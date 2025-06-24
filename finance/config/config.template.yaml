@@ -1,0 +1,307 @@
+# Invoice & Payment Matching Dashboard Configuration Template
+# Copy this file to config.yaml and customize for your environment
+
+# Application Settings
+app:
+  title: "Invoice & Payment Matching Dashboard"
+  description: "Enterprise Finance Automation Solution"
+  version: "1.0.0"
+  debug: false
+  host: "localhost"
+  port: 8501
+  max_file_size: 200  # MB
+  session_timeout: 3600  # seconds
+  theme: "light"  # light, dark, auto
+
+# Database Configuration
+database:
+  # SQLite (Default - for development)
+  type: "sqlite"
+  path: "data/transactions.db"
+
+  # PostgreSQL (Recommended for production)
+  # type: "postgresql"
+  # host: "localhost"
+  # port: 5432
+  # database: "invoice_matching"
+  # username: "postgres"
+  # password: "your_password"
+
+  # MySQL
+  # type: "mysql"
+  # host: "localhost"
+  # port: 3306
+  # database: "invoice_matching"
+  # username: "mysql_user"
+  # password: "your_password"
+
+  # Connection Pool Settings
+  pool_size: 10
+  max_overflow: 20
+  pool_timeout: 30
+  pool_recycle: 3600
+
+# Matching Algorithm Configuration
+matching:
+  # Confidence thresholds (0.0 to 1.0)
+  confidence_threshold: 0.75
+  high_confidence_threshold: 0.90
+  low_confidence_threshold: 0.50
+
+  # Amount matching
+  amount_tolerance: 0.01  # 1% tolerance
+  amount_weight: 0.40
+
+  # Reference number matching
+  fuzzy_threshold: 0.80
+  reference_weight: 0.35
+
+  # Date matching
+  date_window: 7  # days
+  date_weight: 0.15
+
+  # Customer matching
+  customer_weight: 0.10
+
+  # Processing settings
+  batch_size: 1000
+  parallel_workers: 4
+  max_processing_time: 300  # seconds
+
+# File Processing Settings
+file_processing:
+  # Supported formats
+  supported_formats: [".xlsx", ".xls", ".csv", ".txt"]
+
+  # Excel settings
+  excel:
+    max_rows: 100000
+    skip_blank_rows: true
+    header_row: 0
+
+  # CSV settings
+  csv:
+    delimiter: ","
+    encoding: "utf-8"
+    quote_char: '"'
+
+  # Data validation
+  validation:
+    required_fields: ["amount", "date"]
+    date_formats: ["%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y"]
+    amount_formats: ["float", "currency"]
+
+# Security Settings
+security:
+  # Authentication
+  authentication:
+    enabled: true
+    method: "database"  # database, ldap, oauth
+    session_timeout: 3600
+    max_login_attempts: 5
+    lockout_duration: 900  # seconds
+
+  # Password policy
+  password_policy:
+    min_length: 8
+    require_uppercase: true
+    require_lowercase: true
+    require_numbers: true
+    require_special: true
+    expiry_days: 90
+
+  # Encryption
+  encryption:
+    algorithm: "AES-256"
+    key_rotation_days: 30
+
+  # SSL/TLS
+  ssl:
+    enabled: false
+    cert_path: "/path/to/certificate.crt"
+    key_path: "/path/to/private.key"
+    force_https: false
+
+# User Roles and Permissions
+roles:
+  administrator:
+    permissions: ["all"]
+    description: "Full system access"
+
+  finance_manager:
+    permissions: ["view_all", "export", "configure_matching", "manage_users"]
+    description: "Finance team management"
+
+  analyst:
+    permissions: ["view_assigned", "export", "create_reports"]
+    description: "Data analysis and reporting"
+
+  viewer:
+    permissions: ["view_assigned", "basic_export"]
+    description: "Read-only access"
+
+# Logging Configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # File logging
+  file:
+    enabled: true
+    path: "logs/app.log"
+    max_size: 10485760  # 10MB
+    backup_count: 5
+    rotation: "daily"
+
+  # Console logging
+  console:
+    enabled: true
+    level: "INFO"
+
+  # Database logging
+  database:
+    enabled: true
+    table: "system_logs"
+    retention_days: 90
+
+# Performance Settings
+performance:
+  # Memory management
+  max_memory_usage: "2GB"
+  memory_warning_threshold: 0.8
+  garbage_collection_threshold: 1000
+
+  # Processing optimization
+  chunk_size: 10000
+  parallel_processing: true
+  cache_enabled: true
+  cache_size: "500MB"
+  cache_ttl: 3600  # seconds
+
+  # Database optimization
+  query_timeout: 30
+  connection_timeout: 10
+  statement_timeout: 60
+
+# Notification Settings
+notifications:
+  # Email notifications
+  email:
+    enabled: false
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: "your_email@company.com"
+    password: "your_app_password"
+    use_tls: true
+
+  # Webhook notifications
+  webhooks:
+    enabled: false
+    endpoints:
+      - url: "https://your-webhook-url.com/notify"
+        events: ["match_complete", "exception_detected"]
+
+  # In-app notifications
+  in_app:
+    enabled: true
+    retention_days: 30
+
+# Export Settings
+export:
+  # Default formats
+  default_formats: ["xlsx", "csv", "pdf"]
+
+  # Excel export
+  excel:
+    include_charts: true
+    include_summary: true
+    password_protect: false
+
+  # PDF export
+  pdf:
+    include_logo: true
+    watermark: false
+    page_size: "A4"
+    orientation: "portrait"
+
+  # Report scheduling
+  scheduling:
+    enabled: false
+    default_frequency: "weekly"
+    max_scheduled_reports: 10
+
+# Integration Settings
+integrations:
+  # API settings
+  api:
+    enabled: false
+    base_url: "/api/v1"
+    rate_limit: 1000  # requests per hour
+    authentication: "token"
+
+  # External systems
+  erp_systems:
+    sap:
+      enabled: false
+      connection_string: ""
+
+    oracle:
+      enabled: false
+      connection_string: ""
+
+  # Cloud storage
+  cloud_storage:
+    aws_s3:
+      enabled: false
+      bucket: "invoice-matching-data"
+      region: "us-east-1"
+
+    azure_blob:
+      enabled: false
+      container: "invoice-data"
+
+# Backup and Recovery
+backup:
+  # Automatic backups
+  enabled: true
+  frequency: "daily"  # hourly, daily, weekly
+  retention_days: 30
+
+  # Backup locations
+  local_path: "backups/"
+  cloud_backup: false
+
+  # Recovery settings
+  point_in_time_recovery: true
+  recovery_window_days: 7
+
+# Monitoring and Alerting
+monitoring:
+  # Health checks
+  health_checks:
+    enabled: true
+    interval: 60  # seconds
+    endpoints: ["/health", "/metrics"]
+
+  # Metrics collection
+  metrics:
+    enabled: true
+    collection_interval: 300  # seconds
+    retention_days: 90
+
+  # Alerting
+  alerts:
+    enabled: true
+    thresholds:
+      error_rate: 0.05  # 5%
+      response_time: 5000  # milliseconds
+      memory_usage: 0.9  # 90%
+      disk_usage: 0.8  # 80%
+
+# Development Settings (only for development environment)
+development:
+  debug_mode: false
+  hot_reload: false
+  profiling: false
+  mock_data: false
+  test_mode: false
