@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apotek Alpro - Executive Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .medical-gradient {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .subtab-content {
+            display: none;
+        }
+        .subtab-content.active {
+            display: block;
+        }
+        .role-badge {
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .loading {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3B82F6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .iframe-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .subtab-nav {
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 1rem;
+        }
+        .subtab-nav button {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        .subtab-nav button.active {
+            color: #3B82F6;
+            border-bottom-color: #3B82F6;
+            background-color: #EBF4FF;
+        }
+        .subtab-nav button:hover {
+            background-color: #F3F4F6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center gradient-bg">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="mx-auto w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-plus-circle text-white text-2xl"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">Apotek Alpro</h1>
+                <p class="text-gray-600">Executive Dashboard</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email / Username</label>
+                    <input type="text" id="loginEmail" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="loginPassword" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <button type="submit" id="loginBtn" 
+                        class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center">
+                    <span id="loginBtnText">Sign In</span>
+                    <div id="loginSpinner" class="loading ml-2" style="display: none; width: 20px; height: 20px;"></div>
+                </button>
+            </form>
+            
+            <div id="loginError" class="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg hidden">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                <span id="loginErrorText">Invalid credentials. Please check your email and password.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Header -->
+        <header class="medical-gradient text-white shadow-lg">
+            <div class="container mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <i class="fas fa-plus-circle text-xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold">Apotek Alpro</h1>
+                            <p class="text-green-100">Executive Dashboard</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <div class="role-badge" id="userRole">Loading...</div>
+                            <p class="text-green-100 text-sm mt-1" id="userName">Welcome</p>
+                        </div>
+                        <button onclick="logout()" class="bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition duration-300">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="bg-white shadow-sm border-b">
+            <div class="container mx-auto px-6">
+                <div class="flex space-x-1" id="navigationTabs">
+                    <!-- Tabs will be generated based on user role -->
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-6 py-8">
+            <!-- PPM Department -->
+            <div id="ppm-content" class="tab-content">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">
+                            <i class="fas fa-chart-line text-blue-500 mr-3"></i>
+                            PPM Dashboard
+                        </h2>
+                        <button onclick="refreshPPM()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+                            <i class="fas fa-sync-alt mr-2"></i>Refresh
+                        </button>
+                    </div>
+                    
+                    <div class="iframe-container">
+                        <iframe id="ppmFrame" 
+                                src="https://script.google.com/macros/s/AKfycbzaRaZPlsmOGgKRGssxuMPvYx9FQabDshXkwkfkJyIpoZQ4OHz7TYr7wtccK2DAnlho/exec"
+                                loading="lazy">
+                        </iframe>
+                    </div>
+                    
+                    <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-600">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            If the dashboard doesn't load above, 
+                            <a href="https://script.google.com/macros/s/AKfycbzaRaZPlsmOGgKRGssxuMPvYx9FQabDshXkwkfkJyIpoZQ4OHz7TYr7wtccK2DAnlho/exec" 
+                               target="_blank" class="text-blue-500 hover:text-blue-700 underline">
+                                click here to open in new tab
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Finance Department -->
+            <div id="finance-content" class="tab-content">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                        <i class="fas fa-dollar-sign text-green-500 mr-3"></i>
+                        Finance Department
+                    </h2>
+                    
+                    <!-- Finance Subtabs -->
+                    <div class="subtab-nav">
+                        <button onclick="showFinanceSubtab('coretax')" class="subtab-btn active" data-subtab="coretax">
+                            <i class="fas fa-receipt mr-2"></i>Coretax - Invoice Matching System
+                        </button>
+                        <button onclick="showFinanceSubtab('payment-analysis')" class="subtab-btn" data-subtab="payment-analysis">
+                            <i class="fas fa-analytics mr-2"></i>Invoice Matching & Payment Analysis
+                        </button>
+                        <button onclick="showFinanceSubtab('reports')" class="subtab-btn" data-subtab="reports">
+                            <i class="fas fa-chart-bar mr-2"></i>Financial Reports
+                        </button>
+                        <button onclick="showFinanceSubtab('budget')" class="subtab-btn" data-subtab="budget">
+                            <i class="fas fa-wallet mr-2"></i>Budget Analysis
+                        </button>
+                    </div>
+                    
+                    <!-- Coretax Subtab -->
+                    <div id="coretax-subtab" class="subtab-content active">
+                        <div class="mb-4">
+                            <h3 class="text-xl font-semibold mb-2">Coretax - Invoice Matching System</h3>
+                            <p class="text-gray-600">External invoice matching and tax processing system</p>
+                        </div>
+                        
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                            <i class="fas fa-external-link-alt text-blue-500 text-3xl mb-4"></i>
+                            <h4 class="text-lg font-semibold text-blue-800 mb-2">External System Access</h4>
+                            <p class="text-blue-600 mb-4">Click the button below to access the Coretax Invoice Matching System</p>
+                            <a href="https://bsnpklin.gensparkspace.com/" target="_blank" 
+                               class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition duration-300 inline-flex items-center">
+                                <i class="fas fa-calculator mr-2"></i>Open Coretax System
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Analysis Subtab -->
+                    <div id="payment-analysis-subtab" class="subtab-content">
+                        <div class="mb-4">
+                            <h3 class="text-xl font-semibold mb-2">Invoice Matching & Payment Analysis</h3>
+                            <p class="text-gray-600">Advanced invoice and payment processing with SLA tracking</p>
+                        </div>
+                        
+                        <div class="iframe-container">
+                            <iframe id="paymentAnalysisFrame" 
+                                    src="./finance/payment-analysis.html"
+                                    loading="lazy">
+                            </iframe>
+                        </div>
+                        
+                        <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                If the system doesn't load above, 
+                                <a href="./finance/payment-analysis.html" target="_blank" 
+                                   class="text-blue-500 hover:text-blue-700 underline">
+                                    click here to open in new tab
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Financial Reports Subtab -->
+                    <div id="reports-subtab" class="subtab-content">
+                        <div class="text-center py-12">
+                            <i class="fas fa-chart-bar text-gray-400 text-6xl mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-600 mb-2">Financial Reports</h3>
+                            <p class="text-gray-500">Financial reporting system will be integrated here</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Budget Analysis Subtab -->
+                    <div id="budget-subtab" class="subtab-content">
+                        <div class="text-center py-12">
+                            <i class="fas fa-wallet text-gray-400 text-6xl mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-600 mb-2">Budget Analysis</h3>
+                            <p class="text-gray-500">Budget tracking and analysis tools will be available here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Operations Department -->
+            <div id="operations-content" class="tab-content">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="text-center py-12">
+                        <i class="fas fa-cogs text-gray-400 text-6xl mb-4"></i>
+                        <h2 class="text-2xl font-bold text-gray-600 mb-2">Operations Dashboard</h2>
+                        <p class="text-gray-500">Operations management system will be integrated here</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BPT Department -->
+            <div id="bpt-content" class="tab-content">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="text-center py-12">
+                        <i class="fas fa-tasks text-gray-400 text-6xl mb-4"></i>
+                        <h2 class="text-2xl font-bold text-gray-600 mb-2">BPT Dashboard</h2>
+                        <p class="text-gray-500">Business Process Technology dashboard will be available here</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academy Department -->
+            <div id="academy-content" class="tab-content">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="text-center py-12">
+                        <i class="fas fa-graduation-cap text-gray-400 text-6xl mb-4"></i>
+                        <h2 class="text-2xl font-bold text-gray-600 mb-2">Academy Dashboard</h2>
+                        <p class="text-gray-500">Training and development platform will be integrated here</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="reports-content" class="tab-content">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <div class="text-center py-12">
+                        <i class="fas fa-chart-pie text-gray-400 text-6xl mb-4"></i>
+                        <h2 class="text-2xl font-bold text-gray-600 mb-2">Executive Reports</h2>
+                        <p class="text-gray-500">Comprehensive reporting dashboard will be available here</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // User session data
+        let currentUser = null;
+        let userRole = null;
+
+        // Role-based access configuration
+        const roleAccess = {
+            'admin': ['ppm', 'finance', 'operations', 'bpt', 'academy', 'reports'],
+            'chief': ['ppm', 'finance', 'operations', 'bpt', 'academy', 'reports'],
+            'ppm': ['ppm'],
+            'finance': ['finance'],
+            'operations': ['operations'],
+            'bpt': ['bpt'],
+            'academy': ['academy']
+        };
+
+        // Tab configuration
+        const tabConfig = {
+            'ppm': { name: 'PPM', icon: 'fas fa-chart-line', color: 'blue' },
+            'finance': { name: 'Finance', icon: 'fas fa-dollar-sign', color: 'green' },
+            'operations': { name: 'Operations', icon: 'fas fa-cogs', color: 'purple' },
+            'bpt': { name: 'BPT', icon: 'fas fa-tasks', color: 'indigo' },
+            'academy': { name: 'Academy', icon: 'fas fa-graduation-cap', color: 'yellow' },
+            'reports': { name: 'Reports', icon: 'fas fa-chart-pie', color: 'red' }
+        };
+
+        // Login form handling
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await handleLogin();
+        });
+
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showLoginError('Please enter both email and password');
+                return;
+            }
+
+            showLoginLoading(true);
+            hideLoginError();
+
+            try {
+                const isValid = await validateCredentials(email, password);
+                if (isValid) {
+                    showDashboard();
+                } else {
+                    showLoginError('Invalid credentials. Please check your email and password.');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showLoginError('Login failed. Please try again.');
+            } finally {
+                showLoginLoading(false);
+            }
+        }
+
+        async function validateCredentials(email, password) {
+            try {
+                const response = await fetch('https://docs.google.com/spreadsheets/d/1_ve_N74hK1KBMk_Rz_jVDRuLn_kDk13FUROkeNKR5P4/export?format=csv');
+                const csvText = await response.text();
+                const rows = csvText.split('\n').slice(1); // Skip header row
+                
+                for (let row of rows) {
+                    const columns = row.split(',').map(col => col.replace(/"/g, '').trim());
+                    if (columns.length >= 7) {
+                        const masterEmail = columns[0].toLowerCase();
+                        const masterPassword = columns[6];
+                        const masterRole = columns[2].toLowerCase();
+                        
+                        if (masterEmail === email.toLowerCase() && masterPassword === password) {
+                            currentUser = email;
+                            userRole = masterRole;
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error('Validation error:', error);
+                // Fallback for demo - remove in production
+                if (email === 'admin@apotekalpro.com' && password === 'admin123') {
+                    currentUser = email;
+                    userRole = 'admin';
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        function showLoginLoading(show) {
+            const btn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('loginBtnText');
+            const spinner = document.getElementById('loginSpinner');
+            
+            if (show) {
+                btn.disabled = true;
+                btnText.textContent = 'Signing In...';
+                spinner.style.display = 'block';
+            } else {
+                btn.disabled = false;
+                btnText.textContent = 'Sign In';
+                spinner.style.display = 'none';
+            }
+        }
+
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            const errorText = document.getElementById('loginErrorText');
+            errorText.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function hideLoginError() {
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        function showDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            // Update user info
+            document.getElementById('userName').textContent = `Welcome, ${currentUser}`;
+            document.getElementById('userRole').textContent = userRole.toUpperCase();
+            
+            generateNavigationTabs();
+            showTab('ppm'); // Default tab
+        }
+
+        function generateNavigationTabs() {
+            const tabsContainer = document.getElementById('navigationTabs');
+            const allowedTabs = roleAccess[userRole] || [];
+            
+            tabsContainer.innerHTML = '';
+            
+            allowedTabs.forEach(tabKey => {
+                const config = tabConfig[tabKey];
+                if (config) {
+                    const tab = document.createElement('button');
+                    tab.className = `px-6 py-4 text-sm font-medium text-gray-700 hover:text-${config.color}-600 hover:bg-gray-50 border-b-2 border-transparent hover:border-${config.color}-600 transition duration-300`;
+                    tab.onclick = () => showTab(tabKey);
+                    tab.innerHTML = `<i class="${config.icon} mr-2"></i>${config.name}`;
+                    tab.setAttribute('data-tab', tabKey);
+                    tabsContainer.appendChild(tab);
+                }
+            });
+        }
+
+        function showTab(tabKey) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('[data-tab]').forEach(tab => {
+                tab.classList.remove('border-blue-600', 'text-blue-600', 'bg-blue-50');
+                tab.classList.add('border-transparent', 'text-gray-700');
+            });
+            
+            // Show selected tab content
+            const tabContent = document.getElementById(`${tabKey}-content`);
+            if (tabContent) {
+                tabContent.classList.add('active');
+            }
+            
+            // Add active class to selected tab
+            const activeTab = document.querySelector(`[data-tab="${tabKey}"]`);
+            if (activeTab) {
+                activeTab.classList.remove('border-transparent', 'text-gray-700');
+                activeTab.classList.add('border-blue-600', 'text-blue-600', 'bg-blue-50');
+            }
+        }
+
+        function showFinanceSubtab(subtabKey) {
+            // Hide all finance subtab contents
+            document.querySelectorAll('.subtab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all subtab buttons
+            document.querySelectorAll('.subtab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected subtab content
+            const subtabContent = document.getElementById(`${subtabKey}-subtab`);
+            if (subtabContent) {
+                subtabContent.classList.add('active');
+            }
+            
+            // Add active class to selected subtab button
+            const activeBtn = document.querySelector(`[data-subtab="${subtabKey}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+        }
+
+        function refreshPPM() {
+            const iframe = document.getElementById('ppmFrame');
+            iframe.src = iframe.src;
+        }
+
+        function logout() {
+            currentUser = null;
+            userRole = null;
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+            hideLoginError();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is already logged in (for demo purposes)
+            // In production, implement proper session management
+        });
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"954a96a74cc2895e","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDu1v8FL%2FpflQ4PxQ6fw1z9Qn9yOkj%2FekqUeJU9FLANG1PqPE3%2Bz6f0SyAn6k2R%2BmU99FNPhwyitDk8sL9CuBAv2YKPRw%2BhQj6v%2BJ0qSN6pyYjsvcdPRQOOSrJduynn%2B%2B3PeBXcoZtvzY3af1RAhdsvK7ggO%2BVilM%2F2XEPK07TxrGMMMhc%2FRDNITb1A%2BYECIgeZm%2BVmepBPYoZAo5DJIbZNaydc01fyYMc8zYl7o0TtjNuiHze5td%2F9C8zpdy1rMXLvf8oLYaI4eZZfsnw%2F5caMe5uVTAEI7jzBOONJOFLfp9xRru26PpriBCKrUcyF5q5JAqHG5qI0T1DQnIXIHeQyYdzYYFUvkQEmbLlGylcmL68IXwLapK5vvfxby5mEKJP4%2FNkjG2BojrLbB%2F35skPP7lio6AsQ%2BHHNOSgm5QmZCjZnrZD4UbSMTduGXVcjoEP8cw8V%2BiJct9R%2BR42C3XoXCg1JYtlyAiizZJOyyBM%2FhmNBx44K1NMHpjk9OA8t6zwTGb9AwUNVdYwnS7tUybNtk%3D";
+        window.__genspark_locale = "en-US";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDu1v8FL/pflQ4PxQ6fw1z9Qn9yOkj/ekqUeJU9FLANG1PqPE3+z6f0SyAn6k2R+mU99FNPhwyitDk8sL9CuBAv2YKPRw+hQj6v+J0qSN6pyYjsvcdPRQOOSrJduynn++3PeBXcoZtvzY3af1RAhdsvK7ggO+VilM/2XEPK07TxrGMMMhc/RDNITb1A+YECIgeZm+VmepBPYoZAo5DJIbZNaydc01fyYMc8zYl7o0TtjNuiHze5td/9C8zpdy1rMXLvf8oLYaI4eZZfsnw/5caMe5uVTAEI7jzBOONJOFLfp9xRru26PpriBCKrUcyF5q5JAqHG5qI0T1DQnIXIHeQyYdzYYFUvkQEmbLlGylcmL68IXwLapK5vvfxby5mEKJP4/NkjG2BojrLbB/35skPP7lio6AsQ+HHNOSgm5QmZCjZnrZD4UbSMTduGXVcjoEP8cw8V+iJct9R+R42C3XoXCg1JYtlyAiizZJOyyBM/hmNBx44K1NMHpjk9OA8t6zwTGb9AwUNVdYwnS7tUybNtk=";
+    </script>
+    
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    
