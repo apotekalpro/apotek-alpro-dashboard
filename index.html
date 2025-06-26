@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apotek Alpro - Executive Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .login-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+            min-height: calc(100vh - 40px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px 20px 0 0;
+            padding: 15px 25px;
+            color: white;
+        }
+
+        .tab-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 8px;
+            margin: 15px 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-button {
+            background: rgba(255, 255, 255, 0.7);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin: 0 5px;
+            color: #4a5568;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-button:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .content-area {
+            background: white;
+            border-radius: 15px;
+            margin: 0 20px 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .content-header {
+            background: linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 15px 25px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-iframe {
+            width: 100%;
+            height: calc(100vh - 200px);
+            border: none;
+            background: white;
+        }
+
+        .finance-subtabs {
+            background: rgba(102, 126, 234, 0.05);
+            padding: 15px 25px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .finance-subtab {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .finance-subtab:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .finance-subtab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .open-new-tab-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .open-new-tab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+            color: #2d3748;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .login-button {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .error-message {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: white;
+        }
+
+        .logout-btn {
+            background: rgba(248, 113, 113, 0.9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: rgba(248, 113, 113, 1);
+            transform: translateY(-1px);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .tab-container {
+                margin: 10px;
+                padding: 5px;
+            }
+            
+            .tab-button {
+                padding: 10px 15px;
+                margin: 2px;
+                font-size: 14px;
+            }
+            
+            .content-area {
+                margin: 0 10px 10px;
+            }
+            
+            .content-iframe {
+                height: calc(100vh - 180px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="login-container w-full max-w-md p-8">
+            <div class="text-center mb-8">
+                <div class="text-4xl mb-4">
+                    <i class="fas fa-hospital-alt text-blue-600"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Apotek Alpro</h1>
+                <p class="text-gray-600">Executive Dashboard</p>
+            </div>
+            
+            <form id="loginForm">
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Email / Username</label>
+                    <input type="text" id="emailInput" class="login-input" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="passwordInput" class="login-input" placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="login-button">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Login
+                </button>
+                
+                <div id="errorMessage" class="error-message hidden">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Invalid credentials. Please check your email and password.
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboardScreen" class="hidden min-h-screen p-5">
+        <div class="dashboard-container">
+            <!-- Header -->
+            <div class="header">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-hospital-alt text-2xl"></i>
+                        <div>
+                            <h1 class="text-xl font-bold">Apotek Alpro</h1>
+                            <p class="text-sm opacity-90">Executive Dashboard</p>
+                        </div>
+                    </div>
+                    <div class="user-info">
+                        <div class="text-right">
+                            <div id="userEmail" class="font-semibold"></div>
+                            <div id="userRole" class="text-sm opacity-90"></div>
+                        </div>
+                        <button id="logoutBtn" class="logout-btn">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="tab-container">
+                <button class="tab-button" data-tab="operations">
+                    <i class="fas fa-cogs"></i>
+                    Operations
+                </button>
+                <button class="tab-button" data-tab="ppm">
+                    <i class="fas fa-chart-line"></i>
+                    PPM
+                </button>
+                <button class="tab-button" data-tab="strategy">
+                    <i class="fas fa-chess"></i>
+                    Strategy
+                </button>
+                <button class="tab-button" data-tab="finance">
+                    <i class="fas fa-dollar-sign"></i>
+                    Finance
+                </button>
+                <button class="tab-button" data-tab="bpt">
+                    <i class="fas fa-bullseye"></i>
+                    BPT
+                </button>
+                <button class="tab-button" data-tab="academy">
+                    <i class="fas fa-graduation-cap"></i>
+                    Academy
+                </button>
+                <button class="tab-button" data-tab="reports">
+                    <i class="fas fa-file-alt"></i>
+                    Reports
+                </button>
+            </div>
+
+            <!-- Content Areas -->
+            <div class="content-area">
+                <!-- Operations Tab -->
+                <div id="operations-content" class="tab-content">
+                    <div class="content-header">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-cogs text-blue-600"></i>
+                                Operations Dashboard
+                            </h2>
+                            <p class="text-gray-600">Operational management and monitoring system</p>
+                        </div>
+                        <button class="open-new-tab-btn" onclick="window.open('https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec', '_blank')">
+                            <i class="fas fa-external-link-alt"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <iframe src="https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec" 
+                            class="content-iframe"></iframe>
+                </div>
+
+                <!-- PPM Tab -->
+                <div id="ppm-content" class="tab-content hidden">
+                    <div class="content-header">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-chart-line text-green-600"></i>
+                                PPM Dashboard
+                            </h2>
+                            <p class="text-gray-600">Project and performance management</p>
+                        </div>
+                        <button class="open-new-tab-btn" onclick="window.open('https://script.google.com/macros/s/AKfycbzaRaZPlsmOGgKRGssxuMPvYx9FQabDshXkwkfkJyIpoZQ4OHz7TYr7wtccK2DAnlho/exec', '_blank')">
+                            <i class="fas fa-external-link-alt"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <iframe src="https://script.google.com/macros/s/AKfycbzaRaZPlsmOGgKRGssxuMPvYx9FQabDshXkwkfkJyIpoZQ4OHz7TYr7wtccK2DAnlho/exec" 
+                            class="content-iframe"></iframe>
+                </div>
+
+                <!-- Strategy Tab -->
+                <div id="strategy-content" class="tab-content hidden">
+                    <div class="content-header">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-chess text-purple-600"></i>
+                                Strategy Dashboard
+                            </h2>
+                            <p class="text-gray-600">Strategic planning and analysis</p>
+                        </div>
+                        <button class="open-new-tab-btn" onclick="window.open('https://script.google.com/macros/s/AKfycbyXBzPOvB7_u5QYUdA9FKNFPLjoB4li1OekWjUEWstmOJC-adXBHxKtBRi6oR7p9-Ds/exec', '_blank')">
+                            <i class="fas fa-external-link-alt"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <iframe src="https://script.google.com/macros/s/AKfycbyXBzPOvB7_u5QYUdA9FKNFPLjoB4li1OekWjUEWstmOJC-adXBHxKtBRi6oR7p9-Ds/exec" 
+                            class="content-iframe"></iframe>
+                </div>
+
+                <!-- Finance Tab -->
+                <div id="finance-content" class="tab-content hidden">
+                    <div class="content-header">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-dollar-sign text-yellow-600"></i>
+                                Finance Dashboard
+                            </h2>
+                            <p class="text-gray-600">Financial management and analysis</p>
+                        </div>
+                    </div>
+                    
+                    <div class="finance-subtabs">
+                        <div class="finance-subtab active" data-finance-tab="gd-analysis">
+                            <i class="fas fa-industry mr-2"></i>
+                            Supplier Invoice GD Analysis
+                        </div>
+                        <div class="finance-subtab" data-finance-tab="coretax">
+                            <i class="fas fa-receipt mr-2"></i>
+                            Coretax - Invoice Matching System
+                        </div>
+                        <div class="finance-subtab" data-finance-tab="payment-analysis">
+                            <i class="fas fa-credit-card mr-2"></i>
+                            Invoice Matching & Payment Analysis
+                        </div>
+                        <div class="finance-subtab" data-finance-tab="budget">
+                            <i class="fas fa-chart-pie mr-2"></i>
+                            Budget Analysis
+                        </div>
+                    </div>
+
+                    <!-- GD Analysis -->
+                    <div id="finance-gd-analysis" class="finance-content">
+                        <iframe src="https://script.google.com/macros/s/AKfycbxnxfu8mOtNNyetUbhIXc3VGlAIO_YIKc8jlstv4IIKHJrE5wncT0hO4TCcOgZTsg0cHQ/exec" 
+                                class="content-iframe"></iframe>
+                    </div>
+
+                    <!-- Coretax -->
+                    <div id="finance-coretax" class="finance-content hidden">
+                        <iframe src="finance/invoice-matching.html" class="content-iframe"></iframe>
+                    </div>
+
+                    <!-- Payment Analysis -->
+                    <div id="finance-payment-analysis" class="finance-content hidden">
+                        <iframe src="finance/payment-analysis.html" class="content-iframe"></iframe>
+                    </div>
+
+                    <!-- Budget Analysis -->
+                    <div id="finance-budget" class="finance-content hidden">
+                        <div class="p-8 text-center">
+                            <i class="fas fa-chart-pie text-6xl text-gray-300 mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-600 mb-2">Budget Analysis</h3>
+                            <p class="text-gray-500">Coming soon...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BPT Tab -->
+                <div id="bpt-content" class="tab-content hidden">
+                    <div class="content-header">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-bullseye text-red-600"></i>
+                                BPT Dashboard
+                            </h2>
+                            <p class="text-gray-600">Business Process Transformation</p>
+                        </div>
+                    </div>
+                    <div class="p-8 text-center">
+                        <i class="fas fa-bullseye text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-600 mb-2">BPT Dashboard</h3>
+                        <p class="text-gray-500">Coming soon...</p>
+                    </div>
+                </div>
+
+                <!-- Academy Tab -->
+                <div id="academy-content" class="tab-content hidden">
+                    <div class="content-header">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-graduation-cap text-indigo-600"></i>
+                                Academy Dashboard
+                            </h2>
+                            <p class="text-gray-600">Training and development</p>
+                        </div>
+                    </div>
+                    <div class="p-8 text-center">
+                        <i class="fas fa-graduation-cap text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-600 mb-2">Academy Dashboard</h3>
+                        <p class="text-gray-500">Coming soon...</p>
+                    </div>
+                </div>
+
+                <!-- Reports Tab -->
+                <div id="reports-content" class="tab-content hidden">
+                    <div class="content-header">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-file-alt text-gray-600"></i>
+                                Reports Dashboard
+                            </h2>
+                            <p class="text-gray-600">Executive reports and analytics</p>
+                        </div>
+                    </div>
+                    <div class="p-8 text-center">
+                        <i class="fas fa-file-alt text-6xl text-gray-300 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-600 mb-2">Reports Dashboard</h3>
+                        <p class="text-gray-500">Coming soon...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let userRole = null;
+
+        // Authentication
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value;
+            
+            try {
+                const response = await fetch('https://docs.google.com/spreadsheets/d/1_ve_N74hK1KBMk_Rz_jVDRuLn_kDk13FUROkeNKR5P4/export?format=csv');
+                const csvData = await response.text();
+                
+                const lines = csvData.split('\n');
+                const users = [];
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line) {
+                        const columns = line.split(',');
+                        if (columns.length >= 7) {
+                            users.push({
+                                email: columns[0].trim(),
+                                status: columns[1].trim(),
+                                role: columns[2].trim(),
+                                password: columns[6].trim()
+                            });
+                        }
+                    }
+                }
+                
+                const user = users.find(u => 
+                    u.email.toLowerCase() === email.toLowerCase() && 
+                    u.password === password && 
+                    u.status.toLowerCase() === 'active'
+                );
+                
+                if (user) {
+                    currentUser = user;
+                    userRole = user.role.toLowerCase();
+                    
+                    document.getElementById('userEmail').textContent = user.email;
+                    document.getElementById('userRole').textContent = `Role: ${user.role}`;
+                    
+                    showDashboard();
+                    setupRoleBasedAccess();
+                } else {
+                    document.getElementById('errorMessage').classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Authentication error:', error);
+                document.getElementById('errorMessage').classList.remove('hidden');
+            }
+        });
+
+        // Role-based access control
+        function setupRoleBasedAccess() {
+            const allTabs = document.querySelectorAll('.tab-button');
+            const role = userRole;
+            
+            // Hide all tabs first
+            allTabs.forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            let visibleTabs = [];
+            let defaultTab = 'operations';
+            
+            if (role === 'admin' || role === 'chief') {
+                // Admin and Chief see all tabs
+                visibleTabs = ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'academy', 'reports'];
+                defaultTab = 'operations';
+            } else if (role === 'strategy') {
+                // Strategy sees PPM, Strategy, Operations
+                visibleTabs = ['ppm', 'strategy', 'operations'];
+                defaultTab = 'strategy';
+            } else if (role === 'operation') {
+                visibleTabs = ['operations'];
+                defaultTab = 'operations';
+            } else if (role === 'ppm') {
+                visibleTabs = ['ppm'];
+                defaultTab = 'ppm';
+            } else if (role === 'finance') {
+                visibleTabs = ['finance'];
+                defaultTab = 'finance';
+            } else if (role === 'bpt') {
+                visibleTabs = ['bpt'];
+                defaultTab = 'bpt';
+            } else if (role === 'academy') {
+                visibleTabs = ['academy'];
+                defaultTab = 'academy';
+            }
+            
+            // Show allowed tabs
+            visibleTabs.forEach(tabName => {
+                const tab = document.querySelector(`[data-tab="${tabName}"]`);
+                if (tab) {
+                    tab.style.display = 'inline-flex';
+                }
+            });
+            
+            // Set default active tab
+            showTab(defaultTab);
+        }
+
+        // Tab switching
+        function showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`${tabName}-content`).classList.remove('hidden');
+        }
+
+        // Tab event listeners
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                showTab(tabName);
+            });
+        });
+
+        // Finance subtab switching
+        document.querySelectorAll('.finance-subtab').forEach(subtab => {
+            subtab.addEventListener('click', function() {
+                // Update subtab buttons
+                document.querySelectorAll('.finance-subtab').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Update finance content
+                document.querySelectorAll('.finance-content').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                
+                const financeTab = this.getAttribute('data-finance-tab');
+                document.getElementById(`finance-${financeTab}`).classList.remove('hidden');
+            });
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            currentUser = null;
+            userRole = null;
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('dashboardScreen').classList.add('hidden');
+            document.getElementById('loginForm').reset();
+            document.getElementById('errorMessage').classList.add('hidden');
+        });
+
+        function showDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboardScreen').classList.remove('hidden');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show login screen by default
+            document.getElementById('loginScreen').classList.remove('hidden');
+        });
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"955a30058dae6b99","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDlTvBwoEQ5vksdsz0DJgjEcqeT2SiybtDBWSH2xAUN7Ekhn1e3nyhqKc3j9t9reZ9ePATmlSgc5fp3EVvP%2BW8h%2BSdGWPIAPvrMvNv686YnzwtuogO1csQtcmy6Jx0kq52qZbSSLFl9XW3VXBd0stmW7rY7xCLkw36JS5E5iFfYUYyOY9t1oRcKv65Vp4kKiPUlS1KZ1Yj5TGbPwWeyP9lpNMKkzu7BaC9VxjnJsQkIVJT77yRULesJt2SHQYqHAXn%2Bpx1Vzv3VBOtPiaO84CR3KGVEFkGJaxiPp2Cv4nJMoSZyHKstPqepY4cf5cPm7pPpnyaduS8DwD7he1%2FWLtn%2BC7iix%2FrbI0P7If8CiehYN3a52F%2BzhaOk0%2BgKnQrYOOgndrqKI6Fz13CG0QIHArzEE6tGSih6G%2B2aQCmzd1A%2FBTGXUnfi4dtLmGkgpWCqz%2FLPJ4tTA2jgV%2BvmEJs%2FyzlTjX9%2BU%2BmyklHAqAJkuQZdoLwDol%2BwFAAVlPlSJNPJcOvut06q2tNKgqjd%2BhhGFEhZ4%3D";
+        window.__genspark_locale = "en-US";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDlTvBwoEQ5vksdsz0DJgjEcqeT2SiybtDBWSH2xAUN7Ekhn1e3nyhqKc3j9t9reZ9ePATmlSgc5fp3EVvP+W8h+SdGWPIAPvrMvNv686YnzwtuogO1csQtcmy6Jx0kq52qZbSSLFl9XW3VXBd0stmW7rY7xCLkw36JS5E5iFfYUYyOY9t1oRcKv65Vp4kKiPUlS1KZ1Yj5TGbPwWeyP9lpNMKkzu7BaC9VxjnJsQkIVJT77yRULesJt2SHQYqHAXn+px1Vzv3VBOtPiaO84CR3KGVEFkGJaxiPp2Cv4nJMoSZyHKstPqepY4cf5cPm7pPpnyaduS8DwD7he1/WLtn+C7iix/rbI0P7If8CiehYN3a52F+zhaOk0+gKnQrYOOgndrqKI6Fz13CG0QIHArzEE6tGSih6G+2aQCmzd1A/BTGXUnfi4dtLmGkgpWCqz/LPJ4tTA2jgV+vmEJs/yzlTjX9+U+myklHAqAJkuQZdoLwDol+wFAAVlPlSJNPJcOvut06q2tNKgqjd+hhGFEhZ4=";
+    </script>
+    
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    
