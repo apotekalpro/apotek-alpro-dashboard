@@ -538,6 +538,7 @@ button[id*="Unmatched"]:hover {
                     fakturPajak: row[10] || '',
                     orderNumber: row[13] || '',
                     receivingNumber: row[14] || '',
+                    totalInvoiceTaxAmount: row[17] || '',
                     last8Digits: getLast8Digits(row[10])
                 })).filter(record => record.last8Digits.length > 0);
                 combined.push(...processedData);
@@ -951,6 +952,7 @@ button[id*="Unmatched"]:hover {
                 'Invoice Number': record.matchingInvoice?.invoiceNumber || '',
                 'Order Number': record.matchingInvoice?.orderNumber || '',
                 'Receiving Number': record.matchingInvoice?.receivingNumber || ''
+                'Total Invoice Tax Amount': record.matchingInvoice?.totalInvoiceTaxAmount || ''
             }));
             exportToExcel(exportData, 'All_Matched_Records_Combined.xlsx');
             showMessage('All matched records exported successfully!');
