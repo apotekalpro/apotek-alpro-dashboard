@@ -729,7 +729,7 @@ button[id*="Unmatched"]:hover {
             if (matchedRecords.length > 100) {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td colspan="13" class="px-4 py-3 text-center text-sm text-gray-500">
+                    <td colspan="14" class="px-4 py-3 text-center text-sm text-gray-500">
                         Showing first 100 records. Export for complete data.
                     </td>
                 `;
@@ -979,7 +979,7 @@ button[id*="Unmatched"]:hover {
                 'Confirm Date': record.matchingInvoice?.confirmDate || '',
                 'Invoice Number': record.matchingInvoice?.invoiceNumber || '',
                 'Order Number': record.matchingInvoice?.orderNumber || '',
-                'Receiving Number': record.matchingInvoice?.receivingNumber ||, ''
+                'Receiving Number': record.matchingInvoice?.receivingNumber || '',
                 'Total Invoice Tax Amount': record.matchingInvoice?.totalInvoiceTaxAmount || ''
             }));
             exportToExcel(exportData, 'PKU_Matched_Records_Combined.xlsx');
@@ -1005,7 +1005,7 @@ button[id*="Unmatched"]:hover {
                 'Confirm Date': record.matchingInvoice?.confirmDate || '',
                 'Invoice Number': record.matchingInvoice?.invoiceNumber || '',
                 'Order Number': record.matchingInvoice?.orderNumber || '',
-                'Receiving Number': record.matchingInvoice?.receivingNumber ||, ''
+                'Receiving Number': record.matchingInvoice?.receivingNumber || '',
                 'Total Invoice Tax Amount': record.matchingInvoice?.totalInvoiceTaxAmount || ''
             }));
             exportToExcel(exportData, 'PRI_Matched_Records_Combined.xlsx');
@@ -1031,7 +1031,8 @@ button[id*="Unmatched"]:hover {
                 'Confirm Date': record.matchingInvoice?.confirmDate || '',
                 'Invoice Number': record.matchingInvoice?.invoiceNumber || '',
                 'Order Number': record.matchingInvoice?.orderNumber || '',
-                'Receiving Number': record.matchingInvoice?.receivingNumber || ''
+                'Receiving Number': record.matchingInvoice?.receivingNumber || '',
+                'Total Invoice Tax Amount': record.matchingInvoice?.totalInvoiceTaxAmount || ''
             }));
             exportToExcel(exportData, 'APD_Matched_Records_Combined.xlsx');
             showMessage('APD matched records exported successfully!');
