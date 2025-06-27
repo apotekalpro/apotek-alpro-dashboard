@@ -89,6 +89,28 @@
                 overflow: visible !important;
             }
         }
+        /* Force orange buttons with high specificity */
+button[id*="Unmatched"] {
+    background-color: #ea580c !important; /* Orange-600 */
+    color: white !important;
+    border: 1px solid #ea580c !important;
+}
+
+button[id*="Unmatched"]:hover {
+    background-color: #c2410c !important; /* Orange-700 */
+    border-color: #c2410c !important;
+}
+
+/* Alternative - target by specific IDs */
+#exportAllUnmatched, 
+#exportPKUUnmatched, 
+#exportPRIUnmatched, 
+#exportAPDUnmatched {
+    background-color: #ea580c !important;
+    color: white !important;
+    border: 1px solid #ea580c !important;
+}
+
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
