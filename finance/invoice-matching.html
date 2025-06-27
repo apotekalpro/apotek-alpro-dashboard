@@ -387,6 +387,7 @@ button[id*="Unmatched"]:hover {
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Number</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receiving Number</th>
                                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Confirm Date</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Invoice Tax Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody id="matchedTableBody" class="bg-white divide-y divide-gray-200">
@@ -720,6 +721,7 @@ button[id*="Unmatched"]:hover {
                     <td class="px-4 py-3 text-sm text-gray-600">${record.matchingInvoice?.orderNumber || ''}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">${record.matchingInvoice?.receivingNumber || ''}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">${record.matchingInvoice?.confirmDate || ''}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${record.matchingInvoice?.totalInvoiceTaxAmount || ''}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -951,7 +953,7 @@ button[id*="Unmatched"]:hover {
                 'Confirm Date': record.matchingInvoice?.confirmDate || '',
                 'Invoice Number': record.matchingInvoice?.invoiceNumber || '',
                 'Order Number': record.matchingInvoice?.orderNumber || '',
-                'Receiving Number': record.matchingInvoice?.receivingNumber || ''
+                'Receiving Number': record.matchingInvoice?.receivingNumber || '',
                 'Total Invoice Tax Amount': record.matchingInvoice?.totalInvoiceTaxAmount || ''
             }));
             exportToExcel(exportData, 'All_Matched_Records_Combined.xlsx');
@@ -977,7 +979,8 @@ button[id*="Unmatched"]:hover {
                 'Confirm Date': record.matchingInvoice?.confirmDate || '',
                 'Invoice Number': record.matchingInvoice?.invoiceNumber || '',
                 'Order Number': record.matchingInvoice?.orderNumber || '',
-                'Receiving Number': record.matchingInvoice?.receivingNumber || ''
+                'Receiving Number': record.matchingInvoice?.receivingNumber ||, ''
+                'Total Invoice Tax Amount': record.matchingInvoice?.totalInvoiceTaxAmount || ''
             }));
             exportToExcel(exportData, 'PKU_Matched_Records_Combined.xlsx');
             showMessage('PKU matched records exported successfully!');
@@ -1002,7 +1005,8 @@ button[id*="Unmatched"]:hover {
                 'Confirm Date': record.matchingInvoice?.confirmDate || '',
                 'Invoice Number': record.matchingInvoice?.invoiceNumber || '',
                 'Order Number': record.matchingInvoice?.orderNumber || '',
-                'Receiving Number': record.matchingInvoice?.receivingNumber || ''
+                'Receiving Number': record.matchingInvoice?.receivingNumber ||, ''
+                'Total Invoice Tax Amount': record.matchingInvoice?.totalInvoiceTaxAmount || ''
             }));
             exportToExcel(exportData, 'PRI_Matched_Records_Combined.xlsx');
             showMessage('PRI matched records exported successfully!');
