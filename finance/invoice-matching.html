@@ -951,6 +951,7 @@ button[id*="Unmatched"]:hover {
                 'Invoice Number': record.matchingInvoice?.invoiceNumber || '',
                 'Order Number': record.matchingInvoice?.orderNumber || '',
                 'Receiving Number': record.matchingInvoice?.receivingNumber || ''
+                'Total Invoice Tax Amount': record.matchingInvoice?.totalInvoiceTaxAmount || ''
             }));
             exportToExcel(exportData, 'All_Matched_Records_Combined.xlsx');
             showMessage('All matched records exported successfully!');
