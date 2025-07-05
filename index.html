@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apotek Alpro - Executive Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .dashboard-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        .tab-button {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            color: white;
+            font-weight: 500;
+        }
+        
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .tab-button.active {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        .content-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .subtab-button {
+            background: rgba(79, 70, 229, 0.1);
+            color: #4f46e5;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .subtab-button:hover {
+            background: rgba(79, 70, 229, 0.2);
+            transform: translateY(-1px);
+        }
+        
+        .subtab-button.active {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
+        }
+        
+        .header-compact {
+            padding: 0.75rem 1.5rem;
+        }
+        
+        .tab-compact {
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+        }
+        
+        .iframe-container {
+            height: calc(100vh - 180px);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid rgba(79, 70, 229, 0.1);
+        }
+        
+        .iframe-full {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 15px;
+        }
+        
+        .login-input {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(79, 70, 229, 0.2);
+            border-radius: 10px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .login-input:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            outline: none;
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        .login-input::placeholder {
+            color: #9ca3af;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+        }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #dc2626;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center p-4">
+        <div class="login-container w-full max-w-md p-8">
+            <div class="text-center mb-8">
+                <div class="text-4xl mb-4">
+                    <i class="fas fa-building text-blue-600"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Apotek Alpro</h1>
+                <p class="text-gray-600">Executive Dashboard</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email / Username</label>
+                    <input type="text" id="email" class="login-input w-full px-4 py-3" required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="password" class="login-input w-full px-4 py-3" required>
+                </div>
+                
+                <button type="submit" class="btn-primary w-full text-white py-3 px-4">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Login
+                </button>
+                
+                <div id="errorMessage" class="error-message p-3 hidden">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span id="errorText">Invalid credentials. Please check your email and password.</span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Header -->
+        <div class="dashboard-container mx-4 mt-4 mb-2">
+            <div class="header-compact flex justify-between items-center">
+                <div class="flex items-center text-white">
+                    <i class="fas fa-building text-2xl mr-3"></i>
+                    <div>
+                        <h1 class="text-xl font-bold">Apotek Alpro</h1>
+                        <p class="text-sm opacity-90">Executive Dashboard</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4 text-white">
+                    <div class="text-right">
+                        <div class="flex items-center">
+                            <i class="fas fa-user-circle mr-2"></i>
+                            <span id="userEmail" class="font-medium"></span>
+                        </div>
+                        <div class="text-xs opacity-90">
+                            Role: <span id="userRole" class="font-medium"></span>
+                        </div>
+                    </div>
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="dashboard-container mx-4 mb-4">
+            <div class="p-4">
+                <div id="tabNavigation" class="flex flex-wrap gap-2"></div>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="mx-4 mb-4">
+            <div class="content-card p-6">
+                <!-- Operations Content -->
+                <div id="operationsContent" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-cogs mr-3 text-blue-600"></i>
+                                Operations Dashboard
+                            </h2>
+                            <p class="text-gray-600">Operational management and monitoring system</p>
+                        </div>
+                        <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec')" 
+                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <div class="iframe-container">
+                        <iframe src="https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec" 
+                                class="iframe-full"></iframe>
+                    </div>
+                </div>
+
+                <!-- PPM Content -->
+                <div id="ppmContent" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-chart-line mr-3 text-green-600"></i>
+                                PPM Dashboard
+                            </h2>
+                            <p class="text-gray-600">Project and performance management</p>
+                        </div>
+                        <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbzaRaZPlsmOGgKRGssxuMPvYx9FQabDshXkwkfkJyIpoZQ4OHz7TYr7wtccK2DAnlho/exec')" 
+                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <div class="iframe-container">
+                        <iframe src="https://script.google.com/macros/s/AKfycbzaRaZPlsmOGgKRGssxuMPvYx9FQabDshXkwkfkJyIpoZQ4OHz7TYr7wtccK2DAnlho/exec" 
+                                class="iframe-full"></iframe>
+                    </div>
+                </div>
+
+                <!-- Strategy Content -->
+                <div id="strategyContent" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-chess mr-3 text-purple-600"></i>
+                                Strategy Dashboard
+                            </h2>
+                            <p class="text-gray-600">Strategic planning and analysis system</p>
+                        </div>
+                        <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbyXBzPOvB7_u5QYUdA9FKNFPLjoB4li1OekWjUEWstmOJC-adXBHxKtBRi6oR7p9-Ds/exec')" 
+                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <div class="iframe-container">
+                        <iframe src="https://script.google.com/macros/s/AKfycbyXBzPOvB7_u5QYUdA9FKNFPLjoB4li1OekWjUEWstmOJC-adXBHxKtBRi6oR7p9-Ds/exec" 
+                                class="iframe-full"></iframe>
+                    </div>
+                </div>
+
+                <!-- Finance Content -->
+                <div id="financeContent" class="tab-content hidden">
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-4">
+                            <i class="fas fa-dollar-sign mr-3 text-green-600"></i>
+                            Finance Department
+                        </h2>
+                        
+                        <!-- Finance Subtabs -->
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <button onclick="showFinanceSubtab('gd-analysis')" 
+                                    class="subtab-button active px-4 py-2">
+                                <i class="fas fa-factory mr-2"></i>
+                                Supplier Invoice GD Analysis
+                            </button>
+                            <button onclick="showFinanceSubtab('coretax')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-receipt mr-2"></i>
+                                Coretax - Invoice Matching
+                            </button>
+                            <button onclick="showFinanceSubtab('payment')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-credit-card mr-2"></i>
+                                Invoice & Payment Analysis
+                            </button>
+                            <button onclick="showFinanceSubtab('d365-sync')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-sync-alt mr-2"></i>
+                                D365 Sync Check
+                            </button>
+                        </div>
+                        
+                        <!-- GD Analysis Subtab -->
+                        <div id="gdAnalysisSubtab" class="finance-subtab">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Supplier Invoice GD Analysis</h3>
+                                    <p class="text-gray-600">Goods received document analysis and supplier management</p>
+                                </div>
+                                <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbxnxfu8mOtNNyetUbhIXc3VGlAIO_YIKc8jlstv4IIKHJrE5wncT0hO4TCcOgZTsg0cHQ/exec')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="https://script.google.com/macros/s/AKfycbxnxfu8mOtNNyetUbhIXc3VGlAIO_YIKc8jlstv4IIKHJrE5wncT0hO4TCcOgZTsg0cHQ/exec" 
+                                        class="iframe-full"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- Coretax Subtab -->
+                        <div id="coretaxSubtab" class="finance-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Coretax - Invoice Matching System</h3>
+                                    <p class="text-gray-600">Tax invoice processing and matching system</p>
+                                </div>
+                                <button onclick="openInNewTab('./finance/invoice-matching.html')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="./finance/invoice-matching.html" class="iframe-full"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- Payment Analysis Subtab -->
+                        <div id="paymentSubtab" class="finance-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Invoice & Payment Analysis</h3>
+                                    <p class="text-gray-600">Payment matching and analysis dashboard</p>
+                                </div>
+                                <button onclick="openInNewTab('./finance/payment-analysis.html')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="./finance/payment-analysis.html" class="iframe-full"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- D365 Sync Check Subtab -->
+                        <div id="d365SyncSubtab" class="finance-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">D365 Sync Check</h3>
+                                    <p class="text-gray-600">Dynamics 365 synchronization monitoring and validation</p>
+                                </div>
+                                <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbw-Fd3oknK99wrN7p0YaeLt-PawQtKRXyKQXzJr5ff9TPN0xEBfJ4Yiw8IN_R8l7XJP/exec')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="https://script.google.com/macros/s/AKfycbw-Fd3oknK99wrN7p0YaeLt-PawQtKRXyKQXzJr5ff9TPN0xEBfJ4Yiw8IN_R8l7XJP/exec" 
+                                        class="iframe-full"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BPT Content -->
+                <div id="bptContent" class="tab-content hidden">
+                    <div class="text-center py-12">
+                        <i class="fas fa-bullseye text-6xl text-orange-400 mb-4"></i>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">BPT Dashboard</h2>
+                        <p class="text-gray-600">Business process transformation system</p>
+                        <p class="text-sm text-gray-500 mt-4">Integration coming soon...</p>
+                    </div>
+                </div>
+
+                <!-- Academy Content -->
+                <div id="academyContent" class="tab-content hidden">
+                    <div class="text-center py-12">
+                        <i class="fas fa-graduation-cap text-6xl text-indigo-400 mb-4"></i>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Academy Dashboard</h2>
+                        <p class="text-gray-600">Training and development management</p>
+                        <p class="text-sm text-gray-500 mt-4">Integration coming soon...</p>
+                    </div>
+                </div>
+
+                <!-- Reports Content -->
+                <div id="reportsContent" class="tab-content hidden">
+                    <div class="text-center py-12">
+                        <i class="fas fa-chart-bar text-6xl text-pink-400 mb-4"></i>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Reports Dashboard</h2>
+                        <p class="text-gray-600">Executive reporting and analytics</p>
+                        <p class="text-sm text-gray-500 mt-4">Integration coming soon...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let currentUserRole = null;
+
+        // Authentication System
+        async function authenticateUser(email, password) {
+            try {
+                const response = await fetch('https://docs.google.com/spreadsheets/d/1_ve_N74hK1KBMk_Rz_jVDRuLn_kDk13FUROkeNKR5P4/export?format=csv');
+                const csvData = await response.text();
+                
+                const lines = csvData.trim().split('\n');
+                const headers = lines[0].split(',');
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const row = lines[i].split(',');
+                    const userEmail = row[0]?.trim().toLowerCase();
+                    const status = row[1]?.trim();
+                    const role = row[2]?.trim();
+                    const userPassword = row[6]?.trim();
+                    
+                    if (userEmail === email.toLowerCase() && 
+                        userPassword === password && 
+                        status.toLowerCase() === 'active') {
+                        return { email: userEmail, role: role };
+                    }
+                }
+                return null;
+            } catch (error) {
+                console.error('Authentication error:', error);
+                return null;
+            }
+        }
+
+        // Login Form Handler
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            
+            errorMessage.classList.add('hidden');
+            
+            if (!email || !password) {
+                errorText.textContent = 'Please enter both email and password.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            
+            try {
+                const user = await authenticateUser(email, password);
+                
+                if (user) {
+                    currentUser = user.email;
+                    currentUserRole = user.role;
+                    showDashboard();
+                } else {
+                    errorText.textContent = 'Invalid credentials. Please check your email and password.';
+                    errorMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorText.textContent = 'Authentication failed. Please try again.';
+                errorMessage.classList.remove('hidden');
+            }
+        });
+
+        // Show Dashboard
+        function showDashboard() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            document.getElementById('userEmail').textContent = currentUser;
+            document.getElementById('userRole').textContent = currentUserRole;
+            
+            generateTabs();
+            setDefaultTab();
+        }
+
+        // Generate Tabs Based on Role
+        function generateTabs() {
+            const tabNavigation = document.getElementById('tabNavigation');
+            tabNavigation.innerHTML = '';
+            
+            const allTabs = [
+                { id: 'operations', name: 'Operations', icon: 'fas fa-cogs' },
+                { id: 'ppm', name: 'PPM', icon: 'fas fa-chart-line' },
+                { id: 'strategy', name: 'Strategy', icon: 'fas fa-chess' },
+                { id: 'finance', name: 'Finance', icon: 'fas fa-dollar-sign' },
+                { id: 'bpt', name: 'BPT', icon: 'fas fa-bullseye' },
+                { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
+                { id: 'reports', name: 'Reports', icon: 'fas fa-chart-bar' }
+            ];
+            
+            const accessibleTabs = getAccessibleTabs();
+            
+            allTabs.forEach(tab => {
+                if (accessibleTabs.includes(tab.id)) {
+                    const button = document.createElement('button');
+                    button.className = 'tab-button tab-compact px-4 py-2';
+                    button.onclick = () => showTab(tab.id);
+                    button.innerHTML = `<i class="${tab.icon} mr-2"></i>${tab.name}`;
+                    tabNavigation.appendChild(button);
+                }
+            });
+        }
+
+        // Get Accessible Tabs Based on Role
+        function getAccessibleTabs() {
+            const role = currentUserRole?.toLowerCase();
+            
+            switch (role) {
+                case 'admin':
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'academy', 'reports'];
+                case 'chief':
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'academy', 'reports'];
+                case 'strategy':
+                    return ['ppm', 'strategy', 'operations'];
+                case 'operation':
+                case 'operations':
+                    return ['operations'];
+                case 'ppm':
+                    return ['ppm'];
+                case 'finance':
+                    return ['finance'];
+                case 'bpt':
+                    return ['bpt'];
+                case 'academy':
+                    return ['academy'];
+                default:
+                    return ['operations'];
+            }
+        }
+
+        // Set Default Tab
+        function setDefaultTab() {
+            const role = currentUserRole?.toLowerCase();
+            let defaultTab = 'operations';
+            
+            if (role === 'strategy') {
+                defaultTab = 'strategy';
+            } else if (role === 'ppm') {
+                defaultTab = 'ppm';
+            } else if (role === 'finance') {
+                defaultTab = 'finance';
+            } else if (role === 'bpt') {
+                defaultTab = 'bpt';
+            } else if (role === 'academy') {
+                defaultTab = 'academy';
+            }
+            
+            showTab(defaultTab);
+        }
+
+        // Show Tab Content
+        function showTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            const content = document.getElementById(tabId + 'Content');
+            if (content) {
+                content.classList.remove('hidden');
+            }
+            
+            // Add active class to selected tab
+            event?.target?.classList.add('active');
+            
+            // If no event target, find and activate the tab button
+            if (!event?.target) {
+                const buttons = document.querySelectorAll('.tab-button');
+                buttons.forEach(button => {
+                    if (button.textContent.toLowerCase().includes(tabId)) {
+                        button.classList.add('active');
+                    }
+                });
+            }
+        }
+
+        // Finance Subtab Functions
+        function showFinanceSubtab(subtabId) {
+            // Hide all finance subtabs
+            document.querySelectorAll('.finance-subtab').forEach(subtab => {
+                subtab.classList.add('hidden');
+            });
+            
+            // Remove active class from all subtab buttons
+            document.querySelectorAll('.subtab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected subtab
+            const subtabMap = {
+                'gd-analysis': 'gdAnalysisSubtab',
+                'coretax': 'coretaxSubtab',
+                'payment': 'paymentSubtab',
+                'd365-sync': 'd365SyncSubtab'
+            };
+            
+            const targetSubtab = document.getElementById(subtabMap[subtabId]);
+            if (targetSubtab) {
+                targetSubtab.classList.remove('hidden');
+            }
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Utility Functions
+        function openInNewTab(url) {
+            window.open(url, '_blank');
+        }
+
+        function logout() {
+            currentUser = null;
+            currentUserRole = null;
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-focus on email field
+            document.getElementById('email').focus();
+        });
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95a376871c4135f2","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDt4zpqQpbPROnAEbz3xx%2BV9krDKBimcgFTBoaYDolRJavPDWTufiRUDptoPS5KzzNx8isgcmh0bMmgZZAUg3EFVgAUcOk60KzVX%2FwXd2S9SnYINrGD0Gg3ZTMPP2pWYxG27rgCxIe2VXDEVw%2F1iAVVU0RCORlsFFJnF9YesOYXvcx5q6GXHwwbmQIKpS9Bqml8Agxnepsd8xDZ0brmR1NkoB9XbcvlUMIfR2lKs7u76s32mEFp8Vx2NABlmzrJiYm2WdmVhnsQVDcOlwiDcp52orPLIStYID3s6lJ8%2BcHgpod%2FQsz8lvUYHMpIDhCxSvs5NvgAVPU0FYNpweapdYM3VpeTdKXi5mCjYTw5DGn6nz4DlyXZ9nOJSCNTCXILmxLz%2BwQCeTJY63PY2hH0ea0%2Fd9bhgchAl19z9w7L38Hyb7SJTAKJOzh0lfycVxnAt7uddfloLmEt8Rkp6AKhSlf2NYSbkSeKt4xX8isV1xqvm2vSEIftVnlcEUgxabfcOg34WaL3lagjSm6gUjwJgWHlc%3D";
+        window.__genspark_locale = "en-US";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDt4zpqQpbPROnAEbz3xx+V9krDKBimcgFTBoaYDolRJavPDWTufiRUDptoPS5KzzNx8isgcmh0bMmgZZAUg3EFVgAUcOk60KzVX/wXd2S9SnYINrGD0Gg3ZTMPP2pWYxG27rgCxIe2VXDEVw/1iAVVU0RCORlsFFJnF9YesOYXvcx5q6GXHwwbmQIKpS9Bqml8Agxnepsd8xDZ0brmR1NkoB9XbcvlUMIfR2lKs7u76s32mEFp8Vx2NABlmzrJiYm2WdmVhnsQVDcOlwiDcp52orPLIStYID3s6lJ8+cHgpod/Qsz8lvUYHMpIDhCxSvs5NvgAVPU0FYNpweapdYM3VpeTdKXi5mCjYTw5DGn6nz4DlyXZ9nOJSCNTCXILmxLz+wQCeTJY63PY2hH0ea0/d9bhgchAl19z9w7L38Hyb7SJTAKJOzh0lfycVxnAt7uddfloLmEt8Rkp6AKhSlf2NYSbkSeKt4xX8isV1xqvm2vSEIftVnlcEUgxabfcOg34WaL3lagjSm6gUjwJgWHlc=";
+    </script>
+    
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    
