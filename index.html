@@ -274,6 +274,11 @@
                                 <i class="fas fa-file-invoice-dollar mr-2"></i>
                                 Payroll Ledger
                             </button>
+                            <button onclick="showPpmSubtab('lateness-report')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-clock mr-2"></i>
+                                Lateness Report
+                            </button>
                         </div>
                         
                         <!-- PPM Dashboard Subtab -->
@@ -310,6 +315,25 @@
                             </div>
                             <div class="iframe-container">
                                 <iframe src="https://script.google.com/macros/s/AKfycbxubW8WOVAKGgHS_jA70XHzKTbeSmAHve9y6G_h_XiSPl8z7P4mtTRU0kaIN14_ilDmYQ/exec" 
+                                        class="iframe-full"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- Lateness Report Subtab -->
+                        <div id="latenessReportSubtab" class="ppm-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Lateness Report</h3>
+                                    <p class="text-gray-600">Employee lateness tracking and reporting system</p>
+                                </div>
+                                <button onclick="openInNewTab('https://vlksesmp.gensparkspace.com/')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="https://vlksesmp.gensparkspace.com/" 
                                         class="iframe-full"></iframe>
                             </div>
                         </div>
@@ -725,7 +749,8 @@
             // Show selected subtab
             const subtabMap = {
                 'dashboard': 'ppmDashboardSubtab',
-                'payroll-ledger': 'payrollLedgerSubtab'
+                'payroll-ledger': 'payrollLedgerSubtab',
+                'lateness-report': 'latenessReportSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
