@@ -284,6 +284,11 @@
                                 <i class="fas fa-shield-alt mr-2"></i>
                                 KPJ BPJS
                             </button>
+                            <button onclick="showPpmSubtab('tes-kesehatan')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-stethoscope mr-2"></i>
+                                Tes Kesehatan
+                            </button>
                         </div>
                         
                         <!-- PPM Dashboard Subtab -->
@@ -358,6 +363,25 @@
                             </div>
                             <div class="iframe-container">
                                 <iframe src="https://woyztffi.gensparkspace.com/" 
+                                        class="iframe-full"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- Tes Kesehatan Subtab -->
+                        <div id="tesKesehatanSubtab" class="ppm-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Tes Kesehatan</h3>
+                                    <p class="text-gray-600">Health testing and medical examination system</p>
+                                </div>
+                                <button onclick="openInNewTab('https://znxbkqqx.gensparkspace.com/')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="https://znxbkqqx.gensparkspace.com/" 
                                         class="iframe-full"></iframe>
                             </div>
                         </div>
@@ -775,7 +799,8 @@
                 'dashboard': 'ppmDashboardSubtab',
                 'payroll-ledger': 'payrollLedgerSubtab',
                 'lateness-report': 'latenessReportSubtab',
-                'kpj-bpjs': 'kpjBpjsSubtab'
+                'kpj-bpjs': 'kpjBpjsSubtab',
+                'tes-kesehatan': 'tesKesehatanSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
