@@ -289,6 +289,11 @@
                                 <i class="fas fa-stethoscope mr-2"></i>
                                 Tes Kesehatan
                             </button>
+                            <button onclick="showPpmSubtab('salary-calculator')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-calculator mr-2"></i>
+                                Salary Calculator
+                            </button>
                         </div>
                         
                         <!-- PPM Dashboard Subtab -->
@@ -382,6 +387,25 @@
                             </div>
                             <div class="iframe-container">
                                 <iframe src="https://znxbkqqx.gensparkspace.com/" 
+                                        class="iframe-full"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- Salary Calculator Subtab -->
+                        <div id="salaryCalculatorSubtab" class="ppm-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Salary Calculator</h3>
+                                    <p class="text-gray-600">Employee salary calculation and payroll management tool</p>
+                                </div>
+                                <button onclick="openInNewTab('https://xcqtggfp.gensparkspace.com/')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="https://xcqtggfp.gensparkspace.com/" 
                                         class="iframe-full"></iframe>
                             </div>
                         </div>
@@ -800,7 +824,8 @@
                 'payroll-ledger': 'payrollLedgerSubtab',
                 'lateness-report': 'latenessReportSubtab',
                 'kpj-bpjs': 'kpjBpjsSubtab',
-                'tes-kesehatan': 'tesKesehatanSubtab'
+                'tes-kesehatan': 'tesKesehatanSubtab',
+                'salary-calculator': 'salaryCalculatorSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
