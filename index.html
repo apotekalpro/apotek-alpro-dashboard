@@ -234,23 +234,63 @@
             <div class="content-card p-6">
                 <!-- Operations Content -->
                 <div id="operationsContent" class="tab-content hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                                <i class="fas fa-cogs mr-3 text-blue-600"></i>
-                                Operations Dashboard
-                            </h2>
-                            <p class="text-gray-600">Operational management and monitoring system</p>
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-4">
+                            <i class="fas fa-cogs mr-3 text-blue-600"></i>
+                            Operations Department
+                        </h2>
+                        
+                        <!-- Operations Subtabs -->
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <button onclick="showOperationsSubtab('outlet-dashboard')" 
+                                    class="subtab-button active px-4 py-2">
+                                <i class="fas fa-store mr-2"></i>
+                                Outlet Dashboard
+                            </button>
+                            <button onclick="showOperationsSubtab('opps-ed-project')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-project-diagram mr-2"></i>
+                                OPPS ED Project
+                            </button>
                         </div>
-                        <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec')" 
-                                class="btn-primary text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-external-link-alt mr-2"></i>
-                            Open in New Tab
-                        </button>
-                    </div>
-                    <div class="iframe-container">
-                        <iframe src="https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec" 
-                                class="iframe-full"></iframe>
+                        
+                        <!-- Outlet Dashboard Subtab -->
+                        <div id="outletDashboardSubtab" class="operations-subtab">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Outlet Dashboard</h3>
+                                    <p class="text-gray-600">Operational management and monitoring system</p>
+                                </div>
+                                <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec" 
+                                        class="iframe-full"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- OPPS ED Project Subtab -->
+                        <div id="oppsEdProjectSubtab" class="operations-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">OPPS ED Project</h3>
+                                    <p class="text-gray-600">Operations project management and tracking system</p>
+                                </div>
+                                <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbyM0BENUmoe8itSgDxfo_qReKiBtkiVSjOtkThg5y58YjhuCGv3CVEpl2J1tYZknkP4/exec')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="https://script.google.com/macros/s/AKfycbyM0BENUmoe8itSgDxfo_qReKiBtkiVSjOtkThg5y58YjhuCGv3CVEpl2J1tYZknkP4/exec" 
+                                        class="iframe-full"></iframe>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -951,6 +991,33 @@
             const subtabMap = {
                 'dashboard': 'strategyDashboardSubtab',
                 'phoenix-okr': 'phoenixOkrSubtab'
+            };
+            
+            const targetSubtab = document.getElementById(subtabMap[subtabId]);
+            if (targetSubtab) {
+                targetSubtab.classList.remove('hidden');
+            }
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Operations Subtab Functions
+        function showOperationsSubtab(subtabId) {
+            // Hide all Operations subtabs
+            document.querySelectorAll('.operations-subtab').forEach(subtab => {
+                subtab.classList.add('hidden');
+            });
+            
+            // Remove active class from all Operations subtab buttons
+            document.querySelectorAll('#operationsContent .subtab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected subtab
+            const subtabMap = {
+                'outlet-dashboard': 'outletDashboardSubtab',
+                'opps-ed-project': 'oppsEdProjectSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
