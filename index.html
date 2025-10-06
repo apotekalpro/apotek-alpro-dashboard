@@ -234,23 +234,69 @@
             <div class="content-card p-6">
                 <!-- Operations Content -->
                 <div id="operationsContent" class="tab-content hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                                <i class="fas fa-cogs mr-3 text-blue-600"></i>
-                                Operations Dashboard
-                            </h2>
-                            <p class="text-gray-600">Operational management and monitoring system</p>
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-4">
+                            <i class="fas fa-cogs mr-3 text-blue-600"></i>
+                            Operations Department
+                        </h2>
+                        
+                        <!-- Operations Subtabs -->
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <button onclick="showOperationsSubtab('outlet-dashboard')" 
+                                    class="subtab-button active px-4 py-2">
+                                <i class="fas fa-store mr-2"></i>
+                                Outlet Dashboard
+                            </button>
+                            <button onclick="showOperationsSubtab('opps-ed-project')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-project-diagram mr-2"></i>
+                                OPPS ED Project
+                            </button>
                         </div>
-                        <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec')" 
-                                class="btn-primary text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-external-link-alt mr-2"></i>
-                            Open in New Tab
-                        </button>
-                    </div>
-                    <div class="iframe-container">
-                        <iframe src="https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec" 
-                                class="iframe-full"></iframe>
+                        
+                        <!-- Outlet Dashboard Subtab -->
+                        <div id="outletDashboardSubtab" class="operations-subtab">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Outlet Dashboard</h3>
+                                    <p class="text-gray-600">Operational management and monitoring system</p>
+                                </div>
+                                <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec" 
+                                        class="iframe-full"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- OPPS ED Project Subtab -->
+                        <div id="oppsEdProjectSubtab" class="operations-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">OPPS ED Project</h3>
+                                    <p class="text-gray-600">Operations project management and tracking system</p>
+                                </div>
+                                <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbyM0BENUmoe8itSgDxfo_qReKiBtkiVSjOtkThg5y58YjhuCGv3CVEpl2J1tYZknkP4/exec')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-8 text-center">
+                                <i class="fas fa-project-diagram text-6xl text-indigo-500 mb-4"></i>
+                                <h4 class="text-xl font-semibold text-gray-800 mb-2">OPPS ED Project Dashboard</h4>
+                                <p class="text-gray-600 mb-6">This system cannot be embedded due to security restrictions.<br>Click the button below to access the full application.</p>
+                                <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbyM0BENUmoe8itSgDxfo_qReKiBtkiVSjOtkThg5y58YjhuCGv3CVEpl2J1tYZknkP4/exec')" 
+                                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Launch OPPS ED Project
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -604,6 +650,78 @@
                     </div>
                 </div>
 
+                <!-- Procurement Content -->
+                <div id="procurementContent" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-shopping-cart mr-3 text-blue-600"></i>
+                                Procurement Dashboard
+                            </h2>
+                            <p class="text-gray-600">Procurement analysis and management system</p>
+                        </div>
+                        <button onclick="openInNewTab('https://procurementanalys.github.io/dashboardproc/')" 
+                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <div class="iframe-container">
+                        <iframe src="https://procurementanalys.github.io/dashboardproc/" 
+                                class="iframe-full"></iframe>
+                    </div>
+                </div>
+
+                <!-- Warehouse APD Content -->
+                <div id="warehouseApdContent" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-warehouse mr-3 text-green-600"></i>
+                                Warehouse APD Dashboard
+                            </h2>
+                            <p class="text-gray-600">Warehouse management and inventory system</p>
+                        </div>
+                        <button onclick="openInNewTab('https://alprobook.vercel.app/')" 
+                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <div class="iframe-container">
+                        <iframe src="https://alprobook.vercel.app/" 
+                                class="iframe-full"></iframe>
+                    </div>
+                </div>
+
+                <!-- PPR Content -->
+                <div id="pprContent" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-sitemap mr-3 text-purple-600"></i>
+                                PPR Dashboard
+                            </h2>
+                            <p class="text-gray-600">Master outlet management and organizational system</p>
+                        </div>
+                        <button onclick="openInNewTab('https://sites.google.com/view/alpromaster/master-outlet')" 
+                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-50 to-pink-100 rounded-lg p-8 text-center">
+                        <i class="fas fa-sitemap text-6xl text-purple-500 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">Master Outlet Management</h3>
+                        <p class="text-gray-600 mb-6">This Google Sites page cannot be embedded due to security restrictions.<br>Click the button below to access the full application.</p>
+                        <button onclick="openInNewTab('https://sites.google.com/view/alpromaster/master-outlet')" 
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Launch PPR Dashboard
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Academy Content -->
                 <div id="academyContent" class="tab-content hidden">
                     <div class="text-center py-12">
@@ -614,15 +732,7 @@
                     </div>
                 </div>
 
-                <!-- Reports Content -->
-                <div id="reportsContent" class="tab-content hidden">
-                    <div class="text-center py-12">
-                        <i class="fas fa-chart-bar text-6xl text-pink-400 mb-4"></i>
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Reports Dashboard</h2>
-                        <p class="text-gray-600">Executive reporting and analytics</p>
-                        <p class="text-sm text-gray-500 mt-4">Integration coming soon...</p>
-                    </div>
-                </div>
+
             </div>
         </div>
     </div>
@@ -733,8 +843,10 @@
                 { id: 'strategy', name: 'Strategy', icon: 'fas fa-chess' },
                 { id: 'finance', name: 'Finance', icon: 'fas fa-dollar-sign' },
                 { id: 'bpt', name: 'BPT', icon: 'fas fa-bullseye' },
-                { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
-                { id: 'reports', name: 'Reports', icon: 'fas fa-chart-bar' }
+                { id: 'procurement', name: 'Procurement', icon: 'fas fa-shopping-cart' },
+                { id: 'warehouseApd', name: 'Warehouse APD', icon: 'fas fa-warehouse' },
+                { id: 'ppr', name: 'PPR', icon: 'fas fa-sitemap' },
+                { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' }
             ];
             
             const accessibleTabs = getAccessibleTabs();
@@ -756,20 +868,27 @@
             
             switch (role) {
                 case 'admin':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'academy', 'reports'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'];
                 case 'chief':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'academy', 'reports'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'];
                 case 'strategy':
                     return ['ppm', 'strategy', 'operations'];
                 case 'operation':
                 case 'operations':
-                    return ['operations'];
+                    return ['operations', 'warehouseApd'];
                 case 'ppm':
                     return ['ppm'];
                 case 'finance':
                     return ['finance'];
                 case 'bpt':
                     return ['bpt'];
+                case 'procurement':
+                    return ['procurement'];
+                case 'warehouse':
+                case 'warehouseapd':
+                    return ['warehouseApd'];
+                case 'ppr':
+                    return ['ppr'];
                 case 'academy':
                     return ['academy'];
                 default:
@@ -790,6 +909,12 @@
                 defaultTab = 'finance';
             } else if (role === 'bpt') {
                 defaultTab = 'bpt';
+            } else if (role === 'procurement') {
+                defaultTab = 'procurement';
+            } else if (role === 'warehouse' || role === 'warehouseapd') {
+                defaultTab = 'warehouseApd';
+            } else if (role === 'ppr') {
+                defaultTab = 'ppr';
             } else if (role === 'academy') {
                 defaultTab = 'academy';
             }
@@ -905,6 +1030,33 @@
             const subtabMap = {
                 'dashboard': 'strategyDashboardSubtab',
                 'phoenix-okr': 'phoenixOkrSubtab'
+            };
+            
+            const targetSubtab = document.getElementById(subtabMap[subtabId]);
+            if (targetSubtab) {
+                targetSubtab.classList.remove('hidden');
+            }
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Operations Subtab Functions
+        function showOperationsSubtab(subtabId) {
+            // Hide all Operations subtabs
+            document.querySelectorAll('.operations-subtab').forEach(subtab => {
+                subtab.classList.add('hidden');
+            });
+            
+            // Remove active class from all Operations subtab buttons
+            document.querySelectorAll('#operationsContent .subtab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected subtab
+            const subtabMap = {
+                'outlet-dashboard': 'outletDashboardSubtab',
+                'opps-ed-project': 'oppsEdProjectSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
