@@ -604,6 +604,50 @@
                     </div>
                 </div>
 
+                <!-- Procurement Content -->
+                <div id="procurementContent" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-shopping-cart mr-3 text-blue-600"></i>
+                                Procurement Dashboard
+                            </h2>
+                            <p class="text-gray-600">Procurement analysis and management system</p>
+                        </div>
+                        <button onclick="openInNewTab('https://procurementanalys.github.io/dashboardproc/')" 
+                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <div class="iframe-container">
+                        <iframe src="https://procurementanalys.github.io/dashboardproc/" 
+                                class="iframe-full"></iframe>
+                    </div>
+                </div>
+
+                <!-- Warehouse APD Content -->
+                <div id="warehouseApdContent" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-warehouse mr-3 text-green-600"></i>
+                                Warehouse APD Dashboard
+                            </h2>
+                            <p class="text-gray-600">Warehouse management and inventory system</p>
+                        </div>
+                        <button onclick="openInNewTab('https://alprobook.vercel.app/')" 
+                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <div class="iframe-container">
+                        <iframe src="https://alprobook.vercel.app/" 
+                                class="iframe-full"></iframe>
+                    </div>
+                </div>
+
                 <!-- Academy Content -->
                 <div id="academyContent" class="tab-content hidden">
                     <div class="text-center py-12">
@@ -733,6 +777,8 @@
                 { id: 'strategy', name: 'Strategy', icon: 'fas fa-chess' },
                 { id: 'finance', name: 'Finance', icon: 'fas fa-dollar-sign' },
                 { id: 'bpt', name: 'BPT', icon: 'fas fa-bullseye' },
+                { id: 'procurement', name: 'Procurement', icon: 'fas fa-shopping-cart' },
+                { id: 'warehouseApd', name: 'Warehouse APD', icon: 'fas fa-warehouse' },
                 { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
                 { id: 'reports', name: 'Reports', icon: 'fas fa-chart-bar' }
             ];
@@ -756,20 +802,25 @@
             
             switch (role) {
                 case 'admin':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'academy', 'reports'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'academy', 'reports'];
                 case 'chief':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'academy', 'reports'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'academy', 'reports'];
                 case 'strategy':
                     return ['ppm', 'strategy', 'operations'];
                 case 'operation':
                 case 'operations':
-                    return ['operations'];
+                    return ['operations', 'warehouseApd'];
                 case 'ppm':
                     return ['ppm'];
                 case 'finance':
                     return ['finance'];
                 case 'bpt':
                     return ['bpt'];
+                case 'procurement':
+                    return ['procurement'];
+                case 'warehouse':
+                case 'warehouseapd':
+                    return ['warehouseApd'];
                 case 'academy':
                     return ['academy'];
                 default:
@@ -790,6 +841,10 @@
                 defaultTab = 'finance';
             } else if (role === 'bpt') {
                 defaultTab = 'bpt';
+            } else if (role === 'procurement') {
+                defaultTab = 'procurement';
+            } else if (role === 'warehouse' || role === 'warehouseapd') {
+                defaultTab = 'warehouseApd';
             } else if (role === 'academy') {
                 defaultTab = 'academy';
             }
