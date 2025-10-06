@@ -688,6 +688,28 @@
                     </div>
                 </div>
 
+                <!-- PPR Content -->
+                <div id="pprContent" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-sitemap mr-3 text-purple-600"></i>
+                                PPR Dashboard
+                            </h2>
+                            <p class="text-gray-600">Master outlet management and organizational system</p>
+                        </div>
+                        <button onclick="openInNewTab('https://sites.google.com/view/alpromaster/master-outlet')" 
+                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <div class="iframe-container">
+                        <iframe src="https://sites.google.com/view/alpromaster/master-outlet" 
+                                class="iframe-full"></iframe>
+                    </div>
+                </div>
+
                 <!-- Academy Content -->
                 <div id="academyContent" class="tab-content hidden">
                     <div class="text-center py-12">
@@ -811,6 +833,7 @@
                 { id: 'bpt', name: 'BPT', icon: 'fas fa-bullseye' },
                 { id: 'procurement', name: 'Procurement', icon: 'fas fa-shopping-cart' },
                 { id: 'warehouseApd', name: 'Warehouse APD', icon: 'fas fa-warehouse' },
+                { id: 'ppr', name: 'PPR', icon: 'fas fa-sitemap' },
                 { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' }
             ];
             
@@ -833,9 +856,9 @@
             
             switch (role) {
                 case 'admin':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'academy'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'];
                 case 'chief':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'academy'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'];
                 case 'strategy':
                     return ['ppm', 'strategy', 'operations'];
                 case 'operation':
@@ -852,6 +875,8 @@
                 case 'warehouse':
                 case 'warehouseapd':
                     return ['warehouseApd'];
+                case 'ppr':
+                    return ['ppr'];
                 case 'academy':
                     return ['academy'];
                 default:
@@ -876,6 +901,8 @@
                 defaultTab = 'procurement';
             } else if (role === 'warehouse' || role === 'warehouseapd') {
                 defaultTab = 'warehouseApd';
+            } else if (role === 'ppr') {
+                defaultTab = 'ppr';
             } else if (role === 'academy') {
                 defaultTab = 'academy';
             }
