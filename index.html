@@ -685,6 +685,7 @@
                                     </button>
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 </div>
@@ -1083,6 +1084,37 @@
                     </div>
                 </div>
 
+
+
+                <!-- PPR Content -->
+                <div id="pprContent" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-sitemap mr-3 text-purple-600"></i>
+                                PPR Dashboard
+                            </h2>
+                            <p class="text-gray-600">Master outlet management and organizational system</p>
+                        </div>
+                        <button onclick="openInNewTab('https://sites.google.com/view/alpromaster/master-outlet')" 
+                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-50 to-pink-100 rounded-lg p-8 text-center">
+                        <i class="fas fa-sitemap text-6xl text-purple-500 mb-4"></i>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-2">Master Outlet Management</h3>
+                        <p class="text-gray-600 mb-6">This Google Sites page cannot be embedded due to security restrictions.<br>Click the button below to access the full application.</p>
+                        <button onclick="openInNewTab('https://sites.google.com/view/alpromaster/master-outlet')" 
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Launch PPR Dashboard
+                        </button>
+                    </div>
+                </div>
+
+
                 <!-- Academy Content -->
                 <div id="academyContent" class="tab-content hidden">
                     <div class="text-center py-12">
@@ -1093,15 +1125,7 @@
                     </div>
                 </div>
 
-                <!-- Reports Content -->
-                <div id="reportsContent" class="tab-content hidden">
-                    <div class="text-center py-12">
-                        <i class="fas fa-chart-bar text-6xl text-pink-400 mb-4"></i>
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Reports Dashboard</h2>
-                        <p class="text-gray-600">Executive reporting and analytics</p>
-                        <p class="text-sm text-gray-500 mt-4">Integration coming soon...</p>
-                    </div>
-                </div>
+
             </div>
         </div>
     </div>
@@ -1214,8 +1238,13 @@
                 { id: 'bpt', name: 'BPT', icon: 'fas fa-bullseye' },
                 { id: 'procurement', name: 'Procurement', icon: 'fas fa-shopping-cart' },
                 { id: 'warehouseApd', name: 'Warehouse APD', icon: 'fas fa-warehouse' },
+
                 { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
                 { id: 'reports', name: 'Reports', icon: 'fas fa-chart-bar' }
+
+                { id: 'ppr', name: 'PPR', icon: 'fas fa-sitemap' },
+                { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' }
+
             ];
             
             const accessibleTabs = getAccessibleTabs();
@@ -1237,9 +1266,15 @@
             
             switch (role) {
                 case 'admin':
+
                     return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'academy', 'reports'];
                 case 'chief':
                     return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'academy', 'reports'];
+
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'];
+                case 'chief':
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'];
+
                 case 'strategy':
                     return ['ppm', 'strategy', 'operations'];
                 case 'operation':
@@ -1256,6 +1291,11 @@
                 case 'warehouse':
                 case 'warehouseapd':
                     return ['warehouseApd'];
+
+
+                case 'ppr':
+                    return ['ppr'];
+
                 case 'academy':
                     return ['academy'];
                 default:
@@ -1280,6 +1320,11 @@
                 defaultTab = 'procurement';
             } else if (role === 'warehouse' || role === 'warehouseapd') {
                 defaultTab = 'warehouseApd';
+
+
+            } else if (role === 'ppr') {
+                defaultTab = 'ppr';
+
             } else if (role === 'academy') {
                 defaultTab = 'academy';
             }
@@ -1395,6 +1440,33 @@
             const subtabMap = {
                 'dashboard': 'strategyDashboardSubtab',
                 'phoenix-okr': 'phoenixOkrSubtab'
+            };
+            
+            const targetSubtab = document.getElementById(subtabMap[subtabId]);
+            if (targetSubtab) {
+                targetSubtab.classList.remove('hidden');
+            }
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Operations Subtab Functions
+        function showOperationsSubtab(subtabId) {
+            // Hide all Operations subtabs
+            document.querySelectorAll('.operations-subtab').forEach(subtab => {
+                subtab.classList.add('hidden');
+            });
+            
+            // Remove active class from all Operations subtab buttons
+            document.querySelectorAll('#operationsContent .subtab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected subtab
+            const subtabMap = {
+                'outlet-dashboard': 'outletDashboardSubtab',
+                'opps-ed-project': 'oppsEdProjectSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
