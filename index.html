@@ -356,11 +356,7 @@
                                         <i class="fas fa-sync-alt mr-2"></i>
                                         Refresh Data
                                     </button>
-                                    <button onclick="openInNewTab('https://docs.google.com/spreadsheets/d/1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs/edit?gid=353860854#gid=353860854')" 
-                                            class="btn-primary text-white px-4 py-2 rounded-lg">
-                                        <i class="fas fa-external-link-alt mr-2"></i>
-                                        View Source Data
-                                    </button>
+
                                 </div>
                             </div>
                             
@@ -2109,10 +2105,9 @@
                                     <strong>${am.amName}'s Outlets:</strong>
                                     
 ${am.outlets.map(outlet => 
-    `• ${outlet.outlet} (${outlet.outletName})
+    `• ${outlet.outlet}
   Growth: ${outlet.growthPercent >= 0 ? '+' : ''}${outlet.growthPercent.toFixed(1)}%
-  Forecast: ${outlet.forecastPercent.toFixed(1)}%
-  Target: ${outlet.monthlyTargetDisplay}`
+  Forecast: ${outlet.forecastPercent.toFixed(1)}%`
 ).join('\n\n')}
                                 </div>
                             </div>
