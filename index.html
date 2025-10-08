@@ -2109,10 +2109,9 @@
                                     <strong>${am.amName}'s Outlets:</strong>
                                     
 ${am.outlets.map(outlet => 
-    `• ${outlet.outlet} (${outlet.outletName})
+    `• ${outlet.outlet}
   Growth: ${outlet.growthPercent >= 0 ? '+' : ''}${outlet.growthPercent.toFixed(1)}%
-  Forecast: ${outlet.forecastPercent.toFixed(1)}%
-  Target: ${outlet.monthlyTargetDisplay}`
+  Forecast: ${outlet.forecastPercent.toFixed(1)}%`
 ).join('\n\n')}
                                 </div>
                             </div>
