@@ -350,338 +350,23 @@
                                     <h3 class="text-xl font-semibold text-gray-800">AM Performance Tracker</h3>
                                     <p class="text-gray-600">Area Manager performance monitoring and leaderboard system</p>
                                 </div>
-                                <div class="flex gap-2">
-                                    <button onclick="refreshAMData()" 
-                                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-                                        <i class="fas fa-sync-alt mr-2"></i>
-                                        Refresh Data
-                                    </button>
-
-                                </div>
+                                <button onclick="openInNewTab('./am-performance-tracker.html')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="bg-gradient-to-br from-green-50 to-emerald-100 rounded-lg p-8 text-center">
+                                <i class="fas fa-chart-bar text-6xl text-emerald-500 mb-4"></i>
+                                <h4 class="text-xl font-semibold text-gray-800 mb-2">AM Performance Tracker</h4>
+                                <p class="text-gray-600 mb-6">Track Area Manager performance with leaderboards and detailed analytics.<br>Access the standalone system to avoid login conflicts.</p>
+                                <button onclick="window.location.href='./am-performance-tracker.html'" 
+                                        class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+                                    <i class="fas fa-chart-bar mr-2"></i>
+                                    Launch AM Performance Tracker
+                                </button>
                             </div>
                             
-                            <!-- Loading State -->
-                            <div id="amDataLoading" class="text-center py-8 hidden">
-                                <div class="inline-flex items-center">
-                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
-                                    <span class="text-gray-600">Loading AM performance data...</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Champion Leaderboard Cards -->
-                            <div id="amSummaryCards" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                                <!-- Growth Champions Leaderboard -->
-                                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
-                                    <div class="flex items-center justify-between mb-4">
-                                        <h4 class="text-lg font-bold text-green-800 flex items-center">
-                                            <i class="fas fa-chart-line mr-2"></i>
-                                            Growth Champions
-                                        </h4>
-                                        <i class="fas fa-trophy text-2xl text-green-600"></i>
-                                    </div>
-                                    <div class="space-y-3" id="growthChampionsContent">
-                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200 shadow-sm">
-                                            <div class="flex items-center">
-                                                <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                                                    <i class="fas fa-crown"></i>
-                                                </div>
-                                                <div>
-                                                    <div class="font-semibold text-gray-800" id="growthChamp1Name">Loading...</div>
-                                                    <div class="text-xs text-gray-600">Champion</div>
-                                                </div>
-                                            </div>
-                                            <div class="text-right">
-                                                <div class="font-bold text-green-600" id="growthChamp1Rate">-</div>
-                                                <div class="text-xs text-gray-600">Growth Rate</div>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200 shadow-sm">
-                                            <div class="flex items-center">
-                                                <div class="w-8 h-8 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                                                    2
-                                                </div>
-                                                <div>
-                                                    <div class="font-semibold text-gray-800" id="growthChamp2Name">Loading...</div>
-                                                    <div class="text-xs text-gray-600">Runner-up</div>
-                                                </div>
-                                            </div>
-                                            <div class="text-right">
-                                                <div class="font-bold text-green-600" id="growthChamp2Rate">-</div>
-                                                <div class="text-xs text-gray-600">Growth Rate</div>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200 shadow-sm">
-                                            <div class="flex items-center">
-                                                <div class="w-8 h-8 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                                                    3
-                                                </div>
-                                                <div>
-                                                    <div class="font-semibold text-gray-800" id="growthChamp3Name">Loading...</div>
-                                                    <div class="text-xs text-gray-600">Third Place</div>
-                                                </div>
-                                            </div>
-                                            <div class="text-right">
-                                                <div class="font-bold text-green-600" id="growthChamp3Rate">-</div>
-                                                <div class="text-xs text-gray-600">Growth Rate</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Achievement Champions Leaderboard -->
-                                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6 border border-purple-200">
-                                    <div class="flex items-center justify-between mb-4">
-                                        <h4 class="text-lg font-bold text-purple-800 flex items-center">
-                                            <i class="fas fa-bullseye mr-2"></i>
-                                            Achievement Champions
-                                        </h4>
-                                        <i class="fas fa-star text-2xl text-purple-600"></i>
-                                    </div>
-                                    <div class="space-y-3" id="achievementChampionsContent">
-                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-purple-200 shadow-sm">
-                                            <div class="flex items-center">
-                                                <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                                                    <i class="fas fa-crown"></i>
-                                                </div>
-                                                <div>
-                                                    <div class="font-semibold text-gray-800" id="achievementChamp1Name">Loading...</div>
-                                                    <div class="text-xs text-gray-600">Champion</div>
-                                                </div>
-                                            </div>
-                                            <div class="text-right">
-                                                <div class="font-bold text-purple-600" id="achievementChamp1Rate">-</div>
-                                                <div class="text-xs text-gray-600">Achievement %</div>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-purple-200 shadow-sm">
-                                            <div class="flex items-center">
-                                                <div class="w-8 h-8 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                                                    2
-                                                </div>
-                                                <div>
-                                                    <div class="font-semibold text-gray-800" id="achievementChamp2Name">Loading...</div>
-                                                    <div class="text-xs text-gray-600">Runner-up</div>
-                                                </div>
-                                            </div>
-                                            <div class="text-right">
-                                                <div class="font-bold text-purple-600" id="achievementChamp2Rate">-</div>
-                                                <div class="text-xs text-gray-600">Achievement %</div>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-purple-200 shadow-sm">
-                                            <div class="flex items-center">
-                                                <div class="w-8 h-8 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                                                    3
-                                                </div>
-                                                <div>
-                                                    <div class="font-semibold text-gray-800" id="achievementChamp3Name">Loading...</div>
-                                                    <div class="text-xs text-gray-600">Third Place</div>
-                                                </div>
-                                            </div>
-                                            <div class="text-right">
-                                                <div class="font-bold text-purple-600" id="achievementChamp3Rate">-</div>
-                                                <div class="text-xs text-gray-600">Achievement %</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- AM Performance Overview Table -->
-                            <div id="amOverviewTable" class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
-                                <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
-                                    <h4 class="text-lg font-semibold text-gray-800 flex items-center">
-                                        <i class="fas fa-users-cog mr-2 text-blue-600"></i>
-                                        All Area Managers Performance Overview
-                                    </h4>
-                                    <p class="text-sm text-gray-600 mt-1">Complete performance metrics for all Area Managers</p>
-                                </div>
-                                
-                                <!-- Quick Stats Bar -->
-                                <div id="amQuickStats" class="bg-blue-50 px-6 py-3 border-b border-gray-200">
-                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                                        <div>
-                                            <span class="text-lg font-bold text-blue-600" id="totalUniqueAMs">0</span>
-                                            <div class="text-xs text-gray-600">Unique AMs</div>
-                                        </div>
-                                        <div>
-                                            <span class="text-lg font-bold text-green-600" id="topGrowthAM">-</span>
-                                            <div class="text-xs text-gray-600">Highest Growth</div>
-                                        </div>
-                                        <div>
-                                            <span class="text-lg font-bold text-purple-600" id="topForecastAM">-</span>
-                                            <div class="text-xs text-gray-600">Best Forecast</div>
-                                        </div>
-                                        <div>
-                                            <span class="text-lg font-bold text-orange-600" id="totalOutlets">0</span>
-                                            <div class="text-xs text-gray-600">Total Outlets</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAMOverview('rank')">
-                                                    <div class="flex items-center">
-                                                        Rank
-                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
-                                                    </div>
-                                                </th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAMOverview('amName')">
-                                                    <div class="flex items-center">
-                                                        AM Name
-                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
-                                                    </div>
-                                                </th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAMOverview('outlets')">
-                                                    <div class="flex items-center">
-                                                        Outlets Managed
-                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
-                                                    </div>
-                                                </th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAMOverview('avgGrowth')">
-                                                    <div class="flex items-center">
-                                                        Avg Growth %
-                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
-                                                    </div>
-                                                </th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAMOverview('avgForecast')">
-                                                    <div class="flex items-center">
-                                                        Avg Forecast %
-                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
-                                                    </div>
-                                                </th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="sortAMOverview('performance')">
-                                                    <div class="flex items-center">
-                                                        Overall Performance
-                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
-                                                    </div>
-                                                </th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Actions
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="amOverviewTableBody" class="bg-white divide-y divide-gray-200">
-                                            <!-- AM overview rows will be populated here -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                                
-                                <!-- AM Overview Pagination -->
-                                <div id="amOverviewPagination" class="bg-gray-50 px-6 py-3 flex justify-between items-center border-t border-gray-200">
-                                    <div class="text-sm text-gray-700">
-                                        Showing <span id="overviewShowingStart">0</span> to <span id="overviewShowingEnd">0</span> of <span id="overviewTotalRecords">0</span> Area Managers
-                                    </div>
-                                    <div class="flex space-x-2">
-                                        <button id="overviewPrevBtn" onclick="changeOverviewPage(-1)" 
-                                                class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            Previous
-                                        </button>
-                                        <span id="overviewPageInfo" class="px-3 py-1 text-gray-600">Page 1 of 1</span>
-                                        <button id="overviewNextBtn" onclick="changeOverviewPage(1)" 
-                                                class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                            Next
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Filters and Controls -->
-                            <div class="bg-gray-50 rounded-lg p-4 mb-6">
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Search AM</label>
-                                        <input type="text" id="amSearchInput" placeholder="Search by AM name..." 
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                               oninput="filterAMData()">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-                                        <select id="sortBySelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-                                                onchange="sortAMData()">
-                                            <option value="growth-desc">Growth % (High to Low)</option>
-                                            <option value="growth-asc">Growth % (Low to High)</option>
-                                            <option value="forecast-desc">Forecast % (High to Low)</option>
-                                            <option value="forecast-asc">Forecast % (Low to High)</option>
-                                            <option value="name-asc">AM Name (A to Z)</option>
-                                            <option value="name-desc">AM Name (Z to A)</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">View Mode</label>
-                                        <div class="flex rounded-lg border border-gray-300">
-                                            <button id="tableViewBtn" onclick="setViewMode('table')" 
-                                                    class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-l-lg transition-colors">
-                                                <i class="fas fa-table mr-1"></i> Table
-                                            </button>
-                                            <button id="cardViewBtn" onclick="setViewMode('cards')" 
-                                                    class="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-r-lg transition-colors">
-                                                <i class="fas fa-th-large mr-1"></i> Cards
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Error State -->
-                            <div id="amDataError" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 hidden">
-                                <div class="flex items-center">
-                                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
-                                    <span class="text-red-700">Error loading AM performance data. Please check your connection and try again.</span>
-                                </div>
-                            </div>
-                            
-                            <!-- Performance Table View -->
-                            <div id="amTableView" class="bg-white rounded-lg shadow overflow-hidden">
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outlet</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outlet Name</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AM Name</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Target</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Growth %</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Forecast %</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="amTableBody" class="bg-white divide-y divide-gray-200">
-                                            <!-- Table rows will be populated dynamically -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            
-                            <!-- Performance Cards View -->
-                            <div id="amCardsView" class="hidden">
-                                <div id="amCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <!-- Cards will be populated dynamically -->
-                                </div>
-                            </div>
-                            
-                            <!-- Pagination -->
-                            <div id="amPagination" class="flex justify-between items-center mt-6">
-                                <div class="text-sm text-gray-700">
-                                    Showing <span id="showingStart">1</span> to <span id="showingEnd">10</span> of <span id="totalRecords">0</span> AMs
-                                </div>
-                                <div class="flex space-x-2">
-                                    <button id="prevPageBtn" onclick="changePage(-1)" 
-                                            class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                        Previous
-                                    </button>
-                                    <span id="pageInfo" class="px-3 py-1 text-gray-600">Page 1 of 1</span>
-                                    <button id="nextPageBtn" onclick="changePage(1)" 
-                                            class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                        Next
-                                    </button>
-                                </div>
-                            </div>
-
                         </div>
                     </div>
                 </div>
@@ -1489,12 +1174,7 @@
             document.getElementById('errorMessage').classList.add('hidden');
         }
 
-        // AM Performance Tracker Variables
-        let amPerformanceData = [];
-        let filteredAMData = [];
-        let currentPage = 1;
-        let itemsPerPage = 10;
-        let currentViewMode = 'table';
+        // AM functionality moved to standalone page
         
         // AM Overview Table Variables
         let amOverviewData = [];
@@ -2270,16 +1950,10 @@ ${am.outlets.map(outlet =>
                 event.target.classList.add('active');
             }
             
-            // Auto-load AM data when AM Performance Tracker is opened
+            // AM functionality moved to standalone page - no auto-loading needed
             if (subtabId === 'am-performance-tracker') {
-                console.log('🎯 AM Performance Tracker selected, current data length:', amPerformanceData.length);
-                if (amPerformanceData.length === 0) {
-                    console.log('📊 Loading AM data for the first time...');
-                    setTimeout(() => fetchAMPerformanceData(), 100);
-                } else {
-                    console.log('📊 AM data already loaded, displaying existing data');
-                    displayAMData();
-                }
+                console.log('🎯 AM Performance Tracker launcher displayed');
+                // No embedded functionality - redirects to standalone page
             }
         }
 
