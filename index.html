@@ -310,21 +310,333 @@
                                     <h3 class="text-xl font-semibold text-gray-800">AM Performance Tracker</h3>
                                     <p class="text-gray-600">Area Manager performance monitoring and leaderboard system</p>
                                 </div>
-                                <button onclick="openInNewTab('./am-performance-tracker.html')" 
+                                <button onclick="amTracker.refreshData()" 
                                         class="btn-primary text-white px-4 py-2 rounded-lg">
-                                    <i class="fas fa-external-link-alt mr-2"></i>
-                                    Open in New Tab
+                                    <i class="fas fa-sync-alt mr-2"></i>
+                                    Refresh Data
                                 </button>
                             </div>
-                            <div class="bg-gradient-to-br from-green-50 to-emerald-100 rounded-lg p-8 text-center">
-                                <i class="fas fa-chart-bar text-6xl text-emerald-500 mb-4"></i>
-                                <h4 class="text-xl font-semibold text-gray-800 mb-2">AM Performance Tracker</h4>
-                                <p class="text-gray-600 mb-6">Track Area Manager performance with leaderboards and detailed analytics.<br>Access the standalone system to avoid login conflicts.</p>
-                                <button onclick="window.location.href='./am-performance-tracker.html'" 
-                                        class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
-                                    <i class="fas fa-chart-bar mr-2"></i>
-                                    Launch AM Performance Tracker
-                                </button>
+                            
+                            <!-- Loading State -->
+                            <div id="amTrackerLoading" class="text-center py-8 hidden">
+                                <div class="inline-flex items-center">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+                                    <span class="text-gray-700">Loading AM performance data...</span>
+                                </div>
+                            </div>
+
+                            <!-- Error State -->
+                            <div id="amTrackerError" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 hidden">
+                                <div class="flex items-center">
+                                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                                    <span class="text-red-700">Error loading AM performance data. Please check your connection and try again.</span>
+                                </div>
+                            </div>
+
+                            <!-- Champion Leaderboard Cards -->
+                            <div id="amTrackerSummaryCards" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                                <!-- Growth Champions Leaderboard -->
+                                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h4 class="text-lg font-bold text-green-800 flex items-center">
+                                            <i class="fas fa-chart-line mr-2"></i>
+                                            Growth Champions
+                                        </h4>
+                                        <i class="fas fa-trophy text-2xl text-green-600"></i>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200 shadow-sm">
+                                            <div class="flex items-center">
+                                                <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                                                    <i class="fas fa-crown"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="font-semibold text-gray-800" id="amTrackerGrowthChamp1Name">Loading...</div>
+                                                    <div class="text-xs text-gray-600">Champion</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-bold text-green-600" id="amTrackerGrowthChamp1Rate">-</div>
+                                                <div class="text-xs text-gray-600">Growth Rate</div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200 shadow-sm">
+                                            <div class="flex items-center">
+                                                <div class="w-8 h-8 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                                                    2
+                                                </div>
+                                                <div>
+                                                    <div class="font-semibold text-gray-800" id="amTrackerGrowthChamp2Name">Loading...</div>
+                                                    <div class="text-xs text-gray-600">Runner-up</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-bold text-green-600" id="amTrackerGrowthChamp2Rate">-</div>
+                                                <div class="text-xs text-gray-600">Growth Rate</div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200 shadow-sm">
+                                            <div class="flex items-center">
+                                                <div class="w-8 h-8 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                                                    3
+                                                </div>
+                                                <div>
+                                                    <div class="font-semibold text-gray-800" id="amTrackerGrowthChamp3Name">Loading...</div>
+                                                    <div class="text-xs text-gray-600">Third Place</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-bold text-green-600" id="amTrackerGrowthChamp3Rate">-</div>
+                                                <div class="text-xs text-gray-600">Growth Rate</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Achievement Champions Leaderboard -->
+                                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6 border border-purple-200">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h4 class="text-lg font-bold text-purple-800 flex items-center">
+                                            <i class="fas fa-bullseye mr-2"></i>
+                                            Achievement Champions
+                                        </h4>
+                                        <i class="fas fa-star text-2xl text-purple-600"></i>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-purple-200 shadow-sm">
+                                            <div class="flex items-center">
+                                                <div class="w-8 h-8 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                                                    <i class="fas fa-crown"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="font-semibold text-gray-800" id="amTrackerAchievementChamp1Name">Loading...</div>
+                                                    <div class="text-xs text-gray-600">Champion</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-bold text-purple-600" id="amTrackerAchievementChamp1Rate">-</div>
+                                                <div class="text-xs text-gray-600">Achievement %</div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-purple-200 shadow-sm">
+                                            <div class="flex items-center">
+                                                <div class="w-8 h-8 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                                                    2
+                                                </div>
+                                                <div>
+                                                    <div class="font-semibold text-gray-800" id="amTrackerAchievementChamp2Name">Loading...</div>
+                                                    <div class="text-xs text-gray-600">Runner-up</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-bold text-purple-600" id="amTrackerAchievementChamp2Rate">-</div>
+                                                <div class="text-xs text-gray-600">Achievement %</div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between p-3 bg-white rounded-lg border border-purple-200 shadow-sm">
+                                            <div class="flex items-center">
+                                                <div class="w-8 h-8 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                                                    3
+                                                </div>
+                                                <div>
+                                                    <div class="font-semibold text-gray-800" id="amTrackerAchievementChamp3Name">Loading...</div>
+                                                    <div class="text-xs text-gray-600">Third Place</div>
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="font-bold text-purple-600" id="amTrackerAchievementChamp3Rate">-</div>
+                                                <div class="text-xs text-gray-600">Achievement %</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AM Performance Overview Table -->
+                            <div id="amTrackerOverviewTable" class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
+                                <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                                    <h4 class="text-lg font-semibold text-gray-800 flex items-center">
+                                        <i class="fas fa-users-cog mr-2 text-blue-600"></i>
+                                        All Area Managers Performance Overview
+                                    </h4>
+                                    <p class="text-sm text-gray-600 mt-1">Complete performance metrics for all Area Managers</p>
+                                </div>
+                                
+                                <!-- Quick Stats Bar -->
+                                <div id="amTrackerQuickStats" class="bg-blue-50 px-6 py-3 border-b border-gray-200">
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                        <div>
+                                            <span class="text-lg font-bold text-blue-600" id="amTrackerTotalUniqueAMs">0</span>
+                                            <div class="text-xs text-gray-600">Unique AMs</div>
+                                        </div>
+                                        <div>
+                                            <span class="text-lg font-bold text-green-600" id="amTrackerTopGrowthAM">-</span>
+                                            <div class="text-xs text-gray-600">Highest Growth</div>
+                                        </div>
+                                        <div>
+                                            <span class="text-lg font-bold text-purple-600" id="amTrackerTopForecastAM">-</span>
+                                            <div class="text-xs text-gray-600">Best Forecast</div>
+                                        </div>
+                                        <div>
+                                            <span class="text-lg font-bold text-orange-600" id="amTrackerTotalOutlets">0</span>
+                                            <div class="text-xs text-gray-600">Total Outlets</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="amTracker.sortOverview('rank')">
+                                                    <div class="flex items-center">
+                                                        Rank
+                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
+                                                    </div>
+                                                </th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="amTracker.sortOverview('amName')">
+                                                    <div class="flex items-center">
+                                                        AM Name
+                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
+                                                    </div>
+                                                </th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="amTracker.sortOverview('outlets')">
+                                                    <div class="flex items-center">
+                                                        Outlets Managed
+                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
+                                                    </div>
+                                                </th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="amTracker.sortOverview('avgGrowth')">
+                                                    <div class="flex items-center">
+                                                        Avg Growth %
+                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
+                                                    </div>
+                                                </th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="amTracker.sortOverview('avgForecast')">
+                                                    <div class="flex items-center">
+                                                        Avg Forecast %
+                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
+                                                    </div>
+                                                </th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="amTracker.sortOverview('performance')">
+                                                    <div class="flex items-center">
+                                                        Overall Performance
+                                                        <i class="fas fa-sort ml-1 text-gray-400"></i>
+                                                    </div>
+                                                </th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Actions
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="amTrackerOverviewTableBody" class="bg-white divide-y divide-gray-200">
+                                            <!-- AM overview rows will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- AM Overview Pagination -->
+                                <div id="amTrackerOverviewPagination" class="bg-gray-50 px-6 py-3 flex justify-between items-center border-t border-gray-200">
+                                    <div class="text-sm text-gray-700">
+                                        Showing <span id="amTrackerOverviewShowingStart">0</span> to <span id="amTrackerOverviewShowingEnd">0</span> of <span id="amTrackerOverviewTotalRecords">0</span> Area Managers
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button id="amTrackerOverviewPrevBtn" onclick="amTracker.changeOverviewPage(-1)" 
+                                                class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            Previous
+                                        </button>
+                                        <span id="amTrackerOverviewPageInfo" class="px-3 py-1 text-gray-600">Page 1 of 1</span>
+                                        <button id="amTrackerOverviewNextBtn" onclick="amTracker.changeOverviewPage(1)" 
+                                                class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filters and Controls -->
+                            <div class="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Search AM</label>
+                                        <input type="text" id="amTrackerSearchInput" placeholder="Search by AM name..." 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                               oninput="amTracker.filterData()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                                        <select id="amTrackerSortBySelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                onchange="amTracker.sortData()">
+                                            <option value="growth-desc">Growth % (High to Low)</option>
+                                            <option value="growth-asc">Growth % (Low to High)</option>
+                                            <option value="forecast-desc">Forecast % (High to Low)</option>
+                                            <option value="forecast-asc">Forecast % (Low to High)</option>
+                                            <option value="name-asc">AM Name (A to Z)</option>
+                                            <option value="name-desc">AM Name (Z to A)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">View Mode</label>
+                                        <div class="flex rounded-lg border border-gray-300">
+                                            <button id="amTrackerTableViewBtn" onclick="amTracker.setViewMode('table')" 
+                                                    class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-l-lg transition-colors">
+                                                <i class="fas fa-table mr-1"></i> Table
+                                            </button>
+                                            <button id="amTrackerCardViewBtn" onclick="amTracker.setViewMode('cards')" 
+                                                    class="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-r-lg transition-colors">
+                                                <i class="fas fa-th-large mr-1"></i> Cards
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Performance Table View -->
+                            <div id="amTrackerTableView" class="bg-white rounded-lg shadow overflow-hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outlet</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outlet Name</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AM Name</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Target</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Growth %</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Forecast %</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="amTrackerTableBody" class="bg-white divide-y divide-gray-200">
+                                            <!-- Table rows will be populated dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Performance Cards View -->
+                            <div id="amTrackerCardsView" class="hidden">
+                                <div id="amTrackerCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <!-- Cards will be populated dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Pagination -->
+                            <div id="amTrackerPagination" class="flex justify-between items-center mt-6">
+                                <div class="text-sm text-gray-700">
+                                    Showing <span id="amTrackerShowingStart">1</span> to <span id="amTrackerShowingEnd">10</span> of <span id="amTrackerTotalRecords">0</span> AMs
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button id="amTrackerPrevPageBtn" onclick="amTracker.changePage(-1)" 
+                                            class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        Previous
+                                    </button>
+                                    <span id="amTrackerPageInfo" class="px-3 py-1 text-gray-600">Page 1 of 1</span>
+                                    <button id="amTrackerNextPageBtn" onclick="amTracker.changePage(1)" 
+                                            class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        Next
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1095,6 +1407,14 @@
                 targetSubtab.classList.remove('hidden');
             }
             
+            // Load AM tracker data if AM Performance Tracker is selected
+            if (subtabId === 'am-performance-tracker') {
+                // Only load data if not already loaded or if data is empty
+                if (!amTracker.performanceData || amTracker.performanceData.length === 0) {
+                    amTracker.fetchData();
+                }
+            }
+            
             // Add active class to clicked button
             event.target.classList.add('active');
         }
@@ -1119,6 +1439,651 @@
             // Auto-focus on email field
             document.getElementById('email').focus();
         });
+
+        // AM Performance Tracker Namespace - All functions isolated to prevent conflicts
+        const amTracker = {
+            // Data variables
+            performanceData: [],
+            filteredData: [],
+            overviewData: [],
+            currentPage: 1,
+            itemsPerPage: 10,
+            currentViewMode: 'table',
+            currentOverviewPage: 1,
+            overviewItemsPerPage: 15,
+            currentOverviewSort: 'performance',
+            
+            // Main data fetching function
+            async fetchData() {
+                console.log('🚀 AM Tracker: Starting data fetch...');
+                
+                try {
+                    document.getElementById('amTrackerLoading').classList.remove('hidden');
+                    document.getElementById('amTrackerError').classList.add('hidden');
+                    
+                    const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
+                    const gid = '353860854';
+                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+                    
+                    const response = await fetch(csvUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const csvData = await response.text();
+                    const parsedData = this.parseCSVData(csvData);
+                    
+                    this.performanceData = parsedData;
+                    this.filteredData = [...this.performanceData];
+                    
+                    this.generateOverview();
+                    this.displayOverview();
+                    this.updateOverviewPagination();
+                    this.updateSummaryCards();
+                    
+                    document.getElementById('amTrackerSortBySelect').value = 'growth-desc';
+                    this.sortData(false);
+                    
+                    this.displayData();
+                    this.updatePagination();
+                    
+                    document.getElementById('amTrackerLoading').classList.add('hidden');
+                    console.log('✅ AM Tracker: Data loaded successfully!');
+                    
+                } catch (error) {
+                    console.error('❌ AM Tracker: Error fetching data:', error);
+                    document.getElementById('amTrackerLoading').classList.add('hidden');
+                    document.getElementById('amTrackerError').classList.remove('hidden');
+                }
+            },
+            
+            // Parse CSV data with proper handling
+            parseCSVData(csvData) {
+                const lines = csvData.split('\n');
+                const data = [];
+                
+                for (let i = 2; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const values = this.parseCSVLine(line);
+                    
+                    if (values.length >= 11) {
+                        const outlet = values[0]?.trim();
+                        const outletName = values[1]?.trim();
+                        const amName = values[2]?.trim();
+                        const monthlyTarget = parseFloat(values[3]?.replace(/,/g, '')) || 0;
+                        
+                        const dailySalesLastMonth = parseFloat(values[5]?.replace(/,/g, '')) || 0;
+                        const dailySalesUpToDate = parseFloat(values[7]?.replace(/,/g, '')) || 0;
+                        const forecastSalesEndOfMonth = parseFloat(values[8]?.replace(/,/g, '')) || 0;
+                        
+                        const growthPercent = parseFloat(values[9]?.replace('%', '')) || 0;
+                        const forecastPercent = parseFloat(values[10]?.replace('%', '')) || 0;
+                        
+                        if (!outlet || !amName) continue;
+                        
+                        const record = {
+                            outlet,
+                            outletName: outletName || outlet,
+                            amName,
+                            monthlyTarget: monthlyTarget,
+                            monthlyTargetDisplay: monthlyTarget > 0 ? monthlyTarget.toLocaleString() : 'N/A',
+                            growthPercent,
+                            forecastPercent,
+                            performanceScore: (growthPercent + forecastPercent) / 2,
+                            dailySalesLastMonth,
+                            dailySalesUpToDate,
+                            forecastSalesEndOfMonth
+                        };
+                        
+                        data.push(record);
+                    }
+                }
+                
+                return data;
+            },
+            
+            // Parse CSV line with quote handling
+            parseCSVLine(line) {
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                
+                values.push(current);
+                return values;
+            },
+            
+            // Generate overview data by AM
+            generateOverview() {
+                const amGroups = {};
+                
+                this.performanceData.forEach(record => {
+                    const amName = record.amName;
+                    if (!amGroups[amName]) {
+                        amGroups[amName] = {
+                            amName: amName,
+                            outlets: [],
+                            totalSalesLastMonth: 0,
+                            totalSalesUpToDate: 0,
+                            totalForecastSales: 0,
+                            totalTargets: 0
+                        };
+                    }
+                    
+                    amGroups[amName].outlets.push(record);
+                    amGroups[amName].totalSalesLastMonth += record.dailySalesLastMonth;
+                    amGroups[amName].totalSalesUpToDate += record.dailySalesUpToDate;
+                    amGroups[amName].totalForecastSales += record.forecastSalesEndOfMonth;
+                    amGroups[amName].totalTargets += record.monthlyTarget;
+                });
+                
+                this.overviewData = Object.values(amGroups).map(group => {
+                    const outletCount = group.outlets.length;
+                    
+                    const actualGrowthRate = group.totalSalesLastMonth > 0 
+                        ? ((group.totalSalesUpToDate - group.totalSalesLastMonth) / group.totalSalesLastMonth) * 100
+                        : 0;
+                    
+                    const forecastAchievement = group.totalTargets > 0 
+                        ? (group.totalForecastSales / group.totalTargets) * 100
+                        : 0;
+                    
+                    const overallPerformance = (actualGrowthRate + forecastAchievement) / 2;
+                    
+                    return {
+                        amName: group.amName,
+                        outletCount: outletCount,
+                        outlets: group.outlets,
+                        avgGrowth: actualGrowthRate,
+                        avgForecast: forecastAchievement,
+                        overallPerformance: overallPerformance,
+                        totalSalesLastMonth: group.totalSalesLastMonth,
+                        totalSalesUpToDate: group.totalSalesUpToDate,
+                        totalForecastSales: group.totalForecastSales,
+                        totalTargets: group.totalTargets
+                    };
+                });
+                
+                this.overviewData.sort((a, b) => b.avgGrowth - a.avgGrowth);
+                this.currentOverviewSort = 'avgGrowth';
+                
+                this.updateOverviewStats();
+            },
+            
+            // Update summary cards with champions
+            updateSummaryCards() {
+                if (!this.overviewData || this.overviewData.length === 0) return;
+                
+                const growthChampions = [...this.overviewData].sort((a, b) => b.avgGrowth - a.avgGrowth);
+                const achievementChampions = [...this.overviewData].sort((a, b) => b.avgForecast - a.avgForecast);
+                
+                // Update Growth Champions
+                for (let i = 0; i < 3; i++) {
+                    const nameElement = document.getElementById(`amTrackerGrowthChamp${i + 1}Name`);
+                    const rateElement = document.getElementById(`amTrackerGrowthChamp${i + 1}Rate`);
+                    
+                    if (growthChampions[i]) {
+                        nameElement.textContent = growthChampions[i].amName;
+                        rateElement.textContent = `${growthChampions[i].avgGrowth >= 0 ? '+' : ''}${growthChampions[i].avgGrowth.toFixed(1)}%`;
+                        rateElement.className = growthChampions[i].avgGrowth >= 0 ? 'font-bold text-green-600' : 'font-bold text-red-600';
+                    } else {
+                        nameElement.textContent = 'N/A';
+                        rateElement.textContent = '-';
+                        rateElement.className = 'font-bold text-gray-400';
+                    }
+                }
+                
+                // Update Achievement Champions
+                for (let i = 0; i < 3; i++) {
+                    const nameElement = document.getElementById(`amTrackerAchievementChamp${i + 1}Name`);
+                    const rateElement = document.getElementById(`amTrackerAchievementChamp${i + 1}Rate`);
+                    
+                    if (achievementChampions[i]) {
+                        nameElement.textContent = achievementChampions[i].amName;
+                        rateElement.textContent = `${achievementChampions[i].avgForecast.toFixed(1)}%`;
+                        rateElement.className = 'font-bold text-purple-600';
+                    } else {
+                        nameElement.textContent = 'N/A';
+                        rateElement.textContent = '-';
+                        rateElement.className = 'font-bold text-gray-400';
+                    }
+                }
+            },
+            
+            // Update overview stats
+            updateOverviewStats() {
+                if (this.overviewData.length === 0) return;
+                
+                const totalUniqueAMs = this.overviewData.length;
+                const totalOutlets = this.performanceData.length;
+                
+                const topGrowthAM = [...this.overviewData].sort((a, b) => b.avgGrowth - a.avgGrowth)[0];
+                const topForecastAM = [...this.overviewData].sort((a, b) => b.avgForecast - a.avgForecast)[0];
+                
+                document.getElementById('amTrackerTotalUniqueAMs').textContent = totalUniqueAMs;
+                document.getElementById('amTrackerTotalOutlets').textContent = totalOutlets;
+                document.getElementById('amTrackerTopGrowthAM').textContent = topGrowthAM ? `${topGrowthAM.avgGrowth.toFixed(1)}%` : '-';
+                document.getElementById('amTrackerTopForecastAM').textContent = topForecastAM ? `${topForecastAM.avgForecast.toFixed(1)}%` : '-';
+            },
+            
+            // Display overview table
+            displayOverview() {
+                const tbody = document.getElementById('amTrackerOverviewTableBody');
+                tbody.innerHTML = '';
+                
+                const startIndex = (this.currentOverviewPage - 1) * this.overviewItemsPerPage;
+                const endIndex = Math.min(startIndex + this.overviewItemsPerPage, this.overviewData.length);
+                
+                for (let i = startIndex; i < endIndex; i++) {
+                    const am = this.overviewData[i];
+                    const rank = i + 1;
+                    
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition-colors';
+                    
+                    row.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                            <div class="flex items-center">
+                                ${this.getRankIcon(rank)}
+                                <span class="font-medium">#${rank}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-medium text-xs mr-3">
+                                    ${am.amName.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">${am.amName}</div>
+                                    <div class="text-xs text-gray-500">Area Manager</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                ${am.outletCount} outlet${am.outletCount > 1 ? 's' : ''}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                            <div class="flex items-center">
+                                <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-${am.avgGrowth >= 0 ? 'green' : 'red'}-600 h-2 rounded-full" style="width: ${Math.min(100, Math.abs(am.avgGrowth))}%"></div>
+                                </div>
+                                <span class="font-medium ${am.avgGrowth >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                    ${am.avgGrowth >= 0 ? '+' : ''}${am.avgGrowth.toFixed(1)}%
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                            <div class="flex items-center">
+                                <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-purple-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.avgForecast))}%"></div>
+                                </div>
+                                <span class="font-medium text-purple-600">${am.avgForecast.toFixed(1)}%</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">
+                            <div class="flex items-center">
+                                <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.overallPerformance))}%"></div>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="font-medium text-gray-900">${am.overallPerformance.toFixed(1)}%</span>
+                                    ${this.getPerformanceBadge(am.overallPerformance)}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                            <div class="flex space-x-2">
+                                <button onclick="amTracker.viewDetails('${am.amName}')" 
+                                        class="text-blue-600 hover:text-blue-800 font-medium">
+                                    <i class="fas fa-eye mr-1"></i>View Details
+                                </button>
+                                <button onclick="amTracker.filterByAM('${am.amName}')" 
+                                        class="text-green-600 hover:text-green-800 font-medium">
+                                    <i class="fas fa-filter mr-1"></i>Filter
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                }
+            },
+            
+            // Display main data based on view mode
+            displayData() {
+                const tableView = document.getElementById('amTrackerTableView');
+                const cardsView = document.getElementById('amTrackerCardsView');
+                
+                if (this.currentViewMode === 'table') {
+                    tableView.classList.remove('hidden');
+                    cardsView.classList.add('hidden');
+                    this.displayTable();
+                } else {
+                    tableView.classList.add('hidden');
+                    cardsView.classList.remove('hidden');
+                    this.displayCards();
+                }
+            },
+            
+            // Display table view
+            displayTable() {
+                const tbody = document.getElementById('amTrackerTableBody');
+                tbody.innerHTML = '';
+                
+                const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+                const endIndex = Math.min(startIndex + this.itemsPerPage, this.filteredData.length);
+                
+                for (let i = startIndex; i < endIndex; i++) {
+                    const am = this.filteredData[i];
+                    const rank = i + 1;
+                    
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            ${this.getRankIcon(rank)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ${am.outlet}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${am.outletName}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">${am.amName}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${am.monthlyTargetDisplay}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex items-center">
+                                <span class="${am.growthPercent >= 0 ? 'text-green-600' : 'text-red-600'} font-medium">
+                                    ${am.growthPercent >= 0 ? '+' : ''}${am.growthPercent.toFixed(1)}%
+                                </span>
+                                <i class="fas fa-${am.growthPercent >= 0 ? 'arrow-up' : 'arrow-down'} ml-1 text-xs"></i>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <div class="flex items-center">
+                                <div class="w-full bg-gray-200 rounded-full h-2 mr-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.forecastPercent))}%"></div>
+                                </div>
+                                <span class="text-sm font-medium">${am.forecastPercent.toFixed(1)}%</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            ${this.getPerformanceBadge(am.performanceScore)}
+                        </td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                }
+            },
+            
+            // Display cards view
+            displayCards() {
+                const container = document.getElementById('amTrackerCardsContainer');
+                container.innerHTML = '';
+                
+                const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+                const endIndex = Math.min(startIndex + this.itemsPerPage, this.filteredData.length);
+                
+                for (let i = startIndex; i < endIndex; i++) {
+                    const am = this.filteredData[i];
+                    const rank = i + 1;
+                    
+                    const card = document.createElement('div');
+                    card.className = 'bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border';
+                    
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                ${this.getRankIcon(rank)}
+                                <span class="text-lg font-semibold text-gray-800">${am.amName}</span>
+                            </div>
+                            ${this.getPerformanceBadge(am.performanceScore)}
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Outlet:</span>
+                                <span class="text-sm font-medium">${am.outlet}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Outlet Name:</span>
+                                <span class="text-sm font-medium">${am.outletName}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Monthly Target:</span>
+                                <span class="text-sm font-medium">${am.monthlyTargetDisplay}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Growth:</span>
+                                <span class="${am.growthPercent >= 0 ? 'text-green-600' : 'text-red-600'} font-medium">
+                                    ${am.growthPercent >= 0 ? '+' : ''}${am.growthPercent.toFixed(1)}%
+                                    <i class="fas fa-${am.growthPercent >= 0 ? 'arrow-up' : 'arrow-down'} ml-1 text-xs"></i>
+                                </span>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-sm text-gray-600">Forecast:</span>
+                                    <span class="text-sm font-medium">${am.forecastPercent.toFixed(1)}%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.forecastPercent))}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(card);
+                }
+            },
+            
+            // Filter data based on search
+            filterData() {
+                const searchTerm = document.getElementById('amTrackerSearchInput').value.toLowerCase();
+                
+                this.filteredData = this.performanceData.filter(am => 
+                    am.amName.toLowerCase().includes(searchTerm) ||
+                    am.outlet.toLowerCase().includes(searchTerm) ||
+                    am.outletName.toLowerCase().includes(searchTerm)
+                );
+                
+                this.currentPage = 1;
+                this.sortData(false);
+            },
+            
+            // Sort data based on selection
+            sortData(resetPage = true) {
+                const sortBy = document.getElementById('amTrackerSortBySelect').value;
+                
+                this.filteredData.sort((a, b) => {
+                    switch (sortBy) {
+                        case 'growth-desc':
+                            return b.growthPercent - a.growthPercent;
+                        case 'growth-asc':
+                            return a.growthPercent - b.growthPercent;
+                        case 'forecast-desc':
+                            return b.forecastPercent - a.forecastPercent;
+                        case 'forecast-asc':
+                            return a.forecastPercent - b.forecastPercent;
+                        case 'name-asc':
+                            return a.amName.localeCompare(b.amName);
+                        case 'name-desc':
+                            return b.amName.localeCompare(a.amName);
+                        default:
+                            return b.performanceScore - a.performanceScore;
+                    }
+                });
+                
+                if (resetPage) this.currentPage = 1;
+                this.displayData();
+                this.updatePagination();
+            },
+            
+            // Set view mode (table or cards)
+            setViewMode(mode) {
+                this.currentViewMode = mode;
+                
+                const tableBtn = document.getElementById('amTrackerTableViewBtn');
+                const cardBtn = document.getElementById('amTrackerCardViewBtn');
+                
+                if (mode === 'table') {
+                    tableBtn.className = 'flex-1 px-3 py-2 bg-blue-600 text-white rounded-l-lg transition-colors';
+                    cardBtn.className = 'flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-r-lg transition-colors';
+                } else {
+                    tableBtn.className = 'flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-l-lg transition-colors';
+                    cardBtn.className = 'flex-1 px-3 py-2 bg-blue-600 text-white rounded-r-lg transition-colors';
+                }
+                
+                this.displayData();
+            },
+            
+            // Change page for main data
+            changePage(direction) {
+                const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
+                
+                if (direction === -1 && this.currentPage > 1) {
+                    this.currentPage--;
+                } else if (direction === 1 && this.currentPage < totalPages) {
+                    this.currentPage++;
+                }
+                
+                this.displayData();
+                this.updatePagination();
+            },
+            
+            // Update pagination for main data
+            updatePagination() {
+                const totalRecords = this.filteredData.length;
+                const totalPages = Math.ceil(totalRecords / this.itemsPerPage);
+                const startIndex = (this.currentPage - 1) * this.itemsPerPage + 1;
+                const endIndex = Math.min(this.currentPage * this.itemsPerPage, totalRecords);
+                
+                document.getElementById('amTrackerShowingStart').textContent = totalRecords > 0 ? startIndex : 0;
+                document.getElementById('amTrackerShowingEnd').textContent = endIndex;
+                document.getElementById('amTrackerTotalRecords').textContent = totalRecords;
+                document.getElementById('amTrackerPageInfo').textContent = `Page ${this.currentPage} of ${totalPages}`;
+                
+                const prevBtn = document.getElementById('amTrackerPrevPageBtn');
+                const nextBtn = document.getElementById('amTrackerNextPageBtn');
+                
+                prevBtn.disabled = this.currentPage === 1;
+                nextBtn.disabled = this.currentPage === totalPages || totalPages === 0;
+            },
+            
+            // Sort overview table
+            sortOverview(sortBy) {
+                this.currentOverviewSort = sortBy;
+                
+                this.overviewData.sort((a, b) => {
+                    switch (sortBy) {
+                        case 'rank':
+                        case 'performance':
+                            return b.overallPerformance - a.overallPerformance;
+                        case 'amName':
+                            return a.amName.localeCompare(b.amName);
+                        case 'outlets':
+                            return b.outletCount - a.outletCount;
+                        case 'avgGrowth':
+                            return b.avgGrowth - a.avgGrowth;
+                        case 'avgForecast':
+                            return b.avgForecast - a.avgForecast;
+                        default:
+                            return b.overallPerformance - a.overallPerformance;
+                    }
+                });
+                
+                this.currentOverviewPage = 1;
+                this.displayOverview();
+                this.updateOverviewPagination();
+            },
+            
+            // Change page for overview
+            changeOverviewPage(direction) {
+                const totalPages = Math.ceil(this.overviewData.length / this.overviewItemsPerPage);
+                
+                if (direction === -1 && this.currentOverviewPage > 1) {
+                    this.currentOverviewPage--;
+                } else if (direction === 1 && this.currentOverviewPage < totalPages) {
+                    this.currentOverviewPage++;
+                }
+                
+                this.displayOverview();
+                this.updateOverviewPagination();
+            },
+            
+            // Update pagination for overview
+            updateOverviewPagination() {
+                const totalRecords = this.overviewData.length;
+                const totalPages = Math.ceil(totalRecords / this.overviewItemsPerPage);
+                const startIndex = (this.currentOverviewPage - 1) * this.overviewItemsPerPage + 1;
+                const endIndex = Math.min(this.currentOverviewPage * this.overviewItemsPerPage, totalRecords);
+                
+                document.getElementById('amTrackerOverviewShowingStart').textContent = totalRecords > 0 ? startIndex : 0;
+                document.getElementById('amTrackerOverviewShowingEnd').textContent = endIndex;
+                document.getElementById('amTrackerOverviewTotalRecords').textContent = totalRecords;
+                document.getElementById('amTrackerOverviewPageInfo').textContent = `Page ${this.currentOverviewPage} of ${totalPages}`;
+                
+                const prevBtn = document.getElementById('amTrackerOverviewPrevBtn');
+                const nextBtn = document.getElementById('amTrackerOverviewNextBtn');
+                
+                prevBtn.disabled = this.currentOverviewPage === 1;
+                nextBtn.disabled = this.currentOverviewPage === totalPages || totalPages === 0;
+            },
+            
+            // View AM details
+            viewDetails(amName) {
+                const am = this.overviewData.find(a => a.amName === amName);
+                if (!am) return;
+                
+                alert(`AM Details: ${amName}\n\nOutlets Managed: ${am.outletCount}\nAverage Growth: ${am.avgGrowth.toFixed(1)}%\nAverage Forecast: ${am.avgForecast.toFixed(1)}%\nOverall Performance: ${am.overallPerformance.toFixed(1)}%\n\nOutlets:\n${am.outlets.map(o => `• ${o.outlet} (${o.outletName}): Growth ${o.growthPercent.toFixed(1)}%, Forecast ${o.forecastPercent.toFixed(1)}%`).join('\n')}`);
+            },
+            
+            // Filter by specific AM
+            filterByAM(amName) {
+                document.getElementById('amTrackerSearchInput').value = amName;
+                this.filterData();
+            },
+            
+            // Refresh data manually
+            refreshData() {
+                console.log('🔄 AM Tracker: Manual refresh triggered');
+                this.fetchData();
+            },
+            
+            // Helper functions
+            getPerformanceBadge(score) {
+                if (score >= 80) return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-star mr-1"></i>Excellent</span>';
+                if (score >= 60) return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><i class="fas fa-thumbs-up mr-1"></i>Good</span>';
+                if (score >= 40) return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-exclamation mr-1"></i>Average</span>';
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-arrow-down mr-1"></i>Needs Improvement</span>';
+            },
+            
+            getRankIcon(rank) {
+                if (rank === 1) return '<i class="fas fa-trophy text-yellow-500 mr-2"></i>';
+                if (rank === 2) return '<i class="fas fa-medal text-gray-400 mr-2"></i>';
+                if (rank === 3) return '<i class="fas fa-award text-yellow-600 mr-2"></i>';
+                return `<span class="text-gray-500 mr-2 font-medium">${rank}</span>`;
+            }
+        };
     </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95a376871c4135f2","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
