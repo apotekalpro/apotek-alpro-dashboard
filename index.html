@@ -1341,11 +1341,11 @@
                                         <i class="fas fa-wifi mr-2"></i>
                                         Test Cloud Connection
                                     </button>
-                                    <button id="syncCloudBtn" onclick="manualSyncToCloud()" 
-                                            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center text-sm">
-                                        <i class="fas fa-sync mr-2"></i>
-                                        Sync to Cloud
-                                    </button>
+                                    <div id="autoSyncStatus" class="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-medium flex items-center text-sm border border-green-200">
+                                        <i class="fas fa-cloud-upload-alt mr-2"></i>
+                                        <span>Auto-Sync Active</span>
+                                        <div id="syncStatusDot" class="ml-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -2179,41 +2179,166 @@
                 });
         }
         
-        // Manual sync function for the admin panel button
-        function manualSyncToCloud() {
+        // Auto-sync system for real-time cloud synchronization
+        let syncInProgress = false;
+        let syncQueue = [];
+        
+        // Enhanced auto-sync that triggers on ANY user change
+        function autoSyncToCloud(changeType, userData, showStatus = true) {
             if (!_mode || !_db) {
-                showConfigStatus('Cloud mode not available - cannot sync to Supabase', 'error');
+                if (showStatus) {
+                    console.warn('⚠️ Cloud mode not available - changes saved locally only');
+                }
+                return Promise.resolve();
+            }
+            
+            // Add to sync queue to prevent concurrent syncs
+            return new Promise(function(resolve, reject) {
+                syncQueue.push({
+                    changeType: changeType,
+                    userData: userData,
+                    showStatus: showStatus,
+                    resolve: resolve,
+                    reject: reject
+                });
+                
+                // Process queue
+                processSyncQueue();
+            });
+        }
+        
+        // Process sync operations in queue to prevent conflicts
+        function processSyncQueue() {
+            if (syncInProgress || syncQueue.length === 0) {
                 return;
             }
             
-            const syncBtn = document.getElementById('syncCloudBtn');
-            const originalText = syncBtn.innerHTML;
+            syncInProgress = true;
+            const syncItem = syncQueue.shift();
             
-            // Show loading state
-            syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Syncing...';
-            syncBtn.disabled = true;
+            // Show visual indicator
+            showSyncIndicator(true);
             
-            showConfigStatus('Starting manual sync to cloud database...', 'info');
+            if (syncItem.showStatus) {
+                showConfigStatus(`Auto-syncing ${syncItem.changeType} to cloud...`, 'info');
+            }
             
-            syncLocalDataToCloud()
+            // Process the specific change type
+            let syncPromise;
+            
+            switch (syncItem.changeType) {
+                case 'user_created':
+                case 'user_updated':
+                case 'password_changed':
+                    syncPromise = syncSpecificUser(syncItem.userData);
+                    break;
+                case 'user_deleted':
+                    syncPromise = deleteUserFromCloud(syncItem.userData.email);
+                    break;
+                case 'bulk_import':
+                    syncPromise = syncLocalDataToCloud();
+                    break;
+                default:
+                    syncPromise = syncLocalDataToCloud();
+            }
+            
+            syncPromise
                 .then(function() {
-                    showConfigStatus(`Successfully synced ${userManagementData.users.length} users to cloud database`, 'success');
-                    
-                    // Reload data from cloud to verify sync
-                    return loadSecureData();
-                })
-                .then(function() {
-                    showConfigStatus('Cloud sync completed and verified successfully', 'success');
+                    if (syncItem.showStatus) {
+                        showConfigStatus(`✅ ${syncItem.changeType} synced to cloud`, 'success');
+                    }
+                    console.log(`✅ Auto-sync completed: ${syncItem.changeType}`);
+                    syncItem.resolve();
                 })
                 .catch(function(error) {
-                    console.error('Manual sync error:', error);
-                    showConfigStatus('Cloud sync failed: ' + error.message, 'error');
+                    console.warn('⚠️ Auto-sync failed:', error.message);
+                    if (syncItem.showStatus) {
+                        showConfigStatus(`⚠️ Cloud sync failed (saved locally): ${error.message}`, 'warning');
+                    }
+                    syncItem.reject(error);
                 })
                 .finally(function() {
-                    // Restore button state
-                    syncBtn.innerHTML = originalText;
-                    syncBtn.disabled = false;
+                    syncInProgress = false;
+                    showSyncIndicator(false);
+                    
+                    // Process next item in queue
+                    if (syncQueue.length > 0) {
+                        setTimeout(processSyncQueue, 100); // Small delay to prevent overwhelming
+                    }
                 });
+        }
+        
+        // Sync specific user (more efficient than full sync)
+        function syncSpecificUser(userData) {
+            return _db
+                .from('users')
+                .select('id')
+                .eq('email', userData.email.toLowerCase())
+                .single()
+                .then(function(result) {
+                    const existingUser = result.data;
+                    const error = result.error;
+                    
+                    if (error && error.code === 'PGRST116') {
+                        // User doesn't exist, create new
+                        return createUserInCloud(userData);
+                    } else if (existingUser) {
+                        // User exists, update
+                        return updateUserInCloud(existingUser.id, userData);
+                    } else if (error) {
+                        throw error;
+                    }
+                });
+        }
+        
+        // Delete user from cloud
+        function deleteUserFromCloud(email) {
+            return _db
+                .from('users')
+                .delete()
+                .eq('email', email.toLowerCase())
+                .then(function(result) {
+                    const { error } = result;
+                    if (error) throw error;
+                    console.log('✅ User deleted from cloud:', email);
+                    return result;
+                });
+        }
+        
+        // Visual sync indicator
+        function showSyncIndicator(show) {
+            let indicator = document.getElementById('syncIndicator');
+            
+            if (show && !indicator) {
+                // Create sync indicator
+                indicator = document.createElement('div');
+                indicator.id = 'syncIndicator';
+                indicator.className = 'fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center';
+                indicator.innerHTML = '<i class="fas fa-sync fa-spin mr-2"></i>Syncing to cloud...';
+                document.body.appendChild(indicator);
+            } else if (!show && indicator) {
+                // Remove sync indicator
+                indicator.remove();
+            }
+        }
+        
+        // Initialize auto-sync status indicator
+        function initializeAutoSync() {
+            if (_mode && _db) {
+                // Update status to show auto-sync is active
+                const statusDiv = document.getElementById('autoSyncStatus');
+                if (statusDiv) {
+                    statusDiv.className = 'bg-green-100 text-green-800 px-4 py-2 rounded-lg font-medium flex items-center text-sm border border-green-200';
+                    statusDiv.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i><span>Auto-Sync Active</span><div class="ml-2 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>';
+                }
+            } else {
+                // Update status to show local-only mode
+                const statusDiv = document.getElementById('autoSyncStatus');
+                if (statusDiv) {
+                    statusDiv.className = 'bg-yellow-100 text-yellow-800 px-4 py-2 rounded-lg font-medium flex items-center text-sm border border-yellow-200';
+                    statusDiv.innerHTML = '<i class="fas fa-database mr-2"></i><span>Local Storage Only</span><div class="ml-2 w-2 h-2 bg-yellow-500 rounded-full"></div>';
+                }
+            }
         }
         
         // ===== DEBUG FUNCTIONS =====
@@ -2862,19 +2987,6 @@
                 localStorage.setItem('userManagementData', JSON.stringify(userManagementData));
                 localStorage.setItem('loginLogs', JSON.stringify(userManagementData.loginLogs));
                 console.log('✅ User management data saved to localStorage');
-                
-                // Also sync to cloud database if available
-                if (_mode && _db) {
-                    console.log('☁️ Syncing to cloud database...');
-                    syncLocalDataToCloud()
-                        .then(function() {
-                            console.log('✅ Data synced to cloud successfully');
-                        })
-                        .catch(function(error) {
-                            console.warn('⚠️ Cloud sync failed (data saved locally):', error.message);
-                        });
-                }
-                
                 return true;
             } catch (error) {
                 console.error('❌ Error saving user management data:', error);
@@ -3236,6 +3348,9 @@
             // Initialize admin config tab if needed
             if (tabId === 'adminConfig' && currentUserRole && currentUserRole.toLowerCase() === 'admin') {
                 updateCurrentDepartmentsList();
+                
+                // Initialize auto-sync status
+                initializeAutoSync();
                 
                 // Load users from cloud database if not already loaded
                 console.log('🔧 Admin config tab opened, checking user data...');
@@ -3757,10 +3872,15 @@
             
             userManagementData.users.push(newUser);
             
-            // Save locally and sync to cloud
+            // Save locally first
             const saved = saveUserManagementData();
             
             if (saved) {
+                // Immediate UI updates
+                clearAddUserForm();
+                refreshUserList();
+                populateUserAccessSelect();
+                
                 // Log the user creation
                 logUserActivity(currentUser, 'user_created', {
                     targetUser: email,
@@ -3769,15 +3889,11 @@
                     departmentAccess: departmentAccess
                 });
                 
-                clearAddUserForm();
-                refreshUserList();
-                populateUserAccessSelect(); // Update the user access select dropdown
+                showConfigStatus(`User ${name} added successfully`, 'success');
                 
-                if (_mode && _db) {
-                    showConfigStatus(`User ${name} added successfully and syncing to cloud database...`, 'success');
-                } else {
-                    showConfigStatus(`User ${name} added successfully (saved locally)`, 'success');
-                }
+                // Auto-sync to cloud in background
+                autoSyncToCloud('user_created', newUser, false);
+                
             } else {
                 showConfigStatus('Error saving user data', 'error');
             }
@@ -4035,7 +4151,7 @@
                 userToUpdate.password = newPassword;
                 userToUpdate.lastPasswordChange = new Date().toISOString();
                 
-                // Save to localStorage
+                // Save to localStorage first
                 saveUserManagementData();
 
                 // Log the password change
@@ -4046,6 +4162,10 @@
                 });
 
                 console.log('✅ Local password changed successfully for user:', currentUser);
+                
+                // Auto-sync password change to cloud in background
+                autoSyncToCloud('password_changed', userToUpdate, false);
+                
                 return true;
                 
             } catch (error) {
@@ -4089,7 +4209,7 @@
             const currentEditUser = userManagementData.users.find(u => u.id === userId);
             const departmentAccess = currentEditUser?.departmentAccess || departmentAccessConfig[role] || ['operations'];
             
-            userManagementData.users[userIndex] = {
+            const updatedUser = {
                 ...userManagementData.users[userIndex],
                 name: name,
                 email: email.toLowerCase(),
@@ -4102,7 +4222,14 @@
                 updatedAt: new Date().toISOString()
             };
             
+            userManagementData.users[userIndex] = updatedUser;
+            
+            // Save locally first
             saveUserManagementData();
+            
+            // Immediate UI updates
+            closeUserEditModal();
+            refreshUserList();
             
             // Log the user update
             logUserActivity(currentUser, 'user_updated', {
@@ -4116,9 +4243,10 @@
                 }
             });
             
-            closeUserEditModal();
-            refreshUserList();
             showConfigStatus(`User ${name} updated successfully`, 'success');
+            
+            // Auto-sync to cloud in background
+            autoSyncToCloud('user_updated', updatedUser, false);
         }
         
         function deleteUser() {
@@ -4133,6 +4261,17 @@
             const user = userManagementData.users[userIndex];
             
             if (confirm(`Are you sure you want to delete user ${user.name} (${user.email})? This action cannot be undone.`)) {
+                // Store user data for cloud deletion
+                const deletedUser = {...user};
+                
+                // Remove from local data
+                userManagementData.users.splice(userIndex, 1);
+                saveUserManagementData();
+                
+                // Immediate UI updates
+                closeUserEditModal();
+                refreshUserList();
+                
                 // Log the user deletion
                 logUserActivity(currentUser, 'user_deleted', {
                     targetUser: user.email,
@@ -4143,12 +4282,10 @@
                     }
                 });
                 
-                userManagementData.users.splice(userIndex, 1);
-                saveUserManagementData();
-                
-                closeUserEditModal();
-                refreshUserList();
                 showConfigStatus(`User ${user.name} deleted successfully`, 'success');
+                
+                // Auto-sync deletion to cloud in background
+                autoSyncToCloud('user_deleted', deletedUser, false);
             }
         }
         
@@ -4493,14 +4630,15 @@
                     const saved = saveUserManagementData();
                     
                     if (saved) {
+                        // Immediate UI updates
                         refreshUserList();
                         updateUserStatistics();
                         
-                        if (_mode && _db) {
-                            showConfigStatus(`Successfully imported ${users.length} users from CSV and syncing to cloud database...`, 'success');
-                        } else {
-                            showConfigStatus(`Successfully imported ${users.length} users from CSV (saved locally)`, 'success');
-                        }
+                        showConfigStatus(`Successfully imported ${users.length} users from CSV`, 'success');
+                        
+                        // Auto-sync to cloud in background
+                        autoSyncToCloud('bulk_import', users, true);
+                        
                     } else {
                         showConfigStatus('Error importing users', 'error');
                     }
@@ -4753,8 +4891,9 @@
                 return;
             }
             
-            userManagementData.users[userIndex].departmentAccess = [...currentSelectedUser.departmentAccess];
-            userManagementData.users[userIndex].updatedAt = new Date().toISOString();
+            const updatedUser = userManagementData.users[userIndex];
+            updatedUser.departmentAccess = [...currentSelectedUser.departmentAccess];
+            updatedUser.updatedAt = new Date().toISOString();
             
             const success = saveUserManagementData();
             
@@ -4767,6 +4906,9 @@
                     newAccess: currentSelectedUser.departmentAccess,
                     updatedBy: currentUser
                 });
+                
+                // Auto-sync to cloud in background
+                autoSyncToCloud('user_updated', updatedUser, false);
                 
                 // If current logged-in user's access was updated, refresh their tabs
                 if (currentSelectedUser.email === currentUser) {
