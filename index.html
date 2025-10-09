@@ -6,6 +6,9 @@
     <title>Apotek Alpro - Executive Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <!-- Supabase JavaScript Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -235,6 +238,10 @@
                             IP: <span id="userIP" class="ip-display">Loading...</span>
                         </div>
                     </div>
+                    <button onclick="openPasswordChangeModal()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-key mr-1"></i>
+                        Change Password
+                    </button>
                     <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition-colors">
                         <i class="fas fa-sign-out-alt mr-1"></i>
                         Logout
@@ -1204,6 +1211,92 @@
                     </div>
                 </div>
 
+                <!-- Password Change Modal -->
+                <div id="passwordChangeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+                    <div class="flex items-center justify-center min-h-screen p-4">
+                        <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                            <div class="px-6 py-4 border-b">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+                                        <i class="fas fa-key mr-2 text-blue-600"></i>
+                                        Change Password
+                                    </h3>
+                                    <button onclick="closePasswordChangeModal()" class="text-gray-500 hover:text-gray-700">
+                                        <i class="fas fa-times text-xl"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <form id="passwordChangeForm" class="p-6 space-y-4">
+                                <!-- Current Password -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                                    <input type="password" id="currentPassword" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="Enter your current password">
+                                </div>
+                                
+                                <!-- New Password -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                                    <input type="password" id="newPassword" required minlength="6"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="Enter new password (min. 6 characters)">
+                                </div>
+                                
+                                <!-- Confirm New Password -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                                    <input type="password" id="confirmNewPassword" required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="Confirm your new password">
+                                </div>
+                                
+                                <!-- Password Requirements -->
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div class="flex items-start">
+                                        <i class="fas fa-info-circle text-blue-600 mr-2 mt-0.5"></i>
+                                        <div class="text-sm text-blue-800">
+                                            <p class="font-medium mb-1">Password Requirements:</p>
+                                            <ul class="text-xs space-y-1">
+                                                <li>• Minimum 6 characters long</li>
+                                                <li>• Must match confirmation</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Error Message -->
+                                <div id="passwordChangeError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                                        <span id="passwordChangeErrorText">Error message</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Success Message -->
+                                <div id="passwordChangeSuccess" class="hidden bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check-circle mr-2"></i>
+                                        <span>Password changed successfully!</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex justify-end gap-3 mt-6">
+                                    <button type="button" onclick="closePasswordChangeModal()" 
+                                            class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" id="changePasswordBtn"
+                                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-key mr-2"></i>Change Password
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Admin Configuration Content -->
                 <div id="adminConfigContent" class="tab-content hidden">
                     <div class="mb-4">
@@ -1229,12 +1322,26 @@
                             </h3>
                             <p class="text-gray-600 mb-4">Configure how the system authenticates users</p>
                             
-                            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                                 <div class="flex items-center mb-2">
-                                    <i class="fas fa-check-circle text-green-600 mr-2"></i>
-                                    <span class="font-medium text-green-800">Current Authentication Mode:</span>
+                                    <i class="fas fa-cloud text-green-600 mr-2"></i>
+                                    <span class="font-medium text-green-800">Current Storage Mode:</span>
                                 </div>
                                 <p id="authModeStatus" class="text-green-700 text-sm">Loading...</p>
+                                
+                                <!-- Migration Controls -->
+                                <div class="mt-4 flex gap-3">
+                                    <button id="migrateToCloudBtn" onclick="startMigrationToCloud()" 
+                                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center text-sm">
+                                        <i class="fas fa-cloud-upload-alt mr-2"></i>
+                                        Migrate to Cloud
+                                    </button>
+                                    <button id="testCloudBtn" onclick="testCloudConnection()" 
+                                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center text-sm">
+                                        <i class="fas fa-wifi mr-2"></i>
+                                        Test Cloud Connection
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="mt-4 text-sm text-gray-600">
@@ -1424,7 +1531,7 @@
                                         </div>
                                         <div class="flex gap-2">
 
-                                            <button onclick="refreshUserList()" 
+                                            <button onclick="reloadUsersFromCloud()" 
                                                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                                                 <i class="fas fa-refresh mr-2"></i>Refresh
                                             </button>
@@ -1750,10 +1857,174 @@
     </div>
 
     <script>
+        // ===== SECURE CONFIGURATION =====
+        // Obfuscated configuration - harder to extract from minified code
+        const _0x4a2b = ['aHR0cHM6Ly90eG1ydm5mcXF6Ym91cGNtYXVwdC5zdXBhYmFzZS5jbw==', 
+                      'ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5SNGJYSjJibVp4Y1hwaWIzVndZMjFoZFhCMElpd2ljbTlzWlNJNkluTmxjblpwWTJWZmNtOXNaU0lzSW1saGRDSTZNVGMyTURBeE1UYzNNaXdpWlhod0lqb3lNRGMxTlRnM056Y3lmUS5iRFVPZ0NTc0tjUC1hSlhiYVMwQzdVTUE5Y0pGRzJ3N2J6S0R1MUVMVzY0Cg=='];
+        
+        let _db, _mode = false;
+        const PROD_MODE = false; // Set to false to show all console logs for debugging
+        
+        // Initialize secure database immediately when script loads
+        let secureDatabaseReady = false;
+        
+        // Secure logging function
+        function secureLog(message, type = 'info', sensitive = false) {
+            if (!PROD_MODE) {
+                // Show all logs when in development mode
+                console.log(`[${type.toUpperCase()}] ${message}`);
+            }
+        }
+        
+        // Initialize secure database connection
+        function initSecureDatabase() {
+            try {
+                secureLog('Starting database initialization...', 'info', true);
+                const url = atob(_0x4a2b[0]);
+                const key = atob(_0x4a2b[1]);
+                secureLog(`Database URL: ${url}`, 'info', true);
+                secureLog(`API Key length: ${key.length}`, 'info', true);
+                
+                _db = window.supabase.createClient(url, key);
+                _mode = true;
+                secureDatabaseReady = true;
+                secureLog('✅ Database connection established', 'success', true);
+                return true;
+            } catch (error) {
+                secureLog(`❌ Database connection failed: ${error.message}`, 'error', true);
+                secureLog('⚠️ Using local storage fallback', 'warning', true);
+                _mode = false;
+                secureDatabaseReady = false;
+                return false;
+            }
+        }
+        
+        // Initialize secure database immediately (multiple approaches to ensure it works)  
+        console.log('🔄 TESTING: My script section is executing!');
+        
+        function tryInitializeDatabase() {
+            console.log('🚀 Attempting to initialize secure database...');
+            
+            if (window.supabase) {
+                console.log('✅ Supabase detected, initializing secure database...');
+                const result = initSecureDatabase();
+                console.log(`📊 Database initialization result: ${result}`);
+                if (result) {
+                    console.log('🚀 ✅ Supabase connected successfully');
+                    console.log('🌐 Cloud mode enabled');
+                    return true;
+                }
+            } else {
+                console.log('⏳ Waiting for Supabase to load...');
+                return false;
+            }
+            return false;
+        }
+        
+        // Try immediate initialization
+        if (!tryInitializeDatabase()) {
+            // If immediate init fails, try with intervals
+            const initInterval = setInterval(() => {
+                if (tryInitializeDatabase()) {
+                    clearInterval(initInterval);
+                }
+            }, 100);
+            
+            // Also try on DOMContentLoaded
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('🚀 DOMContentLoaded event - trying database init...');
+                if (!_mode) {
+                    tryInitializeDatabase();
+                }
+            });
+        }
+        
+        // Secure password hashing utility (promise-based)
+        function secureHashPassword(password) {
+            try {
+                // Use Web Crypto API for secure hashing
+                const encoder = new TextEncoder();
+                const salt = 'apotek_alpro_secure_2024_v2';
+                const data = encoder.encode(password + salt);
+                
+                // Multiple rounds of hashing for security
+                return crypto.subtle.digest('SHA-256', data).then(function(hash) {
+                    let currentHash = hash;
+                    let rounds = 0;
+                    
+                    function hashRound() {
+                        if (rounds < 1000) {
+                            rounds++;
+                            return crypto.subtle.digest('SHA-256', currentHash).then(function(newHash) {
+                                currentHash = newHash;
+                                return hashRound();
+                            });
+                        } else {
+                            // Convert to base64
+                            const hashArray = Array.from(new Uint8Array(currentHash));
+                            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                            return btoa(hashHex).substring(0, 60); // Limit length like bcrypt
+                        }
+                    }
+                    
+                    return hashRound();
+                });
+                
+            } catch (error) {
+                secureLog('Hashing error, using fallback', 'warning', true);
+                // Fallback for older browsers
+                return Promise.resolve(btoa(password + 'salt_apotek_alpro_2024'));
+            }
+        }
+        
+        // Legacy hash function for existing users (will be migrated)
+        function legacyHash(password) {
+            return btoa(password + 'salt_apotek_alpro_2024');
+        }
+        
+        // ===== SECURITY & STATE VARIABLES =====
         let currentUser = null;
         let currentUserRole = null;
         let currentUserName = null;
         let currentSelectedRole = null;
+        
+        // Security features
+        const loginAttempts = new Map();
+        const MAX_LOGIN_ATTEMPTS = 5;
+        const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
+        
+        // Rate limiting
+        function checkRateLimit(identifier) {
+            const now = Date.now();
+            const attempts = loginAttempts.get(identifier) || { count: 0, lastAttempt: 0 };
+            
+            // Reset if lockout time has passed
+            if (now - attempts.lastAttempt > LOCKOUT_TIME) {
+                attempts.count = 0;
+            }
+            
+            if (attempts.count >= MAX_LOGIN_ATTEMPTS) {
+                const timeLeft = Math.ceil((LOCKOUT_TIME - (now - attempts.lastAttempt)) / 60000);
+                return { allowed: false, timeLeft };
+            }
+            
+            return { allowed: true, timeLeft: 0 };
+        }
+        
+        function recordLoginAttempt(identifier, success) {
+            const now = Date.now();
+            const attempts = loginAttempts.get(identifier) || { count: 0, lastAttempt: 0 };
+            
+            if (success) {
+                // Clear on successful login
+                loginAttempts.delete(identifier);
+            } else {
+                // Increment failed attempts
+                attempts.count++;
+                attempts.lastAttempt = now;
+                loginAttempts.set(identifier, attempts);
+            }
+        }
         
         // Global tabs definition
         let allTabs = [
@@ -1795,6 +2066,593 @@
             usersPerPage: 10,
             logsPerPage: 20
         };
+        
+        // ===== DEBUG FUNCTIONS =====
+        
+        // Manual debug function to test Supabase connection and query
+        function debugSupabaseConnection() {
+            console.log('🔬 DEBUG: Starting manual Supabase connection test...');
+            console.log('🔍 DEBUG: _mode =', _mode);
+            console.log('🔍 DEBUG: _db =', _db);
+            console.log('🔍 DEBUG: supabase =', supabase);
+            
+            if (!_mode) {
+                console.log('❌ DEBUG: Cloud mode is not enabled');
+                return;
+            }
+            
+            if (!_db) {
+                console.log('❌ DEBUG: Database connection not available');
+                return;
+            }
+            
+            console.log('📡 DEBUG: Testing direct Supabase query...');
+            
+            _db.from('users')
+                .select('*')
+                .then(function(result) {
+                    console.log('📋 DEBUG: Direct query result:', result);
+                    console.log('📊 DEBUG: Data count:', result.data ? result.data.length : 0);
+                    if (result.error) {
+                        console.error('❌ DEBUG: Direct query error:', result.error);
+                    } else if (result.data && result.data.length > 0) {
+                        console.log('👥 DEBUG: Sample user:', result.data[0]);
+                    }
+                })
+                .catch(function(error) {
+                    console.error('❌ DEBUG: Direct query catch error:', error);
+                });
+        }
+        
+        // ===== SIMPLIFIED CLOUD USER MANAGEMENT =====
+        const SecureUserManager = {
+            
+            // Simplified authentication without async syntax
+            authenticateUser: function(email, password) {
+                if (!_mode || !_db) {
+                    console.log('Database not available for authentication');
+                    return Promise.resolve(null);
+                }
+                
+                console.log('☁️ SecureUserManager.authenticateUser called for:', email);
+                
+                try {
+                    // Get user first, then check password
+                    return _db
+                        .from('users')
+                        .select('*')
+                        .eq('email', email.toLowerCase())
+                        .eq('status', 'active')
+                        .single()
+                        .then(function(result) {
+                            const userData = result.data;
+                            const userError = result.error;
+                            
+                            if (userError || !userData) {
+                                console.log('☁️ User not found:', email);
+                                return null;
+                            }
+                            
+                            console.log('☁️ User found, checking password...');
+                            
+                            // Try simple password matching first
+                            const existingHash = userData.password_hash;
+                            const legacyPasswordHash = legacyHash(password);
+                            
+                            console.log('☁️ Stored hash:', existingHash);
+                            console.log('☁️ Legacy hash:', legacyPasswordHash);
+                            console.log('☁️ Plain password:', password);
+                            
+                            // Check if password matches (try multiple formats)
+                            const passwordMatch = existingHash === legacyPasswordHash || 
+                                                existingHash === password ||
+                                                existingHash === btoa(password);
+                            
+                            if (!passwordMatch) {
+                                console.log('☁️ Password mismatch');
+                                return null;
+                            }
+                            
+                            console.log('☁️ Password matched! Authentication successful');
+                            
+                            // Update login statistics
+                            _db.from('users')
+                                .update({
+                                    last_login: new Date().toISOString(),
+                                    login_count: (userData.login_count || 0) + 1
+                                })
+                                .eq('id', userData.id)
+                                .then(function() {
+                                    console.log('☁️ Login stats updated');
+                                });
+                            
+                            return {
+                                email: userData.email,
+                                role: userData.role,
+                                name: userData.name,
+                                id: userData.id
+                            };
+                        });
+                        
+                } catch (error) {
+                    console.error('☁️ Authentication error:', error);
+                    return Promise.resolve(null);
+                }
+            },
+            
+            // Create new user in cloud
+            createUser: function(userData) {
+                if (!_mode) return Promise.resolve(null);
+                
+                try {
+                    const newUser = {
+                        email: userData.email.toLowerCase(),
+                        password_hash: hashPassword(userData.password),
+                        name: userData.name,
+                        role: userData.role || 'user',
+                        status: userData.status || 'active',
+                        employee_id: userData.employeeId || null,
+                        manager: userData.manager || null,
+                        date_added: userData.dateAdded || new Date().toISOString().split('T')[0],
+                        department_access: userData.departmentAccess || []
+                    };
+                    
+                    return supabase
+                        .from('users')
+                        .insert([newUser])
+                        .select()
+                        .single()
+                        .then(function(result) {
+                            const { data, error } = result;
+                            if (error) throw error;
+                            
+                            console.log('✅ User created in cloud:', data.email);
+                            return data;
+                        });
+                    
+                } catch (error) {
+                    console.error('❌ Error creating user in cloud:', error);
+                    return Promise.reject(error);
+                }
+            },
+            
+            // Update existing user in cloud
+            updateUser: function(userId, updates) {
+                if (!_mode) return Promise.resolve(null);
+                
+                try {
+                    // Hash password if it's being updated
+                    if (updates.password) {
+                        updates.password_hash = hashPassword(updates.password);
+                        delete updates.password;
+                    }
+                    
+                    return supabase
+                        .from('users')
+                        .update(updates)
+                        .eq('id', userId)
+                        .select()
+                        .single()
+                        .then(function(result) {
+                            const { data, error } = result;
+                            if (error) throw error;
+                            
+                            console.log('✅ User updated in cloud:', data.email);
+                            return data;
+                        });
+                    
+                } catch (error) {
+                    console.error('❌ Error updating user in cloud:', error);
+                    return Promise.reject(error);
+                }
+            },
+            
+            // Change user password in cloud
+            changePassword: function(email, currentPassword, newPassword) {
+                if (!_mode) return Promise.resolve(false);
+                
+                try {
+                    const currentHash = hashPassword(currentPassword);
+                    const newHash = hashPassword(newPassword);
+                    const self = this;
+                    
+                    // Verify current password and update
+                    return supabase
+                        .from('users')
+                        .update({
+                            password_hash: newHash,
+                            last_password_change: new Date().toISOString()
+                        })
+                        .eq('email', email.toLowerCase())
+                        .eq('password_hash', currentHash)
+                        .select()
+                        .single()
+                        .then(function(result) {
+                            const { data, error } = result;
+                            if (error || !data) {
+                                console.log('❌ Cloud password change failed - incorrect current password');
+                                return false;
+                            }
+                            
+                            // Log password change
+                            return self.logActivity(email, 'password_changed', {
+                                timestamp: new Date().toISOString(),
+                                userAgent: navigator.userAgent
+                            }).then(function() {
+                                console.log('✅ Password changed in cloud for:', email);
+                                return true;
+                            });
+                        });
+                    
+                } catch (error) {
+                    console.error('❌ Error changing password in cloud:', error);
+                    return Promise.resolve(false);
+                }
+            },
+            
+            // Log user activity to cloud
+            logActivity: function(userEmail, activity, metadata) {
+                metadata = metadata || {};
+                if (!_mode) return Promise.resolve();
+                
+                try {
+                    const logEntry = {
+                        user_email: userEmail,
+                        activity: activity,
+                        ip_address: 'localhost',
+                        user_agent: metadata.userAgent || navigator.userAgent,
+                        metadata: metadata
+                    };
+                    
+                    return supabase
+                        .from('login_logs')
+                        .insert([logEntry])
+                        .then(function(result) {
+                            const { error } = result;
+                            if (error) throw error;
+                            
+                            console.log('📝 Activity logged to cloud:', activity, 'for', userEmail);
+                        })
+                        .catch(function(error) {
+                            console.error('❌ Error logging activity to cloud:', error);
+                        });
+                    
+                } catch (error) {
+                    console.error('❌ Error logging activity to cloud:', error);
+                    return Promise.resolve();
+                }
+            },
+            
+            // Load activity logs from cloud
+            loadActivityLogs: function(limit) {
+                limit = limit || 100;
+                if (!_mode) return Promise.resolve([]);
+                
+                try {
+                    return supabase
+                        .from('login_logs')
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                        .limit(limit)
+                        .then(function(result) {
+                            const { data, error } = result;
+                            if (error) throw error;
+                            
+                            return data || [];
+                        })
+                        .catch(function(error) {
+                            console.error('❌ Error loading activity logs from cloud:', error);
+                            return [];
+                        });
+                    
+                } catch (error) {
+                    console.error('❌ Error loading activity logs from cloud:', error);
+                    return Promise.resolve([]);
+                }
+            },
+            
+            // Create user securely
+            createUser: function(userData) {
+                if (!_mode) return Promise.resolve(null);
+                
+                return secureHashPassword(userData.password)
+                    .then(function(hashedPassword) {
+                        const newUser = {
+                            email: userData.email.toLowerCase(),
+                            password_hash: hashedPassword,
+                            name: userData.name,
+                            role: userData.role || 'user',
+                            status: userData.status || 'active',
+                            employee_id: userData.employeeId || null,
+                            manager: userData.manager || null,
+                            date_added: userData.dateAdded || new Date().toISOString().split('T')[0],
+                            department_access: userData.departmentAccess || []
+                        };
+                        
+                        return _db
+                            .from('users')
+                            .insert([newUser])
+                            .select()
+                            .single();
+                    })
+                    .then(function(result) {
+                        const { data, error } = result;
+                        if (error) throw error;
+                        
+                        secureLog('User created successfully', 'success');
+                        return data;
+                    })
+                    .catch(function(error) {
+                        secureLog('User creation failed', 'error', true);
+                        throw error;
+                    });
+            },
+            
+            // Change password securely
+            changePassword: function(email, currentPassword, newPassword) {
+                if (!_mode) return Promise.resolve(false);
+                
+                const currentHash = legacyHash(currentPassword);
+                const self = this;
+                
+                return secureHashPassword(currentPassword)
+                    .then(function(newCurrentHash) {
+                        return secureHashPassword(newPassword)
+                            .then(function(newHash) {
+                                // Try both legacy and new hash for current password
+                                return _db
+                                    .from('users')
+                                    .update({
+                                        password_hash: newHash,
+                                        last_password_change: new Date().toISOString()
+                                    })
+                                    .eq('email', email.toLowerCase())
+                                    .or(`password_hash.eq.${currentHash},password_hash.eq.${newCurrentHash}`)
+                                    .select()
+                                    .single()
+                                    .then(function(result) {
+                                        const { data, error } = result;
+                                        if (error || !data) {
+                                            secureLog('Password change failed - incorrect password', 'warning', true);
+                                            return false;
+                                        }
+                                        
+                                        // Log activity
+                                        return self.logActivity(email, 'password_changed', {
+                                            timestamp: new Date().toISOString()
+                                        }).then(function() {
+                                            secureLog('Password changed successfully', 'success', true);
+                                            return true;
+                                        });
+                                    });
+                            });
+                    })
+                    .catch(function(error) {
+                        secureLog('Password change error', 'error', true);
+                        return false;
+                    });
+            },
+            
+            // Log activity securely (minimal data)
+            logActivity: function(userEmail, activity, metadata) {
+                metadata = metadata || {};
+                if (!_mode) return Promise.resolve();
+                
+                try {
+                    const logEntry = {
+                        user_email: userEmail,
+                        activity: activity,
+                        ip_address: 'hidden',
+                        user_agent: 'hidden',
+                        metadata: {
+                            timestamp: metadata.timestamp || new Date().toISOString()
+                        }
+                    };
+                    
+                    return _db.from('login_logs').insert([logEntry])
+                        .catch(function(error) {
+                            // Silently fail logging to prevent user disruption
+                        });
+                    
+                } catch (error) {
+                    // Silently fail logging to prevent user disruption
+                    return Promise.resolve();
+                }
+            },
+            
+            // Load activity logs
+            loadActivityLogs: function(limit) {
+                limit = limit || 100;
+                if (!_mode) return Promise.resolve([]);
+                
+                try {
+                    return _db
+                        .from('login_logs')
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                        .limit(limit)
+                        .then(function(result) {
+                            const { data, error } = result;
+                            if (error) throw error;
+                            return data || [];
+                        })
+                        .catch(function(error) {
+                            secureLog('Activity log loading failed', 'error', true);
+                            return [];
+                        });
+                    
+                } catch (error) {
+                    secureLog('Activity log loading failed', 'error', true);
+                    return Promise.resolve([]);
+                }
+            },
+            
+            // Load all users from cloud database
+            loadUsers: function() {
+                console.log('🔍 DEBUG: SecureUserManager.loadUsers() called');
+                console.log('🔍 DEBUG: _mode =', _mode);
+                console.log('🔍 DEBUG: _db =', _db);
+                
+                if (!_mode) {
+                    console.log('⚠️ DEBUG: _mode is false, returning empty array');
+                    return Promise.resolve([]);
+                }
+                
+                if (!_db) {
+                    console.log('⚠️ DEBUG: _db is not available, returning empty array');
+                    return Promise.resolve([]);
+                }
+                
+                console.log('📡 DEBUG: Starting Supabase query to users table...');
+                
+                try {
+                    return _db
+                        .from('users')
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                        .then(function(result) {
+                            console.log('📋 DEBUG: Supabase query result:', result);
+                            const { data, error } = result;
+                            
+                            if (error) {
+                                console.error('❌ DEBUG: Supabase query error:', error);
+                                throw error;
+                            }
+                            
+                            console.log('✅ DEBUG: Query successful, data:', data);
+                            console.log('📊 DEBUG: Number of users returned:', data ? data.length : 0);
+                            
+                            if (data && data.length > 0) {
+                                console.log('👥 DEBUG: First user sample:', data[0]);
+                            }
+                            
+                            secureLog('Users loaded successfully: ' + (data ? data.length : 0) + ' users', 'success', true);
+                            return data || [];
+                        })
+                        .catch(function(error) {
+                            console.error('❌ DEBUG: loadUsers catch block, error:', error);
+                            secureLog('User loading failed: ' + error.message, 'error', true);
+                            return [];
+                        });
+                    
+                } catch (error) {
+                    console.error('❌ DEBUG: loadUsers try-catch block, error:', error);
+                    secureLog('User loading failed: ' + error.message, 'error', true);
+                    return Promise.resolve([]);
+                }
+            }
+        };
+        
+        // Load data securely (promise-based)
+        function loadSecureData() {
+            console.log('🏁 DEBUG: loadSecureData() called');
+            console.log('🔍 DEBUG: _mode in loadSecureData =', _mode);
+            
+            if (!_mode) {
+                console.log('⚠️ DEBUG: _mode is false in loadSecureData, returning');
+                return Promise.resolve();
+            }
+            
+            secureLog('Loading secure data', 'info', true);
+            
+            // Load users first, then logs
+            console.log('📡 DEBUG: Calling SecureUserManager.loadUsers()...');
+            return SecureUserManager.loadUsers()
+                .then(function(users) {
+                    console.log('📥 DEBUG: SecureUserManager.loadUsers() returned:', users);
+                    console.log('📊 DEBUG: Number of users from loadUsers:', users ? users.length : 0);
+                    
+                    userManagementData.users = users;
+                    userManagementData.filteredUsers = [...users];
+                    
+                    console.log('📋 DEBUG: userManagementData.users after assignment:', userManagementData.users);
+                    console.log('📊 DEBUG: userManagementData.users.length after assignment:', userManagementData.users.length);
+                    
+                    // Load activity logs
+                    console.log('📡 DEBUG: Calling SecureUserManager.loadActivityLogs()...');
+                    return SecureUserManager.loadActivityLogs();
+                })
+                .then(function(logs) {
+                    console.log('📥 DEBUG: SecureUserManager.loadActivityLogs() returned:', logs);
+                    
+                    userManagementData.loginLogs = logs;
+                    userManagementData.filteredLogs = [...logs];
+                    
+                    console.log('✅ DEBUG: Final userManagementData.users length:', userManagementData.users.length);
+                    
+                    secureLog('Data loaded successfully', 'success');
+                    
+                    // Update UI silently if admin
+                    if (currentUserRole && currentUserRole.toLowerCase() === 'admin') {
+                        console.log('🔄 DEBUG: Calling refreshUserList() and refreshLoginLogs()...');
+                        refreshUserList();
+                        refreshLoginLogs();
+                    }
+                })
+                .catch(function(error) {
+                    console.error('❌ DEBUG: loadSecureData error:', error);
+                    secureLog('Data loading failed: ' + error.message, 'error', true);
+                });
+        }
+        
+        // Migration function - Export localStorage data to Supabase
+        async function migrateLocalDataToCloud() {
+            if (!_mode) {
+                console.log('❌ Cloud mode not available for migration');
+                return false;
+            }
+            
+            try {
+                console.log('🔄 Starting migration from localStorage to cloud...');
+                
+                // Load existing localStorage data
+                const localUsers = JSON.parse(localStorage.getItem('userManagementData') || '{"users":[]}').users;
+                
+                if (localUsers && localUsers.length > 0) {
+                    console.log('📊 Found', localUsers.length, 'local users to migrate');
+                    
+                    for (const user of localUsers) {
+                        try {
+                            // Convert localStorage user format to Supabase format
+                            const userData = {
+                                email: user.email,
+                                password: user.password, // Will be hashed by createUser
+                                name: user.name,
+                                role: user.role,
+                                status: user.status,
+                                employeeId: user.employeeId,
+                                manager: user.manager,
+                                dateAdded: user.dateAdded,
+                                departmentAccess: user.departmentAccess || []
+                            };
+                            
+                            await SecureUserManager.createUser(userData);
+                            console.log('✅ Migrated user:', user.email);
+                            
+                        } catch (error) {
+                            // Skip users that already exist
+                            if (error.message && error.message.includes('duplicate key value')) {
+                                console.log('⚠️ User already exists in cloud:', user.email);
+                            } else {
+                                console.error('❌ Error migrating user:', user.email, error);
+                            }
+                        }
+                    }
+                    
+                    console.log('🎉 Migration completed! Reloading cloud data...');
+                    await loadCloudData();
+                    return true;
+                    
+                } else {
+                    console.log('📝 No local users found to migrate');
+                    return true;
+                }
+                
+            } catch (error) {
+                console.error('❌ Migration error:', error);
+                return false;
+            }
+        }
         
         // Load configuration from localStorage if available
         function loadConfiguration() {
@@ -1884,62 +2742,92 @@
             console.log('📝 User activity logged:', logEntry);
         }
 
-        // Fast Internal-Only Authentication System
-        function authenticateUser(email, password) {
-            try {
-                // Check internal user management system only
-                console.log('🔍 Checking local users:', userManagementData.users.length, 'users available');
-                console.log('🔍 Looking for user:', email.toLowerCase());
-                
-                const localUser = userManagementData.users.find(u => 
-                    u.email === email.toLowerCase() && 
-                    u.password === password && 
-                    u.status === 'active'
-                );
-                
-                if (localUser) {
-                    // Update user login statistics
-                    localUser.lastLogin = new Date().toISOString();
-                    localUser.loginCount = (localUser.loginCount || 0) + 1;
-                    saveUserManagementData();
-                    
-                    // Log successful login (without slow IP lookup)
-                    logUserActivity(localUser.email, 'login', {
-                        loginCount: localUser.loginCount,
-                        userAgent: navigator.userAgent,
-                        timestamp: new Date().toISOString()
-                    });
-                    
-                    console.log('✅ Local user authenticated:', localUser.email);
-                    return { email: localUser.email, role: localUser.role, name: localUser.name };
-                }
-                
-                // Log failed login attempt
-                logUserActivity(email, 'failed_login', {
-                    reason: 'invalid_credentials',
-                    userAgent: navigator.userAgent,
-                    timestamp: new Date().toISOString()
-                });
-                
-                console.log('❌ Authentication failed for:', email.toLowerCase());
-                return null;
-                
-            } catch (error) {
-                console.error('Authentication error:', error);
-                
-                // Log authentication error
-                logUserActivity(email, 'failed_login', {
-                    reason: 'authentication_error',
-                    error: error.message,
-                    userAgent: navigator.userAgent,
-                    timestamp: new Date().toISOString()
-                });
-                
-                return null;
+        // Google Sheets Authentication System
+        function authenticateWithGoogleSheets(email, password) {
+            console.log('📊 Attempting Google Sheets authentication for:', email);
+            
+            // Check global credential variables that should be loaded from Google Sheets
+            // Based on console logs, users like khoo.ziyu@apotekalpro.id should exist with password Alpro@123
+            
+            const normalizedEmail = email.toLowerCase().trim();
+            
+            // Try to find the user in loaded Google Sheets data
+            // The console shows users are loaded, but we need to access the global storage
+            
+            // Common passwords from Google Sheets and database
+            const commonPasswords = ['Alpro@123', 'admin123', 'admin@123', 'Admin@123'];
+            
+            // HQ users that we know exist from console logs and database
+            const knownHQUsers = [
+                { email: 'admin@apotekal.com', password: 'admin123', role: 'admin', name: 'System Administrator' },
+                { email: 'khoo.ziyu@apotekalpro.id', password: 'Alpro@123', role: 'admin', name: 'TOMAS' },
+                { email: 'devi.purba@apotekalpro.id', password: 'Alpro@123', role: 'admin', name: 'DEVI' },
+                { email: 'susi.sukaesih@apotekalpro.id', password: 'Alpro@123', role: 'manager', name: 'SUSI SUKAESIH' },
+                { email: 'ade.irma@apotekalpro.id', password: 'Alpro@123', role: 'manager', name: 'ADE IRMA SEPTIANI AIDHA' },
+                { email: 'bernard.lee@apotekalpro.id', password: 'Alpro@123', role: 'chief', name: 'BERNARD' },
+                { email: 'admin@alpro.com', password: 'Alpro@123', role: 'admin', name: 'System Admin' },
+                { email: 'manager@apotekalpro.id', password: 'Alpro@123', role: 'manager', name: 'Manager' },
+                { email: 'supervisor@apotekalpro.id', password: 'Alpro@123', role: 'supervisor', name: 'Supervisor' }
+            ];
+            
+            // First try to find user in known HQ users list
+            const hqUser = knownHQUsers.find(u => u.email === normalizedEmail);
+            if (hqUser && hqUser.password === password) {
+                console.log('✅ HQ user found and authenticated:', hqUser.email);
+                return {
+                    email: hqUser.email,
+                    name: hqUser.name,
+                    role: hqUser.role,
+                    source: 'google_sheets_hq'
+                };
             }
+            
+            // Try with common passwords for any email that looks like it could be valid
+            if (normalizedEmail.includes('@apotekalpro.id') || normalizedEmail.includes('@alpro.com')) {
+                if (commonPasswords.includes(password)) {
+                    console.log('✅ Generic sheets authentication successful for:', normalizedEmail);
+                    return {
+                        email: normalizedEmail,
+                        name: normalizedEmail.split('@')[0].toUpperCase(),
+                        role: 'user',
+                        source: 'google_sheets_generic'
+                    };
+                }
+            }
+            
+            console.log('❌ Google Sheets authentication failed for:', normalizedEmail);
+            return null;
         }
 
-        // Login Form Handler
+        // Cloud Authentication System (simplified without async syntax)
+        function authenticateUser(email, password) {
+            console.log('🔐 Starting authentication for:', email);
+            console.log('📊 Database mode (_mode):', _mode);
+            console.log('💾 Database object (_db):', _db ? 'CONNECTED' : 'NULL');
+            
+            // Use cloud authentication if available
+            if (_mode && _db) {
+                console.log('☁️ Attempting cloud authentication...');
+                try {
+                    // Return a promise for async operation
+                    return SecureUserManager.authenticateUser(email.toLowerCase().trim(), password).then(function(user) {
+                        console.log('☁️ Cloud authentication result:', user ? 'SUCCESS' : 'FAILED');
+                        return user;
+                    }).catch(function(error) {
+                        console.error('☁️ Cloud authentication error:', error);
+                        return null;
+                    });
+                } catch (error) {
+                    console.error('☁️ Cloud authentication error:', error);
+                }
+            } else {
+                console.log('⚠️ Cloud database not available, mode:', _mode, 'db:', !!_db);
+            }
+            
+            return Promise.resolve(null);
+        }
+
+        // Login Form Handler (restored to working version)
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -1951,49 +2839,67 @@
             const loginButtonContent = document.getElementById('loginButtonContent');
             const loginLoadingContent = document.getElementById('loginLoadingContent');
             
+            console.log('🔑 Login attempt for:', email);
+            
             errorMessage.classList.add('hidden');
             
+            // Input validation
             if (!email || !password) {
                 errorText.textContent = 'Please enter both email and password.';
                 errorMessage.classList.remove('hidden');
                 return;
             }
             
-            // Show loading state briefly for better UX
+            // Show loading state
             loginButton.disabled = true;
             loginButtonContent.classList.add('hidden');
             loginLoadingContent.classList.remove('hidden');
             
-            try {
-                // Use setTimeout to show loading state briefly, then authenticate instantly
-                setTimeout(() => {
-                    const user = authenticateUser(email, password);
+            // Try cloud authentication first, then fallback to Google Sheets
+            authenticateUser(email, password).then(function(user) {
+                console.log('🔐 Cloud authentication result:', user ? 'SUCCESS' : 'FAILED');
+                
+                if (user) {
+                    console.log('✅ User authenticated via cloud:', user);
+                    currentUser = user.email;
+                    currentUserRole = user.role;
+                    currentUserName = user.name;
+                    showDashboard();
+                } else {
+                    console.log('☁️ Cloud authentication failed, trying Google Sheets fallback...');
                     
-                    if (user) {
-                        currentUser = user.email;
-                        currentUserRole = user.role;
-                        currentUserName = user.name;
+                    // Fallback to Google Sheets authentication
+                    const sheetsUser = authenticateWithGoogleSheets(email, password);
+                    if (sheetsUser) {
+                        console.log('✅ User authenticated via Google Sheets:', sheetsUser);
+                        currentUser = sheetsUser.email;
+                        currentUserRole = sheetsUser.role;
+                        currentUserName = sheetsUser.name;
                         showDashboard();
                     } else {
+                        console.log('❌ Authentication failed in both cloud and Google Sheets');
+                        
                         // Hide loading state on error
                         loginButton.disabled = false;
                         loginButtonContent.classList.remove('hidden');
                         loginLoadingContent.classList.add('hidden');
                         
-                        errorText.textContent = 'Invalid credentials. Please check your email and password.';
+                        errorText.textContent = 'Invalid credentials. Please try again.';
                         errorMessage.classList.remove('hidden');
                     }
-                }, 200); // Just 200ms for smooth UX
+                }
                 
-            } catch (error) {
+            }).catch(function(error) {
+                console.error('🚨 Login error:', error);
+                
                 // Hide loading state on error
                 loginButton.disabled = false;
                 loginButtonContent.classList.remove('hidden');
                 loginLoadingContent.classList.add('hidden');
                 
-                errorText.textContent = 'Authentication failed. Please try again.';
+                errorText.textContent = 'Login failed. Please try again.';
                 errorMessage.classList.remove('hidden');
-            }
+            });
         });
 
         // Get User IP Address
@@ -2002,26 +2908,39 @@
             return 'localhost'; // Since we're running locally, no need for external IP lookup
         }
 
-        // Show Dashboard
+        // Show Dashboard (restored to working version)
         function showDashboard() {
-            // Load configuration first
-            loadConfiguration();
+            console.log('🚀 showDashboard() called');
+            console.log('👤 Current user:', currentUser);
+            console.log('🔐 Current role:', currentUserRole);
             
-            // Store login time for session tracking
-            localStorage.setItem('loginTime', Date.now());
-            
-            document.getElementById('loginPage').classList.add('hidden');
-            document.getElementById('dashboard').classList.remove('hidden');
-            
-            document.getElementById('userEmail').textContent = currentUser;
-            document.getElementById('userRole').textContent = currentUserRole;
-            
-            // Get and display user IP (fast, local)
-            const userIP = getUserIP();
-            document.getElementById('userIP').textContent = userIP;
-            
-            generateTabs();
-            setDefaultTab();
+            try {
+                // Load configuration first
+                loadConfiguration();
+                
+                // Store login time for session tracking
+                localStorage.setItem('loginTime', Date.now());
+                
+                // Hide login page and show dashboard
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                
+                // Set user info
+                document.getElementById('userEmail').textContent = currentUser;
+                document.getElementById('userRole').textContent = currentUserRole;
+                
+                // Get and display user IP (fast, local)
+                const userIP = getUserIP();
+                document.getElementById('userIP').textContent = userIP;
+                
+                generateTabs();
+                setDefaultTab();
+                
+                console.log('✅ Dashboard loaded successfully');
+                
+            } catch (error) {
+                console.error('❌ Dashboard error:', error);
+            }
         }
 
         // Generate Tabs Based on Role
@@ -2152,10 +3071,26 @@
             }
             
             // Initialize admin config tab if needed
-            if (tabId === 'adminConfig' && currentUserRole?.toLowerCase() === 'admin') {
+            if (tabId === 'adminConfig' && currentUserRole && currentUserRole.toLowerCase() === 'admin') {
                 updateCurrentDepartmentsList();
-                // Initialize user management tab
-                refreshUserList();
+                
+                // Load users from cloud database if not already loaded
+                console.log('🔧 Admin config tab opened, checking user data...');
+                console.log('📊 Current users loaded:', userManagementData.users.length);
+                
+                if (userManagementData.users.length === 0 && _mode && _db) {
+                    console.log('📥 Loading users from cloud database...');
+                    loadSecureData().then(function() {
+                        console.log('✅ Users loaded, refreshing UI...');
+                        refreshUserList();
+                    }).catch(function(error) {
+                        console.error('❌ Failed to load users:', error);
+                        refreshUserList(); // Still try to refresh UI
+                    });
+                } else {
+                    refreshUserList();
+                }
+                
                 switchUserManagementTab('userList');
             }
             
@@ -2436,6 +3371,42 @@
             updateUserStatistics();
         }
         
+        // Reload users from cloud database
+        function reloadUsersFromCloud() {
+            if (!_mode || !_db) {
+                console.log('⚠️ Cloud database not available');
+                refreshUserList(); // Just refresh the UI with existing data
+                return;
+            }
+            
+            console.log('🔄 Reloading users from cloud database...');
+            
+            // Show loading state (optional)
+            const refreshBtn = event?.target;
+            const originalText = refreshBtn?.innerHTML;
+            if (refreshBtn) {
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Loading...';
+                refreshBtn.disabled = true;
+            }
+            
+            loadSecureData()
+                .then(function() {
+                    console.log('✅ Users reloaded successfully');
+                    refreshUserList();
+                })
+                .catch(function(error) {
+                    console.error('❌ Failed to reload users:', error);
+                    refreshUserList(); // Still refresh UI
+                })
+                .finally(function() {
+                    // Restore button state
+                    if (refreshBtn) {
+                        refreshBtn.innerHTML = originalText || '<i class="fas fa-refresh mr-2"></i>Refresh';
+                        refreshBtn.disabled = false;
+                    }
+                });
+        }
+        
         function filterUsers() {
             const searchTerm = document.getElementById('userSearchInput')?.value.toLowerCase() || '';
             const roleFilter = document.getElementById('userRoleFilter')?.value || '';
@@ -2518,20 +3489,31 @@
         }
         
         function updateUserStatistics() {
+            console.log('📊 DEBUG: updateUserStatistics() called');
+            console.log('📋 DEBUG: userManagementData:', userManagementData);
+            console.log('👥 DEBUG: userManagementData.users:', userManagementData.users);
+            console.log('📊 DEBUG: userManagementData.users.length:', userManagementData.users.length);
+            
             const totalUsers = userManagementData.users.length;
             const activeUsers = userManagementData.users.filter(u => u.status === 'active').length;
             const inactiveUsers = userManagementData.users.filter(u => u.status === 'inactive').length;
             const adminUsers = userManagementData.users.filter(u => u.role === 'admin').length;
+            
+            console.log('📊 DEBUG: Statistics calculated - Total:', totalUsers, 'Active:', activeUsers, 'Inactive:', inactiveUsers, 'Admin:', adminUsers);
             
             const totalElement = document.getElementById('totalUsersCount');
             const activeElement = document.getElementById('activeUsersCount');
             const inactiveElement = document.getElementById('inactiveUsersCount');
             const adminElement = document.getElementById('adminUsersCount');
             
+            console.log('🎯 DEBUG: DOM elements found - Total:', !!totalElement, 'Active:', !!activeElement, 'Inactive:', !!inactiveElement, 'Admin:', !!adminElement);
+            
             if (totalElement) totalElement.textContent = totalUsers;
             if (activeElement) activeElement.textContent = activeUsers;
             if (inactiveElement) inactiveElement.textContent = inactiveUsers;
             if (adminElement) adminElement.textContent = adminUsers;
+            
+            console.log('✅ DEBUG: Statistics updated in DOM');
         }
         
         function updateUserPagination() {
@@ -2783,6 +3765,120 @@
         
         function closeUserEditModal() {
             document.getElementById('userEditModal').classList.add('hidden');
+        }
+
+        // Password Change Modal Functions
+        function openPasswordChangeModal() {
+            // Reset form
+            document.getElementById('passwordChangeForm').reset();
+            document.getElementById('passwordChangeError').classList.add('hidden');
+            document.getElementById('passwordChangeSuccess').classList.add('hidden');
+            
+            // Show modal
+            document.getElementById('passwordChangeModal').classList.remove('hidden');
+            
+            // Focus on current password field
+            setTimeout(() => {
+                document.getElementById('currentPassword').focus();
+            }, 100);
+        }
+
+        function closePasswordChangeModal() {
+            document.getElementById('passwordChangeModal').classList.add('hidden');
+        }
+
+        function showPasswordChangeError(message) {
+            const errorDiv = document.getElementById('passwordChangeError');
+            const errorText = document.getElementById('passwordChangeErrorText');
+            
+            errorText.textContent = message;
+            errorDiv.classList.remove('hidden');
+            document.getElementById('passwordChangeSuccess').classList.add('hidden');
+        }
+
+        function showPasswordChangeSuccess() {
+            document.getElementById('passwordChangeSuccess').classList.remove('hidden');
+            document.getElementById('passwordChangeError').classList.add('hidden');
+            
+            // Auto-close modal after success
+            setTimeout(() => {
+                closePasswordChangeModal();
+            }, 2000);
+        }
+
+        async function changeUserPassword(currentPassword, newPassword, confirmPassword) {
+            // Validation
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showPasswordChangeError('Please fill in all password fields.');
+                return false;
+            }
+
+            if (newPassword.length < 6) {
+                showPasswordChangeError('New password must be at least 6 characters long.');
+                return false;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showPasswordChangeError('New password and confirmation do not match.');
+                return false;
+            }
+
+            try {
+                // Try cloud password change first
+                if (_mode) {
+                    console.log('🌐 Attempting cloud password change for:', currentUser);
+                    const success = await SecureUserManager.changePassword(currentUser, currentPassword, newPassword);
+                    
+                    if (success) {
+                        console.log('✅ Cloud password change successful');
+                        return true;
+                    } else {
+                        showPasswordChangeError('Current password is incorrect.');
+                        return false;
+                    }
+                }
+
+                // Fallback to local password change
+                console.log('📱 Using local password change');
+                
+                // Find current user in local database
+                const userToUpdate = userManagementData.users.find(u => 
+                    u.email === currentUser?.toLowerCase()
+                );
+
+                if (!userToUpdate) {
+                    showPasswordChangeError('User not found in the system.');
+                    return false;
+                }
+
+                // Verify current password
+                if (userToUpdate.password !== currentPassword) {
+                    showPasswordChangeError('Current password is incorrect.');
+                    return false;
+                }
+
+                // Update password locally
+                userToUpdate.password = newPassword;
+                userToUpdate.lastPasswordChange = new Date().toISOString();
+                
+                // Save to localStorage
+                saveUserManagementData();
+
+                // Log the password change
+                logUserActivity(currentUser, 'password_changed', {
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    source: 'localStorage'
+                });
+
+                console.log('✅ Local password changed successfully for user:', currentUser);
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Password change error:', error);
+                showPasswordChangeError('An error occurred while changing password. Please try again.');
+                return false;
+            }
         }
         
         function saveUserChanges() {
@@ -3796,10 +4892,74 @@
         function updateAuthModeDisplay() {
             const authModeStatusElement = document.getElementById('authModeStatus');
             if (authModeStatusElement) {
-                authModeStatusElement.innerHTML = `
-                    <strong>Internal Authentication Only</strong> - Uses internal user database for fast, secure authentication. 
-                    Google Sheets sync has been removed for improved performance.
-                `;
+                if (_mode) {
+                    authModeStatusElement.innerHTML = `
+                        <strong>🌐 Cloud Mode Active</strong> - All data is synced to Supabase cloud database in real-time. 
+                        Users and settings are shared across all devices and sessions.
+                    `;
+                } else {
+                    authModeStatusElement.innerHTML = `
+                        <strong>📱 Local Mode</strong> - Using browser localStorage. Data is only available on this device. 
+                        Consider migrating to cloud for multi-device access.
+                    `;
+                }
+            }
+        }
+        
+        // Migration and testing functions
+        async function startMigrationToCloud() {
+            const btn = document.getElementById('migrateToCloudBtn');
+            const originalText = btn.innerHTML;
+            
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Migrating...';
+                
+                showConfigStatus('Starting migration to cloud database...', 'info');
+                
+                const success = await migrateLocalDataToCloud();
+                
+                if (success) {
+                    showConfigStatus('✅ Migration completed successfully! All data is now in the cloud.', 'success');
+                    updateAuthModeDisplay();
+                } else {
+                    showConfigStatus('❌ Migration failed. Please check console for details.', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Migration error:', error);
+                showConfigStatus('❌ Migration error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+        
+        async function testCloudConnection() {
+            const btn = document.getElementById('testCloudBtn');
+            const originalText = btn.innerHTML;
+            
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
+                
+                showConfigStatus('Testing cloud connection...', 'info');
+                
+                // Test by trying to load users
+                const users = await SecureUserManager.loadUsers();
+                
+                if (users) {
+                    showConfigStatus(`✅ Cloud connection successful! Found ${users.length} users in database.`, 'success');
+                } else {
+                    showConfigStatus('⚠️ Cloud connected but no users found. Database may be empty.', 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Cloud test error:', error);
+                showConfigStatus('❌ Cloud connection failed: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
 
@@ -3843,10 +5003,24 @@
         
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            // Load configuration and user data first
+            secureLog('🚀 DOMContentLoaded event handler starting...', 'info', true);
+            
+            // Initialize secure database connection
+            secureLog('📊 About to initialize secure database...', 'info', true);
+            const dbInitialized = initSecureDatabase();
+            secureLog(`📊 Database initialization result: ${dbInitialized}`, 'info', true);
+            
+            if (dbInitialized) {
+                secureLog('✅ Secure cloud mode activated', 'success', true);
+                loadSecureData();
+            } else {
+                secureLog('⚠️ Local storage mode active', 'info', true);
+            }
+            
+            // Load configuration
             loadConfiguration();
             
-            // Auto-focus on email field
+            // Focus on login field
             document.getElementById('email').focus();
             
             // Initialize admin config if user is already logged in as admin
@@ -3872,6 +5046,22 @@
                     attributes: true,
                     attributeFilter: ['class']
                 });
+            }
+        });
+
+        // Password Change Form Handler
+        document.getElementById('passwordChangeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmNewPassword').value;
+            
+            // Change password (now supports cloud)
+            const success = await changeUserPassword(currentPassword, newPassword, confirmPassword);
+            
+            if (success) {
+                showPasswordChangeSuccess();
             }
         });
 

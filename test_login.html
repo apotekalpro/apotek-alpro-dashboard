@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Test</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Testing Admin Login</h1>
+    <p id="status">Loading...</p>
+    
+    <script>
+        // Initialize Supabase
+        const url = 'https://txmrvnfqqzboupcmaupt.supabase.co';
+        const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4bXJ2bmZxcXpib3VwY21hdXB0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDAxMTc3MiwiZXhwIjoyMDc1NTg3NzcyfQ.bDUOgCSsKcP-aJXbaS0C7UMA9cJFG2w7bzKDu1ELW64';
+        
+        const supabase = window.supabase.createClient(url, key);
+        
+        async function testLogin() {
+            try {
+                document.getElementById('status').textContent = 'Testing database connection...';
+                
+                // Test 1: Check if we can connect to database
+                const { data: testData, error: testError } = await supabase
+                    .from('users')
+                    .select('email, name, role')
+                    .limit(1);
+                
+                if (testError) {
+                    throw new Error('Database connection failed: ' + testError.message);
+                }
+                
+                document.getElementById('status').textContent = 'Database connected! Found users: ' + JSON.stringify(testData);
+                
+                // Test 2: Look for admin user
+                const { data: adminUser, error: adminError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', 'admin@apotekal.com')
+                    .single();
+                
+                if (adminError) {
+                    document.getElementById('status').textContent = 'Admin user not found: ' + adminError.message;
+                    return;
+                }
+                
+                document.getElementById('status').textContent = 'Admin user found: ' + JSON.stringify(adminUser);
+                
+            } catch (error) {
+                document.getElementById('status').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        // Run test on page load
+        testLogin();
+    </script>
+</body>
+</html>
