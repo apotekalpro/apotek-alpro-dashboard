@@ -1074,6 +1074,163 @@
                     </div>
                 </div>
 
+                <!-- Admin Configuration Content -->
+                <div id="adminConfigContent" class="tab-content hidden">
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-4">
+                            <i class="fas fa-cogs mr-3 text-red-600"></i>
+                            Admin Configuration Panel
+                        </h2>
+                        <p class="text-gray-600 mb-6">Manage department access permissions for different user roles</p>
+                        
+                        <!-- Configuration Status -->
+                        <div id="configStatus" class="mb-6 p-4 rounded-lg border hidden">
+                            <div class="flex items-center">
+                                <i id="configStatusIcon" class="fas fa-info-circle mr-2"></i>
+                                <span id="configStatusText">Ready</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Role Management Section -->
+                        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-users mr-2 text-blue-600"></i>
+                                Role & Department Access Management
+                            </h3>
+                            
+                            <!-- Role Selection -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Select Role to Configure:</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="selectRole('admin')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="admin">
+                                        <i class="fas fa-crown mr-2"></i>Admin
+                                    </button>
+                                    <button onclick="selectRole('chief')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="chief">
+                                        <i class="fas fa-star mr-2"></i>Chief
+                                    </button>
+                                    <button onclick="selectRole('strategy')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="strategy">
+                                        <i class="fas fa-chess mr-2"></i>Strategy
+                                    </button>
+                                    <button onclick="selectRole('operations')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="operations">
+                                        <i class="fas fa-cogs mr-2"></i>Operations
+                                    </button>
+                                    <button onclick="selectRole('ppm')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="ppm">
+                                        <i class="fas fa-chart-line mr-2"></i>PPM
+                                    </button>
+                                    <button onclick="selectRole('finance')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="finance">
+                                        <i class="fas fa-dollar-sign mr-2"></i>Finance
+                                    </button>
+                                    <button onclick="selectRole('bpt')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="bpt">
+                                        <i class="fas fa-bullseye mr-2"></i>BPT
+                                    </button>
+                                    <button onclick="selectRole('procurement')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="procurement">
+                                        <i class="fas fa-shopping-cart mr-2"></i>Procurement
+                                    </button>
+                                    <button onclick="selectRole('warehouse')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="warehouse">
+                                        <i class="fas fa-warehouse mr-2"></i>Warehouse
+                                    </button>
+                                    <button onclick="selectRole('ppr')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="ppr">
+                                        <i class="fas fa-sitemap mr-2"></i>PPR
+                                    </button>
+                                    <button onclick="selectRole('academy')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="academy">
+                                        <i class="fas fa-graduation-cap mr-2"></i>Academy
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Department Access Configuration -->
+                            <div id="departmentConfig" class="hidden">
+                                <h4 class="text-lg font-medium text-gray-800 mb-4">Department Access for <span id="selectedRoleName" class="text-blue-600 font-semibold"></span> Role:</h4>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" id="departmentCheckboxes">
+                                    <!-- Department checkboxes will be dynamically generated -->
+                                </div>
+                                
+                                <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+                                    <div class="flex gap-2">
+                                        <button onclick="selectAllDepartments()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                            <i class="fas fa-check-double mr-2"></i>Select All
+                                        </button>
+                                        <button onclick="deselectAllDepartments()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                            <i class="fas fa-times mr-2"></i>Deselect All
+                                        </button>
+                                    </div>
+                                    <button onclick="saveRoleConfiguration()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-save mr-2"></i>Save Configuration
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Department Management Section -->
+                        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-plus-circle mr-2 text-green-600"></i>
+                                Department Management
+                            </h3>
+                            
+                            <!-- Add New Department -->
+                            <div class="mb-6">
+                                <h4 class="text-lg font-medium text-gray-800 mb-4">Add New Department:</h4>
+                                <div class="flex gap-4 items-end">
+                                    <div class="flex-1">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Department ID:</label>
+                                        <input type="text" id="newDepartmentId" placeholder="e.g., marketing" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Department Name:</label>
+                                        <input type="text" id="newDepartmentName" placeholder="e.g., Marketing" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Icon Class:</label>
+                                        <input type="text" id="newDepartmentIcon" placeholder="e.g., fas fa-bullhorn" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <button onclick="addNewDepartment()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                        <i class="fas fa-plus mr-2"></i>Add Department
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Current Departments List -->
+                            <div>
+                                <h4 class="text-lg font-medium text-gray-800 mb-4">Current Departments:</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="currentDepartmentsList">
+                                    <!-- Current departments will be listed here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Configuration Export/Import -->
+                        <div class="bg-white rounded-lg shadow-md p-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-exchange-alt mr-2 text-purple-600"></i>
+                                Configuration Backup & Restore
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Export Configuration -->
+                                <div>
+                                    <h4 class="text-lg font-medium text-gray-800 mb-4">Export Configuration:</h4>
+                                    <button onclick="exportConfiguration()" class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                        <i class="fas fa-download mr-2"></i>Download Configuration File
+                                    </button>
+                                    <p class="text-sm text-gray-600 mt-2">Download current access configuration as JSON file for backup</p>
+                                </div>
+                                
+                                <!-- Import Configuration -->
+                                <div>
+                                    <h4 class="text-lg font-medium text-gray-800 mb-4">Import Configuration:</h4>
+                                    <input type="file" id="configImportFile" accept=".json" class="mb-2 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                                    <button onclick="importConfiguration()" class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                                        <i class="fas fa-upload mr-2"></i>Import Configuration File
+                                    </button>
+                                    <p class="text-sm text-gray-600 mt-2">Import previously exported configuration file</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
 
             </div>
         </div>
@@ -1082,6 +1239,47 @@
     <script>
         let currentUser = null;
         let currentUserRole = null;
+        let currentSelectedRole = null;
+        
+        // Default department access configuration
+        let departmentAccessConfig = {
+            admin: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig'],
+            chief: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'],
+            strategy: ['ppm', 'strategy', 'operations'],
+            operations: ['operations', 'warehouseApd'],
+            ppm: ['ppm'],
+            finance: ['finance'],
+            bpt: ['bpt'],
+            procurement: ['procurement'],
+            warehouse: ['warehouseApd'],
+            ppr: ['ppr'],
+            academy: ['academy']
+        };
+        
+        // Load configuration from localStorage if available
+        function loadConfiguration() {
+            const savedConfig = localStorage.getItem('departmentAccessConfig');
+            if (savedConfig) {
+                try {
+                    departmentAccessConfig = JSON.parse(savedConfig);
+                    console.log('✅ Configuration loaded from localStorage');
+                } catch (error) {
+                    console.error('❌ Error loading configuration from localStorage:', error);
+                }
+            }
+        }
+        
+        // Save configuration to localStorage
+        function saveConfiguration() {
+            try {
+                localStorage.setItem('departmentAccessConfig', JSON.stringify(departmentAccessConfig));
+                console.log('✅ Configuration saved to localStorage');
+                return true;
+            } catch (error) {
+                console.error('❌ Error saving configuration to localStorage:', error);
+                return false;
+            }
+        }
 
         // Authentication System
         async function authenticateUser(email, password) {
@@ -1160,6 +1358,9 @@
 
         // Show Dashboard
         async function showDashboard() {
+            // Load configuration first
+            loadConfiguration();
+            
             document.getElementById('loginPage').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
             
@@ -1179,7 +1380,7 @@
             const tabNavigation = document.getElementById('tabNavigation');
             tabNavigation.innerHTML = '';
             
-            const allTabs = [
+            let allTabs = [
                 { id: 'operations', name: 'Operations', icon: 'fas fa-cogs' },
                 { id: 'ppm', name: 'PPM', icon: 'fas fa-chart-line' },
                 { id: 'strategy', name: 'Strategy', icon: 'fas fa-chess' },
@@ -1188,8 +1389,25 @@
                 { id: 'procurement', name: 'Procurement', icon: 'fas fa-shopping-cart' },
                 { id: 'warehouseApd', name: 'Warehouse APD', icon: 'fas fa-warehouse' },
                 { id: 'ppr', name: 'PPR', icon: 'fas fa-sitemap' },
-                { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' }
+                { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
+                { id: 'adminConfig', name: 'Admin Config', icon: 'fas fa-cogs' }
             ];
+            
+            // Load custom tabs from localStorage
+            const savedTabs = localStorage.getItem('customTabs');
+            if (savedTabs) {
+                try {
+                    const customTabs = JSON.parse(savedTabs);
+                    // Add custom tabs to the default tabs (avoid duplicates)
+                    customTabs.forEach(customTab => {
+                        if (!allTabs.find(tab => tab.id === customTab.id)) {
+                            allTabs.push(customTab);
+                        }
+                    });
+                } catch (error) {
+                    console.error('❌ Error loading custom tabs:', error);
+                }
+            }
             
             const accessibleTabs = getAccessibleTabs();
             
@@ -1204,13 +1422,19 @@
             });
         }
 
-        // Get Accessible Tabs Based on Role
+        // Get Accessible Tabs Based on Role (now uses dynamic configuration)
         function getAccessibleTabs() {
             const role = currentUserRole?.toLowerCase();
             
+            // Use dynamic configuration if available
+            if (departmentAccessConfig[role]) {
+                return departmentAccessConfig[role];
+            }
+            
+            // Fallback to default configuration for backward compatibility
             switch (role) {
                 case 'admin':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig'];
                 case 'chief':
                     return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'];
                 case 'strategy':
@@ -1282,6 +1506,11 @@
                 content.classList.remove('hidden');
             }
             
+            // Initialize admin config tab if needed
+            if (tabId === 'adminConfig' && currentUserRole?.toLowerCase() === 'admin') {
+                updateCurrentDepartmentsList();
+            }
+            
             // Add active class to selected tab
             event?.target?.classList.add('active');
             
@@ -1289,7 +1518,8 @@
             if (!event?.target) {
                 const buttons = document.querySelectorAll('.tab-button');
                 buttons.forEach(button => {
-                    if (button.textContent.toLowerCase().includes(tabId)) {
+                    if (button.textContent.toLowerCase().includes(tabId.toLowerCase()) || 
+                        (tabId === 'adminConfig' && button.textContent.toLowerCase().includes('admin config'))) {
                         button.classList.add('active');
                     }
                 });
@@ -1434,10 +1664,344 @@
             document.getElementById('errorMessage').classList.add('hidden');
         }
 
+        // Admin Configuration Functions
+        function selectRole(role) {
+            currentSelectedRole = role;
+            
+            // Update role selector UI
+            document.querySelectorAll('.role-selector').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-white', 'text-gray-700', 'hover:bg-gray-50');
+            });
+            
+            const selectedBtn = document.querySelector(`[data-role="${role}"]`);
+            if (selectedBtn) {
+                selectedBtn.classList.remove('bg-white', 'text-gray-700', 'hover:bg-gray-50');
+                selectedBtn.classList.add('bg-blue-600', 'text-white');
+            }
+            
+            // Show department configuration
+            document.getElementById('departmentConfig').classList.remove('hidden');
+            document.getElementById('selectedRoleName').textContent = role.charAt(0).toUpperCase() + role.slice(1);
+            
+            // Generate department checkboxes
+            generateDepartmentCheckboxes(role);
+            
+            showConfigStatus(`Selected role: ${role}`, 'info');
+        }
+        
+        function generateDepartmentCheckboxes(role) {
+            const container = document.getElementById('departmentCheckboxes');
+            container.innerHTML = '';
+            
+            const currentAccess = departmentAccessConfig[role] || [];
+            
+            allTabs.forEach(tab => {
+                if (tab.id === 'adminConfig' && role !== 'admin') return; // Admin config only for admin role
+                
+                const isChecked = currentAccess.includes(tab.id);
+                
+                const checkboxHtml = `
+                    <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                        <input type="checkbox" 
+                               id="dept_${tab.id}" 
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" 
+                               ${isChecked ? 'checked' : ''}
+                               onchange="updateDepartmentAccess('${role}', '${tab.id}', this.checked)">
+                        <label for="dept_${tab.id}" class="ml-3 flex items-center cursor-pointer flex-1">
+                            <i class="${tab.icon} mr-2 text-gray-600"></i>
+                            <span class="text-sm font-medium text-gray-700">${tab.name}</span>
+                        </label>
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', checkboxHtml);
+            });
+        }
+        
+        function updateDepartmentAccess(role, departmentId, hasAccess) {
+            if (!departmentAccessConfig[role]) {
+                departmentAccessConfig[role] = [];
+            }
+            
+            if (hasAccess) {
+                if (!departmentAccessConfig[role].includes(departmentId)) {
+                    departmentAccessConfig[role].push(departmentId);
+                }
+            } else {
+                departmentAccessConfig[role] = departmentAccessConfig[role].filter(id => id !== departmentId);
+            }
+            
+            console.log(`Updated ${role} access:`, departmentAccessConfig[role]);
+        }
+        
+        function selectAllDepartments() {
+            if (!currentSelectedRole) return;
+            
+            const checkboxes = document.querySelectorAll('#departmentCheckboxes input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                const departmentId = checkbox.id.replace('dept_', '');
+                updateDepartmentAccess(currentSelectedRole, departmentId, true);
+            });
+            
+            showConfigStatus('All departments selected', 'success');
+        }
+        
+        function deselectAllDepartments() {
+            if (!currentSelectedRole) return;
+            
+            const checkboxes = document.querySelectorAll('#departmentCheckboxes input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+                const departmentId = checkbox.id.replace('dept_', '');
+                updateDepartmentAccess(currentSelectedRole, departmentId, false);
+            });
+            
+            showConfigStatus('All departments deselected', 'info');
+        }
+        
+        function saveRoleConfiguration() {
+            if (!currentSelectedRole) {
+                showConfigStatus('Please select a role first', 'error');
+                return;
+            }
+            
+            const success = saveConfiguration();
+            
+            if (success) {
+                showConfigStatus(`Configuration saved successfully for ${currentSelectedRole} role`, 'success');
+                
+                // If current user's role was updated, refresh the tabs
+                if (currentSelectedRole.toLowerCase() === currentUserRole?.toLowerCase()) {
+                    setTimeout(() => {
+                        generateTabs();
+                        showConfigStatus('Dashboard tabs refreshed', 'info');
+                    }, 1000);
+                }
+            } else {
+                showConfigStatus('Error saving configuration', 'error');
+            }
+        }
+        
+        function addNewDepartment() {
+            const id = document.getElementById('newDepartmentId').value.trim();
+            const name = document.getElementById('newDepartmentName').value.trim();
+            const icon = document.getElementById('newDepartmentIcon').value.trim();
+            
+            if (!id || !name || !icon) {
+                showConfigStatus('Please fill in all fields for the new department', 'error');
+                return;
+            }
+            
+            // Check if department already exists
+            if (allTabs.find(tab => tab.id === id)) {
+                showConfigStatus('Department with this ID already exists', 'error');
+                return;
+            }
+            
+            // Add new tab
+            const newTab = { id, name, icon };
+            allTabs.push(newTab);
+            
+            // Save custom tabs to localStorage
+            const customTabs = JSON.parse(localStorage.getItem('customTabs') || '[]');
+            customTabs.push(newTab);
+            localStorage.setItem('customTabs', JSON.stringify(customTabs));
+            
+            // Clear form
+            document.getElementById('newDepartmentId').value = '';
+            document.getElementById('newDepartmentName').value = '';
+            document.getElementById('newDepartmentIcon').value = '';
+            
+            // Refresh UI
+            updateCurrentDepartmentsList();
+            if (currentSelectedRole) {
+                generateDepartmentCheckboxes(currentSelectedRole);
+            }
+            
+            showConfigStatus(`New department '${name}' added successfully`, 'success');
+        }
+        
+        function removeDepartment(departmentId) {
+            if (confirm(`Are you sure you want to remove the '${departmentId}' department? This action cannot be undone.`)) {
+                // Remove from allTabs
+                allTabs = allTabs.filter(tab => tab.id !== departmentId);
+                
+                // Remove from custom tabs in localStorage
+                const customTabs = JSON.parse(localStorage.getItem('customTabs') || '[]');
+                const updatedCustomTabs = customTabs.filter(tab => tab.id !== departmentId);
+                localStorage.setItem('customTabs', JSON.stringify(updatedCustomTabs));
+                
+                // Remove from all role configurations
+                Object.keys(departmentAccessConfig).forEach(role => {
+                    departmentAccessConfig[role] = departmentAccessConfig[role].filter(id => id !== departmentId);
+                });
+                
+                saveConfiguration();
+                
+                // Refresh UI
+                updateCurrentDepartmentsList();
+                if (currentSelectedRole) {
+                    generateDepartmentCheckboxes(currentSelectedRole);
+                }
+                
+                showConfigStatus(`Department '${departmentId}' removed successfully`, 'success');
+            }
+        }
+        
+        function updateCurrentDepartmentsList() {
+            const container = document.getElementById('currentDepartmentsList');
+            container.innerHTML = '';
+            
+            allTabs.forEach(tab => {
+                const isCustom = !['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig'].includes(tab.id);
+                
+                const departmentHtml = `
+                    <div class="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <i class="${tab.icon} mr-3 text-gray-600"></i>
+                                <div>
+                                    <div class="font-medium text-gray-800">${tab.name}</div>
+                                    <div class="text-sm text-gray-500">ID: ${tab.id}</div>
+                                    ${isCustom ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Custom</span>' : '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">System</span>'}
+                                </div>
+                            </div>
+                            ${isCustom ? `<button onclick="removeDepartment('${tab.id}')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', departmentHtml);
+            });
+        }
+        
+        function exportConfiguration() {
+            const config = {
+                departmentAccessConfig,
+                customTabs: JSON.parse(localStorage.getItem('customTabs') || '[]'),
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(config, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `dashboard-config-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showConfigStatus('Configuration exported successfully', 'success');
+        }
+        
+        function importConfiguration() {
+            const fileInput = document.getElementById('configImportFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showConfigStatus('Please select a configuration file to import', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const config = JSON.parse(e.target.result);
+                    
+                    // Validate configuration structure
+                    if (!config.departmentAccessConfig) {
+                        throw new Error('Invalid configuration file: missing departmentAccessConfig');
+                    }
+                    
+                    // Import department access configuration
+                    departmentAccessConfig = config.departmentAccessConfig;
+                    saveConfiguration();
+                    
+                    // Import custom tabs if they exist
+                    if (config.customTabs && Array.isArray(config.customTabs)) {
+                        localStorage.setItem('customTabs', JSON.stringify(config.customTabs));
+                        
+                        // Add custom tabs to allTabs
+                        config.customTabs.forEach(customTab => {
+                            if (!allTabs.find(tab => tab.id === customTab.id)) {
+                                allTabs.push(customTab);
+                            }
+                        });
+                    }
+                    
+                    // Refresh UI
+                    updateCurrentDepartmentsList();
+                    if (currentSelectedRole) {
+                        generateDepartmentCheckboxes(currentSelectedRole);
+                    }
+                    
+                    showConfigStatus(`Configuration imported successfully (exported: ${config.exportDate || 'Unknown date'})`, 'success');
+                    
+                    // Clear file input
+                    fileInput.value = '';
+                    
+                } catch (error) {
+                    console.error('Import error:', error);
+                    showConfigStatus(`Error importing configuration: ${error.message}`, 'error');
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        function showConfigStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('configStatus');
+            const iconElement = document.getElementById('configStatusIcon');
+            const textElement = document.getElementById('configStatusText');
+            
+            // Remove existing classes
+            statusDiv.className = 'mb-6 p-4 rounded-lg border';
+            
+            // Add type-specific classes
+            switch (type) {
+                case 'success':
+                    statusDiv.classList.add('bg-green-50', 'border-green-200', 'text-green-800');
+                    iconElement.className = 'fas fa-check-circle mr-2 text-green-600';
+                    break;
+                case 'error':
+                    statusDiv.classList.add('bg-red-50', 'border-red-200', 'text-red-800');
+                    iconElement.className = 'fas fa-exclamation-triangle mr-2 text-red-600';
+                    break;
+                case 'warning':
+                    statusDiv.classList.add('bg-yellow-50', 'border-yellow-200', 'text-yellow-800');
+                    iconElement.className = 'fas fa-exclamation-triangle mr-2 text-yellow-600';
+                    break;
+                default:
+                    statusDiv.classList.add('bg-blue-50', 'border-blue-200', 'text-blue-800');
+                    iconElement.className = 'fas fa-info-circle mr-2 text-blue-600';
+            }
+            
+            textElement.textContent = message;
+            statusDiv.classList.remove('hidden');
+            
+            // Auto-hide after 5 seconds for non-error messages
+            if (type !== 'error') {
+                setTimeout(() => {
+                    statusDiv.classList.add('hidden');
+                }, 5000);
+            }
+        }
+        
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             // Auto-focus on email field
             document.getElementById('email').focus();
+            
+            // Initialize admin config if user is already logged in as admin
+            if (currentUserRole?.toLowerCase() === 'admin') {
+                updateCurrentDepartmentsList();
+            }
         });
 
         // AM Performance Tracker Namespace - All functions isolated to prevent conflicts
