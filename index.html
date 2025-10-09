@@ -191,9 +191,15 @@
                     <input type="password" id="password" class="login-input w-full px-4 py-3" required>
                 </div>
                 
-                <button type="submit" class="btn-primary w-full text-white py-3 px-4">
-                    <i class="fas fa-sign-in-alt mr-2"></i>
-                    Login
+                <button type="submit" id="loginButton" class="btn-primary w-full text-white py-3 px-4">
+                    <span id="loginButtonContent">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Login
+                    </span>
+                    <span id="loginLoadingContent" class="hidden">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                        Authenticating, please wait...
+                    </span>
                 </button>
                 
                 <div id="errorMessage" class="error-message p-3 hidden">
@@ -1747,6 +1753,20 @@
         let currentUserName = null;
         let currentSelectedRole = null;
         
+        // Global tabs definition
+        let allTabs = [
+            { id: 'operations', name: 'Operations', icon: 'fas fa-cogs' },
+            { id: 'ppm', name: 'PPM', icon: 'fas fa-chart-line' },
+            { id: 'strategy', name: 'Strategy', icon: 'fas fa-chess' },
+            { id: 'finance', name: 'Finance', icon: 'fas fa-dollar-sign' },
+            { id: 'bpt', name: 'BPT', icon: 'fas fa-bullseye' },
+            { id: 'procurement', name: 'Procurement', icon: 'fas fa-shopping-cart' },
+            { id: 'warehouseApd', name: 'Warehouse APD', icon: 'fas fa-warehouse' },
+            { id: 'ppr', name: 'PPR', icon: 'fas fa-sitemap' },
+            { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
+            { id: 'adminConfig', name: 'Admin Config', icon: 'fas fa-cogs' }
+        ];
+        
         // Default department access configuration
         let departmentAccessConfig = {
             admin: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig'],
@@ -1955,6 +1975,9 @@
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
             const errorText = document.getElementById('errorText');
+            const loginButton = document.getElementById('loginButton');
+            const loginButtonContent = document.getElementById('loginButtonContent');
+            const loginLoadingContent = document.getElementById('loginLoadingContent');
             
             errorMessage.classList.add('hidden');
             
@@ -1963,6 +1986,11 @@
                 errorMessage.classList.remove('hidden');
                 return;
             }
+            
+            // Show loading state
+            loginButton.disabled = true;
+            loginButtonContent.classList.add('hidden');
+            loginLoadingContent.classList.remove('hidden');
             
             try {
                 const user = await authenticateUser(email, password);
@@ -1973,10 +2001,20 @@
                     currentUserName = user.name;
                     showDashboard();
                 } else {
+                    // Hide loading state on error
+                    loginButton.disabled = false;
+                    loginButtonContent.classList.remove('hidden');
+                    loginLoadingContent.classList.add('hidden');
+                    
                     errorText.textContent = 'Invalid credentials. Please check your email and password.';
                     errorMessage.classList.remove('hidden');
                 }
             } catch (error) {
+                // Hide loading state on error
+                loginButton.disabled = false;
+                loginButtonContent.classList.remove('hidden');
+                loginLoadingContent.classList.add('hidden');
+                
                 errorText.textContent = 'Authentication failed. Please try again.';
                 errorMessage.classList.remove('hidden');
             }
@@ -2020,19 +2058,6 @@
         function generateTabs() {
             const tabNavigation = document.getElementById('tabNavigation');
             tabNavigation.innerHTML = '';
-            
-            let allTabs = [
-                { id: 'operations', name: 'Operations', icon: 'fas fa-cogs' },
-                { id: 'ppm', name: 'PPM', icon: 'fas fa-chart-line' },
-                { id: 'strategy', name: 'Strategy', icon: 'fas fa-chess' },
-                { id: 'finance', name: 'Finance', icon: 'fas fa-dollar-sign' },
-                { id: 'bpt', name: 'BPT', icon: 'fas fa-bullseye' },
-                { id: 'procurement', name: 'Procurement', icon: 'fas fa-shopping-cart' },
-                { id: 'warehouseApd', name: 'Warehouse APD', icon: 'fas fa-warehouse' },
-                { id: 'ppr', name: 'PPR', icon: 'fas fa-sitemap' },
-                { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
-                { id: 'adminConfig', name: 'Admin Config', icon: 'fas fa-cogs' }
-            ];
             
             // Load custom tabs from localStorage
             const savedTabs = localStorage.getItem('customTabs');
