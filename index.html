@@ -1229,41 +1229,21 @@
                             </h3>
                             <p class="text-gray-600 mb-4">Configure how the system authenticates users</p>
                             
-                            <div class="flex flex-col md:flex-row gap-4 items-start">
-                                <div class="flex-1">
-                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                                        <div class="flex items-center mb-2">
-                                            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
-                                            <span class="font-medium text-blue-800">Current Authentication Mode:</span>
-                                        </div>
-                                        <p id="authModeStatus" class="text-blue-700 text-sm">Loading...</p>
-                                    </div>
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                                    <span class="font-medium text-green-800">Current Authentication Mode:</span>
                                 </div>
-                                <div class="flex-shrink-0">
-                                    <button id="toggleAuthMode" onclick="toggleAuthenticationMode()" 
-                                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center shadow-md hover:shadow-lg">
-                                        <i class="fas fa-toggle-on mr-2"></i>
-                                        Switch Authentication Mode
-                                    </button>
-                                </div>
+                                <p id="authModeStatus" class="text-green-700 text-sm">Loading...</p>
                             </div>
                             
                             <div class="mt-4 text-sm text-gray-600">
-                                <div class="grid md:grid-cols-2 gap-4">
-                                    <div class="border border-gray-200 rounded-lg p-3">
-                                        <div class="flex items-center mb-2">
-                                            <i class="fas fa-database text-blue-600 mr-2"></i>
-                                            <span class="font-medium">Internal + Google Sheets</span>
-                                        </div>
-                                        <p class="text-xs">First checks internal users, then falls back to Google Sheets authentication</p>
+                                <div class="border border-gray-200 rounded-lg p-3">
+                                    <div class="flex items-center mb-2">
+                                        <i class="fas fa-database text-green-600 mr-2"></i>
+                                        <span class="font-medium">Internal Authentication</span>
                                     </div>
-                                    <div class="border border-gray-200 rounded-lg p-3">
-                                        <div class="flex items-center mb-2">
-                                            <i class="fas fa-lock text-green-600 mr-2"></i>
-                                            <span class="font-medium">Internal Only</span>
-                                        </div>
-                                        <p class="text-xs">Uses only internal user database for authentication</p>
-                                    </div>
+                                    <p class="text-xs">Uses internal user database for fast, secure authentication. Google Sheets sync has been removed for improved performance.</p>
                                 </div>
                             </div>
                         </div>
@@ -1443,10 +1423,7 @@
                                             </select>
                                         </div>
                                         <div class="flex gap-2">
-                                            <button onclick="syncUsersFromGoogleSheets()" 
-                                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                                                <i class="fas fa-sync mr-2"></i>Sync from Google Sheets
-                                            </button>
+
                                             <button onclick="refreshUserList()" 
                                                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                                                 <i class="fas fa-refresh mr-2"></i>Refresh
@@ -1697,17 +1674,7 @@
                                             <i class="fas fa-upload mr-2 text-green-600"></i>Import Users
                                         </h4>
                                         <div class="space-y-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 mb-2">Import from Google Sheets</label>
-                                                <div class="flex gap-2">
-                                                    <input type="url" id="googleSheetsUrl" placeholder="Google Sheets CSV URL" 
-                                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                                    <button onclick="importFromGoogleSheets()" 
-                                                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                                                        <i class="fas fa-sync mr-2"></i>Import
-                                                    </button>
-                                                </div>
-                                            </div>
+
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700 mb-2">Import from CSV File</label>
                                                 <input type="file" id="userCsvFile" accept=".csv" 
@@ -1737,24 +1704,12 @@
                                                     class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                                                 <i class="fas fa-file-csv mr-2"></i>Export as CSV
                                             </button>
-                                            <button onclick="exportUsersToGoogleSheets()" 
-                                                    class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                                                <i class="fas fa-external-link-alt mr-2"></i>Generate Google Sheets Format
-                                            </button>
+
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <!-- Sync Status -->
-                                <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                    <h5 class="font-medium text-yellow-800 mb-2">Sync Information</h5>
-                                    <div class="text-sm text-yellow-700">
-                                        <p><strong>Last Sync:</strong> <span id="lastSyncTime">Never</span></p>
-                                        <p><strong>Google Sheets URL:</strong> <span id="currentGoogleSheetsUrl">Not configured</span></p>
-                                        <p><strong>Local Users:</strong> <span id="localUsersCount">0</span></p>
-                                        <p><strong>Note:</strong> Changes made here are stored locally. To sync with Google Sheets, use the import/export functions.</p>
-                                    </div>
-                                </div>
+
                             </div>
                         </div>
                         
@@ -1838,8 +1793,7 @@
             currentUserPage: 1,
             currentLogPage: 1,
             usersPerPage: 10,
-            logsPerPage: 20,
-            googleSheetsUrl: 'https://docs.google.com/spreadsheets/d/1_ve_N74hK1KBMk_Rz_jVDRuLn_kDk13FUROkeNKR5P4/export?format=csv'
+            logsPerPage: 20
         };
         
         // Load configuration from localStorage if available
@@ -1930,13 +1884,10 @@
             console.log('📝 User activity logged:', logEntry);
         }
 
-        // Enhanced Authentication System
-        async function authenticateUser(email, password) {
+        // Fast Internal-Only Authentication System
+        function authenticateUser(email, password) {
             try {
-                // Get user IP for logging
-                const userIP = await getUserIP();
-                
-                // First check local user management system
+                // Check internal user management system only
                 console.log('🔍 Checking local users:', userManagementData.users.length, 'users available');
                 console.log('🔍 Looking for user:', email.toLowerCase());
                 
@@ -1952,9 +1903,8 @@
                     localUser.loginCount = (localUser.loginCount || 0) + 1;
                     saveUserManagementData();
                     
-                    // Log successful login
+                    // Log successful login (without slow IP lookup)
                     logUserActivity(localUser.email, 'login', {
-                        ipAddress: userIP,
                         loginCount: localUser.loginCount,
                         userAgent: navigator.userAgent,
                         timestamp: new Date().toISOString()
@@ -1964,71 +1914,21 @@
                     return { email: localUser.email, role: localUser.role, name: localUser.name };
                 }
                 
-                // Check if user wants to use only internal authentication
-                const useInternalOnly = localStorage.getItem('useInternalAuthOnly') === 'true';
-                
-                if (useInternalOnly) {
-                    console.log('🚫 Google Sheets authentication disabled - using internal only');
-                    
-                    // Log failed login attempt
-                    logUserActivity(email, 'failed_login', {
-                        ipAddress: userIP,
-                        reason: 'user_not_found_in_internal_system',
-                        userAgent: navigator.userAgent,
-                        timestamp: new Date().toISOString()
-                    });
-                    
-                    return null;
-                }
-                
-                // Fallback to Google Sheets authentication
-                console.log('🔄 Checking Google Sheets authentication...');
-                const response = await fetch('https://docs.google.com/spreadsheets/d/1_ve_N74hK1KBMk_Rz_jVDRuLn_kDk13FUROkeNKR5P4/export?format=csv');
-                const csvData = await response.text();
-                
-                const lines = csvData.trim().split('\n');
-                
-                for (let i = 1; i < lines.length; i++) {
-                    const row = lines[i].split(',');
-                    const userEmail = row[0]?.trim().toLowerCase();
-                    const status = row[1]?.trim();
-                    const role = row[2]?.trim();
-                    const userPassword = row[6]?.trim();
-                    const userName = row[0]?.trim(); // Assuming first column has name
-                    
-                    if (userEmail === email.toLowerCase() && 
-                        userPassword === password && 
-                        status.toLowerCase() === 'active') {
-                        
-                        // Log successful login from Google Sheets user
-                        logUserActivity(userEmail, 'login', {
-                            ipAddress: userIP,
-                            source: 'google_sheets',
-                            userAgent: navigator.userAgent,
-                            timestamp: new Date().toISOString()
-                        });
-                        
-                        console.log('✅ Google Sheets user authenticated:', userEmail);
-                        return { email: userEmail, role: role, name: userName };
-                    }
-                }
-                
                 // Log failed login attempt
                 logUserActivity(email, 'failed_login', {
-                    ipAddress: userIP,
                     reason: 'invalid_credentials',
                     userAgent: navigator.userAgent,
                     timestamp: new Date().toISOString()
                 });
                 
+                console.log('❌ Authentication failed for:', email.toLowerCase());
                 return null;
+                
             } catch (error) {
                 console.error('Authentication error:', error);
                 
                 // Log authentication error
-                const userIP = await getUserIP();
                 logUserActivity(email, 'failed_login', {
-                    ipAddress: userIP,
                     reason: 'authentication_error',
                     error: error.message,
                     userAgent: navigator.userAgent,
@@ -2040,7 +1940,7 @@
         }
 
         // Login Form Handler
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const email = document.getElementById('email').value.trim();
@@ -2059,28 +1959,32 @@
                 return;
             }
             
-            // Show loading state
+            // Show loading state briefly for better UX
             loginButton.disabled = true;
             loginButtonContent.classList.add('hidden');
             loginLoadingContent.classList.remove('hidden');
             
             try {
-                const user = await authenticateUser(email, password);
-                
-                if (user) {
-                    currentUser = user.email;
-                    currentUserRole = user.role;
-                    currentUserName = user.name;
-                    showDashboard();
-                } else {
-                    // Hide loading state on error
-                    loginButton.disabled = false;
-                    loginButtonContent.classList.remove('hidden');
-                    loginLoadingContent.classList.add('hidden');
+                // Use setTimeout to show loading state briefly, then authenticate instantly
+                setTimeout(() => {
+                    const user = authenticateUser(email, password);
                     
-                    errorText.textContent = 'Invalid credentials. Please check your email and password.';
-                    errorMessage.classList.remove('hidden');
-                }
+                    if (user) {
+                        currentUser = user.email;
+                        currentUserRole = user.role;
+                        currentUserName = user.name;
+                        showDashboard();
+                    } else {
+                        // Hide loading state on error
+                        loginButton.disabled = false;
+                        loginButtonContent.classList.remove('hidden');
+                        loginLoadingContent.classList.add('hidden');
+                        
+                        errorText.textContent = 'Invalid credentials. Please check your email and password.';
+                        errorMessage.classList.remove('hidden');
+                    }
+                }, 200); // Just 200ms for smooth UX
+                
             } catch (error) {
                 // Hide loading state on error
                 loginButton.disabled = false;
@@ -2093,19 +1997,13 @@
         });
 
         // Get User IP Address
-        async function getUserIP() {
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return data.ip;
-            } catch (error) {
-                console.error('Error getting IP:', error);
-                return 'N/A';
-            }
+        // Fast IP function - no external calls
+        function getUserIP() {
+            return 'localhost'; // Since we're running locally, no need for external IP lookup
         }
 
         // Show Dashboard
-        async function showDashboard() {
+        function showDashboard() {
             // Load configuration first
             loadConfiguration();
             
@@ -2118,8 +2016,8 @@
             document.getElementById('userEmail').textContent = currentUser;
             document.getElementById('userRole').textContent = currentUserRole;
             
-            // Get and display user IP
-            const userIP = await getUserIP();
+            // Get and display user IP (fast, local)
+            const userIP = getUserIP();
             document.getElementById('userIP').textContent = userIP;
             
             generateTabs();
@@ -2256,10 +2154,8 @@
             // Initialize admin config tab if needed
             if (tabId === 'adminConfig' && currentUserRole?.toLowerCase() === 'admin') {
                 updateCurrentDepartmentsList();
-                // Initialize user management tab if not already done
-                if (userManagementData.users.length === 0) {
-                    syncUsersFromGoogleSheets();
-                }
+                // Initialize user management tab
+                refreshUserList();
                 switchUserManagementTab('userList');
             }
             
@@ -2406,10 +2302,10 @@
             window.open(url, '_blank');
         }
 
-        async function logout() {
+        function logout() {
             // Log logout event
             if (currentUser) {
-                const userIP = await getUserIP();
+                const userIP = getUserIP();
                 logUserActivity(currentUser, 'logout', {
                     ipAddress: userIP,
                     userAgent: navigator.userAgent,
@@ -2464,32 +2360,11 @@
             } else if (tabName === 'loginLogs') {
                 refreshLoginLogs();
             } else if (tabName === 'userImport') {
-                updateSyncInformation();
+                // User import tab is ready
             }
         }
         
-        async function syncUsersFromGoogleSheets() {
-            try {
-                showConfigStatus('Syncing users from Google Sheets...', 'info');
-                
-                const response = await fetch(userManagementData.googleSheetsUrl);
-                const csvData = await response.text();
-                
-                const users = parseUsersFromCsv(csvData);
-                userManagementData.users = users;
-                userManagementData.filteredUsers = [...users];
-                
-                saveUserManagementData();
-                refreshUserList();
-                updateUserStatistics();
-                
-                showConfigStatus(`Successfully synced ${users.length} users from Google Sheets`, 'success');
-                
-            } catch (error) {
-                console.error('Error syncing users from Google Sheets:', error);
-                showConfigStatus('Error syncing users from Google Sheets', 'error');
-            }
-        }
+
         
         function parseUsersFromCsv(csvData) {
             const lines = csvData.trim().split('\n');
@@ -3323,37 +3198,9 @@
         }
         
         // Import/Export Functions
-        function updateSyncInformation() {
-            const lastSyncElement = document.getElementById('lastSyncTime');
-            const googleSheetsUrlElement = document.getElementById('currentGoogleSheetsUrl');
-            const localUsersCountElement = document.getElementById('localUsersCount');
-            
-            if (lastSyncElement) {
-                const lastSync = localStorage.getItem('lastSyncTime');
-                lastSyncElement.textContent = lastSync ? new Date(lastSync).toLocaleString() : 'Never';
-            }
-            
-            if (googleSheetsUrlElement) {
-                googleSheetsUrlElement.textContent = userManagementData.googleSheetsUrl;
-            }
-            
-            if (localUsersCountElement) {
-                localUsersCountElement.textContent = userManagementData.users.length;
-            }
-        }
+
         
-        function importFromGoogleSheets() {
-            const url = document.getElementById('googleSheetsUrl').value.trim();
-            if (!url) {
-                showConfigStatus('Please enter a Google Sheets CSV URL', 'error');
-                return;
-            }
-            
-            userManagementData.googleSheetsUrl = url;
-            syncUsersFromGoogleSheets();
-            localStorage.setItem('lastSyncTime', new Date().toISOString());
-            updateSyncInformation();
-        }
+
         
         function importUsersFromCsv() {
             const fileInput = document.getElementById('userCsvFile');
@@ -3431,26 +3278,7 @@
             showConfigStatus('Users exported as CSV successfully', 'success');
         }
         
-        function exportUsersToGoogleSheets() {
-            const csvContent = [
-                'Name,Email,Status,Role,Date,Manager,Employee ID,Password',
-                ...userManagementData.users.map(user => 
-                    `"${user.name}","${user.email}","${user.status}","${user.role}","${user.dateAdded || ''}","${user.manager || ''}","${user.employeeId || ''}","${user.password}"`
-                )
-            ].join('\n');
-            
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `google-sheets-format-${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            
-            showConfigStatus('Google Sheets format CSV generated. Upload this to your Google Sheets and get the CSV export URL.', 'success');
-        }
+
 
         // User-Level Department Access Management Functions
         let currentSelectedUser = null;
@@ -3965,54 +3793,13 @@
         }
         
         // Authentication Mode Management
-        function toggleAuthenticationMode() {
-            const useInternalOnly = localStorage.getItem('useInternalAuthOnly') === 'true';
-            const newMode = !useInternalOnly;
-            
-            localStorage.setItem('useInternalAuthOnly', newMode.toString());
-            
-            const modeText = newMode ? 'Internal Only' : 'Internal + Google Sheets';
-            showConfigStatus(`Authentication mode switched to: ${modeText}`, 'success');
-            
-            console.log(`🔧 Authentication mode: ${modeText}`);
-        }
-        
-        function getCurrentAuthMode() {
-            const useInternalOnly = localStorage.getItem('useInternalAuthOnly') === 'true';
-            return useInternalOnly ? 'Internal Only' : 'Internal + Google Sheets';
-        }
-
-        function toggleAuthenticationMode() {
-            const useInternalOnly = localStorage.getItem('useInternalAuthOnly') === 'true';
-            const newMode = !useInternalOnly;
-            
-            localStorage.setItem('useInternalAuthOnly', newMode.toString());
-            
-            const modeText = newMode ? 'Internal Only' : 'Internal + Google Sheets';
-            showConfigStatus(`Authentication mode switched to: ${modeText}`, 'success');
-            
-            // Update the auth mode status display
-            updateAuthModeDisplay();
-            
-            console.log('🔧 Authentication mode changed to:', modeText);
-        }
-
         function updateAuthModeDisplay() {
             const authModeStatusElement = document.getElementById('authModeStatus');
             if (authModeStatusElement) {
-                const currentMode = getCurrentAuthMode();
-                const useInternalOnly = localStorage.getItem('useInternalAuthOnly') === 'true';
-                
-                if (useInternalOnly) {
-                    authModeStatusElement.innerHTML = `
-                        <strong>${currentMode}</strong> - Only users created in the admin panel can login. 
-                        Google Sheets authentication is disabled.
-                    `;
-                } else {
-                    authModeStatusElement.innerHTML = `
-                        <strong>${currentMode}</strong> - First checks internal users, then falls back to Google Sheets for authentication.
-                    `;
-                }
+                authModeStatusElement.innerHTML = `
+                    <strong>Internal Authentication Only</strong> - Uses internal user database for fast, secure authentication. 
+                    Google Sheets sync has been removed for improved performance.
+                `;
             }
         }
 
