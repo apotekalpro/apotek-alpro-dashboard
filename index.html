@@ -151,6 +151,21 @@
             color: #dc2626;
             border-radius: 10px;
         }
+        
+        .user-mgmt-tab {
+            border-bottom-color: transparent;
+            color: #6b7280;
+        }
+        
+        .user-mgmt-tab:hover {
+            color: #374151;
+            border-bottom-color: #d1d5db;
+        }
+        
+        .user-mgmt-tab.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
     </style>
 </head>
 <body>
@@ -176,9 +191,15 @@
                     <input type="password" id="password" class="login-input w-full px-4 py-3" required>
                 </div>
                 
-                <button type="submit" class="btn-primary w-full text-white py-3 px-4">
-                    <i class="fas fa-sign-in-alt mr-2"></i>
-                    Login
+                <button type="submit" id="loginButton" class="btn-primary w-full text-white py-3 px-4">
+                    <span id="loginButtonContent">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Login
+                    </span>
+                    <span id="loginLoadingContent" class="hidden">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                        Authenticating, please wait...
+                    </span>
                 </button>
                 
                 <div id="errorMessage" class="error-message p-3 hidden">
@@ -1074,6 +1095,115 @@
                     </div>
                 </div>
 
+                <!-- User Edit Modal -->
+                <div id="userEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+                    <div class="flex items-center justify-center min-h-screen p-4">
+                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                            <div class="p-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-xl font-semibold text-gray-800">Edit User</h3>
+                                    <button onclick="closeUserEditModal()" class="text-gray-500 hover:text-gray-700">
+                                        <i class="fas fa-times text-xl"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <input type="hidden" id="editUserId">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                                        <input type="text" id="editUserName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input type="email" id="editUserEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                        <div class="relative">
+                                            <input type="password" id="editUserPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10">
+                                            <button type="button" onclick="togglePasswordVisibility('editUserPassword')" 
+                                                    class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                                        <select id="editUserRole" onchange="onEditUserRoleChange()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="admin">Admin</option>
+                                            <option value="chief">Chief</option>
+                                            <option value="strategy">Strategy</option>
+                                            <option value="operations">Operations</option>
+                                            <option value="ppm">PPM</option>
+                                            <option value="finance">Finance</option>
+                                            <option value="bpt">BPT</option>
+                                            <option value="procurement">Procurement</option>
+                                            <option value="warehouse">Warehouse</option>
+                                            <option value="ppr">PPR</option>
+                                            <option value="academy">Academy</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                        <select id="editUserStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="active">Active</option>
+                                            <option value="inactive">Inactive</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Employee ID</label>
+                                        <input type="text" id="editUserEmployeeId" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                                    <textarea id="editUserNotes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                </div>
+                                
+                                <div class="mt-6">
+                                    <h4 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                                        <i class="fas fa-key mr-2 text-blue-600"></i>
+                                        Department Access Permissions
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-gray-50 rounded-lg border" id="editUserDepartmentAccess">
+                                        <!-- Department access checkboxes will be populated here -->
+                                    </div>
+                                    <div class="mt-3 flex gap-2">
+                                        <button type="button" onclick="selectAllEditUserDepartments()" 
+                                                class="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+                                            <i class="fas fa-check-double mr-1"></i>All
+                                        </button>
+                                        <button type="button" onclick="deselectAllEditUserDepartments()" 
+                                                class="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+                                            <i class="fas fa-times mr-1"></i>None
+                                        </button>
+                                        <button type="button" onclick="resetEditUserToRoleDefaults()" 
+                                                class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                                            <i class="fas fa-undo mr-1"></i>Role Defaults
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex justify-end gap-4 mt-6">
+                                    <button onclick="closeUserEditModal()" 
+                                            class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                        Cancel
+                                    </button>
+                                    <button onclick="deleteUser()" 
+                                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                        <i class="fas fa-trash mr-2"></i>Delete User
+                                    </button>
+                                    <button onclick="saveUserChanges()" 
+                                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-save mr-2"></i>Save Changes
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Admin Configuration Content -->
                 <div id="adminConfigContent" class="tab-content hidden">
                     <div class="mb-4">
@@ -1091,72 +1221,74 @@
                             </div>
                         </div>
                         
-                        <!-- Role Management Section -->
+                        <!-- User-Level Department Access Management -->
                         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                             <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                                <i class="fas fa-users mr-2 text-blue-600"></i>
-                                Role & Department Access Management
+                                <i class="fas fa-user-cog mr-2 text-blue-600"></i>
+                                User Department Access Management
                             </h3>
                             
-                            <!-- Role Selection -->
+                            <!-- User Selection for Department Access -->
                             <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Select Role to Configure:</label>
-                                <div class="flex flex-wrap gap-2">
-                                    <button onclick="selectRole('admin')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="admin">
-                                        <i class="fas fa-crown mr-2"></i>Admin
-                                    </button>
-                                    <button onclick="selectRole('chief')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="chief">
-                                        <i class="fas fa-star mr-2"></i>Chief
-                                    </button>
-                                    <button onclick="selectRole('strategy')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="strategy">
-                                        <i class="fas fa-chess mr-2"></i>Strategy
-                                    </button>
-                                    <button onclick="selectRole('operations')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="operations">
-                                        <i class="fas fa-cogs mr-2"></i>Operations
-                                    </button>
-                                    <button onclick="selectRole('ppm')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="ppm">
-                                        <i class="fas fa-chart-line mr-2"></i>PPM
-                                    </button>
-                                    <button onclick="selectRole('finance')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="finance">
-                                        <i class="fas fa-dollar-sign mr-2"></i>Finance
-                                    </button>
-                                    <button onclick="selectRole('bpt')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="bpt">
-                                        <i class="fas fa-bullseye mr-2"></i>BPT
-                                    </button>
-                                    <button onclick="selectRole('procurement')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="procurement">
-                                        <i class="fas fa-shopping-cart mr-2"></i>Procurement
-                                    </button>
-                                    <button onclick="selectRole('warehouse')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="warehouse">
-                                        <i class="fas fa-warehouse mr-2"></i>Warehouse
-                                    </button>
-                                    <button onclick="selectRole('ppr')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="ppr">
-                                        <i class="fas fa-sitemap mr-2"></i>PPR
-                                    </button>
-                                    <button onclick="selectRole('academy')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="academy">
-                                        <i class="fas fa-graduation-cap mr-2"></i>Academy
-                                    </button>
+                                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                                    <div class="flex-1">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Search User to Configure Access:</label>
+                                        <input type="text" id="userAccessSearch" placeholder="Search by name or email..." 
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                               oninput="searchUsersForAccess()">
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Or Select from List:</label>
+                                        <select id="userAccessSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                onchange="selectUserForAccess()">
+                                            <option value="">Choose a user...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- User Search Results -->
+                                <div id="userAccessSearchResults" class="hidden mb-4">
+                                    <h5 class="text-sm font-medium text-gray-700 mb-2">Search Results:</h5>
+                                    <div id="userAccessSearchList" class="max-h-32 overflow-y-auto border border-gray-200 rounded-lg">
+                                        <!-- Search results will be populated here -->
+                                    </div>
                                 </div>
                             </div>
                             
-                            <!-- Department Access Configuration -->
-                            <div id="departmentConfig" class="hidden">
-                                <h4 class="text-lg font-medium text-gray-800 mb-4">Department Access for <span id="selectedRoleName" class="text-blue-600 font-semibold"></span> Role:</h4>
+                            <!-- Selected User Department Access Configuration -->
+                            <div id="userDepartmentConfig" class="hidden">
+                                <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-200">
+                                    <h4 class="text-lg font-medium text-gray-800 mb-2 flex items-center">
+                                        <i class="fas fa-user mr-2 text-blue-600"></i>
+                                        Configuring access for: <span id="selectedUserName" class="text-blue-600 font-semibold ml-2"></span>
+                                    </h4>
+                                    <div class="text-sm text-gray-600">
+                                        <p><strong>Email:</strong> <span id="selectedUserEmail"></span></p>
+                                        <p><strong>Role:</strong> <span id="selectedUserRole" class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"></span></p>
+                                        <p><strong>Status:</strong> <span id="selectedUserStatus"></span></p>
+                                    </div>
+                                </div>
                                 
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" id="departmentCheckboxes">
-                                    <!-- Department checkboxes will be dynamically generated -->
+                                <h5 class="text-md font-medium text-gray-800 mb-4">Department Access Permissions:</h5>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" id="userDepartmentCheckboxes">
+                                    <!-- User-specific department checkboxes will be dynamically generated -->
                                 </div>
                                 
                                 <div class="flex justify-between items-center pt-4 border-t border-gray-200">
                                     <div class="flex gap-2">
-                                        <button onclick="selectAllDepartments()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                        <button onclick="selectAllUserDepartments()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
                                             <i class="fas fa-check-double mr-2"></i>Select All
                                         </button>
-                                        <button onclick="deselectAllDepartments()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                        <button onclick="deselectAllUserDepartments()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
                                             <i class="fas fa-times mr-2"></i>Deselect All
                                         </button>
+                                        <button onclick="resetToRoleDefaults()" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                                            <i class="fas fa-undo mr-2"></i>Reset to Role Defaults
+                                        </button>
                                     </div>
-                                    <button onclick="saveRoleConfiguration()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                        <i class="fas fa-save mr-2"></i>Save Configuration
+                                    <button onclick="saveUserDepartmentAccess()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-save mr-2"></i>Save User Access
                                     </button>
                                 </div>
                             </div>
@@ -1200,6 +1332,385 @@
                             </div>
                         </div>
                         
+                        <!-- User Management Section -->
+                        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-users-cog mr-2 text-indigo-600"></i>
+                                User Management System
+                            </h3>
+                            
+                            <!-- User Management Tabs -->
+                            <div class="mb-6">
+                                <div class="flex border-b border-gray-200">
+                                    <button onclick="switchUserManagementTab('userList')" 
+                                            class="user-mgmt-tab px-4 py-2 font-medium text-sm border-b-2 transition-colors active" 
+                                            data-tab="userList">
+                                        <i class="fas fa-list mr-2"></i>User List
+                                    </button>
+                                    <button onclick="switchUserManagementTab('addUser')" 
+                                            class="user-mgmt-tab px-4 py-2 font-medium text-sm border-b-2 transition-colors" 
+                                            data-tab="addUser">
+                                        <i class="fas fa-user-plus mr-2"></i>Add User
+                                    </button>
+                                    <button onclick="switchUserManagementTab('loginLogs')" 
+                                            class="user-mgmt-tab px-4 py-2 font-medium text-sm border-b-2 transition-colors" 
+                                            data-tab="loginLogs">
+                                        <i class="fas fa-history mr-2"></i>Login Logs
+                                    </button>
+                                    <button onclick="switchUserManagementTab('userImport')" 
+                                            class="user-mgmt-tab px-4 py-2 font-medium text-sm border-b-2 transition-colors" 
+                                            data-tab="userImport">
+                                        <i class="fas fa-file-import mr-2"></i>Import/Export
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- User List Tab -->
+                            <div id="userListTab" class="user-mgmt-content">
+                                <div class="mb-4">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <div class="flex gap-4">
+                                            <input type="text" id="userSearchInput" placeholder="Search users..." 
+                                                   class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                   oninput="filterUsers()">
+                                            <select id="userRoleFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                    onchange="filterUsers()">
+                                                <option value="">All Roles</option>
+                                                <option value="admin">Admin</option>
+                                                <option value="chief">Chief</option>
+                                                <option value="strategy">Strategy</option>
+                                                <option value="operations">Operations</option>
+                                                <option value="ppm">PPM</option>
+                                                <option value="finance">Finance</option>
+                                                <option value="bpt">BPT</option>
+                                                <option value="procurement">Procurement</option>
+                                                <option value="warehouse">Warehouse</option>
+                                                <option value="ppr">PPR</option>
+                                                <option value="academy">Academy</option>
+                                            </select>
+                                            <select id="userStatusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                    onchange="filterUsers()">
+                                                <option value="">All Status</option>
+                                                <option value="active">Active</option>
+                                                <option value="inactive">Inactive</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button onclick="syncUsersFromGoogleSheets()" 
+                                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                                <i class="fas fa-sync mr-2"></i>Sync from Google Sheets
+                                            </button>
+                                            <button onclick="refreshUserList()" 
+                                                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                                <i class="fas fa-refresh mr-2"></i>Refresh
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- User Statistics -->
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                            <div class="text-2xl font-bold text-blue-600" id="totalUsersCount">0</div>
+                                            <div class="text-sm text-blue-600">Total Users</div>
+                                        </div>
+                                        <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                                            <div class="text-2xl font-bold text-green-600" id="activeUsersCount">0</div>
+                                            <div class="text-sm text-green-600">Active Users</div>
+                                        </div>
+                                        <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                                            <div class="text-2xl font-bold text-red-600" id="inactiveUsersCount">0</div>
+                                            <div class="text-sm text-red-600">Inactive Users</div>
+                                        </div>
+                                        <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                                            <div class="text-2xl font-bold text-purple-600" id="adminUsersCount">0</div>
+                                            <div class="text-sm text-purple-600">Admin Users</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Users Table -->
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white border border-gray-300 rounded-lg">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="usersTableBody" class="divide-y divide-gray-200">
+                                            <!-- Users will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Pagination -->
+                                <div class="flex justify-between items-center mt-4">
+                                    <div class="text-sm text-gray-700">
+                                        Showing <span id="userShowingStart">0</span> to <span id="userShowingEnd">0</span> of <span id="userTotalCount">0</span> users
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button id="userPrevBtn" onclick="changeUserPage(-1)" 
+                                                class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            Previous
+                                        </button>
+                                        <span id="userPageInfo" class="px-3 py-1 text-gray-600">Page 1 of 1</span>
+                                        <button id="userNextBtn" onclick="changeUserPage(1)" 
+                                                class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Add User Tab -->
+                            <div id="addUserTab" class="user-mgmt-content hidden">
+                                <div class="max-w-2xl">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                                            <input type="text" id="newUserName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                   placeholder="Enter full name">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                                            <input type="email" id="newUserEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                   placeholder="Enter email address">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Password *</label>
+                                            <div class="relative">
+                                                <input type="password" id="newUserPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10" 
+                                                       placeholder="Enter password">
+                                                <button type="button" onclick="togglePasswordVisibility('newUserPassword')" 
+                                                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Role *</label>
+                                            <select id="newUserRole" onchange="onNewUserRoleChange()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                <option value="">Select Role</option>
+                                                <option value="admin">Admin</option>
+                                                <option value="chief">Chief</option>
+                                                <option value="strategy">Strategy</option>
+                                                <option value="operations">Operations</option>
+                                                <option value="ppm">PPM</option>
+                                                <option value="finance">Finance</option>
+                                                <option value="bpt">BPT</option>
+                                                <option value="procurement">Procurement</option>
+                                                <option value="warehouse">Warehouse</option>
+                                                <option value="ppr">PPR</option>
+                                                <option value="academy">Academy</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Status *</label>
+                                            <select id="newUserStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                <option value="active">Active</option>
+                                                <option value="inactive">Inactive</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Employee ID</label>
+                                            <input type="text" id="newUserEmployeeId" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                   placeholder="Enter employee ID (optional)">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-6">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                                        <textarea id="newUserNotes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                  placeholder="Additional notes about the user (optional)"></textarea>
+                                    </div>
+                                    
+                                    <!-- Department Access Permissions -->
+                                    <div class="mt-6">
+                                        <h4 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                                            <i class="fas fa-key mr-2 text-blue-600"></i>
+                                            Department Access Permissions
+                                        </h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-gray-50 rounded-lg border" id="newUserDepartmentAccess">
+                                            <div class="text-gray-500 text-center col-span-full py-8">
+                                                Please select a role first to see department access options
+                                            </div>
+                                        </div>
+                                        <div class="mt-3 flex gap-2">
+                                            <button type="button" onclick="selectAllNewUserDepartments()" 
+                                                    class="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+                                                <i class="fas fa-check-double mr-1"></i>All
+                                            </button>
+                                            <button type="button" onclick="deselectAllNewUserDepartments()" 
+                                                    class="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+                                                <i class="fas fa-times mr-1"></i>None
+                                            </button>
+                                            <button type="button" onclick="resetNewUserToRoleDefaults()" 
+                                                    class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                                                <i class="fas fa-undo mr-1"></i>Role Defaults
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex gap-4 mt-6">
+                                        <button onclick="addNewUser()" 
+                                                class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                            <i class="fas fa-user-plus mr-2"></i>Add User
+                                        </button>
+                                        <button onclick="clearAddUserForm()" 
+                                                class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                            <i class="fas fa-times mr-2"></i>Clear Form
+                                        </button>
+                                        <button onclick="generateRandomPassword()" 
+                                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                            <i class="fas fa-random mr-2"></i>Generate Password
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Login Logs Tab -->
+                            <div id="loginLogsTab" class="user-mgmt-content hidden">
+                                <div class="mb-4">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <div class="flex gap-4">
+                                            <input type="text" id="logSearchInput" placeholder="Search by user or IP..." 
+                                                   class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                   oninput="filterLoginLogs()">
+                                            <select id="logTypeFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                    onchange="filterLoginLogs()">
+                                                <option value="">All Events</option>
+                                                <option value="login">Login</option>
+                                                <option value="logout">Logout</option>
+                                                <option value="failed_login">Failed Login</option>
+                                            </select>
+                                            <input type="date" id="logDateFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                   onchange="filterLoginLogs()">
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button onclick="exportLoginLogs()" 
+                                                    class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                                <i class="fas fa-download mr-2"></i>Export Logs
+                                            </button>
+                                            <button onclick="clearLoginLogs()" 
+                                                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                                <i class="fas fa-trash mr-2"></i>Clear Logs
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Login Logs Table -->
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white border border-gray-300 rounded-lg">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Agent</th>
+                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="loginLogsTableBody" class="divide-y divide-gray-200">
+                                            <!-- Login logs will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Logs Pagination -->
+                                <div class="flex justify-between items-center mt-4">
+                                    <div class="text-sm text-gray-700">
+                                        Showing <span id="logShowingStart">0</span> to <span id="logShowingEnd">0</span> of <span id="logTotalCount">0</span> logs
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button id="logPrevBtn" onclick="changeLogPage(-1)" 
+                                                class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            Previous
+                                        </button>
+                                        <span id="logPageInfo" class="px-3 py-1 text-gray-600">Page 1 of 1</span>
+                                        <button id="logNextBtn" onclick="changeLogPage(1)" 
+                                                class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Import/Export Tab -->
+                            <div id="userImportTab" class="user-mgmt-content hidden">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Import Users -->
+                                    <div class="p-6 border border-gray-300 rounded-lg">
+                                        <h4 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                                            <i class="fas fa-upload mr-2 text-green-600"></i>Import Users
+                                        </h4>
+                                        <div class="space-y-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Import from Google Sheets</label>
+                                                <div class="flex gap-2">
+                                                    <input type="url" id="googleSheetsUrl" placeholder="Google Sheets CSV URL" 
+                                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                                    <button onclick="importFromGoogleSheets()" 
+                                                            class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                                        <i class="fas fa-sync mr-2"></i>Import
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Import from CSV File</label>
+                                                <input type="file" id="userCsvFile" accept=".csv" 
+                                                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                                                <button onclick="importUsersFromCsv()" 
+                                                        class="mt-2 w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                                    <i class="fas fa-upload mr-2"></i>Import CSV
+                                                </button>
+                                            </div>
+                                            <div class="text-xs text-gray-500">
+                                                <p><strong>CSV Format:</strong> Name, Email, Status, Role, Date, Manager, EmployeeID, Password</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Export Users -->
+                                    <div class="p-6 border border-gray-300 rounded-lg">
+                                        <h4 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                                            <i class="fas fa-download mr-2 text-blue-600"></i>Export Users
+                                        </h4>
+                                        <div class="space-y-4">
+                                            <button onclick="exportUsersToJson()" 
+                                                    class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                                <i class="fas fa-download mr-2"></i>Export as JSON
+                                            </button>
+                                            <button onclick="exportUsersToCsv()" 
+                                                    class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                                <i class="fas fa-file-csv mr-2"></i>Export as CSV
+                                            </button>
+                                            <button onclick="exportUsersToGoogleSheets()" 
+                                                    class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                                                <i class="fas fa-external-link-alt mr-2"></i>Generate Google Sheets Format
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Sync Status -->
+                                <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <h5 class="font-medium text-yellow-800 mb-2">Sync Information</h5>
+                                    <div class="text-sm text-yellow-700">
+                                        <p><strong>Last Sync:</strong> <span id="lastSyncTime">Never</span></p>
+                                        <p><strong>Google Sheets URL:</strong> <span id="currentGoogleSheetsUrl">Not configured</span></p>
+                                        <p><strong>Local Users:</strong> <span id="localUsersCount">0</span></p>
+                                        <p><strong>Note:</strong> Changes made here are stored locally. To sync with Google Sheets, use the import/export functions.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Configuration Export/Import -->
                         <div class="bg-white rounded-lg shadow-md p-6">
                             <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
@@ -1239,7 +1750,22 @@
     <script>
         let currentUser = null;
         let currentUserRole = null;
+        let currentUserName = null;
         let currentSelectedRole = null;
+        
+        // Global tabs definition
+        let allTabs = [
+            { id: 'operations', name: 'Operations', icon: 'fas fa-cogs' },
+            { id: 'ppm', name: 'PPM', icon: 'fas fa-chart-line' },
+            { id: 'strategy', name: 'Strategy', icon: 'fas fa-chess' },
+            { id: 'finance', name: 'Finance', icon: 'fas fa-dollar-sign' },
+            { id: 'bpt', name: 'BPT', icon: 'fas fa-bullseye' },
+            { id: 'procurement', name: 'Procurement', icon: 'fas fa-shopping-cart' },
+            { id: 'warehouseApd', name: 'Warehouse APD', icon: 'fas fa-warehouse' },
+            { id: 'ppr', name: 'PPR', icon: 'fas fa-sitemap' },
+            { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
+            { id: 'adminConfig', name: 'Admin Config', icon: 'fas fa-cogs' }
+        ];
         
         // Default department access configuration
         let departmentAccessConfig = {
@@ -1256,6 +1782,19 @@
             academy: ['academy']
         };
         
+        // User Management System Variables
+        let userManagementData = {
+            users: [],
+            filteredUsers: [],
+            loginLogs: [],
+            filteredLogs: [],
+            currentUserPage: 1,
+            currentLogPage: 1,
+            usersPerPage: 10,
+            logsPerPage: 20,
+            googleSheetsUrl: 'https://docs.google.com/spreadsheets/d/1_ve_N74hK1KBMk_Rz_jVDRuLn_kDk13FUROkeNKR5P4/export?format=csv'
+        };
+        
         // Load configuration from localStorage if available
         function loadConfiguration() {
             const savedConfig = localStorage.getItem('departmentAccessConfig');
@@ -1265,6 +1804,28 @@
                     console.log('✅ Configuration loaded from localStorage');
                 } catch (error) {
                     console.error('❌ Error loading configuration from localStorage:', error);
+                }
+            }
+            
+            // Load user management data
+            const savedUsers = localStorage.getItem('userManagementData');
+            if (savedUsers) {
+                try {
+                    userManagementData = JSON.parse(savedUsers);
+                    console.log('✅ User management data loaded from localStorage');
+                } catch (error) {
+                    console.error('❌ Error loading user management data:', error);
+                }
+            }
+            
+            // Load login logs
+            const savedLogs = localStorage.getItem('loginLogs');
+            if (savedLogs) {
+                try {
+                    userManagementData.loginLogs = JSON.parse(savedLogs);
+                    console.log('✅ Login logs loaded from localStorage');
+                } catch (error) {
+                    console.error('❌ Error loading login logs:', error);
                 }
             }
         }
@@ -1280,15 +1841,80 @@
                 return false;
             }
         }
+        
+        // Save user management data
+        function saveUserManagementData() {
+            try {
+                localStorage.setItem('userManagementData', JSON.stringify(userManagementData));
+                localStorage.setItem('loginLogs', JSON.stringify(userManagementData.loginLogs));
+                console.log('✅ User management data saved to localStorage');
+                return true;
+            } catch (error) {
+                console.error('❌ Error saving user management data:', error);
+                return false;
+            }
+        }
+        
+        // Log user activity
+        function logUserActivity(email, eventType, details = {}) {
+            const logEntry = {
+                id: Date.now() + Math.random().toString(36).substr(2, 9),
+                timestamp: new Date().toISOString(),
+                email: email,
+                eventType: eventType, // 'login', 'logout', 'failed_login', 'password_change', etc.
+                ipAddress: details.ipAddress || 'Unknown',
+                userAgent: details.userAgent || navigator.userAgent,
+                details: details
+            };
+            
+            userManagementData.loginLogs.unshift(logEntry); // Add to beginning of array
+            
+            // Keep only last 1000 logs to prevent excessive storage
+            if (userManagementData.loginLogs.length > 1000) {
+                userManagementData.loginLogs = userManagementData.loginLogs.slice(0, 1000);
+            }
+            
+            saveUserManagementData();
+            console.log('📝 User activity logged:', logEntry);
+        }
 
-        // Authentication System
+        // Enhanced Authentication System
         async function authenticateUser(email, password) {
             try {
+                // Get user IP for logging
+                const userIP = await getUserIP();
+                
+                // First check local user management system
+                const localUser = userManagementData.users.find(u => 
+                    u.email === email.toLowerCase() && 
+                    u.password === password && 
+                    u.status === 'active'
+                );
+                
+                if (localUser) {
+                    // Update user login statistics
+                    localUser.lastLogin = new Date().toISOString();
+                    localUser.loginCount = (localUser.loginCount || 0) + 1;
+                    saveUserManagementData();
+                    
+                    // Log successful login
+                    logUserActivity(localUser.email, 'login', {
+                        ipAddress: userIP,
+                        loginCount: localUser.loginCount,
+                        userAgent: navigator.userAgent,
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    console.log('✅ Local user authenticated:', localUser.email);
+                    return { email: localUser.email, role: localUser.role, name: localUser.name };
+                }
+                
+                // Fallback to Google Sheets authentication
+                console.log('🔄 Checking Google Sheets authentication...');
                 const response = await fetch('https://docs.google.com/spreadsheets/d/1_ve_N74hK1KBMk_Rz_jVDRuLn_kDk13FUROkeNKR5P4/export?format=csv');
                 const csvData = await response.text();
                 
                 const lines = csvData.trim().split('\n');
-                const headers = lines[0].split(',');
                 
                 for (let i = 1; i < lines.length; i++) {
                     const row = lines[i].split(',');
@@ -1296,16 +1922,47 @@
                     const status = row[1]?.trim();
                     const role = row[2]?.trim();
                     const userPassword = row[6]?.trim();
+                    const userName = row[0]?.trim(); // Assuming first column has name
                     
                     if (userEmail === email.toLowerCase() && 
                         userPassword === password && 
                         status.toLowerCase() === 'active') {
-                        return { email: userEmail, role: role };
+                        
+                        // Log successful login from Google Sheets user
+                        logUserActivity(userEmail, 'login', {
+                            ipAddress: userIP,
+                            source: 'google_sheets',
+                            userAgent: navigator.userAgent,
+                            timestamp: new Date().toISOString()
+                        });
+                        
+                        console.log('✅ Google Sheets user authenticated:', userEmail);
+                        return { email: userEmail, role: role, name: userName };
                     }
                 }
+                
+                // Log failed login attempt
+                logUserActivity(email, 'failed_login', {
+                    ipAddress: userIP,
+                    reason: 'invalid_credentials',
+                    userAgent: navigator.userAgent,
+                    timestamp: new Date().toISOString()
+                });
+                
                 return null;
             } catch (error) {
                 console.error('Authentication error:', error);
+                
+                // Log authentication error
+                const userIP = await getUserIP();
+                logUserActivity(email, 'failed_login', {
+                    ipAddress: userIP,
+                    reason: 'authentication_error',
+                    error: error.message,
+                    userAgent: navigator.userAgent,
+                    timestamp: new Date().toISOString()
+                });
+                
                 return null;
             }
         }
@@ -1318,6 +1975,9 @@
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
             const errorText = document.getElementById('errorText');
+            const loginButton = document.getElementById('loginButton');
+            const loginButtonContent = document.getElementById('loginButtonContent');
+            const loginLoadingContent = document.getElementById('loginLoadingContent');
             
             errorMessage.classList.add('hidden');
             
@@ -1327,18 +1987,34 @@
                 return;
             }
             
+            // Show loading state
+            loginButton.disabled = true;
+            loginButtonContent.classList.add('hidden');
+            loginLoadingContent.classList.remove('hidden');
+            
             try {
                 const user = await authenticateUser(email, password);
                 
                 if (user) {
                     currentUser = user.email;
                     currentUserRole = user.role;
+                    currentUserName = user.name;
                     showDashboard();
                 } else {
+                    // Hide loading state on error
+                    loginButton.disabled = false;
+                    loginButtonContent.classList.remove('hidden');
+                    loginLoadingContent.classList.add('hidden');
+                    
                     errorText.textContent = 'Invalid credentials. Please check your email and password.';
                     errorMessage.classList.remove('hidden');
                 }
             } catch (error) {
+                // Hide loading state on error
+                loginButton.disabled = false;
+                loginButtonContent.classList.remove('hidden');
+                loginLoadingContent.classList.add('hidden');
+                
                 errorText.textContent = 'Authentication failed. Please try again.';
                 errorMessage.classList.remove('hidden');
             }
@@ -1361,6 +2037,9 @@
             // Load configuration first
             loadConfiguration();
             
+            // Store login time for session tracking
+            localStorage.setItem('loginTime', Date.now());
+            
             document.getElementById('loginPage').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
             
@@ -1379,19 +2058,6 @@
         function generateTabs() {
             const tabNavigation = document.getElementById('tabNavigation');
             tabNavigation.innerHTML = '';
-            
-            let allTabs = [
-                { id: 'operations', name: 'Operations', icon: 'fas fa-cogs' },
-                { id: 'ppm', name: 'PPM', icon: 'fas fa-chart-line' },
-                { id: 'strategy', name: 'Strategy', icon: 'fas fa-chess' },
-                { id: 'finance', name: 'Finance', icon: 'fas fa-dollar-sign' },
-                { id: 'bpt', name: 'BPT', icon: 'fas fa-bullseye' },
-                { id: 'procurement', name: 'Procurement', icon: 'fas fa-shopping-cart' },
-                { id: 'warehouseApd', name: 'Warehouse APD', icon: 'fas fa-warehouse' },
-                { id: 'ppr', name: 'PPR', icon: 'fas fa-sitemap' },
-                { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
-                { id: 'adminConfig', name: 'Admin Config', icon: 'fas fa-cogs' }
-            ];
             
             // Load custom tabs from localStorage
             const savedTabs = localStorage.getItem('customTabs');
@@ -1422,16 +2088,25 @@
             });
         }
 
-        // Get Accessible Tabs Based on Role (now uses dynamic configuration)
+        // Get Accessible Tabs Based on User-Level Permissions
         function getAccessibleTabs() {
             const role = currentUserRole?.toLowerCase();
             
-            // Use dynamic configuration if available
+            // First, try to find user-specific permissions
+            const user = userManagementData.users.find(u => u.email === currentUser?.toLowerCase());
+            if (user && user.departmentAccess && user.departmentAccess.length > 0) {
+                console.log(`✅ Using user-level permissions for ${user.email}:`, user.departmentAccess);
+                return user.departmentAccess;
+            }
+            
+            // Fall back to role-based configuration
             if (departmentAccessConfig[role]) {
+                console.log(`✅ Using role-based permissions for ${role}:`, departmentAccessConfig[role]);
                 return departmentAccessConfig[role];
             }
             
             // Fallback to default configuration for backward compatibility
+            console.log(`⚠️ Using fallback permissions for ${role}`);
             switch (role) {
                 case 'admin':
                     return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig'];
@@ -1509,6 +2184,11 @@
             // Initialize admin config tab if needed
             if (tabId === 'adminConfig' && currentUserRole?.toLowerCase() === 'admin') {
                 updateCurrentDepartmentsList();
+                // Initialize user management tab if not already done
+                if (userManagementData.users.length === 0) {
+                    syncUsersFromGoogleSheets();
+                }
+                switchUserManagementTab('userList');
             }
             
             // Add active class to selected tab
@@ -1654,14 +2334,1271 @@
             window.open(url, '_blank');
         }
 
-        function logout() {
+        async function logout() {
+            // Log logout event
+            if (currentUser) {
+                const userIP = await getUserIP();
+                logUserActivity(currentUser, 'logout', {
+                    ipAddress: userIP,
+                    userAgent: navigator.userAgent,
+                    sessionDuration: Date.now() - (localStorage.getItem('loginTime') || Date.now()),
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
+            // Clear session data
             currentUser = null;
             currentUserRole = null;
+            currentUserName = null;
+            localStorage.removeItem('loginTime');
+            
+            // Reset UI
             document.getElementById('dashboard').classList.add('hidden');
             document.getElementById('loginPage').classList.remove('hidden');
             document.getElementById('email').value = '';
             document.getElementById('password').value = '';
             document.getElementById('errorMessage').classList.add('hidden');
+        }
+
+        // User Management Functions
+        function switchUserManagementTab(tabName) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.user-mgmt-tab').forEach(tab => {
+                tab.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                tab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            });
+            
+            // Hide all tab contents
+            document.querySelectorAll('.user-mgmt-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Show selected tab
+            const selectedTab = document.querySelector(`[data-tab="${tabName}"]`);
+            if (selectedTab) {
+                selectedTab.classList.add('active', 'border-blue-500', 'text-blue-600');
+                selectedTab.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            }
+            
+            const contentElement = document.getElementById(tabName + 'Tab');
+            if (contentElement) {
+                contentElement.classList.remove('hidden');
+            }
+            
+            // Initialize tab-specific data
+            if (tabName === 'userList') {
+                refreshUserList();
+                populateUserAccessSelect(); // Ensure user access dropdown is populated
+            } else if (tabName === 'loginLogs') {
+                refreshLoginLogs();
+            } else if (tabName === 'userImport') {
+                updateSyncInformation();
+            }
+        }
+        
+        async function syncUsersFromGoogleSheets() {
+            try {
+                showConfigStatus('Syncing users from Google Sheets...', 'info');
+                
+                const response = await fetch(userManagementData.googleSheetsUrl);
+                const csvData = await response.text();
+                
+                const users = parseUsersFromCsv(csvData);
+                userManagementData.users = users;
+                userManagementData.filteredUsers = [...users];
+                
+                saveUserManagementData();
+                refreshUserList();
+                updateUserStatistics();
+                
+                showConfigStatus(`Successfully synced ${users.length} users from Google Sheets`, 'success');
+                
+            } catch (error) {
+                console.error('Error syncing users from Google Sheets:', error);
+                showConfigStatus('Error syncing users from Google Sheets', 'error');
+            }
+        }
+        
+        function parseUsersFromCsv(csvData) {
+            const lines = csvData.trim().split('\n');
+            const users = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const values = parseCSVLine(line);
+                if (values.length >= 8) {
+                    const role = values[3]?.trim().toLowerCase() || 'user';
+                    
+                    // Get default department access for this role
+                    const defaultDepartments = departmentAccessConfig[role] || ['operations'];
+                    
+                    const user = {
+                        id: Date.now() + Math.random().toString(36).substr(2, 9),
+                        name: values[0]?.trim() || '',
+                        email: values[1]?.trim().toLowerCase() || '',
+                        status: values[2]?.trim().toLowerCase() || 'active',
+                        role: role,
+                        dateAdded: values[4]?.trim() || new Date().toISOString().split('T')[0],
+                        manager: values[5]?.trim() || '',
+                        employeeId: values[6]?.trim() || '',
+                        password: values[7]?.trim() || '',
+                        // Add user-level department access
+                        departmentAccess: [...defaultDepartments],
+                        lastLogin: null,
+                        loginCount: 0,
+                        notes: '',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    if (user.email && user.name) {
+                        users.push(user);
+                    }
+                }
+            }
+            
+            return users;
+        }
+        
+        function parseCSVLine(line) {
+            const values = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    values.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            values.push(current);
+            return values;
+        }
+        
+        function refreshUserList() {
+            filterUsers();
+            updateUserStatistics();
+        }
+        
+        function filterUsers() {
+            const searchTerm = document.getElementById('userSearchInput')?.value.toLowerCase() || '';
+            const roleFilter = document.getElementById('userRoleFilter')?.value || '';
+            const statusFilter = document.getElementById('userStatusFilter')?.value || '';
+            
+            userManagementData.filteredUsers = userManagementData.users.filter(user => {
+                const matchesSearch = user.name.toLowerCase().includes(searchTerm) || 
+                                    user.email.toLowerCase().includes(searchTerm);
+                const matchesRole = !roleFilter || user.role === roleFilter;
+                const matchesStatus = !statusFilter || user.status === statusFilter;
+                
+                return matchesSearch && matchesRole && matchesStatus;
+            });
+            
+            userManagementData.currentUserPage = 1;
+            displayUsers();
+            updateUserPagination();
+        }
+        
+        function displayUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            const startIndex = (userManagementData.currentUserPage - 1) * userManagementData.usersPerPage;
+            const endIndex = Math.min(startIndex + userManagementData.usersPerPage, userManagementData.filteredUsers.length);
+            
+            for (let i = startIndex; i < endIndex; i++) {
+                const user = userManagementData.filteredUsers[i];
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 cursor-pointer';
+                row.onclick = () => openUserEditModal(user);
+                
+                const statusColor = user.status === 'active' ? 'green' : 'red';
+                const roleColor = user.role === 'admin' ? 'purple' : 'blue';
+                
+                row.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-medium text-sm mr-3">
+                                ${user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">${user.name}</div>
+                                <div class="text-sm text-gray-500">${user.employeeId || 'No ID'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${user.email}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${roleColor}-100 text-${roleColor}-800">
+                            ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${statusColor}-100 text-${statusColor}-800">
+                            <i class="fas fa-${user.status === 'active' ? 'check' : 'times'} mr-1"></i>
+                            ${user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        ${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
+                        <button onclick="event.stopPropagation(); openUserEditModal(userManagementData.filteredUsers[${startIndex + (i - startIndex)}])" 
+                                class="text-blue-600 hover:text-blue-800 mr-3">
+                            <i class="fas fa-edit mr-1"></i>Edit
+                        </button>
+                        <button onclick="event.stopPropagation(); toggleUserStatus('${user.id}')" 
+                                class="text-${user.status === 'active' ? 'red' : 'green'}-600 hover:text-${user.status === 'active' ? 'red' : 'green'}-800">
+                            <i class="fas fa-${user.status === 'active' ? 'ban' : 'check'} mr-1"></i>
+                            ${user.status === 'active' ? 'Disable' : 'Enable'}
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            }
+        }
+        
+        function updateUserStatistics() {
+            const totalUsers = userManagementData.users.length;
+            const activeUsers = userManagementData.users.filter(u => u.status === 'active').length;
+            const inactiveUsers = userManagementData.users.filter(u => u.status === 'inactive').length;
+            const adminUsers = userManagementData.users.filter(u => u.role === 'admin').length;
+            
+            const totalElement = document.getElementById('totalUsersCount');
+            const activeElement = document.getElementById('activeUsersCount');
+            const inactiveElement = document.getElementById('inactiveUsersCount');
+            const adminElement = document.getElementById('adminUsersCount');
+            
+            if (totalElement) totalElement.textContent = totalUsers;
+            if (activeElement) activeElement.textContent = activeUsers;
+            if (inactiveElement) inactiveElement.textContent = inactiveUsers;
+            if (adminElement) adminElement.textContent = adminUsers;
+        }
+        
+        function updateUserPagination() {
+            const totalRecords = userManagementData.filteredUsers.length;
+            const totalPages = Math.ceil(totalRecords / userManagementData.usersPerPage);
+            const startIndex = (userManagementData.currentUserPage - 1) * userManagementData.usersPerPage + 1;
+            const endIndex = Math.min(userManagementData.currentUserPage * userManagementData.usersPerPage, totalRecords);
+            
+            const startElement = document.getElementById('userShowingStart');
+            const endElement = document.getElementById('userShowingEnd');
+            const totalElement = document.getElementById('userTotalCount');
+            const pageInfoElement = document.getElementById('userPageInfo');
+            const prevBtn = document.getElementById('userPrevBtn');
+            const nextBtn = document.getElementById('userNextBtn');
+            
+            if (startElement) startElement.textContent = totalRecords > 0 ? startIndex : 0;
+            if (endElement) endElement.textContent = endIndex;
+            if (totalElement) totalElement.textContent = totalRecords;
+            if (pageInfoElement) pageInfoElement.textContent = `Page ${userManagementData.currentUserPage} of ${totalPages}`;
+            
+            if (prevBtn) prevBtn.disabled = userManagementData.currentUserPage === 1;
+            if (nextBtn) nextBtn.disabled = userManagementData.currentUserPage === totalPages || totalPages === 0;
+        }
+        
+        function changeUserPage(direction) {
+            const totalPages = Math.ceil(userManagementData.filteredUsers.length / userManagementData.usersPerPage);
+            
+            if (direction === -1 && userManagementData.currentUserPage > 1) {
+                userManagementData.currentUserPage--;
+            } else if (direction === 1 && userManagementData.currentUserPage < totalPages) {
+                userManagementData.currentUserPage++;
+            }
+            
+            displayUsers();
+            updateUserPagination();
+        }
+        
+        function addNewUser() {
+            const name = document.getElementById('newUserName').value.trim();
+            const email = document.getElementById('newUserEmail').value.trim();
+            const password = document.getElementById('newUserPassword').value;
+            const role = document.getElementById('newUserRole').value;
+            const status = document.getElementById('newUserStatus').value;
+            const employeeId = document.getElementById('newUserEmployeeId').value.trim();
+            const notes = document.getElementById('newUserNotes').value.trim();
+            
+            if (!name || !email || !password || !role) {
+                showConfigStatus('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            // Check if email already exists
+            if (userManagementData.users.find(u => u.email === email.toLowerCase())) {
+                showConfigStatus('A user with this email already exists', 'error');
+                return;
+            }
+            
+            // Get custom department access from user selections (or role defaults if none selected)
+            const customDepartmentAccess = getCurrentNewUserDepartmentAccess();
+            const departmentAccess = customDepartmentAccess.length > 0 ? customDepartmentAccess : (departmentAccessConfig[role] || ['operations']);
+            
+            const newUser = {
+                id: Date.now() + Math.random().toString(36).substr(2, 9),
+                name: name,
+                email: email.toLowerCase(),
+                password: password,
+                role: role,
+                status: status,
+                employeeId: employeeId,
+                notes: notes,
+                // Add department access with custom selections
+                departmentAccess: [...departmentAccess],
+                lastLogin: null,
+                loginCount: 0,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            userManagementData.users.push(newUser);
+            saveUserManagementData();
+            
+            // Log the user creation
+            logUserActivity(currentUser, 'user_created', {
+                targetUser: email,
+                role: role,
+                status: status,
+                departmentAccess: departmentAccess
+            });
+            
+            clearAddUserForm();
+            refreshUserList();
+            populateUserAccessSelect(); // Update the user access select dropdown
+            showConfigStatus(`User ${name} added successfully with ${role} role defaults`, 'success');
+        }
+        
+        function clearAddUserForm() {
+            document.getElementById('newUserName').value = '';
+            document.getElementById('newUserEmail').value = '';
+            document.getElementById('newUserPassword').value = '';
+            document.getElementById('newUserRole').value = '';
+            document.getElementById('newUserStatus').value = 'active';
+            document.getElementById('newUserEmployeeId').value = '';
+            document.getElementById('newUserNotes').value = '';
+            
+            // Clear department access
+            const container = document.getElementById('newUserDepartmentAccess');
+            container.innerHTML = '<div class="text-gray-500 text-center col-span-full py-8">Please select a role first to see department access options</div>';
+        }
+        
+        // New User Department Access Functions
+        function onNewUserRoleChange() {
+            const role = document.getElementById('newUserRole').value;
+            
+            if (!role) {
+                const container = document.getElementById('newUserDepartmentAccess');
+                container.innerHTML = '<div class="text-gray-500 text-center col-span-full py-8">Please select a role first to see department access options</div>';
+                return;
+            }
+            
+            // Generate department checkboxes with role defaults
+            generateNewUserDepartmentCheckboxes(role);
+            
+            showConfigStatus(`Role selected: ${role}. Department access loaded with role defaults.`, 'info');
+        }
+        
+        function generateNewUserDepartmentCheckboxes(role) {
+            const container = document.getElementById('newUserDepartmentAccess');
+            container.innerHTML = '';
+            
+            const roleDefaults = departmentAccessConfig[role] || ['operations'];
+            
+            allTabs.forEach(tab => {
+                if (tab.id === 'adminConfig' && role !== 'admin') return; // Admin config only for admin role
+                
+                const isRoleDefault = roleDefaults.includes(tab.id);
+                
+                const checkboxHtml = `
+                    <div class="flex items-center p-3 border rounded-lg hover:bg-white transition-colors ${isRoleDefault ? 'bg-blue-50 border-blue-200' : 'bg-white'}">
+                        <input type="checkbox" 
+                               id="new_user_dept_${tab.id}" 
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" 
+                               ${isRoleDefault ? 'checked' : ''}
+                               onchange="updateNewUserDepartmentAccess('${tab.id}', this.checked)">
+                        <label for="new_user_dept_${tab.id}" class="ml-3 flex items-center cursor-pointer flex-1">
+                            <i class="${tab.icon} mr-2 text-gray-600"></i>
+                            <div>
+                                <span class="text-sm font-medium text-gray-700">${tab.name}</span>
+                                ${isRoleDefault ? '<div class="text-xs text-blue-600">Role Default</div>' : ''}
+                            </div>
+                        </label>
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', checkboxHtml);
+            });
+        }
+        
+        function updateNewUserDepartmentAccess(departmentId, hasAccess) {
+            // This function doesn't need to do anything special since we'll read the checkboxes when saving
+            console.log(`New user department access updated: ${departmentId} = ${hasAccess}`);
+        }
+        
+        function getCurrentNewUserDepartmentAccess() {
+            const checkboxes = document.querySelectorAll('#newUserDepartmentAccess input[type="checkbox"]:checked');
+            const departmentIds = [];
+            
+            checkboxes.forEach(checkbox => {
+                const departmentId = checkbox.id.replace('new_user_dept_', '');
+                departmentIds.push(departmentId);
+            });
+            
+            return departmentIds;
+        }
+        
+        function selectAllNewUserDepartments() {
+            const checkboxes = document.querySelectorAll('#newUserDepartmentAccess input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            
+            showConfigStatus('All departments selected for new user', 'success');
+        }
+        
+        function deselectAllNewUserDepartments() {
+            const checkboxes = document.querySelectorAll('#newUserDepartmentAccess input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            showConfigStatus('All departments deselected for new user', 'info');
+        }
+        
+        function resetNewUserToRoleDefaults() {
+            const role = document.getElementById('newUserRole').value;
+            if (!role) {
+                showConfigStatus('Please select a role first', 'error');
+                return;
+            }
+            
+            // Regenerate checkboxes with role defaults
+            generateNewUserDepartmentCheckboxes(role);
+            
+            showConfigStatus(`Reset to ${role} role defaults`, 'info');
+        }
+        
+        function generateRandomPassword() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%';
+            let password = '';
+            for (let i = 0; i < 12; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('newUserPassword').value = password;
+            showConfigStatus('Random password generated', 'success');
+        }
+        
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const button = input.nextElementSibling.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                button.className = 'fas fa-eye';
+            }
+        }
+        
+        function openUserEditModal(user) {
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUserName').value = user.name;
+            document.getElementById('editUserEmail').value = user.email;
+            document.getElementById('editUserPassword').value = user.password;
+            document.getElementById('editUserRole').value = user.role;
+            document.getElementById('editUserStatus').value = user.status;
+            document.getElementById('editUserEmployeeId').value = user.employeeId || '';
+            document.getElementById('editUserNotes').value = user.notes || '';
+            
+            // Ensure user has department access (initialize if not exists)
+            if (!user.departmentAccess) {
+                user.departmentAccess = departmentAccessConfig[user.role] || ['operations'];
+            }
+            
+            // Generate department access checkboxes for this user
+            generateEditUserDepartmentCheckboxes(user);
+            
+            document.getElementById('userEditModal').classList.remove('hidden');
+        }
+        
+        function closeUserEditModal() {
+            document.getElementById('userEditModal').classList.add('hidden');
+        }
+        
+        function saveUserChanges() {
+            const userId = document.getElementById('editUserId').value;
+            const name = document.getElementById('editUserName').value.trim();
+            const email = document.getElementById('editUserEmail').value.trim();
+            const password = document.getElementById('editUserPassword').value;
+            const role = document.getElementById('editUserRole').value;
+            const status = document.getElementById('editUserStatus').value;
+            const employeeId = document.getElementById('editUserEmployeeId').value.trim();
+            const notes = document.getElementById('editUserNotes').value.trim();
+            
+            if (!name || !email || !password || !role) {
+                showConfigStatus('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            const userIndex = userManagementData.users.findIndex(u => u.id === userId);
+            if (userIndex === -1) {
+                showConfigStatus('User not found', 'error');
+                return;
+            }
+            
+            // Check if email already exists (excluding current user)
+            const existingUser = userManagementData.users.find(u => u.email === email.toLowerCase() && u.id !== userId);
+            if (existingUser) {
+                showConfigStatus('Another user with this email already exists', 'error');
+                return;
+            }
+            
+            const oldUser = {...userManagementData.users[userIndex]};
+            
+            // Get the current user being edited (with any department access changes)
+            const currentEditUser = userManagementData.users.find(u => u.id === userId);
+            const departmentAccess = currentEditUser?.departmentAccess || departmentAccessConfig[role] || ['operations'];
+            
+            userManagementData.users[userIndex] = {
+                ...userManagementData.users[userIndex],
+                name: name,
+                email: email.toLowerCase(),
+                password: password,
+                role: role,
+                status: status,
+                employeeId: employeeId,
+                notes: notes,
+                departmentAccess: departmentAccess, // Save department access
+                updatedAt: new Date().toISOString()
+            };
+            
+            saveUserManagementData();
+            
+            // Log the user update
+            logUserActivity(currentUser, 'user_updated', {
+                targetUser: email,
+                changes: {
+                    name: oldUser.name !== name ? {from: oldUser.name, to: name} : null,
+                    role: oldUser.role !== role ? {from: oldUser.role, to: role} : null,
+                    status: oldUser.status !== status ? {from: oldUser.status, to: status} : null,
+                    departmentAccess: JSON.stringify(oldUser.departmentAccess) !== JSON.stringify(departmentAccess) ? 
+                        {from: oldUser.departmentAccess, to: departmentAccess} : null
+                }
+            });
+            
+            closeUserEditModal();
+            refreshUserList();
+            showConfigStatus(`User ${name} updated successfully`, 'success');
+        }
+        
+        function deleteUser() {
+            const userId = document.getElementById('editUserId').value;
+            const userIndex = userManagementData.users.findIndex(u => u.id === userId);
+            
+            if (userIndex === -1) {
+                showConfigStatus('User not found', 'error');
+                return;
+            }
+            
+            const user = userManagementData.users[userIndex];
+            
+            if (confirm(`Are you sure you want to delete user ${user.name} (${user.email})? This action cannot be undone.`)) {
+                // Log the user deletion
+                logUserActivity(currentUser, 'user_deleted', {
+                    targetUser: user.email,
+                    deletedUserData: {
+                        name: user.name,
+                        role: user.role,
+                        status: user.status
+                    }
+                });
+                
+                userManagementData.users.splice(userIndex, 1);
+                saveUserManagementData();
+                
+                closeUserEditModal();
+                refreshUserList();
+                showConfigStatus(`User ${user.name} deleted successfully`, 'success');
+            }
+        }
+        
+        function toggleUserStatus(userId) {
+            const userIndex = userManagementData.users.findIndex(u => u.id === userId);
+            if (userIndex === -1) return;
+            
+            const user = userManagementData.users[userIndex];
+            const newStatus = user.status === 'active' ? 'inactive' : 'active';
+            const oldStatus = user.status;
+            
+            userManagementData.users[userIndex].status = newStatus;
+            userManagementData.users[userIndex].updatedAt = new Date().toISOString();
+            
+            saveUserManagementData();
+            
+            // Log the status change
+            logUserActivity(currentUser, 'user_status_changed', {
+                targetUser: user.email,
+                statusChange: {from: oldStatus, to: newStatus}
+            });
+            
+            refreshUserList();
+            showConfigStatus(`User ${user.name} ${newStatus === 'active' ? 'enabled' : 'disabled'} successfully`, 'success');
+        }
+        
+        // User Edit Modal Department Access Functions
+        function generateEditUserDepartmentCheckboxes(user) {
+            const container = document.getElementById('editUserDepartmentAccess');
+            container.innerHTML = '';
+            
+            // Ensure user has department access array
+            if (!user.departmentAccess) {
+                user.departmentAccess = departmentAccessConfig[user.role] || ['operations'];
+            }
+            
+            allTabs.forEach(tab => {
+                if (tab.id === 'adminConfig' && user.role !== 'admin') return; // Admin config only for admin role
+                
+                const isChecked = user.departmentAccess.includes(tab.id);
+                const isRoleDefault = (departmentAccessConfig[user.role] || []).includes(tab.id);
+                
+                const checkboxHtml = `
+                    <div class="flex items-center p-3 border rounded-lg hover:bg-white transition-colors ${isRoleDefault ? 'bg-blue-50 border-blue-200' : 'bg-white'}">
+                        <input type="checkbox" 
+                               id="edit_user_dept_${tab.id}" 
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" 
+                               ${isChecked ? 'checked' : ''}
+                               onchange="updateEditUserDepartmentAccess('${tab.id}', this.checked)">
+                        <label for="edit_user_dept_${tab.id}" class="ml-3 flex items-center cursor-pointer flex-1">
+                            <i class="${tab.icon} mr-2 text-gray-600"></i>
+                            <div>
+                                <span class="text-sm font-medium text-gray-700">${tab.name}</span>
+                                ${isRoleDefault ? '<div class="text-xs text-blue-600">Role Default</div>' : ''}
+                            </div>
+                        </label>
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', checkboxHtml);
+            });
+        }
+        
+        function onEditUserRoleChange() {
+            const userId = document.getElementById('editUserId').value;
+            const newRole = document.getElementById('editUserRole').value;
+            
+            // Find the current user being edited
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            // Update the user's role temporarily for UI purposes
+            user.role = newRole;
+            
+            // Update role defaults but keep any custom access
+            if (!user.departmentAccess || user.departmentAccess.length === 0) {
+                user.departmentAccess = departmentAccessConfig[newRole] || ['operations'];
+            }
+            
+            // Regenerate checkboxes with new role context
+            generateEditUserDepartmentCheckboxes(user);
+            
+            showConfigStatus(`Role changed to ${newRole}. Department access updated to show role defaults.`, 'info');
+        }
+        
+        function updateEditUserDepartmentAccess(departmentId, hasAccess) {
+            const userId = document.getElementById('editUserId').value;
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            if (!user.departmentAccess) {
+                user.departmentAccess = [];
+            }
+            
+            if (hasAccess) {
+                if (!user.departmentAccess.includes(departmentId)) {
+                    user.departmentAccess.push(departmentId);
+                }
+            } else {
+                user.departmentAccess = user.departmentAccess.filter(id => id !== departmentId);
+            }
+            
+            console.log(`Updated ${user.name} access:`, user.departmentAccess);
+        }
+        
+        function selectAllEditUserDepartments() {
+            const userId = document.getElementById('editUserId').value;
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            const checkboxes = document.querySelectorAll('#editUserDepartmentAccess input[type="checkbox"]');
+            const allDepartmentIds = [];
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                const departmentId = checkbox.id.replace('edit_user_dept_', '');
+                allDepartmentIds.push(departmentId);
+            });
+            
+            user.departmentAccess = [...new Set(allDepartmentIds)]; // Remove duplicates
+            showConfigStatus('All departments selected for this user', 'success');
+        }
+        
+        function deselectAllEditUserDepartments() {
+            const userId = document.getElementById('editUserId').value;
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            const checkboxes = document.querySelectorAll('#editUserDepartmentAccess input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            user.departmentAccess = [];
+            showConfigStatus('All departments deselected for this user', 'info');
+        }
+        
+        function resetEditUserToRoleDefaults() {
+            const userId = document.getElementById('editUserId').value;
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            const role = document.getElementById('editUserRole').value;
+            const roleDefaults = departmentAccessConfig[role] || ['operations'];
+            user.departmentAccess = [...roleDefaults];
+            
+            // Update checkboxes to reflect role defaults
+            generateEditUserDepartmentCheckboxes(user);
+            
+            showConfigStatus(`Reset to ${role} role defaults`, 'info');
+        }
+        
+        // Login Log Functions
+        function refreshLoginLogs() {
+            filterLoginLogs();
+        }
+        
+        function filterLoginLogs() {
+            const searchTerm = document.getElementById('logSearchInput')?.value.toLowerCase() || '';
+            const typeFilter = document.getElementById('logTypeFilter')?.value || '';
+            const dateFilter = document.getElementById('logDateFilter')?.value || '';
+            
+            userManagementData.filteredLogs = userManagementData.loginLogs.filter(log => {
+                const matchesSearch = log.email.toLowerCase().includes(searchTerm) || 
+                                    log.ipAddress.toLowerCase().includes(searchTerm);
+                const matchesType = !typeFilter || log.eventType === typeFilter;
+                const matchesDate = !dateFilter || log.timestamp.startsWith(dateFilter);
+                
+                return matchesSearch && matchesType && matchesDate;
+            });
+            
+            userManagementData.currentLogPage = 1;
+            displayLoginLogs();
+            updateLogPagination();
+        }
+        
+        function displayLoginLogs() {
+            const tbody = document.getElementById('loginLogsTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '';
+            
+            const startIndex = (userManagementData.currentLogPage - 1) * userManagementData.logsPerPage;
+            const endIndex = Math.min(startIndex + userManagementData.logsPerPage, userManagementData.filteredLogs.length);
+            
+            for (let i = startIndex; i < endIndex; i++) {
+                const log = userManagementData.filteredLogs[i];
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                
+                const eventColor = getEventColor(log.eventType);
+                const eventIcon = getEventIcon(log.eventType);
+                
+                row.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                        ${new Date(log.timestamp).toLocaleString()}
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${log.email}</td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-${eventColor}-100 text-${eventColor}-800">
+                            <i class="fas fa-${eventIcon} mr-1"></i>
+                            ${log.eventType.replace('_', ' ').toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${log.ipAddress}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate" title="${log.userAgent}">
+                        ${log.userAgent}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500">
+                        ${log.details ? Object.keys(log.details).map(key => `${key}: ${log.details[key]}`).join(', ') : '-'}
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            }
+        }
+        
+        function getEventColor(eventType) {
+            switch (eventType) {
+                case 'login': return 'green';
+                case 'logout': return 'blue';
+                case 'failed_login': return 'red';
+                case 'user_created': return 'purple';
+                case 'user_updated': return 'yellow';
+                case 'user_deleted': return 'red';
+                case 'user_status_changed': return 'orange';
+                default: return 'gray';
+            }
+        }
+        
+        function getEventIcon(eventType) {
+            switch (eventType) {
+                case 'login': return 'sign-in-alt';
+                case 'logout': return 'sign-out-alt';
+                case 'failed_login': return 'exclamation-triangle';
+                case 'user_created': return 'user-plus';
+                case 'user_updated': return 'user-edit';
+                case 'user_deleted': return 'user-times';
+                case 'user_status_changed': return 'user-check';
+                default: return 'info-circle';
+            }
+        }
+        
+        function updateLogPagination() {
+            const totalRecords = userManagementData.filteredLogs.length;
+            const totalPages = Math.ceil(totalRecords / userManagementData.logsPerPage);
+            const startIndex = (userManagementData.currentLogPage - 1) * userManagementData.logsPerPage + 1;
+            const endIndex = Math.min(userManagementData.currentLogPage * userManagementData.logsPerPage, totalRecords);
+            
+            const startElement = document.getElementById('logShowingStart');
+            const endElement = document.getElementById('logShowingEnd');
+            const totalElement = document.getElementById('logTotalCount');
+            const pageInfoElement = document.getElementById('logPageInfo');
+            const prevBtn = document.getElementById('logPrevBtn');
+            const nextBtn = document.getElementById('logNextBtn');
+            
+            if (startElement) startElement.textContent = totalRecords > 0 ? startIndex : 0;
+            if (endElement) endElement.textContent = endIndex;
+            if (totalElement) totalElement.textContent = totalRecords;
+            if (pageInfoElement) pageInfoElement.textContent = `Page ${userManagementData.currentLogPage} of ${totalPages}`;
+            
+            if (prevBtn) prevBtn.disabled = userManagementData.currentLogPage === 1;
+            if (nextBtn) nextBtn.disabled = userManagementData.currentLogPage === totalPages || totalPages === 0;
+        }
+        
+        function changeLogPage(direction) {
+            const totalPages = Math.ceil(userManagementData.filteredLogs.length / userManagementData.logsPerPage);
+            
+            if (direction === -1 && userManagementData.currentLogPage > 1) {
+                userManagementData.currentLogPage--;
+            } else if (direction === 1 && userManagementData.currentLogPage < totalPages) {
+                userManagementData.currentLogPage++;
+            }
+            
+            displayLoginLogs();
+            updateLogPagination();
+        }
+        
+        function exportLoginLogs() {
+            const logs = userManagementData.filteredLogs.map(log => ({
+                timestamp: log.timestamp,
+                email: log.email,
+                eventType: log.eventType,
+                ipAddress: log.ipAddress,
+                userAgent: log.userAgent,
+                details: JSON.stringify(log.details)
+            }));
+            
+            const csvContent = [
+                'Timestamp,Email,Event Type,IP Address,User Agent,Details',
+                ...logs.map(log => 
+                    `"${log.timestamp}","${log.email}","${log.eventType}","${log.ipAddress}","${log.userAgent}","${log.details}"`
+                )
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `login-logs-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showConfigStatus('Login logs exported successfully', 'success');
+        }
+        
+        function clearLoginLogs() {
+            if (confirm('Are you sure you want to clear all login logs? This action cannot be undone.')) {
+                userManagementData.loginLogs = [];
+                userManagementData.filteredLogs = [];
+                saveUserManagementData();
+                refreshLoginLogs();
+                showConfigStatus('Login logs cleared successfully', 'success');
+            }
+        }
+        
+        // Import/Export Functions
+        function updateSyncInformation() {
+            const lastSyncElement = document.getElementById('lastSyncTime');
+            const googleSheetsUrlElement = document.getElementById('currentGoogleSheetsUrl');
+            const localUsersCountElement = document.getElementById('localUsersCount');
+            
+            if (lastSyncElement) {
+                const lastSync = localStorage.getItem('lastSyncTime');
+                lastSyncElement.textContent = lastSync ? new Date(lastSync).toLocaleString() : 'Never';
+            }
+            
+            if (googleSheetsUrlElement) {
+                googleSheetsUrlElement.textContent = userManagementData.googleSheetsUrl;
+            }
+            
+            if (localUsersCountElement) {
+                localUsersCountElement.textContent = userManagementData.users.length;
+            }
+        }
+        
+        function importFromGoogleSheets() {
+            const url = document.getElementById('googleSheetsUrl').value.trim();
+            if (!url) {
+                showConfigStatus('Please enter a Google Sheets CSV URL', 'error');
+                return;
+            }
+            
+            userManagementData.googleSheetsUrl = url;
+            syncUsersFromGoogleSheets();
+            localStorage.setItem('lastSyncTime', new Date().toISOString());
+            updateSyncInformation();
+        }
+        
+        function importUsersFromCsv() {
+            const fileInput = document.getElementById('userCsvFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showConfigStatus('Please select a CSV file to import', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csvData = e.target.result;
+                    const users = parseUsersFromCsv(csvData);
+                    
+                    userManagementData.users = users;
+                    userManagementData.filteredUsers = [...users];
+                    
+                    saveUserManagementData();
+                    refreshUserList();
+                    updateUserStatistics();
+                    
+                    showConfigStatus(`Successfully imported ${users.length} users from CSV`, 'success');
+                    fileInput.value = '';
+                    
+                } catch (error) {
+                    console.error('CSV import error:', error);
+                    showConfigStatus(`Error importing CSV: ${error.message}`, 'error');
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        function exportUsersToJson() {
+            const data = {
+                users: userManagementData.users,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `users-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showConfigStatus('Users exported as JSON successfully', 'success');
+        }
+        
+        function exportUsersToCsv() {
+            const csvContent = [
+                'Name,Email,Status,Role,Date,Manager,Employee ID,Password',
+                ...userManagementData.users.map(user => 
+                    `"${user.name}","${user.email}","${user.status}","${user.role}","${user.dateAdded || ''}","${user.manager || ''}","${user.employeeId || ''}","${user.password}"`
+                )
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `users-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showConfigStatus('Users exported as CSV successfully', 'success');
+        }
+        
+        function exportUsersToGoogleSheets() {
+            const csvContent = [
+                'Name,Email,Status,Role,Date,Manager,Employee ID,Password',
+                ...userManagementData.users.map(user => 
+                    `"${user.name}","${user.email}","${user.status}","${user.role}","${user.dateAdded || ''}","${user.manager || ''}","${user.employeeId || ''}","${user.password}"`
+                )
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `google-sheets-format-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showConfigStatus('Google Sheets format CSV generated. Upload this to your Google Sheets and get the CSV export URL.', 'success');
+        }
+
+        // User-Level Department Access Management Functions
+        let currentSelectedUser = null;
+        
+        function searchUsersForAccess() {
+            const searchTerm = document.getElementById('userAccessSearch').value.toLowerCase().trim();
+            const resultsContainer = document.getElementById('userAccessSearchResults');
+            const resultsList = document.getElementById('userAccessSearchList');
+            
+            if (searchTerm.length < 2) {
+                resultsContainer.classList.add('hidden');
+                return;
+            }
+            
+            const matchingUsers = userManagementData.users.filter(user => 
+                user.name.toLowerCase().includes(searchTerm) || 
+                user.email.toLowerCase().includes(searchTerm)
+            );
+            
+            if (matchingUsers.length > 0) {
+                resultsList.innerHTML = matchingUsers.map(user => `
+                    <div class="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-200 last:border-b-0"
+                         onclick="selectUserForAccessById('${user.id}')">
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-medium text-xs mr-3">
+                                ${user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm">${user.name}</div>
+                                <div class="text-xs text-gray-500">${user.email} - ${user.role}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                resultsContainer.classList.remove('hidden');
+            } else {
+                resultsList.innerHTML = '<div class="p-2 text-gray-500 text-sm">No users found</div>';
+                resultsContainer.classList.remove('hidden');
+            }
+        }
+        
+        function populateUserAccessSelect() {
+            const selectElement = document.getElementById('userAccessSelect');
+            selectElement.innerHTML = '<option value="">Choose a user...</option>';
+            
+            userManagementData.users
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.name} (${user.email}) - ${user.role}`;
+                    selectElement.appendChild(option);
+                });
+        }
+        
+        function selectUserForAccess() {
+            const selectElement = document.getElementById('userAccessSelect');
+            const userId = selectElement.value;
+            
+            if (userId) {
+                selectUserForAccessById(userId);
+            }
+        }
+        
+        function selectUserForAccessById(userId) {
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            currentSelectedUser = user;
+            
+            // Hide search results
+            document.getElementById('userAccessSearchResults').classList.add('hidden');
+            
+            // Update user info display
+            document.getElementById('selectedUserName').textContent = user.name;
+            document.getElementById('selectedUserEmail').textContent = user.email;
+            document.getElementById('selectedUserRole').textContent = user.role.toUpperCase();
+            document.getElementById('selectedUserStatus').textContent = user.status.toUpperCase();
+            
+            // Show user department configuration
+            document.getElementById('userDepartmentConfig').classList.remove('hidden');
+            
+            // Generate user-specific department checkboxes
+            generateUserDepartmentCheckboxes(user);
+            
+            showConfigStatus(`Selected user: ${user.name} for department access configuration`, 'info');
+        }
+        
+        function generateUserDepartmentCheckboxes(user) {
+            const container = document.getElementById('userDepartmentCheckboxes');
+            container.innerHTML = '';
+            
+            // Ensure user has department access array
+            if (!user.departmentAccess) {
+                user.departmentAccess = departmentAccessConfig[user.role] || ['operations'];
+            }
+            
+            allTabs.forEach(tab => {
+                if (tab.id === 'adminConfig' && user.role !== 'admin') return; // Admin config only for admin role
+                
+                const isChecked = user.departmentAccess.includes(tab.id);
+                const isRoleDefault = (departmentAccessConfig[user.role] || []).includes(tab.id);
+                
+                const checkboxHtml = `
+                    <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors ${isRoleDefault ? 'bg-blue-50 border-blue-200' : ''}">
+                        <input type="checkbox" 
+                               id="user_dept_${tab.id}" 
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" 
+                               ${isChecked ? 'checked' : ''}
+                               onchange="updateUserDepartmentAccess('${tab.id}', this.checked)">
+                        <label for="user_dept_${tab.id}" class="ml-3 flex items-center cursor-pointer flex-1">
+                            <i class="${tab.icon} mr-2 text-gray-600"></i>
+                            <div>
+                                <span class="text-sm font-medium text-gray-700">${tab.name}</span>
+                                ${isRoleDefault ? '<div class="text-xs text-blue-600">Role Default</div>' : ''}
+                            </div>
+                        </label>
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', checkboxHtml);
+            });
+        }
+        
+        function updateUserDepartmentAccess(departmentId, hasAccess) {
+            if (!currentSelectedUser) return;
+            
+            if (!currentSelectedUser.departmentAccess) {
+                currentSelectedUser.departmentAccess = [];
+            }
+            
+            if (hasAccess) {
+                if (!currentSelectedUser.departmentAccess.includes(departmentId)) {
+                    currentSelectedUser.departmentAccess.push(departmentId);
+                }
+            } else {
+                currentSelectedUser.departmentAccess = currentSelectedUser.departmentAccess.filter(id => id !== departmentId);
+            }
+            
+            console.log(`Updated ${currentSelectedUser.name} access:`, currentSelectedUser.departmentAccess);
+        }
+        
+        function selectAllUserDepartments() {
+            if (!currentSelectedUser) return;
+            
+            const checkboxes = document.querySelectorAll('#userDepartmentCheckboxes input[type="checkbox"]');
+            const allDepartmentIds = [];
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                const departmentId = checkbox.id.replace('user_dept_', '');
+                allDepartmentIds.push(departmentId);
+            });
+            
+            currentSelectedUser.departmentAccess = [...new Set(allDepartmentIds)]; // Remove duplicates
+            showConfigStatus('All departments selected for this user', 'success');
+        }
+        
+        function deselectAllUserDepartments() {
+            if (!currentSelectedUser) return;
+            
+            const checkboxes = document.querySelectorAll('#userDepartmentCheckboxes input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            currentSelectedUser.departmentAccess = [];
+            showConfigStatus('All departments deselected for this user', 'info');
+        }
+        
+        function resetToRoleDefaults() {
+            if (!currentSelectedUser) return;
+            
+            const roleDefaults = departmentAccessConfig[currentSelectedUser.role] || ['operations'];
+            currentSelectedUser.departmentAccess = [...roleDefaults];
+            
+            // Update checkboxes to reflect role defaults
+            generateUserDepartmentCheckboxes(currentSelectedUser);
+            
+            showConfigStatus(`Reset to ${currentSelectedUser.role} role defaults`, 'info');
+        }
+        
+        function saveUserDepartmentAccess() {
+            if (!currentSelectedUser) {
+                showConfigStatus('Please select a user first', 'error');
+                return;
+            }
+            
+            // Find and update the user in the main array
+            const userIndex = userManagementData.users.findIndex(u => u.id === currentSelectedUser.id);
+            if (userIndex === -1) {
+                showConfigStatus('User not found', 'error');
+                return;
+            }
+            
+            userManagementData.users[userIndex].departmentAccess = [...currentSelectedUser.departmentAccess];
+            userManagementData.users[userIndex].updatedAt = new Date().toISOString();
+            
+            const success = saveUserManagementData();
+            
+            if (success) {
+                showConfigStatus(`Department access saved successfully for ${currentSelectedUser.name}`, 'success');
+                
+                // Log the access change
+                logUserActivity(currentUser, 'user_access_updated', {
+                    targetUser: currentSelectedUser.email,
+                    newAccess: currentSelectedUser.departmentAccess,
+                    updatedBy: currentUser
+                });
+                
+                // If current logged-in user's access was updated, refresh their tabs
+                if (currentSelectedUser.email === currentUser) {
+                    setTimeout(() => {
+                        generateTabs();
+                        showConfigStatus('Your dashboard tabs have been refreshed', 'info');
+                    }, 1000);
+                }
+            } else {
+                showConfigStatus('Error saving user access configuration', 'error');
+            }
         }
 
         // Admin Configuration Functions
