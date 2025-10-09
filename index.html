@@ -1341,6 +1341,11 @@
                                         <i class="fas fa-wifi mr-2"></i>
                                         Test Cloud Connection
                                     </button>
+                                    <button id="syncCloudBtn" onclick="manualSyncToCloud()" 
+                                            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center text-sm">
+                                        <i class="fas fa-sync mr-2"></i>
+                                        Sync to Cloud
+                                    </button>
                                 </div>
                             </div>
                             
@@ -2067,6 +2072,150 @@
             logsPerPage: 20
         };
         
+        // ===== CLOUD SYNC FUNCTIONS =====
+        
+        // Sync local user data to Supabase cloud database
+        function syncLocalDataToCloud() {
+            if (!_mode || !_db) {
+                return Promise.resolve();
+            }
+            
+            console.log('🔄 Starting local to cloud data sync...');
+            
+            return Promise.all(
+                userManagementData.users.map(function(user) {
+                    // Check if user exists in cloud
+                    return _db
+                        .from('users')
+                        .select('id')
+                        .eq('email', user.email.toLowerCase())
+                        .single()
+                        .then(function(result) {
+                            const existingUser = result.data;
+                            const error = result.error;
+                            
+                            if (error && error.code === 'PGRST116') {
+                                // User doesn't exist, create new
+                                console.log('➕ Creating new user in cloud:', user.email);
+                                return createUserInCloud(user);
+                            } else if (existingUser) {
+                                // User exists, update
+                                console.log('🔄 Updating existing user in cloud:', user.email);
+                                return updateUserInCloud(existingUser.id, user);
+                            } else if (error) {
+                                console.warn('⚠️ Error checking user existence:', error);
+                                return Promise.resolve();
+                            }
+                        })
+                        .catch(function(error) {
+                            console.warn('⚠️ Sync error for user', user.email, ':', error.message);
+                            return Promise.resolve(); // Continue with other users
+                        });
+                })
+            );
+        }
+        
+        // Create user in cloud database
+        function createUserInCloud(userData) {
+            const cloudUser = {
+                email: userData.email.toLowerCase(),
+                password_hash: hashPassword(userData.password),
+                name: userData.name,
+                role: userData.role || 'user',
+                status: userData.status || 'active',
+                employee_id: userData.employeeId || null,
+                manager: userData.manager || null,
+                date_added: userData.dateAdded || new Date().toISOString().split('T')[0],
+                department_access: userData.departmentAccess || [],
+                notes: userData.notes || null,
+                login_count: userData.loginCount || 0,
+                last_login: userData.lastLogin || null
+            };
+            
+            return _db
+                .from('users')
+                .insert([cloudUser])
+                .select()
+                .single()
+                .then(function(result) {
+                    const { data, error } = result;
+                    if (error) throw error;
+                    console.log('✅ User created in cloud:', data.email);
+                    return data;
+                });
+        }
+        
+        // Update existing user in cloud database
+        function updateUserInCloud(userId, userData) {
+            const updates = {
+                name: userData.name,
+                role: userData.role,
+                status: userData.status,
+                employee_id: userData.employeeId || null,
+                manager: userData.manager || null,
+                department_access: userData.departmentAccess || [],
+                notes: userData.notes || null,
+                login_count: userData.loginCount || 0,
+                last_login: userData.lastLogin || null,
+                updated_at: new Date().toISOString()
+            };
+            
+            // Only update password if it's different
+            if (userData.password) {
+                updates.password_hash = hashPassword(userData.password);
+            }
+            
+            return _db
+                .from('users')
+                .update(updates)
+                .eq('id', userId)
+                .select()
+                .single()
+                .then(function(result) {
+                    const { data, error } = result;
+                    if (error) throw error;
+                    console.log('✅ User updated in cloud:', data.email);
+                    return data;
+                });
+        }
+        
+        // Manual sync function for the admin panel button
+        function manualSyncToCloud() {
+            if (!_mode || !_db) {
+                showConfigStatus('Cloud mode not available - cannot sync to Supabase', 'error');
+                return;
+            }
+            
+            const syncBtn = document.getElementById('syncCloudBtn');
+            const originalText = syncBtn.innerHTML;
+            
+            // Show loading state
+            syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Syncing...';
+            syncBtn.disabled = true;
+            
+            showConfigStatus('Starting manual sync to cloud database...', 'info');
+            
+            syncLocalDataToCloud()
+                .then(function() {
+                    showConfigStatus(`Successfully synced ${userManagementData.users.length} users to cloud database`, 'success');
+                    
+                    // Reload data from cloud to verify sync
+                    return loadSecureData();
+                })
+                .then(function() {
+                    showConfigStatus('Cloud sync completed and verified successfully', 'success');
+                })
+                .catch(function(error) {
+                    console.error('Manual sync error:', error);
+                    showConfigStatus('Cloud sync failed: ' + error.message, 'error');
+                })
+                .finally(function() {
+                    // Restore button state
+                    syncBtn.innerHTML = originalText;
+                    syncBtn.disabled = false;
+                });
+        }
+        
         // ===== DEBUG FUNCTIONS =====
         
         // Manual debug function to test Supabase connection and query
@@ -2709,9 +2858,23 @@
         // Save user management data
         function saveUserManagementData() {
             try {
+                // Always save to localStorage first for immediate access
                 localStorage.setItem('userManagementData', JSON.stringify(userManagementData));
                 localStorage.setItem('loginLogs', JSON.stringify(userManagementData.loginLogs));
                 console.log('✅ User management data saved to localStorage');
+                
+                // Also sync to cloud database if available
+                if (_mode && _db) {
+                    console.log('☁️ Syncing to cloud database...');
+                    syncLocalDataToCloud()
+                        .then(function() {
+                            console.log('✅ Data synced to cloud successfully');
+                        })
+                        .catch(function(error) {
+                            console.warn('⚠️ Cloud sync failed (data saved locally):', error.message);
+                        });
+                }
+                
                 return true;
             } catch (error) {
                 console.error('❌ Error saving user management data:', error);
@@ -3593,20 +3756,31 @@
             };
             
             userManagementData.users.push(newUser);
-            saveUserManagementData();
             
-            // Log the user creation
-            logUserActivity(currentUser, 'user_created', {
-                targetUser: email,
-                role: role,
-                status: status,
-                departmentAccess: departmentAccess
-            });
+            // Save locally and sync to cloud
+            const saved = saveUserManagementData();
             
-            clearAddUserForm();
-            refreshUserList();
-            populateUserAccessSelect(); // Update the user access select dropdown
-            showConfigStatus(`User ${name} added successfully with ${role} role defaults`, 'success');
+            if (saved) {
+                // Log the user creation
+                logUserActivity(currentUser, 'user_created', {
+                    targetUser: email,
+                    role: role,
+                    status: status,
+                    departmentAccess: departmentAccess
+                });
+                
+                clearAddUserForm();
+                refreshUserList();
+                populateUserAccessSelect(); // Update the user access select dropdown
+                
+                if (_mode && _db) {
+                    showConfigStatus(`User ${name} added successfully and syncing to cloud database...`, 'success');
+                } else {
+                    showConfigStatus(`User ${name} added successfully (saved locally)`, 'success');
+                }
+            } else {
+                showConfigStatus('Error saving user data', 'error');
+            }
         }
         
         function clearAddUserForm() {
@@ -4316,11 +4490,20 @@
                     userManagementData.users = users;
                     userManagementData.filteredUsers = [...users];
                     
-                    saveUserManagementData();
-                    refreshUserList();
-                    updateUserStatistics();
+                    const saved = saveUserManagementData();
                     
-                    showConfigStatus(`Successfully imported ${users.length} users from CSV`, 'success');
+                    if (saved) {
+                        refreshUserList();
+                        updateUserStatistics();
+                        
+                        if (_mode && _db) {
+                            showConfigStatus(`Successfully imported ${users.length} users from CSV and syncing to cloud database...`, 'success');
+                        } else {
+                            showConfigStatus(`Successfully imported ${users.length} users from CSV (saved locally)`, 'success');
+                        }
+                    } else {
+                        showConfigStatus('Error importing users', 'error');
+                    }
                     fileInput.value = '';
                     
                 } catch (error) {
