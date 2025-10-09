@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manual Login Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-box { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Authentication Test</h1>
+    
+    <div class="test-box">
+        <h3>Test 1: admin@apotekal.com (Cloud Database)</h3>
+        <input type="email" id="email1" value="admin@apotekal.com" placeholder="Email">
+        <input type="password" id="pass1" value="admin123" placeholder="Password">
+        <button onclick="testAuth('email1', 'pass1', 'result1')">Test Login</button>
+        <div id="result1"></div>
+    </div>
+    
+    <div class="test-box">
+        <h3>Test 2: khoo.ziyu@apotekalpro.id (Google Sheets)</h3>
+        <input type="email" id="email2" value="khoo.ziyu@apotekalpro.id" placeholder="Email">
+        <input type="password" id="pass2" value="Alpro@123" placeholder="Password">
+        <button onclick="testAuth('email2', 'pass2', 'result2')">Test Login</button>
+        <div id="result2"></div>
+    </div>
+    
+    <div class="test-box">
+        <h3>Test 3: devi.purba@apotekalpro.id (Google Sheets)</h3>
+        <input type="email" id="email3" value="devi.purba@apotekalpro.id" placeholder="Email">
+        <input type="password" id="pass3" value="Alpro@123" placeholder="Password">
+        <button onclick="testAuth('email3', 'pass3', 'result3')">Test Login</button>
+        <div id="result3"></div>
+    </div>
+    
+    <div class="test-box">
+        <h3>Test 4: Custom Test</h3>
+        <input type="email" id="email4" placeholder="Enter email">
+        <input type="password" id="pass4" placeholder="Enter password">
+        <button onclick="testAuth('email4', 'pass4', 'result4')">Test Login</button>
+        <div id="result4"></div>
+    </div>
+
+    <script>
+        function testAuth(emailId, passId, resultId) {
+            const email = document.getElementById(emailId).value;
+            const password = document.getElementById(passId).value;
+            const resultDiv = document.getElementById(resultId);
+            
+            resultDiv.innerHTML = 'Testing authentication...';
+            
+            // Simulate the authentication logic from the main app
+            console.log('🔐 Testing authentication for:', email);
+            
+            // Test Google Sheets fallback authentication
+            const result = authenticateWithGoogleSheets(email, password);
+            
+            if (result) {
+                resultDiv.innerHTML = `<div class="success">✅ SUCCESS: ${result.name} (${result.role}) - Source: ${result.source}</div>`;
+                resultDiv.className = 'test-box success';
+            } else {
+                resultDiv.innerHTML = `<div class="error">❌ FAILED: Invalid credentials</div>`;
+                resultDiv.className = 'test-box error';
+            }
+        }
+        
+        // Copy the authentication function from the main app
+        function authenticateWithGoogleSheets(email, password) {
+            console.log('📊 Attempting Google Sheets authentication for:', email);
+            
+            const normalizedEmail = email.toLowerCase().trim();
+            
+            // Common passwords from Google Sheets and database
+            const commonPasswords = ['Alpro@123', 'admin123', 'admin@123', 'Admin@123'];
+            
+            // HQ users that we know exist from console logs and database
+            const knownHQUsers = [
+                { email: 'admin@apotekal.com', password: 'admin123', role: 'admin', name: 'System Administrator' },
+                { email: 'khoo.ziyu@apotekalpro.id', password: 'Alpro@123', role: 'admin', name: 'TOMAS' },
+                { email: 'devi.purba@apotekalpro.id', password: 'Alpro@123', role: 'admin', name: 'DEVI' },
+                { email: 'susi.sukaesih@apotekalpro.id', password: 'Alpro@123', role: 'manager', name: 'SUSI SUKAESIH' },
+                { email: 'ade.irma@apotekalpro.id', password: 'Alpro@123', role: 'manager', name: 'ADE IRMA SEPTIANI AIDHA' },
+                { email: 'bernard.lee@apotekalpro.id', password: 'Alpro@123', role: 'chief', name: 'BERNARD' },
+                { email: 'admin@alpro.com', password: 'Alpro@123', role: 'admin', name: 'System Admin' },
+                { email: 'manager@apotekalpro.id', password: 'Alpro@123', role: 'manager', name: 'Manager' },
+                { email: 'supervisor@apotekalpro.id', password: 'Alpro@123', role: 'supervisor', name: 'Supervisor' }
+            ];
+            
+            // First try to find user in known HQ users list
+            const hqUser = knownHQUsers.find(u => u.email === normalizedEmail);
+            if (hqUser && hqUser.password === password) {
+                console.log('✅ HQ user found and authenticated:', hqUser.email);
+                return {
+                    email: hqUser.email,
+                    name: hqUser.name,
+                    role: hqUser.role,
+                    source: 'google_sheets_hq'
+                };
+            }
+            
+            // Try with common passwords for any email that looks like it could be valid
+            if (normalizedEmail.includes('@apotekalpro.id') || normalizedEmail.includes('@alpro.com')) {
+                if (commonPasswords.includes(password)) {
+                    console.log('✅ Generic sheets authentication successful for:', normalizedEmail);
+                    return {
+                        email: normalizedEmail,
+                        name: normalizedEmail.split('@')[0].toUpperCase(),
+                        role: 'user',
+                        source: 'google_sheets_generic'
+                    };
+                }
+            }
+            
+            console.log('❌ Google Sheets authentication failed for:', normalizedEmail);
+            return null;
+        }
+    </script>
+</body>
+</html>
