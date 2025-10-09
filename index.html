@@ -471,11 +471,11 @@
                                         </div>
                                         <div>
                                             <span class="text-lg font-bold text-green-600" id="amTrackerTopGrowthAM">-</span>
-                                            <div class="text-xs text-gray-600">Highest Growth</div>
+                                            <div class="text-xs text-gray-600">Total Growth %</div>
                                         </div>
                                         <div>
                                             <span class="text-lg font-bold text-purple-600" id="amTrackerTopForecastAM">-</span>
-                                            <div class="text-xs text-gray-600">Best Forecast</div>
+                                            <div class="text-xs text-gray-600">Total Forecast %</div>
                                         </div>
                                         <div>
                                             <span class="text-lg font-bold text-orange-600" id="amTrackerTotalOutlets">0</span>
@@ -1672,13 +1672,34 @@
                 const totalUniqueAMs = this.overviewData.length;
                 const totalOutlets = this.performanceData.length;
                 
-                const topGrowthAM = [...this.overviewData].sort((a, b) => b.avgGrowth - a.avgGrowth)[0];
-                const topForecastAM = [...this.overviewData].sort((a, b) => b.avgForecast - a.avgForecast)[0];
+                // Calculate Grand Total absolute values across all outlets
+                let grandTotalCurrentMonth = 0;
+                let grandTotalPastMonth = 0;
+                let grandTotalForecast = 0;
+                let grandTotalTargets = 0;
+                
+                // Sum up all outlets' data
+                this.performanceData.forEach(outlet => {
+                    grandTotalCurrentMonth += outlet.dailySalesUpToDate || 0;
+                    grandTotalPastMonth += outlet.dailySalesLastMonth || 0;
+                    grandTotalForecast += outlet.forecastSalesEndOfMonth || 0;
+                    grandTotalTargets += outlet.monthlyTarget || 0;
+                });
+                
+                // Calculate Grand Total Growth % (current month vs past month for all outlets combined)
+                const grandTotalGrowthPercent = grandTotalPastMonth > 0 
+                    ? ((grandTotalCurrentMonth - grandTotalPastMonth) / grandTotalPastMonth) * 100
+                    : 0;
+                
+                // Calculate Grand Total Forecast % (total forecast vs total targets for all outlets combined)
+                const grandTotalForecastPercent = grandTotalTargets > 0 
+                    ? (grandTotalForecast / grandTotalTargets) * 100
+                    : 0;
                 
                 document.getElementById('amTrackerTotalUniqueAMs').textContent = totalUniqueAMs;
                 document.getElementById('amTrackerTotalOutlets').textContent = totalOutlets;
-                document.getElementById('amTrackerTopGrowthAM').textContent = topGrowthAM ? `${topGrowthAM.avgGrowth.toFixed(1)}%` : '-';
-                document.getElementById('amTrackerTopForecastAM').textContent = topForecastAM ? `${topForecastAM.avgForecast.toFixed(1)}%` : '-';
+                document.getElementById('amTrackerTopGrowthAM').textContent = `${grandTotalGrowthPercent >= 0 ? '+' : ''}${grandTotalGrowthPercent.toFixed(1)}%`;
+                document.getElementById('amTrackerTopForecastAM').textContent = `${grandTotalForecastPercent.toFixed(1)}%`;
             },
             
             // Display overview table
