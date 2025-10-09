@@ -1123,7 +1123,7 @@
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                                        <select id="editUserRole" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <select id="editUserRole" onchange="onEditUserRoleChange()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                             <option value="admin">Admin</option>
                                             <option value="chief">Chief</option>
                                             <option value="strategy">Strategy</option>
@@ -1153,6 +1153,30 @@
                                 <div class="mt-4">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
                                     <textarea id="editUserNotes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                </div>
+                                
+                                <div class="mt-6">
+                                    <h4 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                                        <i class="fas fa-key mr-2 text-blue-600"></i>
+                                        Department Access Permissions
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-gray-50 rounded-lg border" id="editUserDepartmentAccess">
+                                        <!-- Department access checkboxes will be populated here -->
+                                    </div>
+                                    <div class="mt-3 flex gap-2">
+                                        <button type="button" onclick="selectAllEditUserDepartments()" 
+                                                class="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+                                            <i class="fas fa-check-double mr-1"></i>All
+                                        </button>
+                                        <button type="button" onclick="deselectAllEditUserDepartments()" 
+                                                class="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+                                            <i class="fas fa-times mr-1"></i>None
+                                        </button>
+                                        <button type="button" onclick="resetEditUserToRoleDefaults()" 
+                                                class="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                                            <i class="fas fa-undo mr-1"></i>Role Defaults
+                                        </button>
+                                    </div>
                                 </div>
                                 
                                 <div class="flex justify-end gap-4 mt-6">
@@ -1191,16 +1215,90 @@
                             </div>
                         </div>
                         
-                        <!-- Role Management Section -->
+                        <!-- User-Level Department Access Management -->
                         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                             <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                                <i class="fas fa-users mr-2 text-blue-600"></i>
-                                Role & Department Access Management
+                                <i class="fas fa-user-cog mr-2 text-blue-600"></i>
+                                User Department Access Management
                             </h3>
+                            
+                            <!-- User Selection for Department Access -->
+                            <div class="mb-6">
+                                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                                    <div class="flex-1">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Search User to Configure Access:</label>
+                                        <input type="text" id="userAccessSearch" placeholder="Search by name or email..." 
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                               oninput="searchUsersForAccess()">
+                                    </div>
+                                    <div class="flex-1">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Or Select from List:</label>
+                                        <select id="userAccessSelect" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                onchange="selectUserForAccess()">
+                                            <option value="">Choose a user...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- User Search Results -->
+                                <div id="userAccessSearchResults" class="hidden mb-4">
+                                    <h5 class="text-sm font-medium text-gray-700 mb-2">Search Results:</h5>
+                                    <div id="userAccessSearchList" class="max-h-32 overflow-y-auto border border-gray-200 rounded-lg">
+                                        <!-- Search results will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Selected User Department Access Configuration -->
+                            <div id="userDepartmentConfig" class="hidden">
+                                <div class="bg-blue-50 p-4 rounded-lg mb-4 border border-blue-200">
+                                    <h4 class="text-lg font-medium text-gray-800 mb-2 flex items-center">
+                                        <i class="fas fa-user mr-2 text-blue-600"></i>
+                                        Configuring access for: <span id="selectedUserName" class="text-blue-600 font-semibold ml-2"></span>
+                                    </h4>
+                                    <div class="text-sm text-gray-600">
+                                        <p><strong>Email:</strong> <span id="selectedUserEmail"></span></p>
+                                        <p><strong>Role:</strong> <span id="selectedUserRole" class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"></span></p>
+                                        <p><strong>Status:</strong> <span id="selectedUserStatus"></span></p>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="text-md font-medium text-gray-800 mb-4">Department Access Permissions:</h5>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" id="userDepartmentCheckboxes">
+                                    <!-- User-specific department checkboxes will be dynamically generated -->
+                                </div>
+                                
+                                <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+                                    <div class="flex gap-2">
+                                        <button onclick="selectAllUserDepartments()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+                                            <i class="fas fa-check-double mr-2"></i>Select All
+                                        </button>
+                                        <button onclick="deselectAllUserDepartments()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                            <i class="fas fa-times mr-2"></i>Deselect All
+                                        </button>
+                                        <button onclick="resetToRoleDefaults()" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+                                            <i class="fas fa-undo mr-2"></i>Reset to Role Defaults
+                                        </button>
+                                    </div>
+                                    <button onclick="saveUserDepartmentAccess()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                        <i class="fas fa-save mr-2"></i>Save User Access
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Role-Level Default Access Management -->
+                        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-users mr-2 text-purple-600"></i>
+                                Role Default Access Management
+                            </h3>
+                            <p class="text-sm text-gray-600 mb-4">Configure default department access for each role. These defaults will be applied to new users with this role.</p>
                             
                             <!-- Role Selection -->
                             <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Select Role to Configure:</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Select Role to Configure Default Access:</label>
                                 <div class="flex flex-wrap gap-2">
                                     <button onclick="selectRole('admin')" class="role-selector px-4 py-2 rounded-lg border transition-colors" data-role="admin">
                                         <i class="fas fa-crown mr-2"></i>Admin
@@ -1240,7 +1338,7 @@
                             
                             <!-- Department Access Configuration -->
                             <div id="departmentConfig" class="hidden">
-                                <h4 class="text-lg font-medium text-gray-800 mb-4">Department Access for <span id="selectedRoleName" class="text-blue-600 font-semibold"></span> Role:</h4>
+                                <h4 class="text-lg font-medium text-gray-800 mb-4">Default Department Access for <span id="selectedRoleName" class="text-purple-600 font-semibold"></span> Role:</h4>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" id="departmentCheckboxes">
                                     <!-- Department checkboxes will be dynamically generated -->
@@ -1255,8 +1353,8 @@
                                             <i class="fas fa-times mr-2"></i>Deselect All
                                         </button>
                                     </div>
-                                    <button onclick="saveRoleConfiguration()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                        <i class="fas fa-save mr-2"></i>Save Configuration
+                                    <button onclick="saveRoleConfiguration()" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                        <i class="fas fa-save mr-2"></i>Save Role Defaults
                                     </button>
                                 </div>
                             </div>
@@ -2010,16 +2108,25 @@
             });
         }
 
-        // Get Accessible Tabs Based on Role (now uses dynamic configuration)
+        // Get Accessible Tabs Based on User-Level Permissions
         function getAccessibleTabs() {
             const role = currentUserRole?.toLowerCase();
             
-            // Use dynamic configuration if available
+            // First, try to find user-specific permissions
+            const user = userManagementData.users.find(u => u.email === currentUser?.toLowerCase());
+            if (user && user.departmentAccess && user.departmentAccess.length > 0) {
+                console.log(`✅ Using user-level permissions for ${user.email}:`, user.departmentAccess);
+                return user.departmentAccess;
+            }
+            
+            // Fall back to role-based configuration
             if (departmentAccessConfig[role]) {
+                console.log(`✅ Using role-based permissions for ${role}:`, departmentAccessConfig[role]);
                 return departmentAccessConfig[role];
             }
             
             // Fallback to default configuration for backward compatibility
+            console.log(`⚠️ Using fallback permissions for ${role}`);
             switch (role) {
                 case 'admin':
                     return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig'];
@@ -2301,6 +2408,7 @@
             // Initialize tab-specific data
             if (tabName === 'userList') {
                 refreshUserList();
+                populateUserAccessSelect(); // Ensure user access dropdown is populated
             } else if (tabName === 'loginLogs') {
                 refreshLoginLogs();
             } else if (tabName === 'userImport') {
@@ -2332,7 +2440,7 @@
         }
         
         function parseUsersFromCsv(csvData) {
-            const lines = csvData.trim().split('\\n');
+            const lines = csvData.trim().split('\n');
             const users = [];
             
             for (let i = 1; i < lines.length; i++) {
@@ -2341,16 +2449,23 @@
                 
                 const values = parseCSVLine(line);
                 if (values.length >= 8) {
+                    const role = values[3]?.trim().toLowerCase() || 'user';
+                    
+                    // Get default department access for this role
+                    const defaultDepartments = departmentAccessConfig[role] || ['operations'];
+                    
                     const user = {
                         id: Date.now() + Math.random().toString(36).substr(2, 9),
                         name: values[0]?.trim() || '',
                         email: values[1]?.trim().toLowerCase() || '',
                         status: values[2]?.trim().toLowerCase() || 'active',
-                        role: values[3]?.trim().toLowerCase() || 'user',
+                        role: role,
                         dateAdded: values[4]?.trim() || new Date().toISOString().split('T')[0],
                         manager: values[5]?.trim() || '',
                         employeeId: values[6]?.trim() || '',
                         password: values[7]?.trim() || '',
+                        // Add user-level department access
+                        departmentAccess: [...defaultDepartments],
                         lastLogin: null,
                         loginCount: 0,
                         notes: '',
@@ -2547,6 +2662,9 @@
                 return;
             }
             
+            // Get default department access for this role
+            const defaultDepartments = departmentAccessConfig[role] || ['operations'];
+            
             const newUser = {
                 id: Date.now() + Math.random().toString(36).substr(2, 9),
                 name: name,
@@ -2556,6 +2674,8 @@
                 status: status,
                 employeeId: employeeId,
                 notes: notes,
+                // Add department access with role defaults
+                departmentAccess: [...defaultDepartments],
                 lastLogin: null,
                 loginCount: 0,
                 createdAt: new Date().toISOString(),
@@ -2569,12 +2689,14 @@
             logUserActivity(currentUser, 'user_created', {
                 targetUser: email,
                 role: role,
-                status: status
+                status: status,
+                departmentAccess: defaultDepartments
             });
             
             clearAddUserForm();
             refreshUserList();
-            showConfigStatus(`User ${name} added successfully`, 'success');
+            populateUserAccessSelect(); // Update the user access select dropdown
+            showConfigStatus(`User ${name} added successfully with ${role} role defaults`, 'success');
         }
         
         function clearAddUserForm() {
@@ -2620,6 +2742,14 @@
             document.getElementById('editUserEmployeeId').value = user.employeeId || '';
             document.getElementById('editUserNotes').value = user.notes || '';
             
+            // Ensure user has department access (initialize if not exists)
+            if (!user.departmentAccess) {
+                user.departmentAccess = departmentAccessConfig[user.role] || ['operations'];
+            }
+            
+            // Generate department access checkboxes for this user
+            generateEditUserDepartmentCheckboxes(user);
+            
             document.getElementById('userEditModal').classList.remove('hidden');
         }
         
@@ -2656,6 +2786,11 @@
             }
             
             const oldUser = {...userManagementData.users[userIndex]};
+            
+            // Get the current user being edited (with any department access changes)
+            const currentEditUser = userManagementData.users.find(u => u.id === userId);
+            const departmentAccess = currentEditUser?.departmentAccess || departmentAccessConfig[role] || ['operations'];
+            
             userManagementData.users[userIndex] = {
                 ...userManagementData.users[userIndex],
                 name: name,
@@ -2665,6 +2800,7 @@
                 status: status,
                 employeeId: employeeId,
                 notes: notes,
+                departmentAccess: departmentAccess, // Save department access
                 updatedAt: new Date().toISOString()
             };
             
@@ -2676,7 +2812,9 @@
                 changes: {
                     name: oldUser.name !== name ? {from: oldUser.name, to: name} : null,
                     role: oldUser.role !== role ? {from: oldUser.role, to: role} : null,
-                    status: oldUser.status !== status ? {from: oldUser.status, to: status} : null
+                    status: oldUser.status !== status ? {from: oldUser.status, to: status} : null,
+                    departmentAccess: JSON.stringify(oldUser.departmentAccess) !== JSON.stringify(departmentAccess) ? 
+                        {from: oldUser.departmentAccess, to: departmentAccess} : null
                 }
             });
             
@@ -2737,6 +2875,132 @@
             
             refreshUserList();
             showConfigStatus(`User ${user.name} ${newStatus === 'active' ? 'enabled' : 'disabled'} successfully`, 'success');
+        }
+        
+        // User Edit Modal Department Access Functions
+        function generateEditUserDepartmentCheckboxes(user) {
+            const container = document.getElementById('editUserDepartmentAccess');
+            container.innerHTML = '';
+            
+            // Ensure user has department access array
+            if (!user.departmentAccess) {
+                user.departmentAccess = departmentAccessConfig[user.role] || ['operations'];
+            }
+            
+            allTabs.forEach(tab => {
+                if (tab.id === 'adminConfig' && user.role !== 'admin') return; // Admin config only for admin role
+                
+                const isChecked = user.departmentAccess.includes(tab.id);
+                const isRoleDefault = (departmentAccessConfig[user.role] || []).includes(tab.id);
+                
+                const checkboxHtml = `
+                    <div class="flex items-center p-3 border rounded-lg hover:bg-white transition-colors ${isRoleDefault ? 'bg-blue-50 border-blue-200' : 'bg-white'}">
+                        <input type="checkbox" 
+                               id="edit_user_dept_${tab.id}" 
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" 
+                               ${isChecked ? 'checked' : ''}
+                               onchange="updateEditUserDepartmentAccess('${tab.id}', this.checked)">
+                        <label for="edit_user_dept_${tab.id}" class="ml-3 flex items-center cursor-pointer flex-1">
+                            <i class="${tab.icon} mr-2 text-gray-600"></i>
+                            <div>
+                                <span class="text-sm font-medium text-gray-700">${tab.name}</span>
+                                ${isRoleDefault ? '<div class="text-xs text-blue-600">Role Default</div>' : ''}
+                            </div>
+                        </label>
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', checkboxHtml);
+            });
+        }
+        
+        function onEditUserRoleChange() {
+            const userId = document.getElementById('editUserId').value;
+            const newRole = document.getElementById('editUserRole').value;
+            
+            // Find the current user being edited
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            // Update the user's role temporarily for UI purposes
+            user.role = newRole;
+            
+            // Update role defaults but keep any custom access
+            if (!user.departmentAccess || user.departmentAccess.length === 0) {
+                user.departmentAccess = departmentAccessConfig[newRole] || ['operations'];
+            }
+            
+            // Regenerate checkboxes with new role context
+            generateEditUserDepartmentCheckboxes(user);
+            
+            showConfigStatus(`Role changed to ${newRole}. Department access updated to show role defaults.`, 'info');
+        }
+        
+        function updateEditUserDepartmentAccess(departmentId, hasAccess) {
+            const userId = document.getElementById('editUserId').value;
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            if (!user.departmentAccess) {
+                user.departmentAccess = [];
+            }
+            
+            if (hasAccess) {
+                if (!user.departmentAccess.includes(departmentId)) {
+                    user.departmentAccess.push(departmentId);
+                }
+            } else {
+                user.departmentAccess = user.departmentAccess.filter(id => id !== departmentId);
+            }
+            
+            console.log(`Updated ${user.name} access:`, user.departmentAccess);
+        }
+        
+        function selectAllEditUserDepartments() {
+            const userId = document.getElementById('editUserId').value;
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            const checkboxes = document.querySelectorAll('#editUserDepartmentAccess input[type="checkbox"]');
+            const allDepartmentIds = [];
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                const departmentId = checkbox.id.replace('edit_user_dept_', '');
+                allDepartmentIds.push(departmentId);
+            });
+            
+            user.departmentAccess = [...new Set(allDepartmentIds)]; // Remove duplicates
+            showConfigStatus('All departments selected for this user', 'success');
+        }
+        
+        function deselectAllEditUserDepartments() {
+            const userId = document.getElementById('editUserId').value;
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            const checkboxes = document.querySelectorAll('#editUserDepartmentAccess input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            user.departmentAccess = [];
+            showConfigStatus('All departments deselected for this user', 'info');
+        }
+        
+        function resetEditUserToRoleDefaults() {
+            const userId = document.getElementById('editUserId').value;
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            const role = document.getElementById('editUserRole').value;
+            const roleDefaults = departmentAccessConfig[role] || ['operations'];
+            user.departmentAccess = [...roleDefaults];
+            
+            // Update checkboxes to reflect role defaults
+            generateEditUserDepartmentCheckboxes(user);
+            
+            showConfigStatus(`Reset to ${role} role defaults`, 'info');
         }
         
         // Login Log Functions
@@ -2880,7 +3144,7 @@
                 ...logs.map(log => 
                     `"${log.timestamp}","${log.email}","${log.eventType}","${log.ipAddress}","${log.userAgent}","${log.details}"`
                 )
-            ].join('\\n');
+            ].join('\n');
             
             const blob = new Blob([csvContent], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
@@ -2999,7 +3263,7 @@
                 ...userManagementData.users.map(user => 
                     `"${user.name}","${user.email}","${user.status}","${user.role}","${user.dateAdded || ''}","${user.manager || ''}","${user.employeeId || ''}","${user.password}"`
                 )
-            ].join('\\n');
+            ].join('\n');
             
             const blob = new Blob([csvContent], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
@@ -3020,7 +3284,7 @@
                 ...userManagementData.users.map(user => 
                     `"${user.name}","${user.email}","${user.status}","${user.role}","${user.dateAdded || ''}","${user.manager || ''}","${user.employeeId || ''}","${user.password}"`
                 )
-            ].join('\\n');
+            ].join('\n');
             
             const blob = new Blob([csvContent], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
@@ -3033,6 +3297,227 @@
             URL.revokeObjectURL(url);
             
             showConfigStatus('Google Sheets format CSV generated. Upload this to your Google Sheets and get the CSV export URL.', 'success');
+        }
+
+        // User-Level Department Access Management Functions
+        let currentSelectedUser = null;
+        
+        function searchUsersForAccess() {
+            const searchTerm = document.getElementById('userAccessSearch').value.toLowerCase().trim();
+            const resultsContainer = document.getElementById('userAccessSearchResults');
+            const resultsList = document.getElementById('userAccessSearchList');
+            
+            if (searchTerm.length < 2) {
+                resultsContainer.classList.add('hidden');
+                return;
+            }
+            
+            const matchingUsers = userManagementData.users.filter(user => 
+                user.name.toLowerCase().includes(searchTerm) || 
+                user.email.toLowerCase().includes(searchTerm)
+            );
+            
+            if (matchingUsers.length > 0) {
+                resultsList.innerHTML = matchingUsers.map(user => `
+                    <div class="p-2 hover:bg-gray-50 cursor-pointer border-b border-gray-200 last:border-b-0"
+                         onclick="selectUserForAccessById('${user.id}')">
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-medium text-xs mr-3">
+                                ${user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="font-medium text-sm">${user.name}</div>
+                                <div class="text-xs text-gray-500">${user.email} - ${user.role}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                resultsContainer.classList.remove('hidden');
+            } else {
+                resultsList.innerHTML = '<div class="p-2 text-gray-500 text-sm">No users found</div>';
+                resultsContainer.classList.remove('hidden');
+            }
+        }
+        
+        function populateUserAccessSelect() {
+            const selectElement = document.getElementById('userAccessSelect');
+            selectElement.innerHTML = '<option value="">Choose a user...</option>';
+            
+            userManagementData.users
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.name} (${user.email}) - ${user.role}`;
+                    selectElement.appendChild(option);
+                });
+        }
+        
+        function selectUserForAccess() {
+            const selectElement = document.getElementById('userAccessSelect');
+            const userId = selectElement.value;
+            
+            if (userId) {
+                selectUserForAccessById(userId);
+            }
+        }
+        
+        function selectUserForAccessById(userId) {
+            const user = userManagementData.users.find(u => u.id === userId);
+            if (!user) return;
+            
+            currentSelectedUser = user;
+            
+            // Hide search results
+            document.getElementById('userAccessSearchResults').classList.add('hidden');
+            
+            // Update user info display
+            document.getElementById('selectedUserName').textContent = user.name;
+            document.getElementById('selectedUserEmail').textContent = user.email;
+            document.getElementById('selectedUserRole').textContent = user.role.toUpperCase();
+            document.getElementById('selectedUserStatus').textContent = user.status.toUpperCase();
+            
+            // Show user department configuration
+            document.getElementById('userDepartmentConfig').classList.remove('hidden');
+            
+            // Generate user-specific department checkboxes
+            generateUserDepartmentCheckboxes(user);
+            
+            showConfigStatus(`Selected user: ${user.name} for department access configuration`, 'info');
+        }
+        
+        function generateUserDepartmentCheckboxes(user) {
+            const container = document.getElementById('userDepartmentCheckboxes');
+            container.innerHTML = '';
+            
+            // Ensure user has department access array
+            if (!user.departmentAccess) {
+                user.departmentAccess = departmentAccessConfig[user.role] || ['operations'];
+            }
+            
+            allTabs.forEach(tab => {
+                if (tab.id === 'adminConfig' && user.role !== 'admin') return; // Admin config only for admin role
+                
+                const isChecked = user.departmentAccess.includes(tab.id);
+                const isRoleDefault = (departmentAccessConfig[user.role] || []).includes(tab.id);
+                
+                const checkboxHtml = `
+                    <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors ${isRoleDefault ? 'bg-blue-50 border-blue-200' : ''}">
+                        <input type="checkbox" 
+                               id="user_dept_${tab.id}" 
+                               class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" 
+                               ${isChecked ? 'checked' : ''}
+                               onchange="updateUserDepartmentAccess('${tab.id}', this.checked)">
+                        <label for="user_dept_${tab.id}" class="ml-3 flex items-center cursor-pointer flex-1">
+                            <i class="${tab.icon} mr-2 text-gray-600"></i>
+                            <div>
+                                <span class="text-sm font-medium text-gray-700">${tab.name}</span>
+                                ${isRoleDefault ? '<div class="text-xs text-blue-600">Role Default</div>' : ''}
+                            </div>
+                        </label>
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', checkboxHtml);
+            });
+        }
+        
+        function updateUserDepartmentAccess(departmentId, hasAccess) {
+            if (!currentSelectedUser) return;
+            
+            if (!currentSelectedUser.departmentAccess) {
+                currentSelectedUser.departmentAccess = [];
+            }
+            
+            if (hasAccess) {
+                if (!currentSelectedUser.departmentAccess.includes(departmentId)) {
+                    currentSelectedUser.departmentAccess.push(departmentId);
+                }
+            } else {
+                currentSelectedUser.departmentAccess = currentSelectedUser.departmentAccess.filter(id => id !== departmentId);
+            }
+            
+            console.log(`Updated ${currentSelectedUser.name} access:`, currentSelectedUser.departmentAccess);
+        }
+        
+        function selectAllUserDepartments() {
+            if (!currentSelectedUser) return;
+            
+            const checkboxes = document.querySelectorAll('#userDepartmentCheckboxes input[type="checkbox"]');
+            const allDepartmentIds = [];
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = true;
+                const departmentId = checkbox.id.replace('user_dept_', '');
+                allDepartmentIds.push(departmentId);
+            });
+            
+            currentSelectedUser.departmentAccess = [...new Set(allDepartmentIds)]; // Remove duplicates
+            showConfigStatus('All departments selected for this user', 'success');
+        }
+        
+        function deselectAllUserDepartments() {
+            if (!currentSelectedUser) return;
+            
+            const checkboxes = document.querySelectorAll('#userDepartmentCheckboxes input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            currentSelectedUser.departmentAccess = [];
+            showConfigStatus('All departments deselected for this user', 'info');
+        }
+        
+        function resetToRoleDefaults() {
+            if (!currentSelectedUser) return;
+            
+            const roleDefaults = departmentAccessConfig[currentSelectedUser.role] || ['operations'];
+            currentSelectedUser.departmentAccess = [...roleDefaults];
+            
+            // Update checkboxes to reflect role defaults
+            generateUserDepartmentCheckboxes(currentSelectedUser);
+            
+            showConfigStatus(`Reset to ${currentSelectedUser.role} role defaults`, 'info');
+        }
+        
+        function saveUserDepartmentAccess() {
+            if (!currentSelectedUser) {
+                showConfigStatus('Please select a user first', 'error');
+                return;
+            }
+            
+            // Find and update the user in the main array
+            const userIndex = userManagementData.users.findIndex(u => u.id === currentSelectedUser.id);
+            if (userIndex === -1) {
+                showConfigStatus('User not found', 'error');
+                return;
+            }
+            
+            userManagementData.users[userIndex].departmentAccess = [...currentSelectedUser.departmentAccess];
+            userManagementData.users[userIndex].updatedAt = new Date().toISOString();
+            
+            const success = saveUserManagementData();
+            
+            if (success) {
+                showConfigStatus(`Department access saved successfully for ${currentSelectedUser.name}`, 'success');
+                
+                // Log the access change
+                logUserActivity(currentUser, 'user_access_updated', {
+                    targetUser: currentSelectedUser.email,
+                    newAccess: currentSelectedUser.departmentAccess,
+                    updatedBy: currentUser
+                });
+                
+                // If current logged-in user's access was updated, refresh their tabs
+                if (currentSelectedUser.email === currentUser) {
+                    setTimeout(() => {
+                        generateTabs();
+                        showConfigStatus('Your dashboard tabs have been refreshed', 'info');
+                    }, 1000);
+                }
+            } else {
+                showConfigStatus('Error saving user access configuration', 'error');
+            }
         }
 
         // Admin Configuration Functions
