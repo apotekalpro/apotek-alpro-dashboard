@@ -1221,6 +1221,53 @@
                             </div>
                         </div>
                         
+                        <!-- Authentication Mode Configuration -->
+                        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                                <i class="fas fa-shield-alt mr-2 text-green-600"></i>
+                                Authentication Configuration
+                            </h3>
+                            <p class="text-gray-600 mb-4">Configure how the system authenticates users</p>
+                            
+                            <div class="flex flex-col md:flex-row gap-4 items-start">
+                                <div class="flex-1">
+                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                        <div class="flex items-center mb-2">
+                                            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                                            <span class="font-medium text-blue-800">Current Authentication Mode:</span>
+                                        </div>
+                                        <p id="authModeStatus" class="text-blue-700 text-sm">Loading...</p>
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <button id="toggleAuthMode" onclick="toggleAuthenticationMode()" 
+                                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center shadow-md hover:shadow-lg">
+                                        <i class="fas fa-toggle-on mr-2"></i>
+                                        Switch Authentication Mode
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 text-sm text-gray-600">
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div class="border border-gray-200 rounded-lg p-3">
+                                        <div class="flex items-center mb-2">
+                                            <i class="fas fa-database text-blue-600 mr-2"></i>
+                                            <span class="font-medium">Internal + Google Sheets</span>
+                                        </div>
+                                        <p class="text-xs">First checks internal users, then falls back to Google Sheets authentication</p>
+                                    </div>
+                                    <div class="border border-gray-200 rounded-lg p-3">
+                                        <div class="flex items-center mb-2">
+                                            <i class="fas fa-lock text-green-600 mr-2"></i>
+                                            <span class="font-medium">Internal Only</span>
+                                        </div>
+                                        <p class="text-xs">Uses only internal user database for authentication</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- User-Level Department Access Management -->
                         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                             <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
@@ -1828,6 +1875,11 @@
                     console.error('❌ Error loading login logs:', error);
                 }
             }
+            
+            // Update authentication mode display
+            setTimeout(() => {
+                updateAuthModeDisplay();
+            }, 100);
         }
         
         // Save configuration to localStorage
@@ -1885,6 +1937,9 @@
                 const userIP = await getUserIP();
                 
                 // First check local user management system
+                console.log('🔍 Checking local users:', userManagementData.users.length, 'users available');
+                console.log('🔍 Looking for user:', email.toLowerCase());
+                
                 const localUser = userManagementData.users.find(u => 
                     u.email === email.toLowerCase() && 
                     u.password === password && 
@@ -1907,6 +1962,23 @@
                     
                     console.log('✅ Local user authenticated:', localUser.email);
                     return { email: localUser.email, role: localUser.role, name: localUser.name };
+                }
+                
+                // Check if user wants to use only internal authentication
+                const useInternalOnly = localStorage.getItem('useInternalAuthOnly') === 'true';
+                
+                if (useInternalOnly) {
+                    console.log('🚫 Google Sheets authentication disabled - using internal only');
+                    
+                    // Log failed login attempt
+                    logUserActivity(email, 'failed_login', {
+                        ipAddress: userIP,
+                        reason: 'user_not_found_in_internal_system',
+                        userAgent: navigator.userAgent,
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    return null;
                 }
                 
                 // Fallback to Google Sheets authentication
@@ -3892,6 +3964,58 @@
             reader.readAsText(file);
         }
         
+        // Authentication Mode Management
+        function toggleAuthenticationMode() {
+            const useInternalOnly = localStorage.getItem('useInternalAuthOnly') === 'true';
+            const newMode = !useInternalOnly;
+            
+            localStorage.setItem('useInternalAuthOnly', newMode.toString());
+            
+            const modeText = newMode ? 'Internal Only' : 'Internal + Google Sheets';
+            showConfigStatus(`Authentication mode switched to: ${modeText}`, 'success');
+            
+            console.log(`🔧 Authentication mode: ${modeText}`);
+        }
+        
+        function getCurrentAuthMode() {
+            const useInternalOnly = localStorage.getItem('useInternalAuthOnly') === 'true';
+            return useInternalOnly ? 'Internal Only' : 'Internal + Google Sheets';
+        }
+
+        function toggleAuthenticationMode() {
+            const useInternalOnly = localStorage.getItem('useInternalAuthOnly') === 'true';
+            const newMode = !useInternalOnly;
+            
+            localStorage.setItem('useInternalAuthOnly', newMode.toString());
+            
+            const modeText = newMode ? 'Internal Only' : 'Internal + Google Sheets';
+            showConfigStatus(`Authentication mode switched to: ${modeText}`, 'success');
+            
+            // Update the auth mode status display
+            updateAuthModeDisplay();
+            
+            console.log('🔧 Authentication mode changed to:', modeText);
+        }
+
+        function updateAuthModeDisplay() {
+            const authModeStatusElement = document.getElementById('authModeStatus');
+            if (authModeStatusElement) {
+                const currentMode = getCurrentAuthMode();
+                const useInternalOnly = localStorage.getItem('useInternalAuthOnly') === 'true';
+                
+                if (useInternalOnly) {
+                    authModeStatusElement.innerHTML = `
+                        <strong>${currentMode}</strong> - Only users created in the admin panel can login. 
+                        Google Sheets authentication is disabled.
+                    `;
+                } else {
+                    authModeStatusElement.innerHTML = `
+                        <strong>${currentMode}</strong> - First checks internal users, then falls back to Google Sheets for authentication.
+                    `;
+                }
+            }
+        }
+
         function showConfigStatus(message, type = 'info') {
             const statusDiv = document.getElementById('configStatus');
             const iconElement = document.getElementById('configStatusIcon');
@@ -3932,12 +4056,35 @@
         
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
+            // Load configuration and user data first
+            loadConfiguration();
+            
             // Auto-focus on email field
             document.getElementById('email').focus();
             
             // Initialize admin config if user is already logged in as admin
             if (currentUserRole?.toLowerCase() === 'admin') {
                 updateCurrentDepartmentsList();
+            }
+            
+            // Set up observer for admin config tab visibility
+            const adminConfigContent = document.getElementById('adminConfigContent');
+            if (adminConfigContent) {
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                            // Check if admin config tab is now visible
+                            if (!adminConfigContent.classList.contains('hidden')) {
+                                updateAuthModeDisplay();
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(adminConfigContent, {
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
             }
         });
 
