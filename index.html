@@ -2002,6 +2002,47 @@
             console.log('   - Are legacy and hashPassword same?:', legacyHash(password) === hashPassword(password));
         };
         
+        // Debug function to check user data in database (accessible from console)
+        window.debugUserInDatabase = function(email) {
+            if (!_mode || !_db) {
+                console.log('❌ Database not available');
+                return;
+            }
+            
+            console.log('🔍 Checking user in database:', email);
+            return _db
+                .from('users')
+                .select('*')
+                .eq('email', email.toLowerCase())
+                .single()
+                .then(function(result) {
+                    const { data: userData, error } = result;
+                    if (error) {
+                        console.log('❌ Error fetching user:', error);
+                        return;
+                    }
+                    if (userData) {
+                        console.log('👤 User data:', userData);
+                        console.log('🔐 Password hash in DB:', userData.password_hash);
+                        
+                        // Test if this hash matches common passwords
+                        const testPasswords = ['admin123', 'Alpro@123', 'password', '123456'];
+                        testPasswords.forEach(pwd => {
+                            console.log(`🧪 Testing "${pwd}":`);
+                            console.log(`   - Legacy hash match: ${userData.password_hash === legacyHash(pwd)}`);
+                            console.log(`   - Plain match: ${userData.password_hash === pwd}`);
+                            console.log(`   - Base64 match: ${userData.password_hash === btoa(pwd)}`);
+                            console.log(`   - hashPassword match: ${userData.password_hash === hashPassword(pwd)}`);
+                        });
+                    } else {
+                        console.log('❌ User not found');
+                    }
+                })
+                .catch(function(error) {
+                    console.log('❌ Database query error:', error);
+                });
+        };
+        
         // ===== SECURITY & STATE VARIABLES =====
         let currentUser = null;
         let currentUserRole = null;
