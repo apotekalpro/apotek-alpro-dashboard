@@ -2785,6 +2785,12 @@
                                     } else {
                                         console.log('✅ Login stats updated successfully for user:', userData.email);
                                         console.log('✅ Rows affected:', updateResult.data ? updateResult.data.length : 'Unknown');
+                                        
+                                        // Force reload user data from database to reflect updated last_login
+                                        console.log('🔄 Forcing user data reload after login stats update');
+                                        if (typeof loadSecureData === 'function') {
+                                            loadSecureData();
+                                        }
                                     }
                                 })
                                 .catch(function(error) {
@@ -3420,14 +3426,34 @@
                 }
             }
             
-            // Load login logs
-            const savedLogs = localStorage.getItem('loginLogs');
-            if (savedLogs) {
-                try {
-                    userManagementData.loginLogs = JSON.parse(savedLogs);
-                    console.log('✅ Login logs loaded from localStorage');
-                } catch (error) {
-                    console.error('❌ Error loading login logs:', error);
+            // Load login logs from database
+            if (SecureUserManager.loadActivityLogs) {
+                SecureUserManager.loadActivityLogs(100).then(function(logs) {
+                    userManagementData.loginLogs = logs || [];
+                    console.log('✅ Login logs loaded from database:', logs ? logs.length : 0, 'entries');
+                }).catch(function(error) {
+                    console.error('❌ Error loading login logs from database:', error);
+                    // Fallback to localStorage if database fails
+                    const savedLogs = localStorage.getItem('loginLogs');
+                    if (savedLogs) {
+                        try {
+                            userManagementData.loginLogs = JSON.parse(savedLogs);
+                            console.log('✅ Login logs loaded from localStorage (fallback)');
+                        } catch (parseError) {
+                            console.error('❌ Error parsing localStorage logs:', parseError);
+                        }
+                    }
+                });
+            } else {
+                // Fallback to localStorage if SecureUserManager not available
+                const savedLogs = localStorage.getItem('loginLogs');
+                if (savedLogs) {
+                    try {
+                        userManagementData.loginLogs = JSON.parse(savedLogs);
+                        console.log('✅ Login logs loaded from localStorage (no database)');
+                    } catch (error) {
+                        console.error('❌ Error loading login logs:', error);
+                    }
                 }
             }
             
