@@ -3012,7 +3012,7 @@
                         metadata: metadata
                     };
                     
-                    return supabase
+                    return _db
                         .from('login_logs')
                         .insert([logEntry])
                         .then(function(result) {
@@ -3037,7 +3037,7 @@
                 if (!_mode) return Promise.resolve([]);
                 
                 try {
-                    return supabase
+                    return _db
                         .from('login_logs')
                         .select('*')
                         .order('created_at', { ascending: false })
@@ -3428,9 +3428,14 @@
             
             // Load login logs from database
             if (SecureUserManager.loadActivityLogs) {
+                console.log('🔍 Attempting to load login logs from database...');
                 SecureUserManager.loadActivityLogs(100).then(function(logs) {
+                    console.log('📋 Raw login logs from database:', logs);
                     userManagementData.loginLogs = logs || [];
                     console.log('✅ Login logs loaded from database:', logs ? logs.length : 0, 'entries');
+                    if (logs && logs.length > 0) {
+                        console.log('📄 Sample log entry:', logs[0]);
+                    }
                 }).catch(function(error) {
                     console.error('❌ Error loading login logs from database:', error);
                     // Fallback to localStorage if database fails
@@ -3600,7 +3605,16 @@
                     
                     // Log successful login activity
                     if (SecureUserManager.logActivity) {
-                        SecureUserManager.logActivity(user.email, 'Login', 'Successful login via cloud authentication');
+                        console.log('📝 Attempting to log login activity for:', user.email);
+                        SecureUserManager.logActivity(user.email, 'Login', 'Successful login via cloud authentication')
+                            .then(function() {
+                                console.log('✅ Login activity logged successfully');
+                            })
+                            .catch(function(error) {
+                                console.error('❌ Failed to log login activity:', error);
+                            });
+                    } else {
+                        console.warn('⚠️ SecureUserManager.logActivity not available');
                     }
                     
                     showDashboard();
