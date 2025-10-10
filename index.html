@@ -1764,7 +1764,7 @@
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Agent</th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+
                                             </tr>
                                         </thead>
                                         <tbody id="loginLogsTableBody" class="divide-y divide-gray-200">
@@ -2326,7 +2326,7 @@
         ];
         
         // Default department access configuration
-        let departmentAccessConfig = {
+        let department_accessConfig = {
             admin: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig'],
             chief: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'],
             strategy: ['ppm', 'strategy', 'operations'],
@@ -2433,12 +2433,12 @@
                 name: userData.name,
                 role: userData.role || 'user',
                 status: userData.status || 'active',
-                employee_id: userData.employeeId || null,
+                employee_id: userData.employee_id || null,
                 manager: userData.manager || null,
                 date_added: userData.dateAdded || new Date().toISOString().split('T')[0],
-                department_access: userData.departmentAccess || [],
-                login_count: userData.loginCount || 0,
-                last_login: userData.lastLogin || null
+                department_access: userData.department_access || [],
+                login_count: userData.login_count || 0,
+                last_login: userData.last_login || null
             };
             
             return _db
@@ -2460,11 +2460,11 @@
                 name: userData.name,
                 role: userData.role,
                 status: userData.status,
-                employee_id: userData.employeeId || null,
+                employee_id: userData.employee_id || null,
                 manager: userData.manager || null,
-                department_access: userData.departmentAccess || [],
-                login_count: userData.loginCount || 0,
-                last_login: userData.lastLogin || null,
+                department_access: userData.department_access || [],
+                login_count: userData.login_count || 0,
+                last_login: userData.last_login || null,
                 updated_at: new Date().toISOString()
             };
             
@@ -2754,16 +2754,54 @@
                             
                             console.log('☁️ Password matched! Authentication successful');
                             
+                            // Detailed debugging before update
+                            console.log('🔍 DEBUG: About to update login stats for user:');
+                            console.log('   - User ID:', userData.id);
+                            console.log('   - User Email:', userData.email);
+                            console.log('   - Current login_count:', userData.login_count);
+                            console.log('   - New timestamp:', new Date().toISOString());
+                            
                             // Update login statistics
-                            _db.from('users')
+                            console.log('🚀 STARTING database update...');
+                            const updatePromise = _db.from('users')
                                 .update({
                                     last_login: new Date().toISOString(),
                                     login_count: (userData.login_count || 0) + 1
                                 })
-                                .eq('id', userData.id)
-                                .then(function() {
-                                    console.log('☁️ Login stats updated');
+                                .eq('id', userData.id);
+                            
+                            console.log('📤 Update promise created:', updatePromise);
+                            
+                            updatePromise.then(function(updateResult) {
+                                    console.log('☁️ DETAILED Login stats update result:', updateResult);
+                                    console.log('   - Update data:', updateResult.data);
+                                    console.log('   - Update error:', updateResult.error);
+                                    console.log('   - Update status:', updateResult.status);
+                                    console.log('   - Update statusText:', updateResult.statusText);
+                                    
+                                    if (updateResult.error) {
+                                        console.error('❌ Failed to update login stats:', updateResult.error);
+                                        console.error('❌ Error details:', JSON.stringify(updateResult.error, null, 2));
+                                    } else {
+                                        console.log('✅ Login stats updated successfully for user:', userData.email);
+                                        console.log('✅ Rows affected:', updateResult.data ? updateResult.data.length : 'Unknown');
+                                        
+                                        // Force reload user data from database to reflect updated last_login
+                                        console.log('🔄 Forcing user data reload after login stats update');
+                                        if (typeof loadSecureData === 'function') {
+                                            loadSecureData();
+                                        }
+                                    }
+                                })
+                                .catch(function(error) {
+                                    console.error('❌ Error updating login stats (catch block):', error);
+                                    console.error('❌ Error stack:', error.stack);
                                 });
+                            
+                            // Add a timeout check to see if the update is hanging
+                            setTimeout(function() {
+                                console.log('⏰ 5 seconds have passed since login stats update started');
+                            }, 5000);
                             
                             return {
                                 email: userData.email,
@@ -2790,10 +2828,10 @@
                         name: userData.name,
                         role: userData.role || 'user',
                         status: userData.status || 'active',
-                        employee_id: userData.employeeId || null,
+                        employee_id: userData.employee_id || null,
                         manager: userData.manager || null,
                         date_added: userData.dateAdded || new Date().toISOString().split('T')[0],
-                        department_access: userData.departmentAccess || []
+                        department_access: userData.department_access || []
                     };
                     
                     return supabase
@@ -2974,7 +3012,7 @@
                         metadata: metadata
                     };
                     
-                    return supabase
+                    return _db
                         .from('login_logs')
                         .insert([logEntry])
                         .then(function(result) {
@@ -2999,7 +3037,7 @@
                 if (!_mode) return Promise.resolve([]);
                 
                 try {
-                    return supabase
+                    return _db
                         .from('login_logs')
                         .select('*')
                         .order('created_at', { ascending: false })
@@ -3033,10 +3071,10 @@
                             name: userData.name,
                             role: userData.role || 'user',
                             status: userData.status || 'active',
-                            employee_id: userData.employeeId || null,
+                            employee_id: userData.employee_id || null,
                             manager: userData.manager || null,
                             date_added: userData.dateAdded || new Date().toISOString().split('T')[0],
-                            department_access: userData.departmentAccess || []
+                            department_access: userData.department_access || []
                         };
                         
                         return _db
@@ -3331,10 +3369,10 @@
                                 name: user.name,
                                 role: user.role,
                                 status: user.status,
-                                employeeId: user.employeeId,
+                                employee_id: user.employee_id,
                                 manager: user.manager,
                                 dateAdded: user.dateAdded,
-                                departmentAccess: user.departmentAccess || []
+                                department_access: user.department_access || []
                             };
                             
                             await SecureUserManager.createUser(userData);
@@ -3367,10 +3405,10 @@
         
         // Load configuration from localStorage if available
         function loadConfiguration() {
-            const savedConfig = localStorage.getItem('departmentAccessConfig');
+            const savedConfig = localStorage.getItem('department_accessConfig');
             if (savedConfig) {
                 try {
-                    departmentAccessConfig = JSON.parse(savedConfig);
+                    department_accessConfig = JSON.parse(savedConfig);
                     console.log('✅ Configuration loaded from localStorage');
                 } catch (error) {
                     console.error('❌ Error loading configuration from localStorage:', error);
@@ -3388,14 +3426,68 @@
                 }
             }
             
-            // Load login logs
-            const savedLogs = localStorage.getItem('loginLogs');
-            if (savedLogs) {
-                try {
-                    userManagementData.loginLogs = JSON.parse(savedLogs);
-                    console.log('✅ Login logs loaded from localStorage');
-                } catch (error) {
-                    console.error('❌ Error loading login logs:', error);
+            // Load login logs from database
+            if (SecureUserManager.loadActivityLogs) {
+                console.log('🔍 Attempting to load login logs from database...');
+                SecureUserManager.loadActivityLogs(100).then(function(logs) {
+                    console.log('📋 Raw login logs from database:', logs);
+                    
+                    // Map database field names to UI field names
+                    const mappedLogs = (logs || []).map(function(log) {
+                        return {
+                            email: log.user_email,
+                            eventType: log.activity,
+                            ipAddress: log.ip_address,
+                            userAgent: log.user_agent,
+                            timestamp: log.created_at,
+
+                        };
+                    });
+                    
+                    userManagementData.loginLogs = mappedLogs;
+                    console.log('✅ Login logs loaded and mapped from database:', mappedLogs.length, 'entries');
+                    if (mappedLogs.length > 0) {
+                        console.log('📄 Sample mapped log entry:', mappedLogs[0]);
+                    }
+                    
+                    // Update the filtered logs and refresh the display
+                    if (typeof filterLoginLogs === 'function') {
+                        filterLoginLogs();
+                    } else {
+                        userManagementData.filteredLogs = mappedLogs;
+                    }
+                    
+                    // Update pagination and table display
+                    if (typeof updateLogPagination === 'function') {
+                        updateLogPagination();
+                    }
+                    if (typeof renderLoginLogsTable === 'function') {
+                        renderLoginLogsTable();
+                    }
+                    
+                }).catch(function(error) {
+                    console.error('❌ Error loading login logs from database:', error);
+                    // Fallback to localStorage if database fails
+                    const savedLogs = localStorage.getItem('loginLogs');
+                    if (savedLogs) {
+                        try {
+                            userManagementData.loginLogs = JSON.parse(savedLogs);
+                            console.log('✅ Login logs loaded from localStorage (fallback)');
+                        } catch (parseError) {
+                            console.error('❌ Error parsing localStorage logs:', parseError);
+                        }
+                    }
+                });
+            } else {
+                // Fallback to localStorage if SecureUserManager not available
+                const savedLogs = localStorage.getItem('loginLogs');
+                if (savedLogs) {
+                    try {
+                        userManagementData.loginLogs = JSON.parse(savedLogs);
+                        console.log('✅ Login logs loaded from localStorage (no database)');
+                    } catch (error) {
+                        console.error('❌ Error loading login logs:', error);
+                    }
                 }
             }
             
@@ -3408,7 +3500,7 @@
         // Save configuration to localStorage
         function saveConfiguration() {
             try {
-                localStorage.setItem('departmentAccessConfig', JSON.stringify(departmentAccessConfig));
+                localStorage.setItem('department_accessConfig', JSON.stringify(department_accessConfig));
                 console.log('✅ Configuration saved to localStorage');
                 return true;
             } catch (error) {
@@ -3539,6 +3631,62 @@
                     currentUser = user.email;
                     currentUserRole = user.role;
                     currentUserName = user.name;
+                    
+                    // Log successful login activity
+                    console.log('🔍 Checking SecureUserManager.logActivity availability...');
+                    console.log('SecureUserManager:', typeof SecureUserManager);
+                    console.log('SecureUserManager.logActivity:', typeof SecureUserManager.logActivity);
+                    
+                    if (SecureUserManager && SecureUserManager.logActivity) {
+                        console.log('📝 Attempting to log login activity for:', user.email);
+                        try {
+                            const logPromise = SecureUserManager.logActivity(user.email, 'Login', 'Successful login via cloud authentication');
+                            console.log('📤 Login activity promise created:', logPromise);
+                            
+                            if (logPromise && typeof logPromise.then === 'function') {
+                                logPromise
+                                    .then(function() {
+                                        console.log('✅ Login activity logged successfully');
+                                    })
+                                    .catch(function(error) {
+                                        console.error('❌ Failed to log login activity:', error);
+                                    });
+                            } else {
+                                console.warn('⚠️ logActivity did not return a promise');
+                            }
+                        } catch (error) {
+                            console.error('❌ Error calling logActivity:', error);
+                        }
+                    } else {
+                        console.warn('⚠️ SecureUserManager.logActivity not available');
+                        if (!SecureUserManager) {
+                            console.warn('⚠️ SecureUserManager is not defined');
+                        } else {
+                            console.warn('⚠️ logActivity method is missing from SecureUserManager');
+                        }
+                    }
+                    
+                    // Manual test: try to insert login log directly
+                    console.log('🧪 Testing direct login log insertion...');
+                    if (_db) {
+                        _db.from('login_logs').insert([{
+                            user_email: user.email,
+                            activity: 'Login',
+                            ip_address: 'localhost',
+                            user_agent: navigator.userAgent,
+                            metadata: { test: true, timestamp: new Date().toISOString() }
+                        }]).then(function(result) {
+                            console.log('🧪 Direct login log insert result:', result);
+                            if (result.error) {
+                                console.error('❌ Direct login log insert failed:', result.error);
+                            } else {
+                                console.log('✅ Direct login log insert successful');
+                            }
+                        }).catch(function(error) {
+                            console.error('❌ Direct login log insert error:', error);
+                        });
+                    }
+                    
                     showDashboard();
                 } else {
                     console.log('☁️ Cloud authentication failed, trying Google Sheets fallback...');
@@ -3658,15 +3806,15 @@
             
             // First, try to find user-specific permissions
             const user = userManagementData.users.find(u => u.email === currentUser?.toLowerCase());
-            if (user && user.departmentAccess && user.departmentAccess.length > 0) {
-                console.log(`✅ Using user-level permissions for ${user.email}:`, user.departmentAccess);
-                return user.departmentAccess;
+            if (user && user.department_access && user.department_access.length > 0) {
+                console.log(`✅ Using user-level permissions for ${user.email}:`, user.department_access);
+                return user.department_access;
             }
             
             // Fall back to role-based configuration
-            if (departmentAccessConfig[role]) {
-                console.log(`✅ Using role-based permissions for ${role}:`, departmentAccessConfig[role]);
-                return departmentAccessConfig[role];
+            if (department_accessConfig[role]) {
+                console.log(`✅ Using role-based permissions for ${role}:`, department_accessConfig[role]);
+                return department_accessConfig[role];
             }
             
             // Fallback to default configuration for backward compatibility
@@ -4010,7 +4158,7 @@
                     const role = values[3]?.trim().toLowerCase() || 'user';
                     
                     // Get default department access for this role
-                    const defaultDepartments = departmentAccessConfig[role] || ['operations'];
+                    const defaultDepartments = department_accessConfig[role] || ['operations'];
                     
                     const user = {
                         id: Date.now() + Math.random().toString(36).substr(2, 9),
@@ -4020,12 +4168,12 @@
                         role: role,
                         dateAdded: values[4]?.trim() || new Date().toISOString().split('T')[0],
                         manager: values[5]?.trim() || '',
-                        employeeId: values[6]?.trim() || '',
+                        employee_id: values[6]?.trim() || '',
                         password: values[7]?.trim() || '',
                         // Add user-level department access
-                        departmentAccess: [...defaultDepartments],
-                        lastLogin: null,
-                        loginCount: 0,
+                        department_access: [...defaultDepartments],
+                        last_login: null,
+                        login_count: 0,
                         notes: '',
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString()
@@ -4148,7 +4296,7 @@
                             </div>
                             <div>
                                 <div class="text-sm font-medium text-gray-900">${user.name}</div>
-                                <div class="text-sm text-gray-500">${user.employeeId || 'No ID'}</div>
+                                <div class="text-sm text-gray-500">${user.employee_id || 'No ID'}</div>
                             </div>
                         </div>
                     </td>
@@ -4165,7 +4313,7 @@
                         </span>
                     </td>
                     <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                        ${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                        ${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}
                     </td>
                     <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
                         <div class="flex flex-wrap gap-2">
@@ -4261,7 +4409,7 @@
             const password = document.getElementById('newUserPassword').value;
             const role = document.getElementById('newUserRole').value;
             const status = document.getElementById('newUserStatus').value;
-            const employeeId = document.getElementById('newUserEmployeeId').value.trim();
+            const employee_id = document.getElementById('newUserEmployeeId').value.trim();
             const notes = document.getElementById('newUserNotes').value.trim();
             
             if (!name || !email || !password || !role) {
@@ -4277,7 +4425,7 @@
             
             // Get custom department access from user selections (or role defaults if none selected)
             const customDepartmentAccess = getCurrentNewUserDepartmentAccess();
-            const departmentAccess = customDepartmentAccess.length > 0 ? customDepartmentAccess : (departmentAccessConfig[role] || ['operations']);
+            const department_access = customDepartmentAccess.length > 0 ? customDepartmentAccess : (department_accessConfig[role] || ['operations']);
             
             const newUser = {
                 id: Date.now() + Math.random().toString(36).substr(2, 9),
@@ -4286,12 +4434,12 @@
                 password: password,
                 role: role,
                 status: status,
-                employeeId: employeeId,
+                employee_id: employee_id,
                 notes: notes,
                 // Add department access with custom selections
-                departmentAccess: [...departmentAccess],
-                lastLogin: null,
-                loginCount: 0,
+                department_access: [...department_access],
+                last_login: null,
+                login_count: 0,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
@@ -4312,7 +4460,7 @@
                     targetUser: email,
                     role: role,
                     status: status,
-                    departmentAccess: departmentAccess
+                    department_access: department_access
                 });
                 
                 showConfigStatus(`User ${name} added successfully`, 'success');
@@ -4359,7 +4507,7 @@
             const container = document.getElementById('newUserDepartmentAccess');
             container.innerHTML = '';
             
-            const roleDefaults = departmentAccessConfig[role] || ['operations'];
+            const roleDefaults = department_accessConfig[role] || ['operations'];
             
             allTabs.forEach(tab => {
                 if (tab.id === 'adminConfig' && role !== 'admin') return; // Admin config only for admin role
@@ -4465,12 +4613,12 @@
             document.getElementById('editUserPassword').value = user.password;
             document.getElementById('editUserRole').value = user.role;
             document.getElementById('editUserStatus').value = user.status;
-            document.getElementById('editUserEmployeeId').value = user.employeeId || '';
+            document.getElementById('editUserEmployeeId').value = user.employee_id || '';
             document.getElementById('editUserNotes').value = user.notes || '';
             
             // Ensure user has department access (initialize if not exists)
-            if (!user.departmentAccess) {
-                user.departmentAccess = departmentAccessConfig[user.role] || ['operations'];
+            if (!user.department_access) {
+                user.department_access = department_accessConfig[user.role] || ['operations'];
             }
             
             // Generate department access checkboxes for this user
@@ -4918,7 +5066,7 @@
             const password = document.getElementById('editUserPassword').value;
             const role = document.getElementById('editUserRole').value;
             const status = document.getElementById('editUserStatus').value;
-            const employeeId = document.getElementById('editUserEmployeeId').value.trim();
+            const employee_id = document.getElementById('editUserEmployeeId').value.trim();
             const notes = document.getElementById('editUserNotes').value.trim();
             
             if (!name || !email || !password || !role) {
@@ -4943,7 +5091,7 @@
             
             // Get the current user being edited (with any department access changes)
             const currentEditUser = userManagementData.users.find(u => u.id === userId);
-            const departmentAccess = currentEditUser?.departmentAccess || departmentAccessConfig[role] || ['operations'];
+            const department_access = currentEditUser?.department_access || department_accessConfig[role] || ['operations'];
             
             const updatedUser = {
                 ...userManagementData.users[userIndex],
@@ -4952,9 +5100,9 @@
                 password: password,
                 role: role,
                 status: status,
-                employeeId: employeeId,
+                employee_id: employee_id,
                 notes: notes,
-                departmentAccess: departmentAccess, // Save department access
+                department_access: department_access, // Save department access
                 updatedAt: new Date().toISOString()
             };
             
@@ -4974,8 +5122,8 @@
                     name: oldUser.name !== name ? {from: oldUser.name, to: name} : null,
                     role: oldUser.role !== role ? {from: oldUser.role, to: role} : null,
                     status: oldUser.status !== status ? {from: oldUser.status, to: status} : null,
-                    departmentAccess: JSON.stringify(oldUser.departmentAccess) !== JSON.stringify(departmentAccess) ? 
-                        {from: oldUser.departmentAccess, to: departmentAccess} : null
+                    department_access: JSON.stringify(oldUser.department_access) !== JSON.stringify(department_access) ? 
+                        {from: oldUser.department_access, to: department_access} : null
                 }
             });
             
@@ -5054,15 +5202,15 @@
             container.innerHTML = '';
             
             // Ensure user has department access array
-            if (!user.departmentAccess) {
-                user.departmentAccess = departmentAccessConfig[user.role] || ['operations'];
+            if (!user.department_access) {
+                user.department_access = department_accessConfig[user.role] || ['operations'];
             }
             
             allTabs.forEach(tab => {
                 if (tab.id === 'adminConfig' && user.role !== 'admin') return; // Admin config only for admin role
                 
-                const isChecked = user.departmentAccess.includes(tab.id);
-                const isRoleDefault = (departmentAccessConfig[user.role] || []).includes(tab.id);
+                const isChecked = user.department_access.includes(tab.id);
+                const isRoleDefault = (department_accessConfig[user.role] || []).includes(tab.id);
                 
                 const checkboxHtml = `
                     <div class="flex items-center p-3 border rounded-lg hover:bg-white transition-colors ${isRoleDefault ? 'bg-blue-50 border-blue-200' : 'bg-white'}">
@@ -5097,8 +5245,8 @@
             user.role = newRole;
             
             // Update role defaults but keep any custom access
-            if (!user.departmentAccess || user.departmentAccess.length === 0) {
-                user.departmentAccess = departmentAccessConfig[newRole] || ['operations'];
+            if (!user.department_access || user.department_access.length === 0) {
+                user.department_access = department_accessConfig[newRole] || ['operations'];
             }
             
             // Regenerate checkboxes with new role context
@@ -5112,19 +5260,19 @@
             const user = userManagementData.users.find(u => u.id === userId);
             if (!user) return;
             
-            if (!user.departmentAccess) {
-                user.departmentAccess = [];
+            if (!user.department_access) {
+                user.department_access = [];
             }
             
             if (hasAccess) {
-                if (!user.departmentAccess.includes(departmentId)) {
-                    user.departmentAccess.push(departmentId);
+                if (!user.department_access.includes(departmentId)) {
+                    user.department_access.push(departmentId);
                 }
             } else {
-                user.departmentAccess = user.departmentAccess.filter(id => id !== departmentId);
+                user.department_access = user.department_access.filter(id => id !== departmentId);
             }
             
-            console.log(`Updated ${user.name} access:`, user.departmentAccess);
+            console.log(`Updated ${user.name} access:`, user.department_access);
         }
         
         function selectAllEditUserDepartments() {
@@ -5141,7 +5289,7 @@
                 allDepartmentIds.push(departmentId);
             });
             
-            user.departmentAccess = [...new Set(allDepartmentIds)]; // Remove duplicates
+            user.department_access = [...new Set(allDepartmentIds)]; // Remove duplicates
             showConfigStatus('All departments selected for this user', 'success');
         }
         
@@ -5155,7 +5303,7 @@
                 checkbox.checked = false;
             });
             
-            user.departmentAccess = [];
+            user.department_access = [];
             showConfigStatus('All departments deselected for this user', 'info');
         }
         
@@ -5165,8 +5313,8 @@
             if (!user) return;
             
             const role = document.getElementById('editUserRole').value;
-            const roleDefaults = departmentAccessConfig[role] || ['operations'];
-            user.departmentAccess = [...roleDefaults];
+            const roleDefaults = department_accessConfig[role] || ['operations'];
+            user.department_access = [...roleDefaults];
             
             // Update checkboxes to reflect role defaults
             generateEditUserDepartmentCheckboxes(user);
@@ -5230,9 +5378,7 @@
                     <td class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate" title="${log.userAgent}">
                         ${log.userAgent}
                     </td>
-                    <td class="px-4 py-3 text-sm text-gray-500">
-                        ${log.details ? Object.keys(log.details).map(key => `${key}: ${log.details[key]}`).join(', ') : '-'}
-                    </td>
+
                 `;
                 
                 tbody.appendChild(row);
@@ -5414,7 +5560,7 @@
             const csvContent = [
                 'Name,Email,Status,Role,Date,Manager,Employee ID,Password',
                 ...userManagementData.users.map(user => 
-                    `"${user.name}","${user.email}","${user.status}","${user.role}","${user.dateAdded || ''}","${user.manager || ''}","${user.employeeId || ''}","${user.password}"`
+                    `"${user.name}","${user.email}","${user.status}","${user.role}","${user.dateAdded || ''}","${user.manager || ''}","${user.employee_id || ''}","${user.password}"`
                 )
             ].join('\n');
             
@@ -5525,15 +5671,15 @@
             container.innerHTML = '';
             
             // Ensure user has department access array
-            if (!user.departmentAccess) {
-                user.departmentAccess = departmentAccessConfig[user.role] || ['operations'];
+            if (!user.department_access) {
+                user.department_access = department_accessConfig[user.role] || ['operations'];
             }
             
             allTabs.forEach(tab => {
                 if (tab.id === 'adminConfig' && user.role !== 'admin') return; // Admin config only for admin role
                 
-                const isChecked = user.departmentAccess.includes(tab.id);
-                const isRoleDefault = (departmentAccessConfig[user.role] || []).includes(tab.id);
+                const isChecked = user.department_access.includes(tab.id);
+                const isRoleDefault = (department_accessConfig[user.role] || []).includes(tab.id);
                 
                 const checkboxHtml = `
                     <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50 transition-colors ${isRoleDefault ? 'bg-blue-50 border-blue-200' : ''}">
@@ -5559,19 +5705,19 @@
         function updateUserDepartmentAccess(departmentId, hasAccess) {
             if (!currentSelectedUser) return;
             
-            if (!currentSelectedUser.departmentAccess) {
-                currentSelectedUser.departmentAccess = [];
+            if (!currentSelectedUser.department_access) {
+                currentSelectedUser.department_access = [];
             }
             
             if (hasAccess) {
-                if (!currentSelectedUser.departmentAccess.includes(departmentId)) {
-                    currentSelectedUser.departmentAccess.push(departmentId);
+                if (!currentSelectedUser.department_access.includes(departmentId)) {
+                    currentSelectedUser.department_access.push(departmentId);
                 }
             } else {
-                currentSelectedUser.departmentAccess = currentSelectedUser.departmentAccess.filter(id => id !== departmentId);
+                currentSelectedUser.department_access = currentSelectedUser.department_access.filter(id => id !== departmentId);
             }
             
-            console.log(`Updated ${currentSelectedUser.name} access:`, currentSelectedUser.departmentAccess);
+            console.log(`Updated ${currentSelectedUser.name} access:`, currentSelectedUser.department_access);
         }
         
         function selectAllUserDepartments() {
@@ -5586,7 +5732,7 @@
                 allDepartmentIds.push(departmentId);
             });
             
-            currentSelectedUser.departmentAccess = [...new Set(allDepartmentIds)]; // Remove duplicates
+            currentSelectedUser.department_access = [...new Set(allDepartmentIds)]; // Remove duplicates
             showConfigStatus('All departments selected for this user', 'success');
         }
         
@@ -5598,15 +5744,15 @@
                 checkbox.checked = false;
             });
             
-            currentSelectedUser.departmentAccess = [];
+            currentSelectedUser.department_access = [];
             showConfigStatus('All departments deselected for this user', 'info');
         }
         
         function resetToRoleDefaults() {
             if (!currentSelectedUser) return;
             
-            const roleDefaults = departmentAccessConfig[currentSelectedUser.role] || ['operations'];
-            currentSelectedUser.departmentAccess = [...roleDefaults];
+            const roleDefaults = department_accessConfig[currentSelectedUser.role] || ['operations'];
+            currentSelectedUser.department_access = [...roleDefaults];
             
             // Update checkboxes to reflect role defaults
             generateUserDepartmentCheckboxes(currentSelectedUser);
@@ -5628,7 +5774,7 @@
             }
             
             const updatedUser = userManagementData.users[userIndex];
-            updatedUser.departmentAccess = [...currentSelectedUser.departmentAccess];
+            updatedUser.department_access = [...currentSelectedUser.department_access];
             updatedUser.updatedAt = new Date().toISOString();
             
             const success = saveUserManagementData();
@@ -5639,7 +5785,7 @@
                 // Log the access change
                 logUserActivity(currentUser, 'user_access_updated', {
                     targetUser: currentSelectedUser.email,
-                    newAccess: currentSelectedUser.departmentAccess,
+                    newAccess: currentSelectedUser.department_access,
                     updatedBy: currentUser
                 });
                 
@@ -5688,7 +5834,7 @@
             const container = document.getElementById('departmentCheckboxes');
             container.innerHTML = '';
             
-            const currentAccess = departmentAccessConfig[role] || [];
+            const currentAccess = department_accessConfig[role] || [];
             
             allTabs.forEach(tab => {
                 if (tab.id === 'adminConfig' && role !== 'admin') return; // Admin config only for admin role
@@ -5714,19 +5860,19 @@
         }
         
         function updateDepartmentAccess(role, departmentId, hasAccess) {
-            if (!departmentAccessConfig[role]) {
-                departmentAccessConfig[role] = [];
+            if (!department_accessConfig[role]) {
+                department_accessConfig[role] = [];
             }
             
             if (hasAccess) {
-                if (!departmentAccessConfig[role].includes(departmentId)) {
-                    departmentAccessConfig[role].push(departmentId);
+                if (!department_accessConfig[role].includes(departmentId)) {
+                    department_accessConfig[role].push(departmentId);
                 }
             } else {
-                departmentAccessConfig[role] = departmentAccessConfig[role].filter(id => id !== departmentId);
+                department_accessConfig[role] = department_accessConfig[role].filter(id => id !== departmentId);
             }
             
-            console.log(`Updated ${role} access:`, departmentAccessConfig[role]);
+            console.log(`Updated ${role} access:`, department_accessConfig[role]);
         }
         
         function selectAllDepartments() {
@@ -5828,8 +5974,8 @@
                 localStorage.setItem('customTabs', JSON.stringify(updatedCustomTabs));
                 
                 // Remove from all role configurations
-                Object.keys(departmentAccessConfig).forEach(role => {
-                    departmentAccessConfig[role] = departmentAccessConfig[role].filter(id => id !== departmentId);
+                Object.keys(department_accessConfig).forEach(role => {
+                    department_accessConfig[role] = department_accessConfig[role].filter(id => id !== departmentId);
                 });
                 
                 saveConfiguration();
@@ -5873,7 +6019,7 @@
         
         function exportConfiguration() {
             const config = {
-                departmentAccessConfig,
+                department_accessConfig,
                 customTabs: JSON.parse(localStorage.getItem('customTabs') || '[]'),
                 exportDate: new Date().toISOString(),
                 version: '1.0'
@@ -5909,12 +6055,12 @@
                     const config = JSON.parse(e.target.result);
                     
                     // Validate configuration structure
-                    if (!config.departmentAccessConfig) {
-                        throw new Error('Invalid configuration file: missing departmentAccessConfig');
+                    if (!config.department_accessConfig) {
+                        throw new Error('Invalid configuration file: missing department_accessConfig');
                     }
                     
                     // Import department access configuration
-                    departmentAccessConfig = config.departmentAccessConfig;
+                    department_accessConfig = config.department_accessConfig;
                     saveConfiguration();
                     
                     // Import custom tabs if they exist
