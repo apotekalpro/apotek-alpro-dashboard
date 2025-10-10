@@ -2754,6 +2754,13 @@
                             
                             console.log('☁️ Password matched! Authentication successful');
                             
+                            // Detailed debugging before update
+                            console.log('🔍 DEBUG: About to update login stats for user:');
+                            console.log('   - User ID:', userData.id);
+                            console.log('   - User Email:', userData.email);
+                            console.log('   - Current login_count:', userData.login_count);
+                            console.log('   - New timestamp:', new Date().toISOString());
+                            
                             // Update login statistics
                             _db.from('users')
                                 .update({
@@ -2762,15 +2769,23 @@
                                 })
                                 .eq('id', userData.id)
                                 .then(function(updateResult) {
-                                    console.log('☁️ Login stats update result:', updateResult);
+                                    console.log('☁️ DETAILED Login stats update result:', updateResult);
+                                    console.log('   - Update data:', updateResult.data);
+                                    console.log('   - Update error:', updateResult.error);
+                                    console.log('   - Update status:', updateResult.status);
+                                    console.log('   - Update statusText:', updateResult.statusText);
+                                    
                                     if (updateResult.error) {
                                         console.error('❌ Failed to update login stats:', updateResult.error);
+                                        console.error('❌ Error details:', JSON.stringify(updateResult.error, null, 2));
                                     } else {
                                         console.log('✅ Login stats updated successfully for user:', userData.email);
+                                        console.log('✅ Rows affected:', updateResult.data ? updateResult.data.length : 'Unknown');
                                     }
                                 })
                                 .catch(function(error) {
-                                    console.error('❌ Error updating login stats:', error);
+                                    console.error('❌ Error updating login stats (catch block):', error);
+                                    console.error('❌ Error stack:', error.stack);
                                 });
                             
                             return {
