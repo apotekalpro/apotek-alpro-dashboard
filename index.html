@@ -2002,6 +2002,32 @@
             console.log('   - Are legacy and hashPassword same?:', legacyHash(password) === hashPassword(password));
         };
         
+        // Test password against suwahyu's actual hash format
+        window.testSuwahyuPassword = function(password) {
+            const targetHash = 'YzliZjg0ZjJlOGZlOWJlOWM4YmM2OTllOTkwMjQzYTU3NDgwNjkzOGNkY2Rj';
+            console.log('🧪 Testing password against suwahyu hash:', password);
+            
+            // Test various hash algorithms and combinations
+            const tests = [
+                { name: 'Direct match', value: password },
+                { name: 'Base64 encoded', value: btoa(password) },
+                { name: 'Legacy hash', value: legacyHash(password) },
+                { name: 'Double base64', value: btoa(btoa(password)) },
+                { name: 'Base64 of legacy', value: btoa(legacyHash(password)) },
+                { name: 'Reversed password', value: password.split('').reverse().join('') },
+                { name: 'Lowercase password', value: password.toLowerCase() },
+                { name: 'Uppercase password', value: password.toUpperCase() }
+            ];
+            
+            tests.forEach(test => {
+                const match = targetHash === test.value || targetHash === btoa(test.value);
+                console.log(`   - ${test.name}: ${match ? '✅ MATCH!' : '❌'} (${test.value})`);
+                if (match) {
+                    console.log(`🎯 FOUND MATCH: ${test.name} produces the target hash!`);
+                }
+            });
+        };
+        
         // Debug function to check user data in database (accessible from console)
         window.debugUserInDatabase = function(email) {
             if (!_mode || !_db) {
@@ -2213,7 +2239,6 @@
                 manager: userData.manager || null,
                 date_added: userData.dateAdded || new Date().toISOString().split('T')[0],
                 department_access: userData.departmentAccess || [],
-                notes: userData.notes || null,
                 login_count: userData.loginCount || 0,
                 last_login: userData.lastLogin || null
             };
@@ -2240,7 +2265,6 @@
                 employee_id: userData.employeeId || null,
                 manager: userData.manager || null,
                 department_access: userData.departmentAccess || [],
-                notes: userData.notes || null,
                 login_count: userData.loginCount || 0,
                 last_login: userData.lastLogin || null,
                 updated_at: new Date().toISOString()
@@ -2814,47 +2838,88 @@
                     });
             },
             
-            // Change password securely
+            // Change password securely - FIXED VERSION
             changePassword: function(email, currentPassword, newPassword) {
                 if (!_mode) return Promise.resolve(false);
                 
-                const currentHash = legacyHash(currentPassword);
+                console.log('🔐 SecureUserManager password change for:', email);
+                
                 const self = this;
                 
-                return secureHashPassword(currentPassword)
-                    .then(function(newCurrentHash) {
-                        return secureHashPassword(newPassword)
-                            .then(function(newHash) {
-                                // Try both legacy and new hash for current password
-                                return _db
-                                    .from('users')
-                                    .update({
-                                        password_hash: newHash,
-                                        last_password_change: new Date().toISOString()
-                                    })
-                                    .eq('email', email.toLowerCase())
-                                    .or(`password_hash.eq.${currentHash},password_hash.eq.${newCurrentHash}`)
-                                    .select()
-                                    .single()
-                                    .then(function(result) {
-                                        const { data, error } = result;
-                                        if (error || !data) {
-                                            secureLog('Password change failed - incorrect password', 'warning', true);
-                                            return false;
-                                        }
-                                        
-                                        // Log activity
-                                        return self.logActivity(email, 'password_changed', {
-                                            timestamp: new Date().toISOString()
-                                        }).then(function() {
-                                            secureLog('Password changed successfully', 'success', true);
-                                            return true;
-                                        });
-                                    });
+                // First, get the user to validate current password
+                return _db
+                    .from('users')
+                    .select('*')
+                    .eq('email', email.toLowerCase())
+                    .eq('status', 'active')
+                    .single()
+                    .then(function(result) {
+                        const { data: userData, error: userError } = result;
+                        
+                        if (userError || !userData) {
+                            console.log('❌ User not found for password change:', email);
+                            return false;
+                        }
+                        
+                        console.log('👤 User found, validating current password...');
+                        
+                        // Validate current password with multiple formats
+                        const existingHash = userData.password_hash;
+                        const legacyPasswordHash = legacyHash(currentPassword);
+                        
+                        console.log('🔍 SecureUserManager Password validation:');
+                        console.log('   - Stored hash:', existingHash);
+                        console.log('   - Legacy hash:', legacyPasswordHash);
+                        console.log('   - Plain password:', currentPassword);
+                        console.log('   - Base64:', btoa(currentPassword));
+                        
+                        // Try multiple formats like in login authentication  
+                        const passwordMatch = existingHash === legacyPasswordHash || 
+                                            existingHash === currentPassword ||
+                                            existingHash === btoa(currentPassword) ||
+                                            existingHash === hashPassword(currentPassword);
+                        
+                        if (!passwordMatch) {
+                            console.log('❌ Current password validation failed in SecureUserManager');
+                            return false;
+                        }
+                        
+                        console.log('✅ Current password validated, updating to new password...');
+                        
+                        // Now update with new password using legacy hash for consistency
+                        const newHash = legacyHash(newPassword);
+                        console.log('💾 SecureUserManager saving new password hash:', newHash);
+                        
+                        return _db
+                            .from('users')
+                            .update({
+                                password_hash: newHash,
+                                last_password_change: new Date().toISOString()
+                            })
+                            .eq('id', userData.id)
+                            .select()
+                            .single()
+                            .then(function(updateResult) {
+                                const { data: updatedData, error: updateError } = updateResult;
+                                
+                                if (updateError || !updatedData) {
+                                    console.error('❌ Password update failed:', updateError);
+                                    return false;
+                                }
+                                
+                                console.log('✅ Password updated successfully in SecureUserManager');
+                                
+                                // Log activity
+                                return self.logActivity(email, 'password_changed', {
+                                    timestamp: new Date().toISOString()
+                                }).then(function() {
+                                    console.log('✅ Password change logged successfully');
+                                    return true;
+                                });
                             });
                     })
                     .catch(function(error) {
-                        secureLog('Password change error', 'error', true);
+                        console.error('❌ SecureUserManager password change error:', error);
                         return false;
                     });
             },
