@@ -1105,8 +1105,8 @@
                 <!-- User Edit Modal -->
                 <div id="userEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
                     <div class="flex items-center justify-center min-h-screen p-4">
-                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                            <div class="p-6">
+                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+                            <div class="p-6 flex-1 overflow-y-auto">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-xl font-semibold text-gray-800">Edit User</h3>
                                     <button onclick="closeUserEditModal()" class="text-gray-500 hover:text-gray-700">
@@ -1192,7 +1192,10 @@
                                     </div>
                                 </div>
                                 
-                                <div class="flex justify-end gap-4 mt-6">
+                            </div>
+                            <!-- Fixed footer with buttons -->
+                            <div class="border-t border-gray-200 p-6 bg-gray-50 rounded-b-lg flex-shrink-0">
+                                <div class="flex justify-end gap-4">
                                     <button onclick="closeUserEditModal()" 
                                             class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
                                         Cancel
@@ -2094,6 +2097,121 @@
             } else {
                 console.log('❌ suwahyu not found in Google Sheets either');
             }
+        };
+        
+        // EMERGENCY: Admin password reset for locked out users
+        window.adminPasswordReset = function(email, newPassword) {
+            if (!currentUserRole || currentUserRole !== 'admin') {
+                console.log('❌ Only admins can reset passwords');
+                return Promise.reject('Admin access required');
+            }
+            
+            if (!_mode || !_db) {
+                console.log('❌ Database not available');
+                return Promise.reject('Database not available');
+            }
+            
+            console.log('🔧 ADMIN: Resetting password for user:', email);
+            
+            const newHash = legacyHash(newPassword);
+            console.log('🔐 ADMIN: New password hash:', newHash);
+            
+            return _db
+                .from('users')
+                .update({
+                    password_hash: newHash,
+                    last_password_change: new Date().toISOString()
+                })
+                .eq('email', email.toLowerCase())
+                .select()
+                .single()
+                .then(function(result) {
+                    const { data, error } = result;
+                    if (error) {
+                        console.error('❌ ADMIN: Password reset failed:', error);
+                        throw error;
+                    }
+                    
+                    console.log('✅ ADMIN: Password reset successful for:', email);
+                    console.log('🔐 ADMIN: New password is:', newPassword);
+                    return {
+                        success: true,
+                        email: email,
+                        newPassword: newPassword,
+                        message: `Password reset successful for ${email}. New password: ${newPassword}`
+                    };
+                })
+                .catch(function(error) {
+                    console.error('❌ ADMIN: Password reset error:', error);
+                    throw error;
+                });
+        };
+        
+        // Bulk password reset for multiple users
+        window.bulkPasswordReset = function(userEmails, defaultPassword) {
+            if (!currentUserRole || currentUserRole !== 'admin') {
+                console.log('❌ Only admins can reset passwords');
+                return Promise.reject('Admin access required');
+            }
+            
+            console.log('🔧 ADMIN: Bulk password reset for', userEmails.length, 'users');
+            
+            const promises = userEmails.map(email => 
+                adminPasswordReset(email, defaultPassword).catch(err => ({ email, error: err }))
+            );
+            
+            return Promise.all(promises).then(results => {
+                const successful = results.filter(r => r.success);
+                const failed = results.filter(r => r.error);
+                
+                console.log('✅ ADMIN: Bulk reset complete');
+                console.log('✅ Successful:', successful.length);
+                console.log('❌ Failed:', failed.length);
+                
+                return { successful, failed, defaultPassword };
+            });
+        };
+        
+        // List all users and their password hash formats (admin only)
+        window.listAllUsersWithPasswords = function() {
+            if (!currentUserRole || currentUserRole !== 'admin') {
+                console.log('❌ Only admins can view user data');
+                return Promise.reject('Admin access required');
+            }
+            
+            if (!_mode || !_db) {
+                console.log('❌ Database not available');
+                return Promise.reject('Database not available');
+            }
+            
+            console.log('👥 ADMIN: Fetching all users from database...');
+            
+            return _db
+                .from('users')
+                .select('email, name, role, status, password_hash, last_login')
+                .order('email')
+                .then(function(result) {
+                    const { data: users, error } = result;
+                    if (error) {
+                        console.error('❌ Error fetching users:', error);
+                        throw error;
+                    }
+                    
+                    console.log('👥 ADMIN: Found', users.length, 'users in database:');
+                    users.forEach(user => {
+                        const hashType = user.password_hash ? 
+                            (user.password_hash.length === 45 && /^[0-9a-f]+$/i.test(user.password_hash) ? 'HEX' :
+                             user.password_hash.startsWith('Q') ? 'BASE64' : 'OTHER') : 'EMPTY';
+                        
+                        console.log(`📧 ${user.email} (${user.name}) - ${user.role} - ${user.status} - Hash: ${hashType}`);
+                    });
+                    
+                    return users;
+                })
+                .catch(function(error) {
+                    console.error('❌ Error listing users:', error);
+                    throw error;
+                });
         };
         
         // Debug function to check user data in database (accessible from console)
