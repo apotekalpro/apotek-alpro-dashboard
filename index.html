@@ -1195,19 +1195,30 @@
                             </div>
                             <!-- Fixed footer with buttons -->
                             <div class="border-t border-gray-200 p-6 bg-gray-50 rounded-b-lg flex-shrink-0">
-                                <div class="flex justify-end gap-4">
-                                    <button onclick="closeUserEditModal()" 
-                                            class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
-                                        Cancel
-                                    </button>
-                                    <button onclick="deleteUser()" 
-                                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                                        <i class="fas fa-trash mr-2"></i>Delete User
-                                    </button>
-                                    <button onclick="saveUserChanges()" 
-                                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                        <i class="fas fa-save mr-2"></i>Save Changes
-                                    </button>
+                                <div class="flex justify-between items-center">
+                                    <!-- Left side - Admin actions -->
+                                    <div class="flex gap-3">
+                                        <button onclick="resetUserPassword()" 
+                                                class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                                            <i class="fas fa-key mr-2"></i>Reset Password
+                                        </button>
+                                        <button onclick="deleteUser()" 
+                                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                            <i class="fas fa-trash mr-2"></i>Delete User
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Right side - Standard actions -->
+                                    <div class="flex gap-4">
+                                        <button onclick="closeUserEditModal()" 
+                                                class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                            Cancel
+                                        </button>
+                                        <button onclick="saveUserChanges()" 
+                                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                            <i class="fas fa-save mr-2"></i>Save Changes
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -4456,6 +4467,16 @@
             // Generate department access checkboxes for this user
             generateEditUserDepartmentCheckboxes(user);
             
+            // Show/hide Reset Password button based on admin role
+            const resetPasswordBtn = document.querySelector('button[onclick="resetUserPassword()"]');
+            if (resetPasswordBtn) {
+                if (currentUserRole === 'admin') {
+                    resetPasswordBtn.style.display = 'inline-flex';
+                } else {
+                    resetPasswordBtn.style.display = 'none';
+                }
+            }
+            
             document.getElementById('userEditModal').classList.remove('hidden');
         }
         
@@ -4666,6 +4687,114 @@
                 console.error('❌ Local password change error:', error);
                 showPasswordChangeError('An error occurred while changing password. Please try again.');
                 return Promise.resolve(false);
+            }
+        }
+        
+        function resetUserPassword() {
+            // Check if user is admin
+            if (currentUserRole !== 'admin') {
+                showConfigStatus('Only administrators can reset passwords', 'error');
+                return;
+            }
+            
+            const userId = document.getElementById('editUserId').value;
+            const userEmail = document.getElementById('editUserEmail').value.trim();
+            const userName = document.getElementById('editUserName').value.trim();
+            
+            if (!userId || !userEmail) {
+                showConfigStatus('Invalid user data', 'error');
+                return;
+            }
+            
+            // Confirm the action
+            const confirmMessage = `Reset password for ${userName} (${userEmail}) to "Alpro@123"?\n\nThis will:\n- Set their password to "Alpro@123"\n- Allow them to login with this temporary password\n- Require them to change it after login`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            showConfigStatus('Resetting password...', 'info');
+            
+            const resetPassword = 'Alpro@123';
+            
+            // Try cloud reset first if available
+            if (_mode && _db) {
+                console.log('🔐 Admin resetting password for:', userEmail);
+                
+                const newHash = legacyHash(resetPassword);
+                
+                _db.from('users')
+                    .update({
+                        password_hash: newHash,
+                        last_password_change: new Date().toISOString()
+                    })
+                    .eq('email', userEmail.toLowerCase())
+                    .select()
+                    .single()
+                    .then(function(result) {
+                        const { data, error } = result;
+                        if (error) {
+                            console.error('❌ Cloud password reset failed:', error);
+                            // Try local fallback
+                            resetPasswordLocally();
+                        } else {
+                            console.log('✅ Cloud password reset successful');
+                            showConfigStatus(`Password reset successful! User can now login with "Alpro@123"`, 'success');
+                            
+                            // Update password field in modal to show new password
+                            document.getElementById('editUserPassword').value = resetPassword;
+                            
+                            // Also update local copy if exists
+                            updateLocalPassword();
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('❌ Cloud password reset error:', error);
+                        // Try local fallback
+                        resetPasswordLocally();
+                    });
+            } else {
+                // No cloud mode, reset locally only
+                resetPasswordLocally();
+            }
+            
+            function resetPasswordLocally() {
+                try {
+                    const userIndex = userManagementData.users.findIndex(u => u.id === userId);
+                    if (userIndex === -1) {
+                        showConfigStatus('User not found in local storage', 'error');
+                        return;
+                    }
+                    
+                    userManagementData.users[userIndex].password = resetPassword;
+                    userManagementData.users[userIndex].lastPasswordChange = new Date().toISOString();
+                    
+                    saveUserManagementData();
+                    
+                    console.log('✅ Local password reset successful');
+                    showConfigStatus(`Password reset successful! User can now login with "Alpro@123"`, 'success');
+                    
+                    // Update password field in modal to show new password
+                    document.getElementById('editUserPassword').value = resetPassword;
+                    
+                } catch (error) {
+                    console.error('❌ Local password reset error:', error);
+                    showConfigStatus('Error resetting password', 'error');
+                }
+            }
+            
+            function updateLocalPassword() {
+                try {
+                    const userIndex = userManagementData.users.findIndex(u => u.id === userId);
+                    if (userIndex !== -1) {
+                        userManagementData.users[userIndex].password = resetPassword;
+                        userManagementData.users[userIndex].lastPasswordChange = new Date().toISOString();
+                        saveUserManagementData();
+                        console.log('✅ Local password copy also updated');
+                    }
+                } catch (error) {
+                    console.log('⚠️ Could not update local password copy:', error);
+                }
             }
         }
         
