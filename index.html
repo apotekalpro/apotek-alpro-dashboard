@@ -4953,7 +4953,7 @@
             // Validation
             if (!currentPassword || !newPassword || !confirmPassword) {
                 showPasswordChangeError('Please fill in all password fields.');
-                return false;
+                return Promise.resolve(false);
             }
 
             if (newPassword.length < 6) {
@@ -5097,7 +5097,178 @@
                     } else {
                         showPasswordChangeError('Current password is incorrect.');
                         return false;
+            }
+
+            // Try cloud password change first if cloud mode is available
+            if (_mode && _db) {
+                console.log('🌐 Attempting cloud password change for:', currentUser);
+                return SecureUserManager.changePassword(currentUser, currentPassword, newPassword)
+                    .then(function(success) {
+                        if (success) {
+                            console.log('✅ Cloud password change successful');
+                            showPasswordChangeSuccess();
+                            
+                            // Also update the local copy if it exists
+                            const localUser = userManagementData.users.find(u => 
+                                u.email === currentUser?.toLowerCase()
+                            );
+                            if (localUser) {
+                                localUser.password = newPassword;
+                                localUser.lastPasswordChange = new Date().toISOString();
+                                saveUserManagementData();
+                                console.log('✅ Local password also updated');
+                            }
+                            
+                            return true;
+                        } else {
+                            console.log('⚠️ Cloud password change failed, trying local fallback...');
+                            
+                            // Fallback to local password change
+                            console.log('📱 Using local password change');
+                            
+                            // Find current user in local database
+                            const userToUpdate = userManagementData.users.find(u => 
+                                u.email === currentUser?.toLowerCase()
+                            );
+
+                            if (!userToUpdate) {
+                                showPasswordChangeError('User not found in the system.');
+                                return false;
+                            }
+
+                            // Verify current password using the same logic as login
+                            const isPasswordValid = validatePasswordForUser(userToUpdate, currentPassword);
+                            if (!isPasswordValid) {
+                                showPasswordChangeError('Current password is incorrect.');
+                                return false;
+                            }
+
+                            // Update password locally
+                            userToUpdate.password = newPassword;
+                            userToUpdate.lastPasswordChange = new Date().toISOString();
+                            
+                            // Save to localStorage first
+                            saveUserManagementData();
+
+                            // Log the password change
+                            logUserActivity(currentUser, 'password_changed', {
+                                timestamp: new Date().toISOString(),
+                                userAgent: navigator.userAgent,
+                                source: 'localStorage'
+                            });
+
+                            console.log('✅ Local password changed successfully for user:', currentUser);
+                            
+                            // Show success message
+                            showPasswordChangeSuccess();
+                            
+                            // Auto-sync password change to cloud in background
+                            autoSyncToCloud('password_changed', userToUpdate, false);
+                            
+                            return true;
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('❌ Cloud password change error:', error);
+                        
+                        // Fallback to local password change
+                        console.log('📱 Using local password change after cloud error');
+                        
+                        try {
+                            // Find current user in local database
+                            const userToUpdate = userManagementData.users.find(u => 
+                                u.email === currentUser?.toLowerCase()
+                            );
+
+                            if (!userToUpdate) {
+                                showPasswordChangeError('User not found in the system.');
+                                return false;
+                            }
+
+                            // Verify current password using the same logic as login
+                            const isPasswordValid = validatePasswordForUser(userToUpdate, currentPassword);
+                            if (!isPasswordValid) {
+                                showPasswordChangeError('Current password is incorrect.');
+                                return false;
+                            }
+
+                            // Update password locally
+                            userToUpdate.password = newPassword;
+                            userToUpdate.lastPasswordChange = new Date().toISOString();
+                            
+                            // Save to localStorage first
+                            saveUserManagementData();
+
+                            // Log the password change
+                            logUserActivity(currentUser, 'password_changed', {
+                                timestamp: new Date().toISOString(),
+                                userAgent: navigator.userAgent,
+                                source: 'localStorage'
+                            });
+
+                            console.log('✅ Local password changed successfully for user:', currentUser);
+                            
+                            // Show success message
+                            showPasswordChangeSuccess();
+                            
+                            // Auto-sync password change to cloud in background
+                            autoSyncToCloud('password_changed', userToUpdate, false);
+                            
+                            return true;
+                            
+                        } catch (localError) {
+                            console.error('❌ Local password change error:', localError);
+                            showPasswordChangeError('An error occurred while changing password. Please try again.');
+                            return false;
+                        }
+                    });
+            } else {
+                // No cloud mode, use local password change only
+                console.log('📱 Using local password change (no cloud mode)');
+                
+                try {
+                    // Find current user in local database
+                    const userToUpdate = userManagementData.users.find(u => 
+                        u.email === currentUser?.toLowerCase()
+                    );
+
+                    if (!userToUpdate) {
+                        showPasswordChangeError('User not found in the system.');
+                        return Promise.resolve(false);
                     }
+
+                    // Verify current password using the same logic as login
+                    const isPasswordValid = validatePasswordForUser(userToUpdate, currentPassword);
+                    if (!isPasswordValid) {
+                        showPasswordChangeError('Current password is incorrect.');
+                        return Promise.resolve(false);
+                    }
+
+                    // Update password locally
+                    userToUpdate.password = newPassword;
+                    userToUpdate.lastPasswordChange = new Date().toISOString();
+                    
+                    // Save to localStorage first
+                    saveUserManagementData();
+
+                    // Log the password change
+                    logUserActivity(currentUser, 'password_changed', {
+                        timestamp: new Date().toISOString(),
+                        userAgent: navigator.userAgent,
+                        source: 'localStorage'
+                    });
+
+                    console.log('✅ Local password changed successfully for user:', currentUser);
+                    
+                    // Show success message
+                    showPasswordChangeSuccess();
+                    
+                    return Promise.resolve(true);
+                    
+                } catch (error) {
+                    console.error('❌ Local password change error:', error);
+                    showPasswordChangeError('An error occurred while changing password. Please try again.');
+                    return Promise.resolve(false);
                 }
 
                 // Fallback to local password change
@@ -6601,9 +6772,21 @@
             // Change password (now supports cloud)
             const success = await changeUserPassword(currentPassword, newPassword, confirmPassword);
             
-            if (success) {
-                showPasswordChangeSuccess();
-            }
+            // Change password (now supports cloud with promise)
+            changeUserPassword(currentPassword, newPassword, confirmPassword)
+                .then(function(success) {
+                    console.log('🔑 Password change result:', success);
+                    // Success handling is already done inside changeUserPassword
+                })
+                .catch(function(error) {
+                    console.error('❌ Password change form error:', error);
+                    showPasswordChangeError('An error occurred while changing password. Please try again.');
+                })
+                .finally(function() {
+                    // Re-enable submit button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                });
         });
 
         // AM Performance Tracker Namespace - All functions isolated to prevent conflicts
