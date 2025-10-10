@@ -1106,13 +1106,18 @@
                 <div id="userEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
                     <div class="flex items-center justify-center min-h-screen p-4">
                         <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
-                            <div class="p-6 flex-1 overflow-y-auto">
-                                <div class="flex justify-between items-center mb-4">
+                            <!-- Fixed header -->
+                            <div class="p-6 border-b border-gray-200 flex-shrink-0">
+                                <div class="flex justify-between items-center">
                                     <h3 class="text-xl font-semibold text-gray-800">Edit User</h3>
                                     <button onclick="closeUserEditModal()" class="text-gray-500 hover:text-gray-700">
                                         <i class="fas fa-times text-xl"></i>
                                     </button>
                                 </div>
+                            </div>
+                            <!-- Scrollable content -->
+                            <div class="flex-1 overflow-y-auto p-6">
+
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <input type="hidden" id="editUserId">
@@ -1198,10 +1203,6 @@
                                 <div class="flex justify-between items-center">
                                     <!-- Left side - Admin actions -->
                                     <div class="flex gap-3">
-                                        <button onclick="resetUserPassword()" 
-                                                class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
-                                            <i class="fas fa-key mr-2"></i>Reset Password
-                                        </button>
                                         <button onclick="deleteUser()" 
                                                 class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
                                             <i class="fas fa-trash mr-2"></i>Delete User
@@ -4167,15 +4168,23 @@
                         ${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                     </td>
                     <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                        <button onclick="event.stopPropagation(); openUserEditModal(userManagementData.filteredUsers[${startIndex + (i - startIndex)}])" 
-                                class="text-blue-600 hover:text-blue-800 mr-3">
-                            <i class="fas fa-edit mr-1"></i>Edit
-                        </button>
-                        <button onclick="event.stopPropagation(); toggleUserStatus('${user.id}')" 
-                                class="text-${user.status === 'active' ? 'red' : 'green'}-600 hover:text-${user.status === 'active' ? 'red' : 'green'}-800">
-                            <i class="fas fa-${user.status === 'active' ? 'ban' : 'check'} mr-1"></i>
-                            ${user.status === 'active' ? 'Disable' : 'Enable'}
-                        </button>
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="event.stopPropagation(); openUserEditModal(userManagementData.filteredUsers[${startIndex + (i - startIndex)}])" 
+                                    class="text-blue-600 hover:text-blue-800 transition-colors">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                            ${currentUserRole === 'admin' ? `
+                            <button onclick="event.stopPropagation(); resetUserPasswordFromTable('${user.id}', '${user.email}', '${user.name}')" 
+                                    class="text-orange-600 hover:text-orange-800 transition-colors">
+                                <i class="fas fa-key mr-1"></i>Reset
+                            </button>
+                            ` : ''}
+                            <button onclick="event.stopPropagation(); toggleUserStatus('${user.id}')" 
+                                    class="text-${user.status === 'active' ? 'red' : 'green'}-600 hover:text-${user.status === 'active' ? 'red' : 'green'}-800 transition-colors">
+                                <i class="fas fa-${user.status === 'active' ? 'ban' : 'check'} mr-1"></i>
+                                ${user.status === 'active' ? 'Disable' : 'Enable'}
+                            </button>
+                        </div>
                     </td>
                 `;
                 
@@ -4784,6 +4793,110 @@
             }
             
             function updateLocalPassword() {
+                try {
+                    const userIndex = userManagementData.users.findIndex(u => u.id === userId);
+                    if (userIndex !== -1) {
+                        userManagementData.users[userIndex].password = resetPassword;
+                        userManagementData.users[userIndex].lastPasswordChange = new Date().toISOString();
+                        saveUserManagementData();
+                        console.log('✅ Local password copy also updated');
+                    }
+                } catch (error) {
+                    console.log('⚠️ Could not update local password copy:', error);
+                }
+            }
+        }
+        
+        function resetUserPasswordFromTable(userId, userEmail, userName) {
+            // Check if user is admin
+            if (currentUserRole !== 'admin') {
+                showConfigStatus('Only administrators can reset passwords', 'error');
+                return;
+            }
+            
+            if (!userId || !userEmail) {
+                showConfigStatus('Invalid user data', 'error');
+                return;
+            }
+            
+            // Confirm the action
+            const confirmMessage = `Reset password for ${userName} (${userEmail}) to "Alpro@123"?\n\nThis will:\n- Set their password to "Alpro@123"\n- Allow them to login with this temporary password\n- Require them to change it after login`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            showConfigStatus('Resetting password...', 'info');
+            
+            const resetPassword = 'Alpro@123';
+            
+            // Try cloud reset first if available
+            if (_mode && _db) {
+                console.log('🔐 Admin resetting password for:', userEmail);
+                
+                const newHash = legacyHash(resetPassword);
+                
+                _db.from('users')
+                    .update({
+                        password_hash: newHash,
+                        last_password_change: new Date().toISOString()
+                    })
+                    .eq('email', userEmail.toLowerCase())
+                    .select()
+                    .single()
+                    .then(function(result) {
+                        const { data, error } = result;
+                        if (error) {
+                            console.error('❌ Cloud password reset failed:', error);
+                            // Try local fallback
+                            resetPasswordLocallyFromTable();
+                        } else {
+                            console.log('✅ Cloud password reset successful');
+                            showConfigStatus(`Password reset successful! ${userName} can now login with "Alpro@123"`, 'success');
+                            
+                            // Also update local copy if exists
+                            updateLocalPasswordFromTable();
+                            
+                            // Refresh user table to show updated last password change
+                            renderUserTable();
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('❌ Cloud password reset error:', error);
+                        // Try local fallback
+                        resetPasswordLocallyFromTable();
+                    });
+            } else {
+                // No cloud mode, reset locally only
+                resetPasswordLocallyFromTable();
+            }
+            
+            function resetPasswordLocallyFromTable() {
+                try {
+                    const userIndex = userManagementData.users.findIndex(u => u.id === userId);
+                    if (userIndex === -1) {
+                        showConfigStatus('User not found in local storage', 'error');
+                        return;
+                    }
+                    
+                    userManagementData.users[userIndex].password = resetPassword;
+                    userManagementData.users[userIndex].lastPasswordChange = new Date().toISOString();
+                    
+                    saveUserManagementData();
+                    
+                    console.log('✅ Local password reset successful');
+                    showConfigStatus(`Password reset successful! ${userName} can now login with "Alpro@123"`, 'success');
+                    
+                    // Refresh user table to show updated information
+                    renderUserTable();
+                    
+                } catch (error) {
+                    console.error('❌ Local password reset error:', error);
+                    showConfigStatus('Error resetting password', 'error');
+                }
+            }
+            
+            function updateLocalPasswordFromTable() {
                 try {
                     const userIndex = userManagementData.users.findIndex(u => u.id === userId);
                     if (userIndex !== -1) {
