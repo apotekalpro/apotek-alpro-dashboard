@@ -3604,17 +3604,58 @@
                     currentUserName = user.name;
                     
                     // Log successful login activity
-                    if (SecureUserManager.logActivity) {
+                    console.log('🔍 Checking SecureUserManager.logActivity availability...');
+                    console.log('SecureUserManager:', typeof SecureUserManager);
+                    console.log('SecureUserManager.logActivity:', typeof SecureUserManager.logActivity);
+                    
+                    if (SecureUserManager && SecureUserManager.logActivity) {
                         console.log('📝 Attempting to log login activity for:', user.email);
-                        SecureUserManager.logActivity(user.email, 'Login', 'Successful login via cloud authentication')
-                            .then(function() {
-                                console.log('✅ Login activity logged successfully');
-                            })
-                            .catch(function(error) {
-                                console.error('❌ Failed to log login activity:', error);
-                            });
+                        try {
+                            const logPromise = SecureUserManager.logActivity(user.email, 'Login', 'Successful login via cloud authentication');
+                            console.log('📤 Login activity promise created:', logPromise);
+                            
+                            if (logPromise && typeof logPromise.then === 'function') {
+                                logPromise
+                                    .then(function() {
+                                        console.log('✅ Login activity logged successfully');
+                                    })
+                                    .catch(function(error) {
+                                        console.error('❌ Failed to log login activity:', error);
+                                    });
+                            } else {
+                                console.warn('⚠️ logActivity did not return a promise');
+                            }
+                        } catch (error) {
+                            console.error('❌ Error calling logActivity:', error);
+                        }
                     } else {
                         console.warn('⚠️ SecureUserManager.logActivity not available');
+                        if (!SecureUserManager) {
+                            console.warn('⚠️ SecureUserManager is not defined');
+                        } else {
+                            console.warn('⚠️ logActivity method is missing from SecureUserManager');
+                        }
+                    }
+                    
+                    // Manual test: try to insert login log directly
+                    console.log('🧪 Testing direct login log insertion...');
+                    if (_db) {
+                        _db.from('login_logs').insert([{
+                            user_email: user.email,
+                            activity: 'Login',
+                            ip_address: 'localhost',
+                            user_agent: navigator.userAgent,
+                            metadata: { test: true, timestamp: new Date().toISOString() }
+                        }]).then(function(result) {
+                            console.log('🧪 Direct login log insert result:', result);
+                            if (result.error) {
+                                console.error('❌ Direct login log insert failed:', result.error);
+                            } else {
+                                console.log('✅ Direct login log insert successful');
+                            }
+                        }).catch(function(error) {
+                            console.error('❌ Direct login log insert error:', error);
+                        });
                     }
                     
                     showDashboard();
