@@ -2072,6 +2072,36 @@
             logsPerPage: 20
         };
         
+        // ===== PASSWORD VALIDATION FUNCTIONS =====
+        
+        // Validate password using same logic as login authentication
+        function validatePasswordForUser(userObj, inputPassword) {
+            if (!userObj || !inputPassword) return false;
+            
+            // Get the stored password (could be from local storage or cloud)
+            const storedPassword = userObj.password || userObj.password_hash;
+            
+            if (!storedPassword) return false;
+            
+            // Try multiple password formats (same as login authentication)
+            const legacyPasswordHash = legacyHash(inputPassword);
+            
+            console.log('🔐 Password validation debug:');
+            console.log('   - Stored password:', storedPassword);
+            console.log('   - Input password:', inputPassword);
+            console.log('   - Legacy hash:', legacyPasswordHash);
+            console.log('   - Base64 hash:', btoa(inputPassword));
+            
+            // Check if password matches (try multiple formats like in login)
+            const passwordMatch = storedPassword === legacyPasswordHash || 
+                                storedPassword === inputPassword ||
+                                storedPassword === btoa(inputPassword) ||
+                                storedPassword === hashPassword(inputPassword);
+            
+            console.log('🔐 Password match result:', passwordMatch);
+            return passwordMatch;
+        }
+        
         // ===== CLOUD SYNC FUNCTIONS =====
         
         // Sync local user data to Supabase cloud database
@@ -2525,37 +2555,83 @@
             changePassword: function(email, currentPassword, newPassword) {
                 if (!_mode) return Promise.resolve(false);
                 
+                console.log('🔐 Cloud password change started for:', email);
+                
                 try {
-                    const currentHash = hashPassword(currentPassword);
-                    const newHash = hashPassword(newPassword);
                     const self = this;
                     
-                    // Verify current password and update
-                    return supabase
+                    // First, get the user to check current password with multiple formats
+                    return _db
                         .from('users')
-                        .update({
-                            password_hash: newHash,
-                            last_password_change: new Date().toISOString()
-                        })
+                        .select('*')
                         .eq('email', email.toLowerCase())
-                        .eq('password_hash', currentHash)
-                        .select()
+                        .eq('status', 'active')
                         .single()
                         .then(function(result) {
-                            const { data, error } = result;
-                            if (error || !data) {
-                                console.log('❌ Cloud password change failed - incorrect current password');
+                            const userData = result.data;
+                            const userError = result.error;
+                            
+                            if (userError || !userData) {
+                                console.log('❌ User not found in cloud for password change');
                                 return false;
                             }
                             
-                            // Log password change
-                            return self.logActivity(email, 'password_changed', {
-                                timestamp: new Date().toISOString(),
-                                userAgent: navigator.userAgent
-                            }).then(function() {
-                                console.log('✅ Password changed in cloud for:', email);
-                                return true;
-                            });
+                            console.log('👤 User found, validating current password...');
+                            
+                            // Check current password with multiple formats (same as login)
+                            const existingHash = userData.password_hash;
+                            const legacyPasswordHash = legacyHash(currentPassword);
+                            
+                            console.log('🔍 Password validation:');
+                            console.log('   - Stored hash:', existingHash);
+                            console.log('   - Legacy hash:', legacyPasswordHash);
+                            console.log('   - Plain password:', currentPassword);
+                            console.log('   - Base64:', btoa(currentPassword));
+                            
+                            // Try multiple formats like in login authentication
+                            const passwordMatch = existingHash === legacyPasswordHash || 
+                                                existingHash === currentPassword ||
+                                                existingHash === btoa(currentPassword) ||
+                                                existingHash === hashPassword(currentPassword);
+                            
+                            if (!passwordMatch) {
+                                console.log('❌ Current password validation failed');
+                                return false;
+                            }
+                            
+                            console.log('✅ Current password validated, updating to new password...');
+                            
+                            // Now update with new password
+                            const newHash = hashPassword(newPassword);
+                            
+                            return _db
+                                .from('users')
+                                .update({
+                                    password_hash: newHash,
+                                    last_password_change: new Date().toISOString()
+                                })
+                                .eq('id', userData.id)
+                                .select()
+                                .single()
+                                .then(function(updateResult) {
+                                    const { data: updatedData, error: updateError } = updateResult;
+                                    
+                                    if (updateError) {
+                                        console.error('❌ Password update failed:', updateError);
+                                        return false;
+                                    }
+                                    
+                                    console.log('✅ Password updated successfully in cloud');
+                                    
+                                    // Log password change
+                                    return self.logActivity(email, 'password_changed', {
+                                        timestamp: new Date().toISOString(),
+                                        userAgent: navigator.userAgent
+                                    }).then(function() {
+                                        console.log('✅ Password change logged successfully');
+                                        return true;
+                                    });
+                                });
                         });
                     
                 } catch (error) {
@@ -4114,17 +4190,30 @@
             }
 
             try {
-                // Try cloud password change first
-                if (_mode) {
+                // Try cloud password change first if cloud mode is available
+                if (_mode && _db) {
                     console.log('🌐 Attempting cloud password change for:', currentUser);
                     const success = await SecureUserManager.changePassword(currentUser, currentPassword, newPassword);
                     
                     if (success) {
                         console.log('✅ Cloud password change successful');
+                        showPasswordChangeSuccess();
+                        
+                        // Also update the local copy if it exists
+                        const localUser = userManagementData.users.find(u => 
+                            u.email === currentUser?.toLowerCase()
+                        );
+                        if (localUser) {
+                            localUser.password = newPassword;
+                            localUser.lastPasswordChange = new Date().toISOString();
+                            saveUserManagementData();
+                            console.log('✅ Local password also updated');
+                        }
+                        
                         return true;
                     } else {
-                        showPasswordChangeError('Current password is incorrect.');
-                        return false;
+                        console.log('⚠️ Cloud password change failed, trying local fallback...');
+                        // Don't show error yet, try local fallback
                     }
                 }
 
@@ -4141,8 +4230,9 @@
                     return false;
                 }
 
-                // Verify current password
-                if (userToUpdate.password !== currentPassword) {
+                // Verify current password using the same logic as login
+                const isPasswordValid = validatePasswordForUser(userToUpdate, currentPassword);
+                if (!isPasswordValid) {
                     showPasswordChangeError('Current password is incorrect.');
                     return false;
                 }
@@ -4163,6 +4253,9 @@
 
                 console.log('✅ Local password changed successfully for user:', currentUser);
                 
+                // Show success message
+                showPasswordChangeSuccess();
+                
                 // Auto-sync password change to cloud in background
                 autoSyncToCloud('password_changed', userToUpdate, false);
                 
@@ -4173,6 +4266,11 @@
                 showPasswordChangeError('An error occurred while changing password. Please try again.');
                 return false;
             }
+            
+            // If we reach here, both cloud and local methods failed
+            console.log('❌ Both cloud and local password change methods failed');
+            showPasswordChangeError('Current password is incorrect. Please verify your current password and try again.');
+            return false;
         }
         
         function saveUserChanges() {
