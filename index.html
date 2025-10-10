@@ -1105,9 +1105,9 @@
                 <!-- User Edit Modal -->
                 <div id="userEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
                     <div class="flex items-center justify-center min-h-screen p-4">
-                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full h-[90vh] max-h-[90vh] flex flex-col">
+                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full" style="height: 90vh; max-height: 90vh; display: flex; flex-direction: column;">
                             <!-- Fixed header -->
-                            <div class="p-6 border-b border-gray-200 flex-shrink-0">
+                            <div class="p-6 border-b border-gray-200" style="flex-shrink: 0;">
                                 <div class="flex justify-between items-center">
                                     <h3 class="text-xl font-semibold text-gray-800">Edit User</h3>
                                     <button onclick="closeUserEditModal()" class="text-gray-500 hover:text-gray-700">
@@ -1116,7 +1116,7 @@
                                 </div>
                             </div>
                             <!-- Scrollable content -->
-                            <div class="flex-1 overflow-y-auto p-6" style="min-height: 0;">
+                            <div class="p-6" style="flex: 1; overflow-y: auto; min-height: 0;">
 
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1199,7 +1199,7 @@
                                 
                             </div>
                             <!-- Fixed footer with buttons -->
-                            <div class="border-t border-gray-200 p-6 bg-gray-50 rounded-b-lg flex-shrink-0">
+                            <div class="border-t border-gray-200 p-6 bg-gray-50 rounded-b-lg" style="flex-shrink: 0;">
                                 <div class="flex justify-between items-center">
                                     <!-- Left side - Admin actions -->
                                     <div class="flex gap-3">
