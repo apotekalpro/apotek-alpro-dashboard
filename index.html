@@ -1992,6 +1992,16 @@
             return legacyHash(password);
         }
         
+        // Debug function to test password formats (accessible from console)
+        window.debugPasswordFormats = function(password) {
+            console.log('🔍 Password format debugging for:', password);
+            console.log('   - Legacy hash:', legacyHash(password));
+            console.log('   - hashPassword:', hashPassword(password));
+            console.log('   - Plain:', password);
+            console.log('   - Base64:', btoa(password));
+            console.log('   - Are legacy and hashPassword same?:', legacyHash(password) === hashPassword(password));
+        };
+        
         // ===== SECURITY & STATE VARIABLES =====
         let currentUser = null;
         let currentUserRole = null;
@@ -2452,13 +2462,20 @@
                             console.log('☁️ Legacy hash:', legacyPasswordHash);
                             console.log('☁️ Plain password:', password);
                             
-                            // Check if password matches (try multiple formats)
+                            // Check if password matches (try multiple formats like password change)
+                            console.log('🔍 LOGIN Password validation details:');
+                            console.log('   - existingHash === legacyPasswordHash:', existingHash === legacyPasswordHash);
+                            console.log('   - existingHash === password:', existingHash === password);
+                            console.log('   - existingHash === btoa(password):', existingHash === btoa(password));
+                            console.log('   - existingHash === hashPassword(password):', existingHash === hashPassword(password));
+                            
                             const passwordMatch = existingHash === legacyPasswordHash || 
                                                 existingHash === password ||
-                                                existingHash === btoa(password);
+                                                existingHash === btoa(password) ||
+                                                existingHash === hashPassword(password);
                             
                             if (!passwordMatch) {
-                                console.log('☁️ Password mismatch');
+                                console.log('☁️ Password mismatch - none of the formats matched');
                                 return null;
                             }
                             
@@ -2587,11 +2604,18 @@
                             const existingHash = userData.password_hash;
                             const legacyPasswordHash = legacyHash(currentPassword);
                             
-                            console.log('🔍 Password validation:');
+                            console.log('🔍 PASSWORD CHANGE validation:');
                             console.log('   - Stored hash:', existingHash);
                             console.log('   - Legacy hash:', legacyPasswordHash);
                             console.log('   - Plain password:', currentPassword);
                             console.log('   - Base64:', btoa(currentPassword));
+                            console.log('   - hashPassword result:', hashPassword(currentPassword));
+                            
+                            console.log('🔍 PASSWORD CHANGE validation details:');
+                            console.log('   - existingHash === legacyPasswordHash:', existingHash === legacyPasswordHash);
+                            console.log('   - existingHash === currentPassword:', existingHash === currentPassword);
+                            console.log('   - existingHash === btoa(currentPassword):', existingHash === btoa(currentPassword));
+                            console.log('   - existingHash === hashPassword(currentPassword):', existingHash === hashPassword(currentPassword));
                             
                             // Try multiple formats like in login authentication
                             const passwordMatch = existingHash === legacyPasswordHash || 
@@ -2600,7 +2624,7 @@
                                                 existingHash === hashPassword(currentPassword);
                             
                             if (!passwordMatch) {
-                                console.log('❌ Current password validation failed');
+                                console.log('❌ Current password validation failed - none of the formats matched');
                                 return false;
                             }
                             
@@ -2608,6 +2632,12 @@
                             
                             // Now update with new password
                             const newHash = hashPassword(newPassword);
+                            console.log('💾 Saving new password hash:', newHash);
+                            console.log('💾 New password formats:');
+                            console.log('   - legacyHash:', legacyHash(newPassword));
+                            console.log('   - hashPassword:', hashPassword(newPassword));
+                            console.log('   - plain:', newPassword);
+                            console.log('   - base64:', btoa(newPassword));
                             
                             return _db
                                 .from('users')
