@@ -2762,13 +2762,17 @@
                             console.log('   - New timestamp:', new Date().toISOString());
                             
                             // Update login statistics
-                            _db.from('users')
+                            console.log('🚀 STARTING database update...');
+                            const updatePromise = _db.from('users')
                                 .update({
                                     last_login: new Date().toISOString(),
                                     login_count: (userData.login_count || 0) + 1
                                 })
-                                .eq('id', userData.id)
-                                .then(function(updateResult) {
+                                .eq('id', userData.id);
+                            
+                            console.log('📤 Update promise created:', updatePromise);
+                            
+                            updatePromise.then(function(updateResult) {
                                     console.log('☁️ DETAILED Login stats update result:', updateResult);
                                     console.log('   - Update data:', updateResult.data);
                                     console.log('   - Update error:', updateResult.error);
@@ -2787,6 +2791,11 @@
                                     console.error('❌ Error updating login stats (catch block):', error);
                                     console.error('❌ Error stack:', error.stack);
                                 });
+                            
+                            // Add a timeout check to see if the update is hanging
+                            setTimeout(function() {
+                                console.log('⏰ 5 seconds have passed since login stats update started');
+                            }, 5000);
                             
                             return {
                                 email: userData.email,
