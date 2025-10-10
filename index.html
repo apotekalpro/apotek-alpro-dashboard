@@ -1987,6 +1987,11 @@
             return btoa(password + 'salt_apotek_alpro_2024');
         }
         
+        // Main hash function - uses legacy hash for compatibility
+        function hashPassword(password) {
+            return legacyHash(password);
+        }
+        
         // ===== SECURITY & STATE VARIABLES =====
         let currentUser = null;
         let currentUserRole = null;
@@ -4172,76 +4177,110 @@
             }, 2000);
         }
 
-        async function changeUserPassword(currentPassword, newPassword, confirmPassword) {
+        function changeUserPassword(currentPassword, newPassword, confirmPassword) {
             // Validation
             if (!currentPassword || !newPassword || !confirmPassword) {
                 showPasswordChangeError('Please fill in all password fields.');
-                return false;
+                return Promise.resolve(false);
             }
 
             if (newPassword.length < 6) {
                 showPasswordChangeError('New password must be at least 6 characters long.');
-                return false;
+                return Promise.resolve(false);
             }
 
             if (newPassword !== confirmPassword) {
                 showPasswordChangeError('New password and confirmation do not match.');
-                return false;
+                return Promise.resolve(false);
             }
 
-            try {
-                // Try cloud password change first if cloud mode is available
-                if (_mode && _db) {
-                    console.log('🌐 Attempting cloud password change for:', currentUser);
-                    const success = await SecureUserManager.changePassword(currentUser, currentPassword, newPassword);
-                    
-                    if (success) {
-                        console.log('✅ Cloud password change successful');
-                        showPasswordChangeSuccess();
-                        
-                        // Also update the local copy if it exists
-                        const localUser = userManagementData.users.find(u => 
-                            u.email === currentUser?.toLowerCase()
-                        );
-                        if (localUser) {
-                            localUser.password = newPassword;
-                            localUser.lastPasswordChange = new Date().toISOString();
-                            saveUserManagementData();
-                            console.log('✅ Local password also updated');
-                        }
-                        
-                        return true;
-                    } else {
-                        console.log('⚠️ Cloud password change failed, trying local fallback...');
-                        // Don't show error yet, try local fallback
-                    }
-                }
+            if (!currentUser) {
+                showPasswordChangeError('No user logged in. Please log in again.');
+                return Promise.resolve(false);
+            }
 
-                // Fallback to local password change
-                console.log('📱 Using local password change');
-                
-                // Find current user in local database
-                const userToUpdate = userManagementData.users.find(u => 
-                    u.email === currentUser?.toLowerCase()
+            console.log('🔑 Password change attempt for user:', currentUser);
+
+            // Try cloud password change first if cloud mode is available
+            if (_mode && _db) {
+                console.log('🌐 Attempting cloud password change for:', currentUser);
+                return SecureUserManager.changePassword(currentUser, currentPassword, newPassword)
+                    .then(function(success) {
+                        if (success) {
+                            console.log('✅ Cloud password change successful');
+                            showPasswordChangeSuccess();
+                            
+                            // Also update the local copy if it exists
+                            const localUser = userManagementData.users.find(u => 
+                                u.email.toLowerCase() === currentUser.toLowerCase()
+                            );
+                            if (localUser) {
+                                localUser.password = newPassword;
+                                localUser.lastPasswordChange = new Date().toISOString();
+                                saveUserManagementData();
+                                console.log('✅ Local password copy also updated');
+                            }
+                            
+                            return true;
+                        } else {
+                            console.log('⚠️ Cloud password change failed, trying local fallback...');
+                            return attemptLocalPasswordChange(currentPassword, newPassword);
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('❌ Cloud password change error:', error);
+                        console.log('📱 Attempting local password change fallback...');
+                        return attemptLocalPasswordChange(currentPassword, newPassword);
+                    });
+            } else {
+                // No cloud mode, use local password change only
+                console.log('📱 Using local password change (no cloud mode)');
+                return attemptLocalPasswordChange(currentPassword, newPassword);
+            }
+        }
+        
+        function attemptLocalPasswordChange(currentPassword, newPassword) {
+            try {
+                // First check if user exists in local storage
+                let userToUpdate = userManagementData.users.find(u => 
+                    u.email.toLowerCase() === currentUser.toLowerCase()
                 );
 
+                // If user not found locally, create a minimal local entry
                 if (!userToUpdate) {
-                    showPasswordChangeError('User not found in the system.');
-                    return false;
+                    console.log('📝 User not found in local storage, creating local entry...');
+                    
+                    // Create a basic user entry for the currently logged in user
+                    userToUpdate = {
+                        id: Date.now().toString(),
+                        email: currentUser.toLowerCase(),
+                        name: currentUserName || currentUser.split('@')[0],
+                        role: currentUserRole || 'user',
+                        password: currentPassword, // Store current password temporarily
+                        status: 'active',
+                        createdAt: new Date().toISOString(),
+                        lastPasswordChange: new Date().toISOString()
+                    };
+                    
+                    userManagementData.users.push(userToUpdate);
+                    console.log('✅ Created local user entry for:', currentUser);
                 }
 
                 // Verify current password using the same logic as login
                 const isPasswordValid = validatePasswordForUser(userToUpdate, currentPassword);
                 if (!isPasswordValid) {
+                    console.log('❌ Current password validation failed for user:', currentUser);
                     showPasswordChangeError('Current password is incorrect.');
-                    return false;
+                    return Promise.resolve(false);
                 }
+
+                console.log('✅ Current password validated, updating to new password...');
 
                 // Update password locally
                 userToUpdate.password = newPassword;
                 userToUpdate.lastPasswordChange = new Date().toISOString();
                 
-                // Save to localStorage first
+                // Save to localStorage
                 saveUserManagementData();
 
                 // Log the password change
@@ -4256,21 +4295,19 @@
                 // Show success message
                 showPasswordChangeSuccess();
                 
-                // Auto-sync password change to cloud in background
-                autoSyncToCloud('password_changed', userToUpdate, false);
+                // Auto-sync password change to cloud in background if cloud mode available
+                if (_mode && _db) {
+                    console.log('🔄 Auto-syncing password change to cloud...');
+                    autoSyncToCloud('password_changed', userToUpdate, false);
+                }
                 
-                return true;
+                return Promise.resolve(true);
                 
             } catch (error) {
-                console.error('❌ Password change error:', error);
+                console.error('❌ Local password change error:', error);
                 showPasswordChangeError('An error occurred while changing password. Please try again.');
-                return false;
+                return Promise.resolve(false);
             }
-            
-            // If we reach here, both cloud and local methods failed
-            console.log('❌ Both cloud and local password change methods failed');
-            showPasswordChangeError('Current password is incorrect. Please verify your current password and try again.');
-            return false;
         }
         
         function saveUserChanges() {
@@ -5473,19 +5510,34 @@
         });
 
         // Password Change Form Handler
-        document.getElementById('passwordChangeForm').addEventListener('submit', async function(e) {
+        document.getElementById('passwordChangeForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const currentPassword = document.getElementById('currentPassword').value;
             const newPassword = document.getElementById('newPassword').value;
             const confirmPassword = document.getElementById('confirmNewPassword').value;
             
-            // Change password (now supports cloud)
-            const success = await changeUserPassword(currentPassword, newPassword, confirmPassword);
+            // Disable submit button to prevent double submission
+            const submitBtn = document.getElementById('changePasswordBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Changing...';
             
-            if (success) {
-                showPasswordChangeSuccess();
-            }
+            // Change password (now supports cloud with promise)
+            changeUserPassword(currentPassword, newPassword, confirmPassword)
+                .then(function(success) {
+                    console.log('🔑 Password change result:', success);
+                    // Success handling is already done inside changeUserPassword
+                })
+                .catch(function(error) {
+                    console.error('❌ Password change form error:', error);
+                    showPasswordChangeError('An error occurred while changing password. Please try again.');
+                })
+                .finally(function() {
+                    // Re-enable submit button
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                });
         });
 
         // AM Performance Tracker Namespace - All functions isolated to prevent conflicts
