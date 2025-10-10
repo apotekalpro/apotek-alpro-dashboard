@@ -3431,11 +3431,40 @@
                 console.log('🔍 Attempting to load login logs from database...');
                 SecureUserManager.loadActivityLogs(100).then(function(logs) {
                     console.log('📋 Raw login logs from database:', logs);
-                    userManagementData.loginLogs = logs || [];
-                    console.log('✅ Login logs loaded from database:', logs ? logs.length : 0, 'entries');
-                    if (logs && logs.length > 0) {
-                        console.log('📄 Sample log entry:', logs[0]);
+                    
+                    // Map database field names to UI field names
+                    const mappedLogs = (logs || []).map(function(log) {
+                        return {
+                            email: log.user_email,
+                            eventType: log.activity,
+                            ipAddress: log.ip_address,
+                            userAgent: log.user_agent,
+                            timestamp: log.created_at,
+                            details: JSON.stringify(log.metadata || {})
+                        };
+                    });
+                    
+                    userManagementData.loginLogs = mappedLogs;
+                    console.log('✅ Login logs loaded and mapped from database:', mappedLogs.length, 'entries');
+                    if (mappedLogs.length > 0) {
+                        console.log('📄 Sample mapped log entry:', mappedLogs[0]);
                     }
+                    
+                    // Update the filtered logs and refresh the display
+                    if (typeof filterLoginLogs === 'function') {
+                        filterLoginLogs();
+                    } else {
+                        userManagementData.filteredLogs = mappedLogs;
+                    }
+                    
+                    // Update pagination and table display
+                    if (typeof updateLogPagination === 'function') {
+                        updateLogPagination();
+                    }
+                    if (typeof renderLoginLogsTable === 'function') {
+                        renderLoginLogsTable();
+                    }
+                    
                 }).catch(function(error) {
                     console.error('❌ Error loading login logs from database:', error);
                     // Fallback to localStorage if database fails
