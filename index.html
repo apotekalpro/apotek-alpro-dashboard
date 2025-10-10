@@ -1764,7 +1764,7 @@
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Agent</th>
-                                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+
                                             </tr>
                                         </thead>
                                         <tbody id="loginLogsTableBody" class="divide-y divide-gray-200">
@@ -3440,7 +3440,7 @@
                             ipAddress: log.ip_address,
                             userAgent: log.user_agent,
                             timestamp: log.created_at,
-                            details: JSON.stringify(log.metadata || {})
+
                         };
                     });
                     
@@ -5378,9 +5378,7 @@
                     <td class="px-4 py-3 text-sm text-gray-500 max-w-xs truncate" title="${log.userAgent}">
                         ${log.userAgent}
                     </td>
-                    <td class="px-4 py-3 text-sm text-gray-500">
-                        ${log.details ? Object.keys(log.details).map(key => `${key}: ${log.details[key]}`).join(', ') : '-'}
-                    </td>
+
                 `;
                 
                 tbody.appendChild(row);
