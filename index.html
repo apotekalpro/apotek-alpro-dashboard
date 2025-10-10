@@ -2007,6 +2007,16 @@
             const targetHash = 'YzliZjg0ZjJlOGZlOWJlOWM4YmM2OTllOTkwMjQzYTU3NDgwNjkzOGNkY2Rj';
             console.log('🧪 Testing password against suwahyu hash:', password);
             
+            // Decode the target hash to see what it contains
+            try {
+                const decoded = atob(targetHash);
+                console.log('🔍 Target hash decoded:', decoded);
+                console.log('🔍 Decoded length:', decoded.length);
+                console.log('🔍 Looks like hex?:', /^[0-9a-f]+$/i.test(decoded));
+            } catch (e) {
+                console.log('❌ Could not decode target hash as base64');
+            }
+            
             // Test various hash algorithms and combinations
             const tests = [
                 { name: 'Direct match', value: password },
@@ -2016,16 +2026,35 @@
                 { name: 'Base64 of legacy', value: btoa(legacyHash(password)) },
                 { name: 'Reversed password', value: password.split('').reverse().join('') },
                 { name: 'Lowercase password', value: password.toLowerCase() },
-                { name: 'Uppercase password', value: password.toUpperCase() }
+                { name: 'Uppercase password', value: password.toUpperCase() },
+                // Test MD5-like combinations
+                { name: 'With different salt', value: btoa(password + 'different_salt') },
+                { name: 'Old format salt', value: btoa(password + 'salt') },
+                { name: 'Simple salt', value: btoa('salt' + password) },
+                { name: 'Email as salt', value: btoa(password + 'suwahyu@apotekalpro.id') },
+                { name: 'No salt base64', value: btoa(password) }
             ];
             
             tests.forEach(test => {
-                const match = targetHash === test.value || targetHash === btoa(test.value);
+                const directMatch = targetHash === test.value;
+                const base64Match = targetHash === btoa(test.value);
+                const match = directMatch || base64Match;
+                
                 console.log(`   - ${test.name}: ${match ? '✅ MATCH!' : '❌'} (${test.value})`);
                 if (match) {
                     console.log(`🎯 FOUND MATCH: ${test.name} produces the target hash!`);
+                    if (base64Match) console.log('   → Match found after base64 encoding');
                 }
             });
+            
+            // Test if suwahyu might be in Google Sheets
+            console.log('📊 Testing if suwahyu uses Google Sheets authentication...');
+            const sheetsResult = authenticateWithGoogleSheets('suwahyu@apotekalpro.id', password);
+            if (sheetsResult) {
+                console.log('🎯 SUCCESS: suwahyu is authenticated via Google Sheets!', sheetsResult);
+            } else {
+                console.log('❌ suwahyu not found in Google Sheets either');
+            }
         };
         
         // Debug function to check user data in database (accessible from console)
@@ -3756,6 +3785,24 @@
             document.getElementById('email').value = '';
             document.getElementById('password').value = '';
             document.getElementById('errorMessage').classList.add('hidden');
+            
+            // Reset login button state (fix for stuck "Authenticating" state)
+            const loginButton = document.getElementById('loginButton');
+            const loginButtonContent = document.getElementById('loginButtonContent');
+            const loginLoadingContent = document.getElementById('loginLoadingContent');
+            
+            if (loginButton) {
+                loginButton.disabled = false;
+                loginButton.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+            if (loginButtonContent) {
+                loginButtonContent.classList.remove('hidden');
+            }
+            if (loginLoadingContent) {
+                loginLoadingContent.classList.add('hidden');
+            }
+            
+            console.log('🚪 Logout completed - login form reset to normal state');
         }
 
         // User Management Functions
@@ -4382,28 +4429,62 @@
                     u.email.toLowerCase() === currentUser.toLowerCase()
                 );
 
-                // If user not found locally, create a minimal local entry
+                // If user not found locally, check if they're in Google Sheets
                 if (!userToUpdate) {
-                    console.log('📝 User not found in local storage, creating local entry...');
+                    console.log('📝 User not found in local storage, checking Google Sheets...');
                     
-                    // Create a basic user entry for the currently logged in user
-                    userToUpdate = {
-                        id: Date.now().toString(),
-                        email: currentUser.toLowerCase(),
-                        name: currentUserName || currentUser.split('@')[0],
-                        role: currentUserRole || 'user',
-                        password: currentPassword, // Store current password temporarily
-                        status: 'active',
-                        createdAt: new Date().toISOString(),
-                        lastPasswordChange: new Date().toISOString()
-                    };
-                    
-                    userManagementData.users.push(userToUpdate);
-                    console.log('✅ Created local user entry for:', currentUser);
+                    // Test if user is in Google Sheets
+                    const sheetsUser = authenticateWithGoogleSheets(currentUser, currentPassword);
+                    if (sheetsUser) {
+                        console.log('📊 User found in Google Sheets, creating local entry...');
+                        
+                        // Create a basic user entry for the Google Sheets user
+                        userToUpdate = {
+                            id: Date.now().toString(),
+                            email: currentUser.toLowerCase(),
+                            name: sheetsUser.name || currentUserName || currentUser.split('@')[0],
+                            role: sheetsUser.role || currentUserRole || 'user',
+                            password: currentPassword, // Store current password
+                            status: 'active',
+                            createdAt: new Date().toISOString(),
+                            lastPasswordChange: new Date().toISOString(),
+                            source: 'google_sheets'
+                        };
+                        
+                        userManagementData.users.push(userToUpdate);
+                        console.log('✅ Created local user entry from Google Sheets for:', currentUser);
+                    } else {
+                        console.log('📝 User not found in Google Sheets either, creating minimal local entry...');
+                        
+                        // Create a basic user entry for the currently logged in user
+                        userToUpdate = {
+                            id: Date.now().toString(),
+                            email: currentUser.toLowerCase(),
+                            name: currentUserName || currentUser.split('@')[0],
+                            role: currentUserRole || 'user',
+                            password: currentPassword, // Store current password temporarily
+                            status: 'active',
+                            createdAt: new Date().toISOString(),
+                            lastPasswordChange: new Date().toISOString(),
+                            source: 'local_fallback'
+                        };
+                        
+                        userManagementData.users.push(userToUpdate);
+                        console.log('✅ Created fallback local user entry for:', currentUser);
+                    }
                 }
 
-                // Verify current password using the same logic as login
-                const isPasswordValid = validatePasswordForUser(userToUpdate, currentPassword);
+                // Verify current password using multiple validation methods
+                let isPasswordValid = validatePasswordForUser(userToUpdate, currentPassword);
+                
+                // If standard validation fails but user has Google Sheets source, try sheets validation
+                if (!isPasswordValid && userToUpdate.source === 'google_sheets') {
+                    console.log('🔄 Standard validation failed, trying Google Sheets validation...');
+                    const sheetsUser = authenticateWithGoogleSheets(currentUser, currentPassword);
+                    isPasswordValid = !!sheetsUser;
+                    console.log('📊 Google Sheets validation result:', isPasswordValid);
+                }
+                
                 if (!isPasswordValid) {
                     console.log('❌ Current password validation failed for user:', currentUser);
                     showPasswordChangeError('Current password is incorrect.');
