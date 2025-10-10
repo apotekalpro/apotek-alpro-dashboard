@@ -2761,8 +2761,16 @@
                                     login_count: (userData.login_count || 0) + 1
                                 })
                                 .eq('id', userData.id)
-                                .then(function() {
-                                    console.log('☁️ Login stats updated');
+                                .then(function(updateResult) {
+                                    console.log('☁️ Login stats update result:', updateResult);
+                                    if (updateResult.error) {
+                                        console.error('❌ Failed to update login stats:', updateResult.error);
+                                    } else {
+                                        console.log('✅ Login stats updated successfully for user:', userData.email);
+                                    }
+                                })
+                                .catch(function(error) {
+                                    console.error('❌ Error updating login stats:', error);
                                 });
                             
                             return {
@@ -3539,6 +3547,12 @@
                     currentUser = user.email;
                     currentUserRole = user.role;
                     currentUserName = user.name;
+                    
+                    // Log successful login activity
+                    if (SecureUserManager.logActivity) {
+                        SecureUserManager.logActivity(user.email, 'Login', 'Successful login via cloud authentication');
+                    }
+                    
                     showDashboard();
                 } else {
                     console.log('☁️ Cloud authentication failed, trying Google Sheets fallback...');
