@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 1 Authentication System Verification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #ccc;
+        }
+        .success { border-left-color: #4CAF50; background: #f4fff4; }
+        .error { border-left-color: #f44336; background: #fff4f4; }
+        .info { border-left-color: #2196F3; background: #f4f8ff; }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976D2; }
+        .password-format {
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 5px;
+            border-radius: 3px;
+            word-break: break-all;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Phase 1 Authentication System Verification</h1>
+    <p>Testing modern PBKDF2 password hashing with legacy backward compatibility</p>
+
+    <div class="test-container">
+        <h2>🧪 Automated Tests</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>🔑 Password Format Testing</h2>
+        <div>
+            <input type="text" id="testPassword" placeholder="Enter test password" value="TestPass123">
+            <button onclick="testPasswordFormats()">Test Password Formats</button>
+        </div>
+        <div id="passwordResults"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>🔄 Hybrid Verification Testing</h2>
+        <div>
+            <input type="text" id="verifyPassword" placeholder="Password" value="TestPass123">
+            <select id="hashFormat">
+                <option value="legacy">Legacy Base64</option>
+                <option value="pbkdf2">PBKDF2</option>
+            </select>
+            <button onclick="testHybridVerification()">Test Verification</button>
+        </div>
+        <div id="verificationResults"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>📊 Test Summary</h2>
+        <div id="testSummary"></div>
+    </div>
+
+    <script>
+        // Include the authentication functions from main app
+        
+        // Legacy hash function (Base64 with salt)
+        function legacyHash(password) {
+            return btoa(password + 'salt_apotek_alpro_2024');
+        }
+
+        // Modern PBKDF2 hash function
+        async function modernPBKDF2Hash(password) {
+            try {
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const keyMaterial = await crypto.subtle.importKey('raw', passwordData, { name: 'PBKDF2' }, false, ['deriveBits']);
+                const hashBuffer = await crypto.subtle.deriveBits({
+                    name: 'PBKDF2',
+                    salt: salt,
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                }, keyMaterial, 256);
+                
+                const saltBase64 = btoa(String.fromCharCode(...salt));
+                const hashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+                return `$pbkdf2$${saltBase64}$${hashBase64}`;
+            } catch (error) {
+                console.error('PBKDF2 hashing failed:', error);
+                return legacyHash(password);
+            }
+        }
+
+        // PBKDF2 verification function
+        async function verifyPBKDF2Hash(password, storedHash) {
+            try {
+                const parts = storedHash.split('$');
+                if (parts.length !== 4 || parts[0] !== '' || parts[1] !== 'pbkdf2') {
+                    return false;
+                }
+                
+                const saltBase64 = parts[2];
+                const hashBase64 = parts[3];
+                const salt = new Uint8Array(atob(saltBase64).split('').map(c => c.charCodeAt(0)));
+                
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                const keyMaterial = await crypto.subtle.importKey('raw', passwordData, { name: 'PBKDF2' }, false, ['deriveBits']);
+                const hashBuffer = await crypto.subtle.deriveBits({
+                    name: 'PBKDF2',
+                    salt: salt,
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                }, keyMaterial, 256);
+                
+                const computedHashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+                return computedHashBase64 === hashBase64;
+            } catch (error) {
+                console.error('PBKDF2 verification failed:', error);
+                return false;
+            }
+        }
+
+        // Hybrid password verification
+        async function verifyPassword(password, storedHash) {
+            if (storedHash.startsWith('$pbkdf2$')) {
+                console.log('🔐 Using PBKDF2 verification');
+                return await verifyPBKDF2Hash(password, storedHash);
+            } else {
+                console.log('🔐 Using legacy verification');
+                const legacyHashResult = legacyHash(password);
+                return storedHash === legacyHashResult;
+            }
+        }
+
+        // Test functions
+        function logResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            element.appendChild(div);
+        }
+
+        async function testPasswordFormats() {
+            const password = document.getElementById('testPassword').value;
+            const resultsDiv = document.getElementById('passwordResults');
+            resultsDiv.innerHTML = '';
+
+            logResult('passwordResults', `Testing password formats for: "${password}"`, 'info');
+
+            // Test legacy format
+            const legacyResult = legacyHash(password);
+            logResult('passwordResults', 
+                `Legacy Format: <span class="password-format">${legacyResult}</span>`, 'info');
+
+            // Test PBKDF2 format
+            try {
+                const pbkdf2Result = await modernPBKDF2Hash(password);
+                logResult('passwordResults', 
+                    `PBKDF2 Format: <span class="password-format">${pbkdf2Result}</span>`, 'success');
+                
+                // Test verification of both formats
+                const legacyVerify = await verifyPassword(password, legacyResult);
+                const pbkdf2Verify = await verifyPassword(password, pbkdf2Result);
+                
+                logResult('passwordResults', 
+                    `Legacy verification: ${legacyVerify ? '✅ PASS' : '❌ FAIL'}`, 
+                    legacyVerify ? 'success' : 'error');
+                    
+                logResult('passwordResults', 
+                    `PBKDF2 verification: ${pbkdf2Verify ? '✅ PASS' : '❌ FAIL'}`, 
+                    pbkdf2Verify ? 'success' : 'error');
+
+            } catch (error) {
+                logResult('passwordResults', `PBKDF2 generation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testHybridVerification() {
+            const password = document.getElementById('verifyPassword').value;
+            const format = document.getElementById('hashFormat').value;
+            const resultsDiv = document.getElementById('verificationResults');
+            resultsDiv.innerHTML = '';
+
+            let testHash;
+            if (format === 'legacy') {
+                testHash = legacyHash(password);
+                logResult('verificationResults', `Testing legacy hash: ${testHash}`, 'info');
+            } else {
+                testHash = await modernPBKDF2Hash(password);
+                logResult('verificationResults', `Testing PBKDF2 hash: ${testHash}`, 'info');
+            }
+
+            const result = await verifyPassword(password, testHash);
+            logResult('verificationResults', 
+                `Verification result: ${result ? '✅ SUCCESS' : '❌ FAILED'}`, 
+                result ? 'success' : 'error');
+
+            // Test wrong password
+            const wrongResult = await verifyPassword('wrongpassword', testHash);
+            logResult('verificationResults', 
+                `Wrong password test: ${wrongResult ? '❌ FAILED (should be false)' : '✅ SUCCESS (correctly rejected)'}`, 
+                wrongResult ? 'error' : 'success');
+        }
+
+        async function runAllTests() {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = '';
+            
+            let passCount = 0;
+            let totalTests = 0;
+
+            logResult('testResults', '🚀 Starting comprehensive Phase 1 tests...', 'info');
+
+            // Test 1: Legacy hash function
+            totalTests++;
+            try {
+                const legacyResult = legacyHash('test123');
+                const expected = btoa('test123' + 'salt_apotek_alpro_2024');
+                if (legacyResult === expected) {
+                    passCount++;
+                    logResult('testResults', 'Test 1: Legacy hash function ✅ PASS', 'success');
+                } else {
+                    logResult('testResults', 'Test 1: Legacy hash function ❌ FAIL', 'error');
+                }
+            } catch (error) {
+                logResult('testResults', `Test 1: Legacy hash function ❌ ERROR: ${error.message}`, 'error');
+            }
+
+            // Test 2: PBKDF2 hash function
+            totalTests++;
+            try {
+                const pbkdf2Result = await modernPBKDF2Hash('test123');
+                if (pbkdf2Result && pbkdf2Result.startsWith('$pbkdf2$')) {
+                    passCount++;
+                    logResult('testResults', 'Test 2: PBKDF2 hash function ✅ PASS', 'success');
+                } else {
+                    logResult('testResults', 'Test 2: PBKDF2 hash function ❌ FAIL', 'error');
+                }
+            } catch (error) {
+                logResult('testResults', `Test 2: PBKDF2 hash function ❌ ERROR: ${error.message}`, 'error');
+            }
+
+            // Test 3: Legacy password verification
+            totalTests++;
+            try {
+                const legacyHash = legacyHash('test123');
+                const legacyVerify = await verifyPassword('test123', legacyHash);
+                if (legacyVerify) {
+                    passCount++;
+                    logResult('testResults', 'Test 3: Legacy verification ✅ PASS', 'success');
+                } else {
+                    logResult('testResults', 'Test 3: Legacy verification ❌ FAIL', 'error');
+                }
+            } catch (error) {
+                logResult('testResults', `Test 3: Legacy verification ❌ ERROR: ${error.message}`, 'error');
+            }
+
+            // Test 4: PBKDF2 password verification
+            totalTests++;
+            try {
+                const pbkdf2Hash = await modernPBKDF2Hash('test123');
+                const pbkdf2Verify = await verifyPassword('test123', pbkdf2Hash);
+                if (pbkdf2Verify) {
+                    passCount++;
+                    logResult('testResults', 'Test 4: PBKDF2 verification ✅ PASS', 'success');
+                } else {
+                    logResult('testResults', 'Test 4: PBKDF2 verification ❌ FAIL', 'error');
+                }
+            } catch (error) {
+                logResult('testResults', `Test 4: PBKDF2 verification ❌ ERROR: ${error.message}`, 'error');
+            }
+
+            // Test 5: Cross-format compatibility
+            totalTests++;
+            try {
+                const legacyHash = legacyHash('test123');
+                const pbkdf2Hash = await modernPBKDF2Hash('test123');
+                
+                const legacyToLegacy = await verifyPassword('test123', legacyHash);
+                const pbkdf2ToPbkdf2 = await verifyPassword('test123', pbkdf2Hash);
+                
+                if (legacyToLegacy && pbkdf2ToPbkdf2) {
+                    passCount++;
+                    logResult('testResults', 'Test 5: Cross-format compatibility ✅ PASS', 'success');
+                } else {
+                    logResult('testResults', 'Test 5: Cross-format compatibility ❌ FAIL', 'error');
+                }
+            } catch (error) {
+                logResult('testResults', `Test 5: Cross-format compatibility ❌ ERROR: ${error.message}`, 'error');
+            }
+
+            // Test 6: Wrong password rejection
+            totalTests++;
+            try {
+                const testHash = legacyHash('correct123');
+                const wrongVerify = await verifyPassword('wrong123', testHash);
+                if (!wrongVerify) {
+                    passCount++;
+                    logResult('testResults', 'Test 6: Wrong password rejection ✅ PASS', 'success');
+                } else {
+                    logResult('testResults', 'Test 6: Wrong password rejection ❌ FAIL', 'error');
+                }
+            } catch (error) {
+                logResult('testResults', `Test 6: Wrong password rejection ❌ ERROR: ${error.message}`, 'error');
+            }
+
+            // Display summary
+            const summaryDiv = document.getElementById('testSummary');
+            summaryDiv.innerHTML = `
+                <div class="test-result ${passCount === totalTests ? 'success' : 'error'}">
+                    <h3>📊 Test Summary</h3>
+                    <p><strong>Passed:</strong> ${passCount} / ${totalTests} tests</p>
+                    <p><strong>Success Rate:</strong> ${((passCount / totalTests) * 100).toFixed(1)}%</p>
+                    <p><strong>Status:</strong> ${passCount === totalTests ? '✅ All tests passed!' : '⚠️ Some tests failed'}</p>
+                </div>
+            `;
+
+            logResult('testResults', 
+                `🏁 Tests completed: ${passCount}/${totalTests} passed (${((passCount / totalTests) * 100).toFixed(1)}%)`, 
+                passCount === totalTests ? 'success' : 'error');
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 1000);
+        });
+    </script>
+</body>
+</html>

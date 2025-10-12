@@ -882,9 +882,15 @@
                                     Open in New Tab
                                 </button>
                             </div>
-                            <div class="iframe-container">
-                                <iframe src="https://apotekalpro.github.io/Strategy-Phoenix/okr-login.html" 
-                                        class="iframe-full"></iframe>
+                            <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-8 text-center">
+                                <i class="fas fa-info-circle text-4xl text-blue-500 mb-4"></i>
+                                <h4 class="text-xl font-semibold text-gray-800 mb-2">External Content Disabled</h4>
+                                <p class="text-gray-600 mb-4">External iframe temporarily disabled to prevent authentication interference.</p>
+                                <button onclick="openInNewTab('https://apotekalpro.github.io/Strategy-Phoenix/okr-login.html')" 
+                                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1014,9 +1020,15 @@
                             Open in New Tab
                         </button>
                     </div>
-                    <div class="iframe-container">
-                        <iframe src="https://apotekalpro.github.io/BPT/login.html" 
-                                class="iframe-full"></iframe>
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-8 text-center">
+                        <i class="fas fa-info-circle text-4xl text-green-500 mb-4"></i>
+                        <h4 class="text-xl font-semibold text-gray-800 mb-2">External Content Disabled</h4>
+                        <p class="text-gray-600 mb-4">External iframe temporarily disabled to prevent authentication interference.</p>
+                        <button onclick="openInNewTab('https://apotekalpro.github.io/BPT/login.html')" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
                     </div>
                 </div>
 
@@ -1997,13 +2009,125 @@
             }
         }
         
-        // Legacy hash function for existing users (will be migrated)
+        // Legacy hash function for existing users (backward compatibility)
         function legacyHash(password) {
             return btoa(password + 'salt_apotek_alpro_2024');
         }
         
-        // Main hash function - uses legacy hash for compatibility
-        function hashPassword(password) {
+        // Modern PBKDF2 hash function (secure)
+        async function modernPBKDF2Hash(password) {
+            try {
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                
+                // Generate a random salt for each password
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                
+                // Import the password as a key
+                const keyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    passwordData,
+                    { name: 'PBKDF2' },
+                    false,
+                    ['deriveBits']
+                );
+                
+                // Derive the hash using PBKDF2
+                const hashBuffer = await crypto.subtle.deriveBits(
+                    {
+                        name: 'PBKDF2',
+                        salt: salt,
+                        iterations: 100000, // 100,000 iterations for security
+                        hash: 'SHA-256'
+                    },
+                    keyMaterial,
+                    256 // 32 bytes = 256 bits
+                );
+                
+                // Convert to base64 for storage
+                const saltBase64 = btoa(String.fromCharCode(...salt));
+                const hashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+                
+                // Return in format: $pbkdf2$salt$hash
+                return `$pbkdf2$${saltBase64}$${hashBase64}`;
+                
+            } catch (error) {
+                console.error('❌ PBKDF2 hashing error:', error);
+                // Fallback to legacy hash if crypto API fails
+                return legacyHash(password);
+            }
+        }
+        
+        // Verify PBKDF2 password
+        async function verifyPBKDF2Hash(password, storedHash) {
+            try {
+                // Parse the stored hash format: $pbkdf2$salt$hash
+                const parts = storedHash.split('$');
+                if (parts.length !== 4 || parts[1] !== 'pbkdf2') {
+                    return false;
+                }
+                
+                const saltBase64 = parts[2];
+                const storedHashBase64 = parts[3];
+                
+                // Decode salt from base64
+                const salt = Uint8Array.from(atob(saltBase64), c => c.charCodeAt(0));
+                
+                // Hash the provided password with the same salt
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                
+                const keyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    passwordData,
+                    { name: 'PBKDF2' },
+                    false,
+                    ['deriveBits']
+                );
+                
+                const hashBuffer = await crypto.subtle.deriveBits(
+                    {
+                        name: 'PBKDF2',
+                        salt: salt,
+                        iterations: 100000,
+                        hash: 'SHA-256'
+                    },
+                    keyMaterial,
+                    256
+                );
+                
+                const calculatedHashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+                
+                // Compare hashes
+                return calculatedHashBase64 === storedHashBase64;
+                
+            } catch (error) {
+                console.error('❌ PBKDF2 verification error:', error);
+                return false;
+            }
+        }
+        
+        // Hybrid password verification (supports both legacy and PBKDF2)
+        async function verifyPassword(password, storedHash) {
+            // Check if it's a PBKDF2 hash
+            if (storedHash.startsWith('$pbkdf2$')) {
+                console.log('🔐 Using PBKDF2 verification');
+                return await verifyPBKDF2Hash(password, storedHash);
+            } else {
+                // Legacy hash verification
+                console.log('🔐 Using legacy verification');
+                const legacyHashResult = legacyHash(password);
+                return storedHash === legacyHashResult;
+            }
+        }
+        
+        // Main hash function - now uses modern PBKDF2 for new passwords
+        async function hashPassword(password) {
+            return await modernPBKDF2Hash(password);
+        }
+        
+        // Legacy wrapper for backward compatibility
+        function hashPasswordSync(password) {
             return legacyHash(password);
         }
         
@@ -2717,98 +2841,116 @@
                             
                             console.log('☁️ User found, checking password...');
                             
-                            // Try simple password matching first
+                            // Modern hybrid password verification
                             const existingHash = userData.password_hash;
-                            const legacyPasswordHash = legacyHash(password);
-                            
                             console.log('☁️ Stored hash:', existingHash);
-                            console.log('☁️ Legacy hash:', legacyPasswordHash);
-                            console.log('☁️ Plain password:', password);
+                            console.log('☁️ Hash format:', existingHash.startsWith('$pbkdf2$') ? 'PBKDF2 (Modern)' : 'Legacy Base64');
                             
-                            // Check if password matches (try multiple formats like password change)
-                            console.log('🔍 LOGIN Password validation details:');
-                            console.log('   - existingHash === legacyPasswordHash:', existingHash === legacyPasswordHash);
-                            console.log('   - existingHash === password:', existingHash === password);
-                            console.log('   - existingHash === btoa(password):', existingHash === btoa(password));
-                            console.log('   - existingHash === hashPassword(password):', existingHash === hashPassword(password));
-                            
-                            const passwordMatch = existingHash === legacyPasswordHash || 
-                                                existingHash === password ||
-                                                existingHash === btoa(password) ||
-                                                existingHash === hashPassword(password);
-                            
-                            // Special case for suwahyu's hex hash format  
-                            let hexHashMatch = false;
-                            if (!passwordMatch && existingHash.length === 45 && /^[0-9a-f]+$/i.test(existingHash)) {
-                                console.log('🔍 LOGIN: Testing hex hash format for user with 45-char hash...');
-                                if (userData.email === 'suwahyu@apotekalpro.id' && password === 'Alpro@123') {
-                                    hexHashMatch = true;
-                                    console.log('✅ LOGIN: Special case suwahyu hex hash accepted');
-                                }
-                            }
-                            
-                            if (!passwordMatch && !hexHashMatch) {
-                                console.log('☁️ Password mismatch - none of the formats matched');
-                                return null;
-                            }
-                            
-                            console.log('☁️ Password matched! Authentication successful');
-                            
-                            // Detailed debugging before update
-                            console.log('🔍 DEBUG: About to update login stats for user:');
-                            console.log('   - User ID:', userData.id);
-                            console.log('   - User Email:', userData.email);
-                            console.log('   - Current login_count:', userData.login_count);
-                            console.log('   - New timestamp:', new Date().toISOString());
-                            
-                            // Update login statistics
-                            console.log('🚀 STARTING database update...');
-                            const updatePromise = _db.from('users')
-                                .update({
-                                    last_login: new Date().toISOString(),
-                                    login_count: (userData.login_count || 0) + 1
-                                })
-                                .eq('id', userData.id);
-                            
-                            console.log('📤 Update promise created:', updatePromise);
-                            
-                            updatePromise.then(function(updateResult) {
-                                    console.log('☁️ DETAILED Login stats update result:', updateResult);
-                                    console.log('   - Update data:', updateResult.data);
-                                    console.log('   - Update error:', updateResult.error);
-                                    console.log('   - Update status:', updateResult.status);
-                                    console.log('   - Update statusText:', updateResult.statusText);
-                                    
-                                    if (updateResult.error) {
-                                        console.error('❌ Failed to update login stats:', updateResult.error);
-                                        console.error('❌ Error details:', JSON.stringify(updateResult.error, null, 2));
-                                    } else {
-                                        console.log('✅ Login stats updated successfully for user:', userData.email);
-                                        console.log('✅ Rows affected:', updateResult.data ? updateResult.data.length : 'Unknown');
-                                        
-                                        // Force reload user data from database to reflect updated last_login
-                                        console.log('🔄 Forcing user data reload after login stats update');
-                                        if (typeof loadSecureData === 'function') {
-                                            loadSecureData();
-                                        }
+                            // Use hybrid verification (async)
+                            return verifyPassword(password, existingHash).then(function(passwordMatch) {
+                                console.log('🔍 Hybrid password verification result:', passwordMatch);
+                                
+                                // Special case for suwahyu's hex hash format (backward compatibility)
+                                let hexHashMatch = false;
+                                if (!passwordMatch && existingHash.length === 45 && /^[0-9a-f]+$/i.test(existingHash)) {
+                                    console.log('🔍 LOGIN: Testing hex hash format for user with 45-char hash...');
+                                    if (userData.email === 'suwahyu@apotekalpro.id' && password === 'Alpro@123') {
+                                        hexHashMatch = true;
+                                        console.log('✅ LOGIN: Special case suwahyu hex hash accepted');
                                     }
-                                })
-                                .catch(function(error) {
-                                    console.error('❌ Error updating login stats (catch block):', error);
-                                    console.error('❌ Error stack:', error.stack);
+                                }
+                                
+                                if (!passwordMatch && !hexHashMatch) {
+                                    console.log('☁️ Password verification failed - incorrect password');
+                                    return null;
+                                }
+                                
+                                console.log('☁️ Password verified! Authentication successful');
+                                
+                                // AUTO-MIGRATION: If user has legacy hash, migrate to PBKDF2
+                                let migrationPromise = Promise.resolve();
+                                if (!existingHash.startsWith('$pbkdf2$') && !hexHashMatch) {
+                                    console.log('🔄 AUTO-MIGRATION: Converting legacy hash to PBKDF2...');
+                                    migrationPromise = modernPBKDF2Hash(password).then(function(newHash) {
+                                        console.log('🔄 AUTO-MIGRATION: New PBKDF2 hash generated');
+                                        return _db.from('users')
+                                            .update({ 
+                                                password_hash: newHash,
+                                                last_password_change: new Date().toISOString()
+                                            })
+                                            .eq('id', userData.id)
+                                            .then(function(updateResult) {
+                                                if (updateResult.error) {
+                                                    console.error('❌ AUTO-MIGRATION: Failed to update password:', updateResult.error);
+                                                } else {
+                                                    console.log('✅ AUTO-MIGRATION: Password upgraded to PBKDF2 format');
+                                                }
+                                                return userData; // Return original user data regardless of migration result
+                                            });
+                                    }).catch(function(error) {
+                                        console.error('❌ AUTO-MIGRATION: Hash generation failed:', error);
+                                        return userData; // Return user data even if migration fails
+                                    });
+                                }
+                                
+                                // After migration (or if no migration needed), update login statistics
+                                return migrationPromise.then(function() {
+                                    console.log('🔍 DEBUG: About to update login stats for user:');
+                                    console.log('   - User ID:', userData.id);
+                                    console.log('   - User Email:', userData.email);
+                                    console.log('   - Current login_count:', userData.login_count);
+                                    console.log('   - New timestamp:', new Date().toISOString());
+                                    
+                                    // Update login statistics
+                                    console.log('🚀 STARTING database update...');
+                                    const updatePromise = _db.from('users')
+                                        .update({
+                                            last_login: new Date().toISOString(),
+                                            login_count: (userData.login_count || 0) + 1
+                                        })
+                                        .eq('id', userData.id);
+                                    
+                                    console.log('📤 Update promise created:', updatePromise);
+                                    
+                                    updatePromise.then(function(updateResult) {
+                                        console.log('☁️ DETAILED Login stats update result:', updateResult);
+                                        console.log('   - Update data:', updateResult.data);
+                                        console.log('   - Update error:', updateResult.error);
+                                        console.log('   - Update status:', updateResult.status);
+                                        console.log('   - Update statusText:', updateResult.statusText);
+                                        
+                                        if (updateResult.error) {
+                                            console.error('❌ Failed to update login stats:', updateResult.error);
+                                            console.error('❌ Error details:', JSON.stringify(updateResult.error, null, 2));
+                                        } else {
+                                            console.log('✅ Login stats updated successfully for user:', userData.email);
+                                            console.log('✅ Rows affected:', updateResult.data ? updateResult.data.length : 'Unknown');
+                                            
+                                            // Force reload user data from database to reflect updated last_login
+                                            console.log('🔄 Forcing user data reload after login stats update');
+                                            if (typeof loadSecureData === 'function') {
+                                                loadSecureData();
+                                            }
+                                        }
+                                    })
+                                    .catch(function(error) {
+                                        console.error('❌ Error updating login stats (catch block):', error);
+                                        console.error('❌ Error stack:', error.stack);
+                                    });
+                                    
+                                    // Add a timeout check to see if the update is hanging
+                                    setTimeout(function() {
+                                        console.log('⏰ 5 seconds have passed since login stats update started');
+                                    }, 5000);
+                                    
+                                    return {
+                                        email: userData.email,
+                                        role: userData.role,
+                                        name: userData.name,
+                                        id: userData.id
+                                    };
                                 });
-                            
-                            // Add a timeout check to see if the update is hanging
-                            setTimeout(function() {
-                                console.log('⏰ 5 seconds have passed since login stats update started');
-                            }, 5000);
-                            
-                            return {
-                                email: userData.email,
-                                role: userData.role,
-                                name: userData.name,
-                                id: userData.id
-                            };
+                            });
                         });
                         
                 } catch (error) {
@@ -2822,30 +2964,38 @@
                 if (!_mode) return Promise.resolve(null);
                 
                 try {
-                    const newUser = {
-                        email: userData.email.toLowerCase(),
-                        password_hash: hashPassword(userData.password),
-                        name: userData.name,
-                        role: userData.role || 'user',
-                        status: userData.status || 'active',
-                        employee_id: userData.employee_id || null,
-                        manager: userData.manager || null,
-                        date_added: userData.dateAdded || new Date().toISOString().split('T')[0],
-                        department_access: userData.department_access || []
-                    };
-                    
-                    return supabase
-                        .from('users')
-                        .insert([newUser])
-                        .select()
-                        .single()
-                        .then(function(result) {
-                            const { data, error } = result;
-                            if (error) throw error;
-                            
-                            console.log('✅ User created in cloud:', data.email);
-                            return data;
-                        });
+                    // Generate PBKDF2 hash for new users
+                    return modernPBKDF2Hash(userData.password).then(function(passwordHash) {
+                        const newUser = {
+                            email: userData.email.toLowerCase(),
+                            password_hash: passwordHash,
+                            name: userData.name,
+                            role: userData.role || 'user',
+                            status: userData.status || 'active',
+                            employee_id: userData.employee_id || null,
+                            manager: userData.manager || null,
+                            date_added: userData.dateAdded || new Date().toISOString().split('T')[0],
+                            department_access: userData.department_access || []
+                        };
+                        
+                        console.log('👤 Creating new user with PBKDF2 password hash:', newUser.email);
+                        
+                        return _db
+                            .from('users')
+                            .insert([newUser])
+                            .select()
+                            .single()
+                            .then(function(result) {
+                                const { data, error } = result;
+                                if (error) throw error;
+                                
+                                console.log('✅ User created in cloud with PBKDF2 hash:', data.email);
+                                return data;
+                            });
+                    }).catch(function(error) {
+                        console.error('❌ Error creating user (PBKDF2 generation failed):', error);
+                        return Promise.reject(error);
+                    });
                     
                 } catch (error) {
                     console.error('❌ Error creating user in cloud:', error);
@@ -3121,60 +3271,60 @@
                         
                         console.log('👤 User found, validating current password...');
                         
-                        // Validate current password with multiple formats
+                        // Validate current password using hybrid verification
                         const existingHash = userData.password_hash;
-                        const legacyPasswordHash = legacyHash(currentPassword);
-                        
                         console.log('🔍 SecureUserManager Password validation:');
                         console.log('   - Stored hash:', existingHash);
-                        console.log('   - Legacy hash:', legacyPasswordHash);
-                        console.log('   - Plain password:', currentPassword);
-                        console.log('   - Base64:', btoa(currentPassword));
+                        console.log('   - Hash format:', existingHash.startsWith('$pbkdf2$') ? 'PBKDF2 (Modern)' : 'Legacy Base64');
                         
-                        // Try multiple formats like in login authentication  
-                        const passwordMatch = existingHash === legacyPasswordHash || 
-                                            existingHash === currentPassword ||
-                                            existingHash === btoa(currentPassword) ||
-                                            existingHash === hashPassword(currentPassword);
-                        
-                        if (!passwordMatch) {
-                            console.log('❌ Current password validation failed in SecureUserManager');
-                            return false;
-                        }
-                        
-                        console.log('✅ Current password validated, updating to new password...');
-                        
-                        // Now update with new password using legacy hash for consistency
-                        const newHash = legacyHash(newPassword);
-                        console.log('💾 SecureUserManager saving new password hash:', newHash);
-                        
-                        return _db
+                        // Use hybrid verification for current password
+                        return verifyPassword(currentPassword, existingHash).then(function(passwordMatch) {
+                            console.log('🔍 Hybrid password verification result:', passwordMatch);
+                            
+                            if (!passwordMatch) {
+                                console.log('❌ Current password validation failed in SecureUserManager');
+                                return false;
+                            }
+                            
+                            console.log('✅ Current password validated, updating to new password...');
+                            
+                            // Generate new password using modern PBKDF2 hash
+                            return modernPBKDF2Hash(newPassword).then(function(newHash) {
+                                console.log('💾 SecureUserManager saving new PBKDF2 password hash');
+                                console.log('🔒 New hash format: PBKDF2');
+                                
+                                return _db
                             .from('users')
-                            .update({
-                                password_hash: newHash,
-                                last_password_change: new Date().toISOString()
-                            })
-                            .eq('id', userData.id)
-                            .select()
-                            .single()
-                            .then(function(updateResult) {
-                                const { data: updatedData, error: updateError } = updateResult;
-                                
-                                if (updateError || !updatedData) {
-                                    console.error('❌ Password update failed:', updateError);
-                                    return false;
-                                }
-                                
-                                console.log('✅ Password updated successfully in SecureUserManager');
-                                
-                                // Log activity
-                                return self.logActivity(email, 'password_changed', {
-                                    timestamp: new Date().toISOString()
-                                }).then(function() {
-                                    console.log('✅ Password change logged successfully');
-                                    return true;
-                                });
+                                    .update({
+                                        password_hash: newHash,
+                                        last_password_change: new Date().toISOString()
+                                    })
+                                    .eq('id', userData.id)
+                                    .select()
+                                    .single()
+                                    .then(function(updateResult) {
+                                        const { data: updatedData, error: updateError } = updateResult;
+                                        
+                                        if (updateError || !updatedData) {
+                                            console.error('❌ Password update failed:', updateError);
+                                            return false;
+                                        }
+                                        
+                                        console.log('✅ Password updated successfully in SecureUserManager (PBKDF2 format)');
+                                        
+                                        // Log activity
+                                        return self.logActivity(email, 'password_changed', {
+                                            timestamp: new Date().toISOString()
+                                        }).then(function() {
+                                            console.log('✅ Password change logged successfully');
+                                            return true;
+                                        });
+                                    });
+                            }).catch(function(error) {
+                                console.error('❌ PBKDF2 hash generation failed:', error);
+                                return false;
                             });
+                        });
                     })
                     .catch(function(error) {
                         console.error('❌ SecureUserManager password change error:', error);
@@ -3689,27 +3839,19 @@
                     
                     showDashboard();
                 } else {
-                    console.log('☁️ Cloud authentication failed, trying Google Sheets fallback...');
+                    console.log('☁️ Cloud authentication failed - Supabase database is the only authentication method');
+                    console.log('🚫 Google Sheets fallback DISABLED - using Supabase database only');
                     
-                    // Fallback to Google Sheets authentication
-                    const sheetsUser = authenticateWithGoogleSheets(email, password);
-                    if (sheetsUser) {
-                        console.log('✅ User authenticated via Google Sheets:', sheetsUser);
-                        currentUser = sheetsUser.email;
-                        currentUserRole = sheetsUser.role;
-                        currentUserName = sheetsUser.name;
-                        showDashboard();
-                    } else {
-                        console.log('❌ Authentication failed in both cloud and Google Sheets');
-                        
-                        // Hide loading state on error
-                        loginButton.disabled = false;
-                        loginButtonContent.classList.remove('hidden');
-                        loginLoadingContent.classList.add('hidden');
-                        
-                        errorText.textContent = 'Invalid credentials. Please try again.';
-                        errorMessage.classList.remove('hidden');
-                    }
+                    // SECURITY FIX: Only use Supabase authentication, no Google Sheets fallback
+                    console.log('❌ Authentication failed - user not found in Supabase database');
+                    
+                    // Hide loading state on error
+                    loginButton.disabled = false;
+                    loginButtonContent.classList.remove('hidden');
+                    loginLoadingContent.classList.add('hidden');
+                    
+                    errorText.textContent = 'Invalid credentials. Please check your email and password.';
+                    errorMessage.classList.remove('hidden');
                 }
                 
             }).catch(function(error) {

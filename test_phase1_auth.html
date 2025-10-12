@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Phase 1 Authentication</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Test Phase 1 Hybrid Authentication</h1>
+    <div>
+        <button onclick="testLogin()">Test khoo.ziyu@apotekalpro.id Login</button>
+        <button onclick="testPasswordChange()">Test Password Change</button>
+    </div>
+    <div id="results"></div>
+
+    <script>
+        // Supabase config
+        const url = 'https://txmrvnfqqzboupcmaupt.supabase.co';
+        const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4bXJ2bmZxcXpib3VwY21hdXB0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDAxMTc3MiwiZXhwIjoyMDc1NTg3NzcyfQ.bDUOgCSsKcP-aJXbaS0C7UMA9cJFG2w7bzKDu1ELW64';
+        const supabase = window.supabase.createClient(url, key);
+
+        // Legacy hash function
+        function legacyHash(password) {
+            return btoa(password + 'salt_apotek_alpro_2024');
+        }
+
+        // Modern PBKDF2 hash function
+        async function modernPBKDF2Hash(password) {
+            try {
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                
+                const keyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    passwordData,
+                    { name: 'PBKDF2' },
+                    false,
+                    ['deriveBits']
+                );
+                
+                const hashBuffer = await crypto.subtle.deriveBits(
+                    {
+                        name: 'PBKDF2',
+                        salt: salt,
+                        iterations: 100000,
+                        hash: 'SHA-256'
+                    },
+                    keyMaterial,
+                    256
+                );
+                
+                const saltBase64 = btoa(String.fromCharCode(...salt));
+                const hashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+                
+                return `$pbkdf2$${saltBase64}$${hashBase64}`;
+                
+            } catch (error) {
+                console.error('❌ PBKDF2 hashing error:', error);
+                return legacyHash(password);
+            }
+        }
+
+        // Verify PBKDF2 password
+        async function verifyPBKDF2Hash(password, storedHash) {
+            try {
+                const parts = storedHash.split('$');
+                if (parts.length !== 4 || parts[1] !== 'pbkdf2') {
+                    return false;
+                }
+                
+                const saltBase64 = parts[2];
+                const storedHashBase64 = parts[3];
+                
+                const salt = Uint8Array.from(atob(saltBase64), c => c.charCodeAt(0));
+                
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                
+                const keyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    passwordData,
+                    { name: 'PBKDF2' },
+                    false,
+                    ['deriveBits']
+                );
+                
+                const hashBuffer = await crypto.subtle.deriveBits(
+                    {
+                        name: 'PBKDF2',
+                        salt: salt,
+                        iterations: 100000,
+                        hash: 'SHA-256'
+                    },
+                    keyMaterial,
+                    256
+                );
+                
+                const calculatedHashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+                
+                return calculatedHashBase64 === storedHashBase64;
+                
+            } catch (error) {
+                console.error('❌ PBKDF2 verification error:', error);
+                return false;
+            }
+        }
+
+        // Hybrid password verification
+        async function verifyPassword(password, storedHash) {
+            if (storedHash.startsWith('$pbkdf2$')) {
+                console.log('🔐 Using PBKDF2 verification');
+                return await verifyPBKDF2Hash(password, storedHash);
+            } else {
+                console.log('🔐 Using legacy verification');
+                const legacyHashResult = legacyHash(password);
+                return storedHash === legacyHashResult;
+            }
+        }
+
+        async function testLogin() {
+            const email = 'khoo.ziyu@apotekalpro.id';
+            const password = 'Alpro@123';
+            
+            document.getElementById('results').innerHTML = '<p>Testing login...</p>';
+            
+            try {
+                // Get user data
+                const { data: userData, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', email)
+                    .eq('status', 'active')
+                    .single();
+                
+                if (error || !userData) {
+                    document.getElementById('results').innerHTML = `<p style="color: red;">User not found: ${error?.message}</p>`;
+                    return;
+                }
+                
+                console.log('👤 User found:', userData);
+                
+                // Test password verification
+                const passwordMatch = await verifyPassword(password, userData.password_hash);
+                
+                document.getElementById('results').innerHTML = `
+                    <h3>Login Test Results:</h3>
+                    <p><strong>User:</strong> ${userData.name} (${userData.email})</p>
+                    <p><strong>Hash Format:</strong> ${userData.password_hash.startsWith('$pbkdf2$') ? 'PBKDF2 (Modern)' : 'Legacy Base64'}</p>
+                    <p><strong>Password Verification:</strong> ${passwordMatch ? '✅ SUCCESS' : '❌ FAILED'}</p>
+                    <p><strong>Auth Result:</strong> ${passwordMatch ? '🎉 Login would succeed' : '❌ Login would fail'}</p>
+                `;
+                
+                // If legacy, test auto-migration
+                if (passwordMatch && !userData.password_hash.startsWith('$pbkdf2$')) {
+                    document.getElementById('results').innerHTML += `<p style="color: blue;">🔄 Testing auto-migration to PBKDF2...</p>`;
+                    
+                    const newHash = await modernPBKDF2Hash(password);
+                    console.log('🔄 New PBKDF2 hash generated:', newHash);
+                    
+                    // Update the user's password hash
+                    const { data: updateData, error: updateError } = await supabase
+                        .from('users')
+                        .update({ 
+                            password_hash: newHash,
+                            last_password_change: new Date().toISOString()
+                        })
+                        .eq('id', userData.id)
+                        .select()
+                        .single();
+                    
+                    if (updateError) {
+                        document.getElementById('results').innerHTML += `<p style="color: red;">❌ Auto-migration failed: ${updateError.message}</p>`;
+                    } else {
+                        document.getElementById('results').innerHTML += `<p style="color: green;">✅ Auto-migration successful! Password upgraded to PBKDF2</p>`;
+                        
+                        // Test new hash
+                        const newVerification = await verifyPassword(password, newHash);
+                        document.getElementById('results').innerHTML += `<p><strong>New Hash Verification:</strong> ${newVerification ? '✅ SUCCESS' : '❌ FAILED'}</p>`;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('❌ Test error:', error);
+                document.getElementById('results').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testPasswordChange() {
+            const email = 'khoo.ziyu@apotekalpro.id';
+            const currentPassword = 'Alpro@123';
+            const newPassword = 'NewSecurePassword123!';
+            
+            document.getElementById('results').innerHTML = '<p>Testing password change...</p>';
+            
+            try {
+                // Get current user
+                const { data: userData, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', email)
+                    .single();
+                
+                if (error || !userData) {
+                    document.getElementById('results').innerHTML = `<p style="color: red;">User not found</p>`;
+                    return;
+                }
+                
+                // Verify current password
+                const currentPasswordValid = await verifyPassword(currentPassword, userData.password_hash);
+                
+                if (!currentPasswordValid) {
+                    document.getElementById('results').innerHTML = `<p style="color: red;">❌ Current password is incorrect</p>`;
+                    return;
+                }
+                
+                // Generate new PBKDF2 hash
+                const newHash = await modernPBKDF2Hash(newPassword);
+                
+                // Update password
+                const { data: updateData, error: updateError } = await supabase
+                    .from('users')
+                    .update({ 
+                        password_hash: newHash,
+                        last_password_change: new Date().toISOString()
+                    })
+                    .eq('id', userData.id)
+                    .select()
+                    .single();
+                
+                if (updateError) {
+                    document.getElementById('results').innerHTML = `<p style="color: red;">❌ Password change failed: ${updateError.message}</p>`;
+                } else {
+                    document.getElementById('results').innerHTML = `
+                        <h3>Password Change Test Results:</h3>
+                        <p style="color: green;">✅ Password changed successfully!</p>
+                        <p><strong>New Hash Format:</strong> PBKDF2</p>
+                        <p><strong>Old Password:</strong> ${currentPassword}</p>
+                        <p><strong>New Password:</strong> ${newPassword}</p>
+                    `;
+                    
+                    // Test new password
+                    const newPasswordValid = await verifyPassword(newPassword, newHash);
+                    document.getElementById('results').innerHTML += `<p><strong>New Password Verification:</strong> ${newPasswordValid ? '✅ SUCCESS' : '❌ FAILED'}</p>`;
+                    
+                    // Restore original password for next tests
+                    setTimeout(async () => {
+                        const restoredHash = await modernPBKDF2Hash(currentPassword);
+                        await supabase
+                            .from('users')
+                            .update({ password_hash: restoredHash })
+                            .eq('id', userData.id);
+                        document.getElementById('results').innerHTML += `<p style="color: blue;">🔄 Password restored to original for future tests</p>`;
+                    }, 2000);
+                }
+                
+            } catch (error) {
+                console.error('❌ Password change error:', error);
+                document.getElementById('results').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Phase 1 Quick Test</title>
+</head>
+<body>
+    <h1>Phase 1 Authentication Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Define the Phase 1 functions directly here for testing
+        
+        // Legacy hash function (Base64 with salt)
+        function legacyHash(password) {
+            return btoa(password + 'salt_apotek_alpro_2024');
+        }
+
+        // Modern PBKDF2 hash function
+        async function modernPBKDF2Hash(password) {
+            try {
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const keyMaterial = await crypto.subtle.importKey('raw', passwordData, { name: 'PBKDF2' }, false, ['deriveBits']);
+                const hashBuffer = await crypto.subtle.deriveBits({
+                    name: 'PBKDF2',
+                    salt: salt,
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                }, keyMaterial, 256);
+                
+                const saltBase64 = btoa(String.fromCharCode(...salt));
+                const hashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+                return `$pbkdf2$${saltBase64}$${hashBase64}`;
+            } catch (error) {
+                console.error('PBKDF2 hashing failed:', error);
+                return legacyHash(password);
+            }
+        }
+
+        // PBKDF2 verification function
+        async function verifyPBKDF2Hash(password, storedHash) {
+            try {
+                const parts = storedHash.split('$');
+                if (parts.length !== 4 || parts[0] !== '' || parts[1] !== 'pbkdf2') {
+                    return false;
+                }
+                
+                const saltBase64 = parts[2];
+                const hashBase64 = parts[3];
+                const salt = new Uint8Array(atob(saltBase64).split('').map(c => c.charCodeAt(0)));
+                
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                const keyMaterial = await crypto.subtle.importKey('raw', passwordData, { name: 'PBKDF2' }, false, ['deriveBits']);
+                const hashBuffer = await crypto.subtle.deriveBits({
+                    name: 'PBKDF2',
+                    salt: salt,
+                    iterations: 100000,
+                    hash: 'SHA-256'
+                }, keyMaterial, 256);
+                
+                const computedHashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+                return computedHashBase64 === hashBase64;
+            } catch (error) {
+                console.error('PBKDF2 verification failed:', error);
+                return false;
+            }
+        }
+
+        // Hybrid password verification
+        async function verifyPassword(password, storedHash) {
+            if (storedHash.startsWith('$pbkdf2$')) {
+                console.log('🔐 Using PBKDF2 verification');
+                return await verifyPBKDF2Hash(password, storedHash);
+            } else {
+                console.log('🔐 Using legacy verification');
+                const legacyHashResult = legacyHash(password);
+                return storedHash === legacyHashResult;
+            }
+        }
+
+        // Test function
+        async function runTests() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>Running Phase 1 Tests...</h2>';
+            
+            try {
+                // Test 1: Legacy password hashing
+                console.log('=== Test 1: Legacy Hash ===');
+                const testPassword = 'TestPassword123';
+                const legacyResult = legacyHash(testPassword);
+                results.innerHTML += `<p><strong>Test 1 - Legacy Hash:</strong> ${legacyResult}</p>`;
+                
+                // Test 2: PBKDF2 password hashing
+                console.log('=== Test 2: PBKDF2 Hash ===');
+                const pbkdf2Result = await modernPBKDF2Hash(testPassword);
+                results.innerHTML += `<p><strong>Test 2 - PBKDF2 Hash:</strong> ${pbkdf2Result}</p>`;
+                
+                // Test 3: Legacy verification
+                console.log('=== Test 3: Legacy Verification ===');
+                const legacyVerify = await verifyPassword(testPassword, legacyResult);
+                results.innerHTML += `<p><strong>Test 3 - Legacy Verification:</strong> ${legacyVerify ? '✅ PASS' : '❌ FAIL'}</p>`;
+                
+                // Test 4: PBKDF2 verification
+                console.log('=== Test 4: PBKDF2 Verification ===');
+                const pbkdf2Verify = await verifyPassword(testPassword, pbkdf2Result);
+                results.innerHTML += `<p><strong>Test 4 - PBKDF2 Verification:</strong> ${pbkdf2Verify ? '✅ PASS' : '❌ FAIL'}</p>`;
+                
+                // Test 5: Cross-format compatibility test
+                console.log('=== Test 5: Wrong Password Test ===');
+                const wrongPasswordTest = await verifyPassword('WrongPassword', legacyResult);
+                results.innerHTML += `<p><strong>Test 5 - Wrong Password (should fail):</strong> ${wrongPasswordTest ? '❌ FAIL (should be false)' : '✅ PASS (correctly rejected)'}</p>`;
+                
+                // Test 6: Test real user password format
+                console.log('=== Test 6: Real User Password Test ===');
+                // This is Alpro@123 with legacy salt - should match the base64 format from database
+                const realPassword = 'Alpro@123';
+                const realLegacyHash = legacyHash(realPassword); // Should be: QWxwcm9AMTIzc2FsdF9hcG90ZWtfYWxwcm9fMjAyNA==
+                results.innerHTML += `<p><strong>Test 6 - Real Password Hash:</strong> ${realLegacyHash}</p>`;
+                results.innerHTML += `<p><strong>Expected Hash:</strong> QWxwcm9AMTIzc2FsdF9hcG90ZWtfYWxwcm9fMjAyNA==</p>`;
+                results.innerHTML += `<p><strong>Hash Match:</strong> ${realLegacyHash === 'QWxwcm9AMTIzc2FsdF9hcG90ZWtfYWxwcm9fMjAyNA==' ? '✅ MATCHES' : '❌ DOES NOT MATCH'}</p>`;
+                
+                results.innerHTML += '<h2>✅ All Phase 1 Tests Completed!</h2>';
+                console.log('✅ All Phase 1 tests completed successfully');
+                
+            } catch (error) {
+                results.innerHTML += `<p style="color: red;"><strong>Error:</strong> ${error.message}</p>`;
+                console.error('Test error:', error);
+            }
+        }
+        
+        // Run tests automatically
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>
