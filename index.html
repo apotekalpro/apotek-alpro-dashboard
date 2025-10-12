@@ -2320,12 +2320,13 @@
                     
                     console.log('🔐 Storing JWT tokens with keys:', { sessionKey, refreshKey });
                     
-                    // Use sessionStorage for access token (cleared on tab close)
+                    // Use localStorage for access token (for persistence across refreshes)
+                    // Note: Changed from sessionStorage to localStorage to fix refresh issue
                     const sessionData = JSON.stringify({
                         accessToken: accessToken,
                         createdAt: tokenData.createdAt
                     });
-                    sessionStorage.setItem(sessionKey, sessionData);
+                    localStorage.setItem(sessionKey, sessionData);
                     
                     // Use localStorage for refresh token (persistent across sessions)
                     const refreshData = JSON.stringify({
@@ -2342,7 +2343,7 @@
                     console.log('   - Refresh data length:', refreshData.length);
                     
                     // Verify storage worked
-                    const verifySession = sessionStorage.getItem(sessionKey);
+                    const verifySession = localStorage.getItem(sessionKey);
                     const verifyRefresh = localStorage.getItem(refreshKey);
                     console.log('🔍 Storage verification:');
                     console.log('   - Session stored:', verifySession ? 'YES' : 'NO');
@@ -2360,7 +2361,7 @@
                 try {
                     const storageKey = JWT_CONFIG.storagePrefix + 'session';
                     console.log('🔍 Looking for access token with key:', storageKey);
-                    const sessionData = sessionStorage.getItem(storageKey);
+                    const sessionData = localStorage.getItem(storageKey);
                     console.log('🔍 Session data found:', sessionData ? 'YES' : 'NO');
                     
                     if (!sessionData) return null;
@@ -2399,7 +2400,7 @@
             // Clear all tokens
             clearTokens: function() {
                 try {
-                    sessionStorage.removeItem(JWT_CONFIG.storagePrefix + 'session');
+                    localStorage.removeItem(JWT_CONFIG.storagePrefix + 'session');
                     localStorage.removeItem(JWT_CONFIG.storagePrefix + 'refresh');
                     console.log('🔐 JWT tokens cleared');
                     return true;
