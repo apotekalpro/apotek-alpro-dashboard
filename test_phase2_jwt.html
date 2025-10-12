@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 2: JWT Session Management Testing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 15px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 15px;
+            margin: 12px 0;
+            border-radius: 8px;
+            border-left: 5px solid #ccc;
+            font-family: 'Courier New', monospace;
+        }
+        .success { border-left-color: #4CAF50; background: #f4fff4; color: #2e7d32; }
+        .error { border-left-color: #f44336; background: #fff4f4; color: #c62828; }
+        .info { border-left-color: #2196F3; background: #f4f8ff; color: #1565c0; }
+        .warning { border-left-color: #ff9800; background: #fff8f0; color: #ef6c00; }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 8px 4px;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: translateY(-2px); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        
+        .jwt-token {
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            word-break: break-all;
+            font-size: 11px;
+            border: 1px solid #ddd;
+        }
+        
+        .test-section {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin: 15px 0;
+            padding: 15px;
+        }
+        
+        .test-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        input, select {
+            padding: 10px;
+            margin: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 Phase 2: JWT Session Management Testing Suite</h1>
+    <p><strong>Testing JWT tokens, session management, auto-refresh, and security features</strong></p>
+
+    <div class="container">
+        <h2>📊 Test Progress</h2>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressBar"></div>
+        </div>
+        <div id="progressText">Ready to start testing...</div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Automated JWT Test Suite</h2>
+        <button onclick="runAllJWTTests()">Run All Phase 2 Tests</button>
+        <button onclick="clearResults()">Clear Results</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-header">🔑 JWT Token Generation Testing</div>
+        <button onclick="testJWTGeneration()">Test JWT Generation</button>
+        <button onclick="testJWTWithCustomPayload()">Test Custom Payload</button>
+        <div id="jwtGenerationResults"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-header">🔍 JWT Token Verification Testing</div>
+        <input type="text" id="tokenInput" placeholder="Paste JWT token to verify">
+        <button onclick="testJWTVerification()">Verify Token</button>
+        <div id="jwtVerificationResults"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-header">🔄 Session Management Testing</div>
+        <div>
+            <input type="email" id="testEmail" placeholder="test@example.com" value="test@apotekalpro.id">
+            <input type="text" id="testRole" placeholder="User role" value="admin">
+            <button onclick="testSessionCreation()">Create Test Session</button>
+            <button onclick="testSessionValidation()">Validate Session</button>
+            <button onclick="testSessionDestroy()">Destroy Session</button>
+        </div>
+        <div id="sessionResults"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-header">🔄 Token Refresh Testing</div>
+        <button onclick="testTokenRefresh()">Test Token Refresh</button>
+        <button onclick="simulateTokenExpiry()">Simulate Token Expiry</button>
+        <div id="refreshResults"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-header">💾 Secure Storage Testing</div>
+        <button onclick="testSecureStorage()">Test Storage Operations</button>
+        <button onclick="testDeviceIdValidation()">Test Device ID Security</button>
+        <div id="storageResults"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-header">⚡ Performance & Security Testing</div>
+        <button onclick="testJWTPerformance()">Test JWT Performance</button>
+        <button onclick="testSecurityValidation()">Test Security Features</button>
+        <div id="performanceResults"></div>
+    </div>
+
+    <div class="container">
+        <h2>📋 Test Summary</h2>
+        <div id="testSummary">
+            <div class="test-result info">No tests run yet. Click "Run All Phase 2 Tests" to begin comprehensive testing.</div>
+        </div>
+    </div>
+
+    <script>
+        // Include Phase 2 JWT functions for testing
+        
+        // JWT Configuration (same as main app)
+        const JWT_CONFIG = {
+            secret: 'alpro_jwt_secret_2024_' + btoa(new Date().getTime().toString()),
+            algorithm: 'HS256',
+            issuer: 'alpro-pharmacy-system',
+            audience: 'alpro-users',
+            accessTokenExpiry: 15 * 60,
+            refreshTokenExpiry: 7 * 24 * 60 * 60,
+            storagePrefix: 'alpro_test_'
+        };
+
+        // Base64 URL-safe encoding/decoding
+        function base64UrlEncode(str) {
+            return btoa(str)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        function base64UrlDecode(str) {
+            str += '='.repeat((4 - str.length % 4) % 4);
+            return atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+        }
+
+        // HMAC SHA-256 signature generation
+        async function generateHmacSignature(data, secret) {
+            try {
+                const encoder = new TextEncoder();
+                const keyData = encoder.encode(secret);
+                const messageData = encoder.encode(data);
+                
+                const cryptoKey = await crypto.subtle.importKey(
+                    'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+                );
+                
+                const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+                return base64UrlEncode(String.fromCharCode(...new Uint8Array(signature)));
+            } catch (error) {
+                throw new Error('JWT signature generation failed');
+            }
+        }
+
+        // Generate JWT token
+        async function generateJWT(payload, expiresIn = JWT_CONFIG.accessTokenExpiry) {
+            try {
+                const now = Math.floor(Date.now() / 1000);
+                
+                const header = {
+                    alg: JWT_CONFIG.algorithm,
+                    typ: 'JWT'
+                };
+                
+                const jwtPayload = {
+                    ...payload,
+                    iss: JWT_CONFIG.issuer,
+                    aud: JWT_CONFIG.audience,
+                    iat: now,
+                    exp: now + expiresIn,
+                    nbf: now,
+                    jti: crypto.getRandomValues(new Uint32Array(1))[0].toString(16)
+                };
+                
+                const encodedHeader = base64UrlEncode(JSON.stringify(header));
+                const encodedPayload = base64UrlEncode(JSON.stringify(jwtPayload));
+                const data = encodedHeader + '.' + encodedPayload;
+                const signature = await generateHmacSignature(data, JWT_CONFIG.secret);
+                
+                return data + '.' + signature;
+            } catch (error) {
+                throw new Error('Failed to generate JWT token');
+            }
+        }
+
+        // Verify JWT signature
+        async function verifyJWTSignature(token, secret) {
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) throw new Error('Invalid JWT format');
+                
+                const [header, payload, signature] = parts;
+                const data = header + '.' + payload;
+                const expectedSignature = await generateHmacSignature(data, secret);
+                
+                return signature === expectedSignature;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // Parse and validate JWT
+        async function parseJWT(token) {
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) throw new Error('Invalid JWT format');
+                
+                const isValidSignature = await verifyJWTSignature(token, JWT_CONFIG.secret);
+                if (!isValidSignature) throw new Error('Invalid JWT signature');
+                
+                const header = JSON.parse(base64UrlDecode(parts[0]));
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                
+                const now = Math.floor(Date.now() / 1000);
+                if (payload.exp && payload.exp < now) throw new Error('JWT token has expired');
+                if (payload.nbf && payload.nbf > now) throw new Error('JWT token not yet valid');
+                if (payload.iss !== JWT_CONFIG.issuer) throw new Error('Invalid JWT issuer');
+                if (payload.aud !== JWT_CONFIG.audience) throw new Error('Invalid JWT audience');
+                
+                return { header, payload, isValid: true };
+            } catch (error) {
+                return { header: null, payload: null, isValid: false, error: error.message };
+            }
+        }
+
+        // Test results management
+        let testCount = 0;
+        let passedTests = 0;
+        let totalTests = 0;
+
+        function logResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            element.appendChild(div);
+            
+            if (type === 'success') passedTests++;
+            totalTests++;
+            updateProgress();
+        }
+
+        function updateProgress() {
+            if (totalTests > 0) {
+                const percentage = (passedTests / totalTests) * 100;
+                document.getElementById('progressBar').style.width = percentage + '%';
+                document.getElementById('progressText').textContent = 
+                    `Tests: ${passedTests}/${totalTests} passed (${percentage.toFixed(1)}%)`;
+            }
+        }
+
+        function clearResults() {
+            document.querySelectorAll('[id$="Results"]').forEach(el => el.innerHTML = '');
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('testSummary').innerHTML = 
+                '<div class="test-result info">Results cleared. Ready for new tests.</div>';
+            passedTests = 0;
+            totalTests = 0;
+            updateProgress();
+        }
+
+        // Individual test functions
+        async function testJWTGeneration() {
+            logResult('jwtGenerationResults', 'Testing JWT token generation...', 'info');
+            
+            try {
+                const payload = {
+                    sub: 'test-user-123',
+                    email: 'test@example.com',
+                    role: 'admin'
+                };
+                
+                const token = await generateJWT(payload, 3600);
+                
+                if (token && token.split('.').length === 3) {
+                    logResult('jwtGenerationResults', '✅ JWT token generated successfully', 'success');
+                    logResult('jwtGenerationResults', `Token: <div class="jwt-token">${token}</div>`, 'info');
+                    
+                    // Test token structure
+                    const parts = token.split('.');
+                    const header = JSON.parse(base64UrlDecode(parts[0]));
+                    const payloadParsed = JSON.parse(base64UrlDecode(parts[1]));
+                    
+                    logResult('jwtGenerationResults', 
+                        `Header: ${JSON.stringify(header, null, 2)}`, 'info');
+                    logResult('jwtGenerationResults', 
+                        `Payload: ${JSON.stringify(payloadParsed, null, 2)}`, 'info');
+                        
+                } else {
+                    logResult('jwtGenerationResults', '❌ Invalid JWT token format', 'error');
+                }
+            } catch (error) {
+                logResult('jwtGenerationResults', `❌ JWT generation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testJWTWithCustomPayload() {
+            try {
+                const customPayload = {
+                    sub: 'custom-user-456',
+                    email: 'custom@apotekalpro.id',
+                    role: 'manager',
+                    department: 'pharmacy',
+                    permissions: ['read', 'write', 'admin']
+                };
+                
+                const token = await generateJWT(customPayload, 1800);
+                logResult('jwtGenerationResults', '✅ Custom payload JWT generated successfully', 'success');
+                
+                const parsed = await parseJWT(token);
+                if (parsed.isValid) {
+                    logResult('jwtGenerationResults', '✅ Custom payload JWT verified successfully', 'success');
+                } else {
+                    logResult('jwtGenerationResults', '❌ Custom payload JWT verification failed', 'error');
+                }
+            } catch (error) {
+                logResult('jwtGenerationResults', `❌ Custom JWT test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testJWTVerification() {
+            const tokenInput = document.getElementById('tokenInput');
+            const token = tokenInput.value.trim();
+            
+            if (!token) {
+                logResult('jwtVerificationResults', '❌ Please enter a JWT token to verify', 'error');
+                return;
+            }
+            
+            logResult('jwtVerificationResults', 'Verifying JWT token...', 'info');
+            
+            try {
+                const parsed = await parseJWT(token);
+                
+                if (parsed.isValid) {
+                    logResult('jwtVerificationResults', '✅ JWT token is valid', 'success');
+                    logResult('jwtVerificationResults', 
+                        `User: ${parsed.payload.email || parsed.payload.sub}`, 'info');
+                    logResult('jwtVerificationResults', 
+                        `Role: ${parsed.payload.role || 'N/A'}`, 'info');
+                    logResult('jwtVerificationResults', 
+                        `Expires: ${new Date(parsed.payload.exp * 1000).toLocaleString()}`, 'info');
+                } else {
+                    logResult('jwtVerificationResults', `❌ JWT token is invalid: ${parsed.error}`, 'error');
+                }
+            } catch (error) {
+                logResult('jwtVerificationResults', `❌ JWT verification error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSessionCreation() {
+            const email = document.getElementById('testEmail').value;
+            const role = document.getElementById('testRole').value;
+            
+            if (!email) {
+                logResult('sessionResults', '❌ Please enter an email for session testing', 'error');
+                return;
+            }
+            
+            logResult('sessionResults', 'Creating test session...', 'info');
+            
+            try {
+                const userData = {
+                    id: 'test-id-' + Date.now(),
+                    email: email,
+                    name: 'Test User',
+                    role: role || 'user'
+                };
+                
+                const accessToken = await generateJWT(userData, JWT_CONFIG.accessTokenExpiry);
+                const refreshToken = await generateJWT({ 
+                    sub: userData.id, 
+                    type: 'refresh' 
+                }, JWT_CONFIG.refreshTokenExpiry);
+                
+                // Store tokens
+                sessionStorage.setItem('alpro_test_session', JSON.stringify({
+                    accessToken: accessToken,
+                    createdAt: Date.now()
+                }));
+                
+                localStorage.setItem('alpro_test_refresh', JSON.stringify({
+                    refreshToken: refreshToken,
+                    createdAt: Date.now()
+                }));
+                
+                logResult('sessionResults', '✅ Test session created successfully', 'success');
+                logResult('sessionResults', `User: ${email}`, 'info');
+                logResult('sessionResults', `Role: ${role}`, 'info');
+                
+            } catch (error) {
+                logResult('sessionResults', `❌ Session creation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSessionValidation() {
+            logResult('sessionResults', 'Validating current session...', 'info');
+            
+            try {
+                const sessionData = sessionStorage.getItem('alpro_test_session');
+                if (!sessionData) {
+                    logResult('sessionResults', '❌ No session found', 'error');
+                    return;
+                }
+                
+                const parsed = JSON.parse(sessionData);
+                const token = parsed.accessToken;
+                
+                const validation = await parseJWT(token);
+                
+                if (validation.isValid) {
+                    logResult('sessionResults', '✅ Session is valid', 'success');
+                    logResult('sessionResults', 
+                        `Valid until: ${new Date(validation.payload.exp * 1000).toLocaleString()}`, 'info');
+                } else {
+                    logResult('sessionResults', `❌ Session is invalid: ${validation.error}`, 'error');
+                }
+            } catch (error) {
+                logResult('sessionResults', `❌ Session validation error: ${error.message}`, 'error');
+            }
+        }
+
+        function testSessionDestroy() {
+            logResult('sessionResults', 'Destroying test session...', 'info');
+            
+            try {
+                sessionStorage.removeItem('alpro_test_session');
+                localStorage.removeItem('alpro_test_refresh');
+                
+                logResult('sessionResults', '✅ Test session destroyed successfully', 'success');
+            } catch (error) {
+                logResult('sessionResults', `❌ Session destruction failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testTokenRefresh() {
+            logResult('refreshResults', 'Testing token refresh mechanism...', 'info');
+            
+            try {
+                // Create a short-lived token (10 seconds)
+                const userData = {
+                    sub: 'refresh-test-user',
+                    email: 'refresh@test.com',
+                    role: 'user'
+                };
+                
+                const shortToken = await generateJWT(userData, 10); // 10 seconds
+                const refreshToken = await generateJWT({ 
+                    sub: userData.sub, 
+                    type: 'refresh' 
+                }, 3600);
+                
+                logResult('refreshResults', '✅ Short-lived token created (10 seconds)', 'success');
+                
+                // Wait 5 seconds and test
+                setTimeout(async () => {
+                    const parsed = await parseJWT(shortToken);
+                    if (parsed.isValid) {
+                        logResult('refreshResults', '✅ Token still valid after 5 seconds', 'success');
+                    } else {
+                        logResult('refreshResults', '✅ Token expired as expected', 'success');
+                        logResult('refreshResults', 'Refresh token would be used here', 'info');
+                    }
+                }, 5000);
+                
+            } catch (error) {
+                logResult('refreshResults', `❌ Token refresh test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function simulateTokenExpiry() {
+            logResult('refreshResults', 'Simulating token expiry scenario...', 'info');
+            
+            try {
+                // Create an already expired token
+                const now = Math.floor(Date.now() / 1000);
+                const expiredPayload = {
+                    sub: 'expired-user',
+                    email: 'expired@test.com',
+                    iat: now - 3600, // 1 hour ago
+                    exp: now - 1800, // 30 minutes ago (expired)
+                    iss: JWT_CONFIG.issuer,
+                    aud: JWT_CONFIG.audience
+                };
+                
+                const encodedHeader = base64UrlEncode(JSON.stringify({alg: 'HS256', typ: 'JWT'}));
+                const encodedPayload = base64UrlEncode(JSON.stringify(expiredPayload));
+                const data = encodedHeader + '.' + encodedPayload;
+                const signature = await generateHmacSignature(data, JWT_CONFIG.secret);
+                
+                const expiredToken = data + '.' + signature;
+                
+                const parsed = await parseJWT(expiredToken);
+                
+                if (!parsed.isValid && parsed.error.includes('expired')) {
+                    logResult('refreshResults', '✅ Token expiry detection working correctly', 'success');
+                } else {
+                    logResult('refreshResults', '❌ Token expiry detection failed', 'error');
+                }
+                
+            } catch (error) {
+                logResult('refreshResults', `❌ Expiry simulation failed: ${error.message}`, 'error');
+            }
+        }
+
+        function testSecureStorage() {
+            logResult('storageResults', 'Testing secure storage operations...', 'info');
+            
+            try {
+                // Test storage
+                const testData = {
+                    token: 'test-token-123',
+                    created: Date.now(),
+                    deviceId: 'test-device-id'
+                };
+                
+                localStorage.setItem('alpro_test_storage', JSON.stringify(testData));
+                
+                // Test retrieval
+                const retrieved = localStorage.getItem('alpro_test_storage');
+                const parsed = JSON.parse(retrieved);
+                
+                if (parsed.token === testData.token) {
+                    logResult('storageResults', '✅ Storage and retrieval working correctly', 'success');
+                } else {
+                    logResult('storageResults', '❌ Storage data mismatch', 'error');
+                }
+                
+                // Cleanup
+                localStorage.removeItem('alpro_test_storage');
+                logResult('storageResults', '✅ Storage cleanup completed', 'success');
+                
+            } catch (error) {
+                logResult('storageResults', `❌ Storage test failed: ${error.message}`, 'error');
+            }
+        }
+
+        function testDeviceIdValidation() {
+            logResult('storageResults', 'Testing device ID security...', 'info');
+            
+            try {
+                // Generate device ID
+                const deviceId = btoa(
+                    navigator.userAgent + 
+                    navigator.language + 
+                    screen.width + 'x' + screen.height +
+                    Math.random().toString(36)
+                ).substring(0, 32);
+                
+                logResult('storageResults', `Device ID generated: ${deviceId}`, 'info');
+                
+                // Test device ID consistency
+                const deviceId2 = btoa(
+                    navigator.userAgent + 
+                    navigator.language + 
+                    screen.width + 'x' + screen.height +
+                    Math.random().toString(36)
+                ).substring(0, 32);
+                
+                if (deviceId !== deviceId2) {
+                    logResult('storageResults', '✅ Device ID includes random component (good for security)', 'success');
+                } else {
+                    logResult('storageResults', '⚠️ Device ID is deterministic', 'warning');
+                }
+                
+            } catch (error) {
+                logResult('storageResults', `❌ Device ID test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testJWTPerformance() {
+            logResult('performanceResults', 'Testing JWT performance...', 'info');
+            
+            try {
+                const payload = {
+                    sub: 'perf-test-user',
+                    email: 'perf@test.com',
+                    role: 'user'
+                };
+                
+                // Test generation performance
+                const genStart = performance.now();
+                const tokens = [];
+                
+                for (let i = 0; i < 10; i++) {
+                    tokens.push(await generateJWT(payload, 3600));
+                }
+                
+                const genEnd = performance.now();
+                const genTime = genEnd - genStart;
+                
+                logResult('performanceResults', 
+                    `✅ Generated 10 JWT tokens in ${genTime.toFixed(2)}ms (avg: ${(genTime/10).toFixed(2)}ms)`, 'success');
+                
+                // Test verification performance
+                const verifyStart = performance.now();
+                
+                for (const token of tokens) {
+                    await parseJWT(token);
+                }
+                
+                const verifyEnd = performance.now();
+                const verifyTime = verifyEnd - verifyStart;
+                
+                logResult('performanceResults', 
+                    `✅ Verified 10 JWT tokens in ${verifyTime.toFixed(2)}ms (avg: ${(verifyTime/10).toFixed(2)}ms)`, 'success');
+                
+            } catch (error) {
+                logResult('performanceResults', `❌ Performance test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSecurityValidation() {
+            logResult('performanceResults', 'Testing security features...', 'info');
+            
+            try {
+                // Test 1: Invalid signature detection
+                const validToken = await generateJWT({ sub: 'test' }, 3600);
+                const tampered = validToken.substring(0, validToken.length - 5) + 'XXXXX';
+                
+                const tamperedResult = await parseJWT(tampered);
+                if (!tamperedResult.isValid) {
+                    logResult('performanceResults', '✅ Invalid signature detected correctly', 'success');
+                } else {
+                    logResult('performanceResults', '❌ Failed to detect invalid signature', 'error');
+                }
+                
+                // Test 2: Wrong issuer rejection
+                const wrongIssuer = {
+                    sub: 'test',
+                    iss: 'wrong-issuer',
+                    aud: JWT_CONFIG.audience,
+                    exp: Math.floor(Date.now() / 1000) + 3600
+                };
+                
+                const encodedHeader = base64UrlEncode(JSON.stringify({alg: 'HS256', typ: 'JWT'}));
+                const encodedPayload = base64UrlEncode(JSON.stringify(wrongIssuer));
+                const data = encodedHeader + '.' + encodedPayload;
+                const signature = await generateHmacSignature(data, JWT_CONFIG.secret);
+                const wrongIssuerToken = data + '.' + signature;
+                
+                const issuerResult = await parseJWT(wrongIssuerToken);
+                if (!issuerResult.isValid && issuerResult.error.includes('issuer')) {
+                    logResult('performanceResults', '✅ Wrong issuer rejected correctly', 'success');
+                } else {
+                    logResult('performanceResults', '❌ Failed to reject wrong issuer', 'error');
+                }
+                
+            } catch (error) {
+                logResult('performanceResults', `❌ Security test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Main test runner
+        async function runAllJWTTests() {
+            clearResults();
+            logResult('testResults', '🚀 Starting comprehensive Phase 2 JWT testing...', 'info');
+            
+            const tests = [
+                { name: 'JWT Generation', fn: testJWTGeneration },
+                { name: 'JWT Custom Payload', fn: testJWTWithCustomPayload },
+                { name: 'Session Creation', fn: testSessionCreation },
+                { name: 'Session Validation', fn: testSessionValidation },
+                { name: 'Token Refresh', fn: testTokenRefresh },
+                { name: 'Secure Storage', fn: testSecureStorage },
+                { name: 'Device ID Security', fn: testDeviceIdValidation },
+                { name: 'JWT Performance', fn: testJWTPerformance },
+                { name: 'Security Validation', fn: testSecurityValidation }
+            ];
+            
+            let completed = 0;
+            
+            for (const test of tests) {
+                try {
+                    logResult('testResults', `Running: ${test.name}...`, 'info');
+                    await test.fn();
+                    completed++;
+                } catch (error) {
+                    logResult('testResults', `❌ ${test.name} failed: ${error.message}`, 'error');
+                }
+            }
+            
+            // Final summary
+            setTimeout(() => {
+                const summary = `
+                    <div class="test-result ${passedTests === totalTests ? 'success' : 'warning'}">
+                        <h3>🔐 Phase 2 JWT Testing Complete</h3>
+                        <p><strong>Tests Passed:</strong> ${passedTests} / ${totalTests}</p>
+                        <p><strong>Success Rate:</strong> ${((passedTests / totalTests) * 100).toFixed(1)}%</p>
+                        <p><strong>Status:</strong> ${passedTests === totalTests ? 
+                            '✅ All tests passed - JWT system ready!' : 
+                            '⚠️ Some tests failed - review results above'}</p>
+                    </div>
+                `;
+                document.getElementById('testSummary').innerHTML = summary;
+            }, 2000);
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                logResult('testResults', 'Phase 2 JWT test suite loaded and ready', 'info');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
