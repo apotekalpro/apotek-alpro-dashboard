@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Session Debug Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .debug-result {
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 4px;
+            border-left: 4px solid #ccc;
+        }
+        .success { border-left-color: #4CAF50; background: #f4fff4; }
+        .error { border-left-color: #f44336; background: #fff4f4; }
+        .info { border-left-color: #2196F3; background: #f4f8ff; }
+        .warning { border-left-color: #ff9800; background: #fff8f0; }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1976D2; }
+        .token-display {
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            word-break: break-all;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔐 JWT Session Debug Tool</h1>
+    <p>Debug tool to diagnose JWT session persistence issues</p>
+
+    <div class="debug-section">
+        <h2>📊 Storage Inspection</h2>
+        <button onclick="inspectStorage()">Inspect Storage</button>
+        <button onclick="clearAllStorage()">Clear All Storage</button>
+        <div id="storageResults"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🔑 Test JWT Creation & Storage</h2>
+        <button onclick="createTestJWT()">Create Test JWT</button>
+        <button onclick="validateStoredJWT()">Validate Stored JWT</button>
+        <div id="jwtResults"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🔄 Session Flow Testing</h2>
+        <button onclick="simulateLogin()">Simulate Login</button>
+        <button onclick="simulateRefresh()">Simulate Page Refresh</button>
+        <button onclick="testSessionRestore()">Test Session Restore</button>
+        <div id="sessionResults"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>🧪 Live Application Testing</h2>
+        <button onclick="testMainAppSession()">Test Main App Session</button>
+        <div id="mainAppResults"></div>
+    </div>
+
+    <script>
+        // JWT Configuration (matching main app)
+        const JWT_CONFIG = {
+            secret: 'alpro_jwt_secret_2024_' + btoa(new Date().getTime().toString()),
+            algorithm: 'HS256',
+            issuer: 'alpro-pharmacy-system',
+            audience: 'alpro-users',
+            accessTokenExpiry: 15 * 60,
+            refreshTokenExpiry: 7 * 24 * 60 * 60,
+            storagePrefix: 'alpro_'
+        };
+
+        function logDebug(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const div = document.createElement('div');
+            div.className = `debug-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            element.appendChild(div);
+        }
+
+        // Base64 URL functions
+        function base64UrlEncode(str) {
+            return btoa(str)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        function base64UrlDecode(str) {
+            str += '='.repeat((4 - str.length % 4) % 4);
+            return atob(str.replace(/-/g, '+').replace(/_/g, '/'));
+        }
+
+        // HMAC signature generation
+        async function generateHmacSignature(data, secret) {
+            try {
+                const encoder = new TextEncoder();
+                const keyData = encoder.encode(secret);
+                const messageData = encoder.encode(data);
+                
+                const cryptoKey = await crypto.subtle.importKey(
+                    'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+                );
+                
+                const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+                return base64UrlEncode(String.fromCharCode(...new Uint8Array(signature)));
+            } catch (error) {
+                throw new Error('JWT signature generation failed');
+            }
+        }
+
+        // Generate JWT token
+        async function generateJWT(payload, expiresIn = JWT_CONFIG.accessTokenExpiry) {
+            try {
+                const now = Math.floor(Date.now() / 1000);
+                
+                const header = { alg: JWT_CONFIG.algorithm, typ: 'JWT' };
+                const jwtPayload = {
+                    ...payload,
+                    iss: JWT_CONFIG.issuer,
+                    aud: JWT_CONFIG.audience,
+                    iat: now,
+                    exp: now + expiresIn,
+                    nbf: now,
+                    jti: crypto.getRandomValues(new Uint32Array(1))[0].toString(16)
+                };
+                
+                const encodedHeader = base64UrlEncode(JSON.stringify(header));
+                const encodedPayload = base64UrlEncode(JSON.stringify(jwtPayload));
+                const data = encodedHeader + '.' + encodedPayload;
+                const signature = await generateHmacSignature(data, JWT_CONFIG.secret);
+                
+                return data + '.' + signature;
+            } catch (error) {
+                throw new Error('Failed to generate JWT token');
+            }
+        }
+
+        function inspectStorage() {
+            logDebug('storageResults', '🔍 Inspecting all storage...', 'info');
+            
+            // Check sessionStorage
+            logDebug('storageResults', '<strong>SessionStorage:</strong>', 'info');
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                const value = sessionStorage.getItem(key);
+                logDebug('storageResults', `  ${key}: ${value.substring(0, 100)}${value.length > 100 ? '...' : ''}`, 'info');
+            }
+            
+            // Check localStorage
+            logDebug('storageResults', '<strong>LocalStorage:</strong>', 'info');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                logDebug('storageResults', `  ${key}: ${value.substring(0, 100)}${value.length > 100 ? '...' : ''}`, 'info');
+            }
+
+            // Check specifically for Alpro tokens
+            const alproSession = sessionStorage.getItem('alpro_session');
+            const alproRefresh = localStorage.getItem('alpro_refresh');
+            const alproDevice = localStorage.getItem('alpro_device_id');
+
+            logDebug('storageResults', '<strong>Alpro-specific tokens:</strong>', 'info');
+            logDebug('storageResults', `alpro_session: ${alproSession ? '✅ Found' : '❌ Missing'}`, alproSession ? 'success' : 'error');
+            logDebug('storageResults', `alpro_refresh: ${alproRefresh ? '✅ Found' : '❌ Missing'}`, alproRefresh ? 'success' : 'error');
+            logDebug('storageResults', `alpro_device_id: ${alproDevice ? '✅ Found' : '❌ Missing'}`, alproDevice ? 'success' : 'error');
+
+            if (alproSession) {
+                try {
+                    const sessionData = JSON.parse(alproSession);
+                    logDebug('storageResults', `Session created: ${new Date(sessionData.createdAt).toLocaleString()}`, 'info');
+                } catch (e) {
+                    logDebug('storageResults', 'Error parsing session data', 'error');
+                }
+            }
+        }
+
+        function clearAllStorage() {
+            sessionStorage.clear();
+            localStorage.clear();
+            logDebug('storageResults', '✅ All storage cleared', 'success');
+        }
+
+        async function createTestJWT() {
+            logDebug('jwtResults', '🔑 Creating test JWT...', 'info');
+            
+            try {
+                const testUser = {
+                    sub: 'test-user-' + Date.now(),
+                    email: 'test@apotekalpro.id',
+                    name: 'Test User',
+                    role: 'admin'
+                };
+
+                // Generate tokens
+                const accessToken = await generateJWT(testUser, 3600);
+                const refreshToken = await generateJWT({ 
+                    sub: testUser.sub, 
+                    type: 'refresh' 
+                }, JWT_CONFIG.refreshTokenExpiry);
+
+                // Store tokens exactly like the main app
+                sessionStorage.setItem('alpro_session', JSON.stringify({
+                    accessToken: accessToken,
+                    createdAt: Date.now()
+                }));
+
+                localStorage.setItem('alpro_refresh', JSON.stringify({
+                    refreshToken: refreshToken,
+                    createdAt: Date.now(),
+                    deviceId: 'test-device-123'
+                }));
+
+                localStorage.setItem('alpro_device_id', 'test-device-123');
+
+                logDebug('jwtResults', '✅ Test JWT created and stored', 'success');
+                logDebug('jwtResults', `Access Token: <div class="token-display">${accessToken}</div>`, 'info');
+                logDebug('jwtResults', `Refresh Token: <div class="token-display">${refreshToken}</div>`, 'info');
+
+            } catch (error) {
+                logDebug('jwtResults', `❌ JWT creation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function validateStoredJWT() {
+            logDebug('jwtResults', '🔍 Validating stored JWT...', 'info');
+            
+            try {
+                const sessionData = sessionStorage.getItem('alpro_session');
+                if (!sessionData) {
+                    logDebug('jwtResults', '❌ No session data found', 'error');
+                    return;
+                }
+
+                const parsed = JSON.parse(sessionData);
+                const token = parsed.accessToken;
+
+                if (!token) {
+                    logDebug('jwtResults', '❌ No access token in session data', 'error');
+                    return;
+                }
+
+                // Parse the JWT
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    logDebug('jwtResults', '❌ Invalid JWT format', 'error');
+                    return;
+                }
+
+                const header = JSON.parse(base64UrlDecode(parts[0]));
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                
+                logDebug('jwtResults', '✅ JWT parsed successfully', 'success');
+                logDebug('jwtResults', `Header: ${JSON.stringify(header, null, 2)}`, 'info');
+                logDebug('jwtResults', `Payload: ${JSON.stringify(payload, null, 2)}`, 'info');
+                
+                const now = Math.floor(Date.now() / 1000);
+                const isExpired = payload.exp < now;
+                const timeLeft = payload.exp - now;
+                
+                logDebug('jwtResults', `Expires: ${new Date(payload.exp * 1000).toLocaleString()}`, 'info');
+                logDebug('jwtResults', `Status: ${isExpired ? '❌ Expired' : '✅ Valid'}`, isExpired ? 'error' : 'success');
+                
+                if (!isExpired) {
+                    logDebug('jwtResults', `Time left: ${Math.floor(timeLeft / 60)} minutes ${timeLeft % 60} seconds`, 'success');
+                }
+
+            } catch (error) {
+                logDebug('jwtResults', `❌ JWT validation failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function simulateLogin() {
+            logDebug('sessionResults', '🔐 Simulating login process...', 'info');
+            
+            try {
+                // Clear existing storage
+                sessionStorage.removeItem('alpro_session');
+                localStorage.removeItem('alpro_refresh');
+                
+                // Create new session like after login
+                await createTestJWT();
+                
+                logDebug('sessionResults', '✅ Login simulation complete', 'success');
+                
+            } catch (error) {
+                logDebug('sessionResults', `❌ Login simulation failed: ${error.message}`, 'error');
+            }
+        }
+
+        function simulateRefresh() {
+            logDebug('sessionResults', '🔄 Simulating page refresh...', 'info');
+            
+            // This simulates what happens when the page loads
+            const sessionData = sessionStorage.getItem('alpro_session');
+            const refreshData = localStorage.getItem('alpro_refresh');
+            
+            if (sessionData && refreshData) {
+                logDebug('sessionResults', '✅ Session data found after refresh', 'success');
+                logDebug('sessionResults', `Session: ${sessionData.substring(0, 50)}...`, 'info');
+                logDebug('sessionResults', `Refresh: ${refreshData.substring(0, 50)}...`, 'info');
+            } else {
+                logDebug('sessionResults', '❌ Session data missing after refresh', 'error');
+                logDebug('sessionResults', `Session: ${sessionData ? 'Found' : 'Missing'}`, sessionData ? 'success' : 'error');
+                logDebug('sessionResults', `Refresh: ${refreshData ? 'Found' : 'Missing'}`, refreshData ? 'success' : 'error');
+            }
+        }
+
+        async function testSessionRestore() {
+            logDebug('sessionResults', '🔄 Testing session restore process...', 'info');
+            
+            try {
+                // Simulate the main app's session validation
+                const sessionData = sessionStorage.getItem('alpro_session');
+                if (!sessionData) {
+                    logDebug('sessionResults', '❌ No access token found (main app behavior)', 'error');
+                    return;
+                }
+
+                const parsed = JSON.parse(sessionData);
+                const token = parsed.accessToken;
+
+                // Parse and validate like main app
+                const parts = token.split('.');
+                const payload = JSON.parse(base64UrlDecode(parts[1]));
+                
+                const now = Math.floor(Date.now() / 1000);
+                if (payload.exp < now) {
+                    logDebug('sessionResults', '❌ Token expired, should try refresh', 'warning');
+                    return;
+                }
+
+                logDebug('sessionResults', '✅ Session restore would succeed', 'success');
+                logDebug('sessionResults', `User: ${payload.email}`, 'info');
+                logDebug('sessionResults', `Role: ${payload.role}`, 'info');
+                logDebug('sessionResults', '✅ Dashboard would be shown', 'success');
+
+            } catch (error) {
+                logDebug('sessionResults', `❌ Session restore failed: ${error.message}`, 'error');
+            }
+        }
+
+        function testMainAppSession() {
+            logDebug('mainAppResults', '🧪 Testing integration with main app...', 'info');
+            
+            // Try to access main app's JWT functions if available
+            if (typeof window.parent !== 'undefined') {
+                try {
+                    // Check if we can access parent window JWT functions
+                    const parentJWT = window.parent.JWTSessionManager;
+                    if (parentJWT) {
+                        logDebug('mainAppResults', '✅ Main app JWT manager accessible', 'success');
+                    } else {
+                        logDebug('mainAppResults', '❌ Main app JWT manager not found', 'error');
+                    }
+                } catch (e) {
+                    logDebug('mainAppResults', '⚠️ Cannot access parent window (CORS)', 'warning');
+                }
+            }
+
+            // Check if main app is using same storage keys
+            const mainAppSession = sessionStorage.getItem('alpro_session');
+            const mainAppRefresh = localStorage.getItem('alpro_refresh');
+            
+            logDebug('mainAppResults', `Main app session: ${mainAppSession ? 'Found' : 'Missing'}`, mainAppSession ? 'success' : 'error');
+            logDebug('mainAppResults', `Main app refresh: ${mainAppRefresh ? 'Found' : 'Missing'}`, mainAppRefresh ? 'success' : 'error');
+
+            // Provide instructions
+            logDebug('mainAppResults', '<strong>Instructions for testing:</strong>', 'info');
+            logDebug('mainAppResults', '1. Open main app in another tab', 'info');
+            logDebug('mainAppResults', '2. Login successfully', 'info');
+            logDebug('mainAppResults', '3. Come back here and click "Inspect Storage"', 'info');
+            logDebug('mainAppResults', '4. You should see alpro_session and alpro_refresh tokens', 'info');
+            logDebug('mainAppResults', '5. Refresh main app tab - it should stay logged in', 'info');
+        }
+
+        // Auto-run initial inspection
+        window.addEventListener('load', () => {
+            setTimeout(inspectStorage, 500);
+        });
+    </script>
+</body>
+</html>

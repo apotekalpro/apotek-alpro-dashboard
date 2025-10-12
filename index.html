@@ -2315,20 +2315,39 @@
                         deviceId: this.getDeviceId()
                     };
                     
+                    const sessionKey = JWT_CONFIG.storagePrefix + 'session';
+                    const refreshKey = JWT_CONFIG.storagePrefix + 'refresh';
+                    
+                    console.log('🔐 Storing JWT tokens with keys:', { sessionKey, refreshKey });
+                    
                     // Use sessionStorage for access token (cleared on tab close)
-                    sessionStorage.setItem(JWT_CONFIG.storagePrefix + 'session', JSON.stringify({
+                    const sessionData = JSON.stringify({
                         accessToken: accessToken,
                         createdAt: tokenData.createdAt
-                    }));
+                    });
+                    sessionStorage.setItem(sessionKey, sessionData);
                     
                     // Use localStorage for refresh token (persistent across sessions)
-                    localStorage.setItem(JWT_CONFIG.storagePrefix + 'refresh', JSON.stringify({
+                    const refreshData = JSON.stringify({
                         refreshToken: refreshToken,
                         createdAt: tokenData.createdAt,
                         deviceId: tokenData.deviceId
-                    }));
+                    });
+                    localStorage.setItem(refreshKey, refreshData);
                     
                     console.log('🔐 JWT tokens stored securely');
+                    console.log('   - Session storage key:', sessionKey);
+                    console.log('   - Refresh storage key:', refreshKey);
+                    console.log('   - Session data length:', sessionData.length);
+                    console.log('   - Refresh data length:', refreshData.length);
+                    
+                    // Verify storage worked
+                    const verifySession = sessionStorage.getItem(sessionKey);
+                    const verifyRefresh = localStorage.getItem(refreshKey);
+                    console.log('🔍 Storage verification:');
+                    console.log('   - Session stored:', verifySession ? 'YES' : 'NO');
+                    console.log('   - Refresh stored:', verifyRefresh ? 'YES' : 'NO');
+                    
                     return true;
                 } catch (error) {
                     console.error('❌ Failed to store JWT tokens:', error);
@@ -2339,10 +2358,15 @@
             // Retrieve access token
             getAccessToken: function() {
                 try {
-                    const sessionData = sessionStorage.getItem(JWT_CONFIG.storagePrefix + 'session');
+                    const storageKey = JWT_CONFIG.storagePrefix + 'session';
+                    console.log('🔍 Looking for access token with key:', storageKey);
+                    const sessionData = sessionStorage.getItem(storageKey);
+                    console.log('🔍 Session data found:', sessionData ? 'YES' : 'NO');
+                    
                     if (!sessionData) return null;
                     
                     const parsed = JSON.parse(sessionData);
+                    console.log('🔍 Parsed access token:', parsed.accessToken ? 'FOUND' : 'MISSING');
                     return parsed.accessToken;
                 } catch (error) {
                     console.error('❌ Failed to retrieve access token:', error);
@@ -2655,8 +2679,16 @@
                     this.scheduleTokenRefresh();
                     
                     // Auto-login user (show dashboard instead of login)
-                    if (window.location.hash.includes('login') || !window.location.hash) {
-                        showSection('dashboard');
+                    console.log('🔐 JWT session valid - attempting to show dashboard');
+                    if (typeof showDashboard === 'function') {
+                        showDashboard();
+                    } else {
+                        console.log('⚠️ showDashboard function not yet available, will retry...');
+                        setTimeout(() => {
+                            if (typeof showDashboard === 'function') {
+                                showDashboard();
+                            }
+                        }, 1000);
                     }
                     
                     return { authenticated: true, userData: sessionStatus.userData };
@@ -6942,6 +6974,31 @@
                         console.log('✅ User auto-logged in via valid JWT session');
                         console.log('   - User:', sessionResult.userData.email);
                         console.log('   - Role:', sessionResult.userData.role);
+                        console.log('   - Current URL hash:', window.location.hash);
+                        
+                        // Set user context immediately
+                        window.currentUser = sessionResult.userData.email;
+                        window.currentUserRole = sessionResult.userData.role;
+                        window.currentUserName = sessionResult.userData.name;
+                        
+                        // Only auto-login if we're on login page or no specific page
+                        if (!window.location.hash || window.location.hash === '#login' || window.location.hash === '#') {
+                            console.log('🔐 Auto-redirecting to dashboard after JWT session restore');
+                            
+                            // Wait for showDashboard to be available, then call it
+                            const waitForDashboard = function() {
+                                if (typeof showDashboard === 'function') {
+                                    console.log('✅ showDashboard found, redirecting...');
+                                    showDashboard();
+                                } else {
+                                    console.log('⏳ Waiting for showDashboard function...');
+                                    setTimeout(waitForDashboard, 500);
+                                }
+                            };
+                            waitForDashboard();
+                        } else {
+                            console.log('🔐 JWT session restored, staying on current page:', window.location.hash);
+                        }
                     } else {
                         console.log('🔐 No valid JWT session found:', sessionResult.reason);
                     }
