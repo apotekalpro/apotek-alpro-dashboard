@@ -6974,9 +6974,7 @@
             }
         };
 
-        // ==============================================
         // JWT AUTHENTICATION SYSTEM - Phase 1 & 2
-        // ==============================================
 
         // JWT Configuration
         const JWT_CONFIG = {
@@ -7565,9 +7563,7 @@
             }
         };
 
-        // ==============================================
         // JWT SESSION AUTO-RESTORE ON PAGE LOAD
-        // ==============================================
         
         // Initialize JWT session restoration
         async function initializeJWTSession() {
@@ -7634,6 +7630,183 @@
 🎯 USER IMPACT: ZERO DISRUPTION
 
 Ready for deployment! 🚀
+        // PASSWORD RESET FUNCTIONALITY
+
+        // Admin password reset for locked out users
+        window.adminPasswordReset = async function(email, newPassword, useModernHash = false) {
+            try {
+                console.log('🔧 ADMIN: Resetting password for user:', email);
+                
+                // Get current users
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const userIndex = users.findIndex(u => u.email === email);
+                
+                if (userIndex === -1) {
+                    console.error('❌ User not found:', email);
+                    return { success: false, error: 'User not found' };
+                }
+                
+                let newHash;
+                let passwordFormat;
+                
+                if (useModernHash) {
+                    // Use PBKDF2 for modern security
+                    newHash = await modernPBKDF2Hash(newPassword);
+                    passwordFormat = 'pbkdf2';
+                    console.log('🔐 Using PBKDF2 hash format');
+                } else {
+                    // Use legacy hash for compatibility with live environment
+                    newHash = legacyHash(newPassword);
+                    passwordFormat = 'legacy';
+                    console.log('🔐 Using legacy hash format for compatibility');
+                }
+                
+                // Update user password
+                users[userIndex].password = newHash;
+                users[userIndex].passwordFormat = passwordFormat;
+                users[userIndex].resetAt = new Date().toISOString();
+                users[userIndex].resetBy = 'admin';
+                
+                // Save to localStorage
+                localStorage.setItem('users', JSON.stringify(users));
+                
+                console.log('✅ Password reset successful for:', email);
+                console.log('🔐 New password hash:', newHash);
+                
+                return {
+                    success: true,
+                    message: `Password reset successful for ${email}`,
+                    format: passwordFormat,
+                    hash: newHash
+                };
+                
+            } catch (error) {
+                console.error('❌ Password reset failed:', error);
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        };
+
+        // Quick reset for specific user (backwards compatibility)
+        window.resetPassword = async function(email, newPassword) {
+            // Use legacy format by default for compatibility
+            return await adminPasswordReset(email, newPassword, false);
+        };
+
+        // Modern reset with PBKDF2
+        window.resetPasswordSecure = async function(email, newPassword) {
+            return await adminPasswordReset(email, newPassword, true);
+        };
+
+        // Reset khoo.ziyu admin account specifically (emergency function)
+        window.fixAdminAccount = async function(newPassword = 'Alpro@123') {
+            console.log('🆘 EMERGENCY: Fixing admin account login issue');
+            
+            const result = await adminPasswordReset('khoo.ziyu@apotekalpro.id', newPassword, false);
+            
+            if (result.success) {
+                console.log('✅ Admin account fixed! Password reset to legacy format.');
+                console.log('🔗 You can now login in both sandbox and live environments.');
+                console.log('📝 Password will auto-upgrade to PBKDF2 on next login in JWT environment.');
+            } else {
+                console.error('❌ Failed to fix admin account:', result.error);
+            }
+            
+            return result;
+        };
+
+        // Batch reset all users to legacy format (for live environment compatibility)
+        window.resetAllToLegacy = async function() {
+            try {
+                console.log('🔄 Resetting all users to legacy format...');
+                
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                let resetCount = 0;
+                
+                for (let i = 0; i < users.length; i++) {
+                    const user = users[i];
+                    
+                    // Skip if already in legacy format
+                    if (!user.password.startsWith('$pbkdf2$')) {
+                        continue;
+                    }
+                    
+                    // Reset to legacy format with default password
+                    const defaultPassword = user.email === 'khoo.ziyu@apotekalpro.id' ? 'Alpro@123' : 'Alpro@123';
+                    users[i].password = legacyHash(defaultPassword);
+                    users[i].passwordFormat = 'legacy';
+                    users[i].batchResetAt = new Date().toISOString();
+                    users[i].batchResetReason = 'Live environment compatibility';
+                    
+                    resetCount++;
+                    console.log(`✅ Reset user ${user.email} to legacy format`);
+                }
+                
+                localStorage.setItem('users', JSON.stringify(users));
+                
+                console.log(`✅ Batch reset completed! ${resetCount} users reset to legacy format.`);
+                console.log('📝 All users can now login with password: Alpro@123');
+                
+                return {
+                    success: true,
+                    resetCount: resetCount,
+                    message: `${resetCount} users reset to legacy format`
+                };
+                
+            } catch (error) {
+                console.error('❌ Batch reset failed:', error);
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        };
+
+        // Export user data for live environment
+        window.exportForLive = function() {
+            try {
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                // Convert all users to legacy format for live compatibility
+                const exportUsers = users.map(user => ({
+                    ...user,
+                    password: user.password.startsWith('$pbkdf2$') ? legacyHash('Alpro@123') : user.password,
+                    passwordFormat: 'legacy',
+                    exportedAt: new Date().toISOString(),
+                    exportNote: user.password.startsWith('$pbkdf2$') ? 'Password reset to Alpro@123 for live compatibility' : 'Original password maintained'
+                }));
+                
+                console.log('📤 User data prepared for live environment export:');
+                console.log(JSON.stringify(exportUsers, null, 2));
+                
+                return exportUsers;
+                
+            } catch (error) {
+                console.error('❌ Export failed:', error);
+                return [];
+            }
+        };
+
+        // Console helper messages
+        console.log(`
+🔧 PASSWORD RESET FUNCTIONS AVAILABLE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🆘 EMERGENCY FIXES:
+   fixAdminAccount()                    - Fix khoo.ziyu account specifically
+   resetAllToLegacy()                   - Reset all users to legacy format
+
+🔐 INDIVIDUAL RESETS:
+   resetPassword('email', 'newPass')    - Reset to legacy format (live compatible)
+   resetPasswordSecure('email', 'pass') - Reset to PBKDF2 format (secure)
+   adminPasswordReset('email', 'pass', modern) - Full control reset
+
+📤 DATA EXPORT:
+   exportForLive()                      - Export user data for live environment
+
+Example: fixAdminAccount('YourNewPassword')
 `);
 
     </script>
