@@ -4270,6 +4270,11 @@
             updateUserPagination();
         }
         
+        // Alias function for backward compatibility with reset password functionality
+        function renderUserTable() {
+            filterUsers(); // This calls displayUsers() and updates everything
+        }
+        
         function displayUsers() {
             const tbody = document.getElementById('usersTableBody');
             if (!tbody) return;
