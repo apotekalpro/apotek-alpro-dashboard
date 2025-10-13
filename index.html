@@ -2105,6 +2105,598 @@
                 return `<span class="text-gray-500 mr-2 font-medium">${rank}</span>`;
             }
         };
+
+        // ==============================================
+        // JWT AUTHENTICATION SYSTEM - Phase 1 & 2
+        // ==============================================
+
+        // JWT Configuration
+        const JWT_CONFIG = {
+            secret: 'alpro_jwt_secret_2024_secure', // In production, this should be from env
+            issuer: 'apotek-alpro-dashboard',
+            audience: 'alpro-users',
+            accessTokenExpiry: 15 * 60, // 15 minutes in seconds
+            refreshTokenExpiry: 7 * 24 * 60 * 60, // 7 days in seconds
+            algorithm: 'HS256',
+            storagePrefix: 'alpro_'
+        };
+
+        // Legacy hash function for existing users (backward compatibility)
+        function legacyHash(password) {
+            return btoa(password + 'salt_apotek_alpro_2024');
+        }
+
+        // Modern PBKDF2 hash function (secure)
+        async function modernPBKDF2Hash(password) {
+            try {
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                
+                // Generate a random salt for each password
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                
+                // Import the password as a key
+                const keyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    passwordData,
+                    { name: 'PBKDF2' },
+                    false,
+                    ['deriveBits']
+                );
+                
+                // Derive the hash using PBKDF2
+                const hashBuffer = await crypto.subtle.deriveBits(
+                    {
+                        name: 'PBKDF2',
+                        salt: salt,
+                        iterations: 100000, // 100,000 iterations for security
+                        hash: 'SHA-256'
+                    },
+                    keyMaterial,
+                    256 // 32 bytes = 256 bits
+                );
+                
+                // Convert to base64 for storage
+                const saltBase64 = btoa(String.fromCharCode(...salt));
+                const hashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+                
+                // Return in format: $pbkdf2$salt$hash
+                return `$pbkdf2$${saltBase64}$${hashBase64}`;
+                
+            } catch (error) {
+                console.error('❌ PBKDF2 hashing error:', error);
+                // Fallback to legacy hash if crypto API fails
+                return legacyHash(password);
+            }
+        }
+
+        // Verify PBKDF2 password
+        async function verifyPBKDF2Hash(password, storedHash) {
+            try {
+                // Parse the stored hash format: $pbkdf2$salt$hash
+                const parts = storedHash.split('$');
+                if (parts.length !== 4 || parts[1] !== 'pbkdf2') {
+                    return false;
+                }
+                
+                const saltBase64 = parts[2];
+                const storedHashBase64 = parts[3];
+                
+                // Decode salt from base64
+                const salt = Uint8Array.from(atob(saltBase64), c => c.charCodeAt(0));
+                
+                // Hash the provided password with the same salt
+                const encoder = new TextEncoder();
+                const passwordData = encoder.encode(password);
+                
+                const keyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    passwordData,
+                    { name: 'PBKDF2' },
+                    false,
+                    ['deriveBits']
+                );
+                
+                const hashBuffer = await crypto.subtle.deriveBits(
+                    {
+                        name: 'PBKDF2',
+                        salt: salt,
+                        iterations: 100000,
+                        hash: 'SHA-256'
+                    },
+                    keyMaterial,
+                    256
+                );
+                
+                const calculatedHashBase64 = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
+                
+                // Compare hashes
+                return calculatedHashBase64 === storedHashBase64;
+                
+            } catch (error) {
+                console.error('❌ PBKDF2 verification error:', error);
+                return false;
+            }
+        }
+
+        // Hybrid password verification (Phase 1 - supports both legacy and PBKDF2)
+        async function verifyPassword(inputPassword, storedHash) {
+            // Check if it's PBKDF2 format
+            if (storedHash.startsWith('$pbkdf2$')) {
+                console.log('🔐 Verifying PBKDF2 password');
+                return await verifyPBKDF2Hash(inputPassword, storedHash);
+            } else {
+                console.log('🔐 Verifying legacy password');
+                // Legacy format verification
+                const legacyHashInput = legacyHash(inputPassword);
+                return legacyHashInput === storedHash;
+            }
+        }
+
+        // Auto-migrate legacy password to PBKDF2 on successful login
+        async function autoMigratePassword(email, plainPassword) {
+            try {
+                console.log('🔄 Auto-migrating password to PBKDF2 format for:', email);
+                const newPBKDF2Hash = await modernPBKDF2Hash(plainPassword);
+                
+                // Find and update user data
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const userIndex = users.findIndex(u => u.email === email);
+                
+                if (userIndex !== -1) {
+                    users[userIndex].password = newPBKDF2Hash;
+                    users[userIndex].passwordFormat = 'pbkdf2';
+                    users[userIndex].migratedAt = new Date().toISOString();
+                    localStorage.setItem('users', JSON.stringify(users));
+                    console.log('✅ Password migrated successfully for:', email);
+                }
+            } catch (error) {
+                console.error('❌ Password migration failed:', error);
+                // Don't block login if migration fails
+            }
+        }
+
+        // Base64 URL-safe encoding for JWT
+        function base64URLEncode(data) {
+            const base64 = btoa(data);
+            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        }
+
+        // Base64 URL-safe decoding for JWT
+        function base64URLDecode(data) {
+            let base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+            // Add padding if necessary
+            while (base64.length % 4) {
+                base64 += '=';
+            }
+            return atob(base64);
+        }
+
+        // Create HMAC-SHA256 signature for JWT
+        async function createHMACSignature(data, secret) {
+            try {
+                const encoder = new TextEncoder();
+                const keyData = encoder.encode(secret);
+                const dataToSign = encoder.encode(data);
+                
+                const cryptoKey = await crypto.subtle.importKey(
+                    'raw',
+                    keyData,
+                    { name: 'HMAC', hash: 'SHA-256' },
+                    false,
+                    ['sign']
+                );
+                
+                const signature = await crypto.subtle.sign('HMAC', cryptoKey, dataToSign);
+                const signatureArray = new Uint8Array(signature);
+                const signatureString = String.fromCharCode.apply(null, signatureArray);
+                
+                return base64URLEncode(signatureString);
+            } catch (error) {
+                console.error('❌ HMAC signature creation failed:', error);
+                throw new Error('JWT signature creation failed');
+            }
+        }
+
+        // Verify HMAC-SHA256 signature for JWT
+        async function verifyHMACSignature(data, signature, secret) {
+            try {
+                const expectedSignature = await createHMACSignature(data, secret);
+                return signature === expectedSignature;
+            } catch (error) {
+                console.error('❌ HMAC signature verification failed:', error);
+                return false;
+            }
+        }
+
+        // Generate JWT Token
+        async function generateJWT(payload, expiresInSeconds = JWT_CONFIG.accessTokenExpiry) {
+            try {
+                const now = Math.floor(Date.now() / 1000);
+                
+                // JWT Header
+                const header = {
+                    alg: JWT_CONFIG.algorithm,
+                    typ: 'JWT'
+                };
+                
+                // JWT Payload with standard claims
+                const jwtPayload = {
+                    ...payload,
+                    iss: JWT_CONFIG.issuer,          // Issuer
+                    aud: JWT_CONFIG.audience,        // Audience
+                    exp: now + expiresInSeconds,     // Expiration time
+                    nbf: now,                        // Not before
+                    iat: now,                        // Issued at
+                    jti: crypto.randomUUID()         // JWT ID for uniqueness
+                };
+                
+                // Encode header and payload
+                const encodedHeader = base64URLEncode(JSON.stringify(header));
+                const encodedPayload = base64URLEncode(JSON.stringify(jwtPayload));
+                
+                // Create signature
+                const dataToSign = `${encodedHeader}.${encodedPayload}`;
+                const signature = await createHMACSignature(dataToSign, JWT_CONFIG.secret);
+                
+                // Combine parts
+                const jwt = `${encodedHeader}.${encodedPayload}.${signature}`;
+                
+                console.log('✅ JWT generated successfully');
+                console.log('   - Algorithm:', JWT_CONFIG.algorithm);
+                console.log('   - Expires in:', expiresInSeconds, 'seconds');
+                console.log('   - Token length:', jwt.length);
+                
+                return jwt;
+            } catch (error) {
+                console.error('❌ JWT generation failed:', error);
+                throw new Error('JWT generation failed');
+            }
+        }
+
+        // Verify and parse JWT Token
+        async function verifyJWT(token) {
+            try {
+                if (!token || typeof token !== 'string') {
+                    return { header: null, payload: null, isValid: false, error: 'Invalid token format' };
+                }
+                
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    return { header: null, payload: null, isValid: false, error: 'Invalid JWT structure' };
+                }
+                
+                const [encodedHeader, encodedPayload, signature] = parts;
+                
+                // Verify signature first
+                const dataToVerify = `${encodedHeader}.${encodedPayload}`;
+                const isSignatureValid = await verifyHMACSignature(dataToVerify, signature, JWT_CONFIG.secret);
+                
+                if (!isSignatureValid) {
+                    return { header: null, payload: null, isValid: false, error: 'Invalid signature' };
+                }
+                
+                // Decode and parse header and payload
+                const header = JSON.parse(base64URLDecode(encodedHeader));
+                const payload = JSON.parse(base64URLDecode(encodedPayload));
+                
+                // Validate standard claims
+                const now = Math.floor(Date.now() / 1000);
+                
+                if (payload.exp && payload.exp <= now) {
+                    return { header, payload, isValid: false, error: 'Token expired' };
+                }
+                
+                if (payload.nbf && payload.nbf > now) {
+                    return { header, payload, isValid: false, error: 'Token not yet valid' };
+                }
+                
+                if (payload.iss !== JWT_CONFIG.issuer) {
+                    return { header, payload, isValid: false, error: 'Invalid issuer' };
+                }
+                
+                if (payload.aud !== JWT_CONFIG.audience) {
+                    return { header, payload, isValid: false, error: 'Invalid audience' };
+                }
+                
+                return { header, payload, isValid: true, error: null };
+                
+            } catch (error) {
+                console.error('❌ JWT parsing/validation failed:', error.message);
+                return { header: null, payload: null, isValid: false, error: error.message };
+            }
+        }
+
+        // Secure session storage manager
+        const SessionStorage = {
+            // Store JWT tokens securely
+            setTokens: function(accessToken, refreshToken) {
+                try {
+                    // Store with expiration metadata
+                    const tokenData = {
+                        accessToken: accessToken,
+                        refreshToken: refreshToken,
+                        createdAt: Date.now(),
+                        deviceId: this.getDeviceId()
+                    };
+                    
+                    const sessionKey = JWT_CONFIG.storagePrefix + 'session';
+                    const refreshKey = JWT_CONFIG.storagePrefix + 'refresh';
+                    
+                    console.log('🔐 Storing JWT tokens with keys:', { sessionKey, refreshKey });
+                    
+                    // Use localStorage for access token (for persistence across refreshes)
+                    // Note: Changed from sessionStorage to localStorage to fix refresh issue
+                    const sessionData = JSON.stringify({
+                        accessToken: accessToken,
+                        createdAt: tokenData.createdAt
+                    });
+                    localStorage.setItem(sessionKey, sessionData);
+                    
+                    // Use localStorage for refresh token (persistent across sessions)
+                    const refreshData = JSON.stringify({
+                        refreshToken: refreshToken,
+                        createdAt: tokenData.createdAt,
+                        deviceId: tokenData.deviceId
+                    });
+                    localStorage.setItem(refreshKey, refreshData);
+                    
+                    console.log('🔐 JWT tokens stored securely');
+                    console.log('   - Session storage key:', sessionKey);
+                    console.log('   - Refresh storage key:', refreshKey);
+                    console.log('   - Session data length:', sessionData.length);
+                    console.log('   - Refresh data length:', refreshData.length);
+                    
+                    // Verify storage worked
+                    const verifySession = localStorage.getItem(sessionKey);
+                    const verifyRefresh = localStorage.getItem(refreshKey);
+                    console.log('🔍 Storage verification:');
+                    console.log('   - Session stored:', verifySession ? 'YES' : 'NO');
+                    console.log('   - Refresh stored:', verifyRefresh ? 'YES' : 'NO');
+                    
+                    return true;
+                } catch (error) {
+                    console.error('❌ Failed to store JWT tokens:', error);
+                    return false;
+                }
+            },
+            
+            // Retrieve access token
+            getAccessToken: function() {
+                try {
+                    const storageKey = JWT_CONFIG.storagePrefix + 'session';
+                    console.log('🔍 Looking for access token with key:', storageKey);
+                    const sessionData = localStorage.getItem(storageKey);
+                    console.log('🔍 Session data found:', sessionData ? 'YES' : 'NO');
+                    
+                    if (!sessionData) return null;
+                    
+                    const parsed = JSON.parse(sessionData);
+                    console.log('🔍 Parsed access token:', parsed.accessToken ? 'FOUND' : 'MISSING');
+                    return parsed.accessToken;
+                } catch (error) {
+                    console.error('❌ Failed to retrieve access token:', error);
+                    return null;
+                }
+            },
+            
+            // Retrieve refresh token
+            getRefreshToken: function() {
+                try {
+                    const refreshData = localStorage.getItem(JWT_CONFIG.storagePrefix + 'refresh');
+                    if (!refreshData) return null;
+                    
+                    const parsed = JSON.parse(refreshData);
+                    
+                    // Validate device ID for security
+                    if (parsed.deviceId && parsed.deviceId !== this.getDeviceId()) {
+                        console.log('⚠️ Device ID mismatch, clearing refresh token');
+                        this.clearTokens();
+                        return null;
+                    }
+                    
+                    return parsed.refreshToken;
+                } catch (error) {
+                    console.error('❌ Failed to retrieve refresh token:', error);
+                    return null;
+                }
+            },
+            
+            // Clear all tokens
+            clearTokens: function() {
+                try {
+                    localStorage.removeItem(JWT_CONFIG.storagePrefix + 'session');
+                    localStorage.removeItem(JWT_CONFIG.storagePrefix + 'refresh');
+                    console.log('🔐 JWT tokens cleared');
+                    return true;
+                } catch (error) {
+                    console.error('❌ Failed to clear JWT tokens:', error);
+                    return false;
+                }
+            },
+            
+            // Generate or retrieve device ID
+            getDeviceId: function() {
+                let deviceId = localStorage.getItem(JWT_CONFIG.storagePrefix + 'device_id');
+                if (!deviceId) {
+                    // Generate unique device ID based on browser characteristics
+                    deviceId = btoa(
+                        navigator.userAgent + 
+                        navigator.language + 
+                        screen.width + 'x' + screen.height +
+                        new Date().getTimezoneOffset() +
+                        Math.random().toString(36)
+                    ).substring(0, 32);
+                    localStorage.setItem(JWT_CONFIG.storagePrefix + 'device_id', deviceId);
+                }
+                return deviceId;
+            }
+        };
+
+        // JWT Session Management
+        const JWTSession = {
+            // Create new session with JWT tokens
+            create: async function(userEmail, userData) {
+                try {
+                    console.log('🔐 Creating JWT session for:', userEmail);
+                    
+                    // Prepare JWT payload
+                    const tokenPayload = {
+                        sub: userEmail,                    // Subject (user email)
+                        email: userEmail,
+                        name: userData.name || userEmail,
+                        role: userData.role || 'user',
+                        department: userData.department || 'operations',
+                        loginTime: new Date().toISOString()
+                    };
+                    
+                    // Generate access token (15 minutes)
+                    const accessToken = await generateJWT(tokenPayload, JWT_CONFIG.accessTokenExpiry);
+                    
+                    // Generate refresh token (7 days)
+                    const refreshPayload = {
+                        sub: userEmail,
+                        type: 'refresh',
+                        deviceId: SessionStorage.getDeviceId()
+                    };
+                    const refreshToken = await generateJWT(refreshPayload, JWT_CONFIG.refreshTokenExpiry);
+                    
+                    // Store tokens securely
+                    const stored = SessionStorage.setTokens(accessToken, refreshToken);
+                    
+                    if (stored) {
+                        console.log('✅ JWT session created successfully');
+                        return { success: true, accessToken, refreshToken };
+                    } else {
+                        console.error('❌ Failed to store JWT tokens');
+                        return { success: false, error: 'Token storage failed' };
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ JWT session creation failed:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            // Restore session from stored tokens
+            restore: async function() {
+                try {
+                    console.log('🔍 Attempting to restore JWT session...');
+                    
+                    const accessToken = SessionStorage.getAccessToken();
+                    console.log('🔍 Access token found:', accessToken ? 'YES' : 'NO');
+                    
+                    if (!accessToken) {
+                        console.log('❌ No access token found');
+                        return { success: false, error: 'No access token' };
+                    }
+                    
+                    // Verify access token
+                    const verification = await verifyJWT(accessToken);
+                    console.log('🔍 Access token verification:', verification.isValid ? 'VALID' : 'INVALID');
+                    
+                    if (verification.isValid) {
+                        console.log('✅ JWT session restored successfully');
+                        return { 
+                            success: true, 
+                            user: verification.payload,
+                            accessToken: accessToken
+                        };
+                    } else if (verification.error === 'Token expired') {
+                        console.log('⏰ Access token expired, attempting refresh...');
+                        return await this.refresh();
+                    } else {
+                        console.log('❌ Invalid access token:', verification.error);
+                        SessionStorage.clearTokens();
+                        return { success: false, error: verification.error };
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ JWT session restoration failed:', error);
+                    SessionStorage.clearTokens();
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            // Refresh expired access token
+            refresh: async function() {
+                try {
+                    console.log('🔄 Refreshing JWT tokens...');
+                    
+                    const refreshToken = SessionStorage.getRefreshToken();
+                    if (!refreshToken) {
+                        console.log('❌ No refresh token found');
+                        return { success: false, error: 'No refresh token' };
+                    }
+                    
+                    // Verify refresh token
+                    const verification = await verifyJWT(refreshToken);
+                    if (!verification.isValid) {
+                        console.log('❌ Invalid refresh token:', verification.error);
+                        SessionStorage.clearTokens();
+                        return { success: false, error: 'Invalid refresh token' };
+                    }
+                    
+                    // Get user data to create new access token
+                    const userEmail = verification.payload.sub;
+                    const users = JSON.parse(localStorage.getItem('users') || '[]');
+                    const userData = users.find(u => u.email === userEmail);
+                    
+                    if (!userData) {
+                        console.log('❌ User not found for refresh');
+                        SessionStorage.clearTokens();
+                        return { success: false, error: 'User not found' };
+                    }
+                    
+                    // Generate new access token
+                    const tokenPayload = {
+                        sub: userEmail,
+                        email: userEmail,
+                        name: userData.name || userEmail,
+                        role: userData.role || 'user',
+                        department: userData.department || 'operations',
+                        refreshedAt: new Date().toISOString()
+                    };
+                    
+                    const newAccessToken = await generateJWT(tokenPayload, JWT_CONFIG.accessTokenExpiry);
+                    
+                    // Store new access token (keep same refresh token)
+                    SessionStorage.setTokens(newAccessToken, refreshToken);
+                    
+                    console.log('✅ JWT tokens refreshed successfully');
+                    return { 
+                        success: true, 
+                        user: tokenPayload,
+                        accessToken: newAccessToken
+                    };
+                    
+                } catch (error) {
+                    console.error('❌ JWT token refresh failed:', error);
+                    SessionStorage.clearTokens();
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            // Destroy current session
+            destroy: function() {
+                try {
+                    console.log('🔐 Destroying JWT session...');
+                    SessionStorage.clearTokens();
+                    console.log('✅ JWT session destroyed');
+                    return true;
+                } catch (error) {
+                    console.error('❌ JWT session destruction failed:', error);
+                    return false;
+                }
+            },
+            
+            // Get current user from session
+            getCurrentUser: async function() {
+                const session = await this.restore();
+                return session.success ? session.user : null;
+            }
+        };
+
     </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95a376871c4135f2","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
