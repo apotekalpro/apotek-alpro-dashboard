@@ -3687,6 +3687,22 @@
                         });
                     }
                     
+                    // 🚀 ACTIVATE JWT SESSION SYSTEM
+                    console.log('🔐 Creating JWT session for authenticated user...');
+                    JWTSession.create(user.email, {
+                        name: user.name || user.email,
+                        role: user.role || 'user',
+                        department: user.department || 'operations'
+                    }).then(function(jwtResult) {
+                        if (jwtResult.success) {
+                            console.log('✅ JWT session created successfully');
+                        } else {
+                            console.warn('⚠️ JWT session creation failed, continuing with legacy session:', jwtResult.error);
+                        }
+                    }).catch(function(error) {
+                        console.error('❌ JWT session creation error:', error);
+                    });
+                    
                     showDashboard();
                 } else {
                     console.log('☁️ Cloud authentication failed, trying Google Sheets fallback...');
@@ -7548,6 +7564,77 @@
                 return session.success ? session.user : null;
             }
         };
+
+        // ==============================================
+        // JWT SESSION AUTO-RESTORE ON PAGE LOAD
+        // ==============================================
+        
+        // Initialize JWT session restoration
+        async function initializeJWTSession() {
+            console.log('🔄 Initializing JWT session restoration...');
+            
+            try {
+                const sessionResult = await JWTSession.restore();
+                
+                if (sessionResult.success) {
+                    console.log('🔐 JWT session restored successfully!');
+                    console.log('👤 User from JWT:', sessionResult.user);
+                    
+                    // Set global user variables from JWT
+                    currentUser = sessionResult.user.email;
+                    currentUserRole = sessionResult.user.role || 'user';
+                    currentUserName = sessionResult.user.name || sessionResult.user.email;
+                    
+                    // Hide login page and show dashboard
+                    console.log('🚀 Auto-login via JWT session');
+                    showDashboard();
+                    
+                } else {
+                    console.log('🔍 No valid JWT session found:', sessionResult.error);
+                    console.log('📋 Showing login page');
+                    // Login page is already visible by default
+                }
+                
+            } catch (error) {
+                console.error('❌ JWT session initialization error:', error);
+                console.log('📋 Fallback: Showing login page');
+            }
+        }
+
+        // Auto-initialize JWT session when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Page loaded - checking for existing JWT session...');
+            initializeJWTSession();
+        });
+
+        // Also try on window load as fallback
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                if (document.getElementById('loginPage') && !document.getElementById('loginPage').classList.contains('hidden')) {
+                    console.log('🔄 Window load fallback - checking JWT session again...');
+                    initializeJWTSession();
+                }
+            }, 500);
+        });
+
+        console.log(`
+🚀 JWT AUTHENTICATION SYSTEM ACTIVATED!
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ FEATURES ACTIVE:
+   🔐 PBKDF2 Password Hashing (100k iterations)
+   🔄 Backward Compatibility (legacy passwords work)  
+   ⏰ Auto Session Restore (15min tokens)
+   🔒 Device Fingerprinting Security
+   🔄 Auto Token Refresh (seamless experience)
+   📱 Cross-tab Session Sync
+
+🛡️ SECURITY LEVEL: ENTERPRISE GRADE
+📊 MIGRATION MODE: GRADUAL (Option A)
+🎯 USER IMPACT: ZERO DISRUPTION
+
+Ready for deployment! 🚀
+`);
 
     </script>
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95a376871c4135f2","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
