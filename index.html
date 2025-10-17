@@ -835,48 +835,104 @@
                         
                         <!-- Incentive Calculator Subtab -->
                         <div id="incentiveCalculatorSubtab" class="ppm-subtab hidden">
-                            <div class="mb-4">
-                                <h3 class="text-xl font-semibold text-gray-800">Incentive Calculator</h3>
-                                <p class="text-gray-600">Calculate AM, BM, and Alproean incentives based on sales performance</p>
+                            <!-- Header Section -->
+                            <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 mb-6 text-white shadow-lg">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-gift text-3xl mr-4"></i>
+                                    <div>
+                                        <h3 class="text-2xl font-bold">Incentive Calculator</h3>
+                                        <p class="text-purple-100 text-sm mt-1">Calculate AM, BM, and Alproean incentives based on sales performance</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Instructions Card -->
+                            <div class="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4 mb-6">
+                                <div class="flex">
+                                    <i class="fas fa-info-circle text-blue-500 text-xl mr-3 mt-1"></i>
+                                    <div>
+                                        <h4 class="font-semibold text-blue-900 mb-2">How to Use</h4>
+                                        <ol class="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                                            <li>Upload all 5 required Excel files using the file inputs below</li>
+                                            <li>Click "Calculate Incentives" to process the data</li>
+                                            <li>Review the results in the summary cards and detailed table</li>
+                                            <li>Export matched or unmatched employee results as Excel files</li>
+                                        </ol>
+                                    </div>
+                                </div>
                             </div>
                             
                             <!-- File Upload Section -->
-                            <div class="bg-white rounded-lg p-6 mb-6 border border-gray-200">
-                                <h4 class="text-lg font-semibold text-gray-800 mb-4">Upload Excel Files</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Active Alproean List</label>
+                            <div class="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200">
+                                <div class="flex items-center mb-6">
+                                    <i class="fas fa-cloud-upload-alt text-2xl text-blue-600 mr-3"></i>
+                                    <h4 class="text-xl font-semibold text-gray-800">Upload Excel Files</h4>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Active Alproean List -->
+                                    <div class="bg-blue-50 rounded-lg p-4 border-2 border-blue-200 hover:border-blue-400 transition-colors">
+                                        <div class="flex items-center mb-3">
+                                            <i class="fas fa-users text-blue-600 mr-2"></i>
+                                            <label class="block text-sm font-semibold text-blue-900">Active Alproean List</label>
+                                        </div>
                                         <input type="file" id="activeAlproeanFile" accept=".xlsx,.xls" 
-                                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                               class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer cursor-pointer">
+                                        <p class="text-xs text-blue-600 mt-2">List of active Alproean employees</p>
                                     </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Full Alproean List</label>
+                                    
+                                    <!-- Full Alproean List -->
+                                    <div class="bg-green-50 rounded-lg p-4 border-2 border-green-200 hover:border-green-400 transition-colors">
+                                        <div class="flex items-center mb-3">
+                                            <i class="fas fa-user-friends text-green-600 mr-2"></i>
+                                            <label class="block text-sm font-semibold text-green-900">Full Alproean List</label>
+                                        </div>
                                         <input type="file" id="fullAlproeanFile" accept=".xlsx,.xls" 
-                                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                                               class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700 file:cursor-pointer cursor-pointer">
+                                        <p class="text-xs text-green-600 mt-2">Complete employee details</p>
                                     </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Sales & GP Data</label>
+                                    
+                                    <!-- Sales & GP Data -->
+                                    <div class="bg-purple-50 rounded-lg p-4 border-2 border-purple-200 hover:border-purple-400 transition-colors">
+                                        <div class="flex items-center mb-3">
+                                            <i class="fas fa-chart-line text-purple-600 mr-2"></i>
+                                            <label class="block text-sm font-semibold text-purple-900">Sales & GP Data</label>
+                                        </div>
                                         <input type="file" id="salesGpFile" accept=".xlsx,.xls" 
-                                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                                               class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700 file:cursor-pointer cursor-pointer">
+                                        <p class="text-xs text-purple-600 mt-2">Sales and gross profit data</p>
                                     </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Personal Sales</label>
+                                    
+                                    <!-- Personal Sales -->
+                                    <div class="bg-orange-50 rounded-lg p-4 border-2 border-orange-200 hover:border-orange-400 transition-colors">
+                                        <div class="flex items-center mb-3">
+                                            <i class="fas fa-user-tag text-orange-600 mr-2"></i>
+                                            <label class="block text-sm font-semibold text-orange-900">Personal Sales</label>
+                                        </div>
                                         <input type="file" id="personalSalesFile" accept=".xlsx,.xls" 
-                                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100">
+                                               class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-700 file:cursor-pointer cursor-pointer">
+                                        <p class="text-xs text-orange-600 mt-2">Individual sales performance</p>
                                     </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Outlet Mapping</label>
+                                    
+                                    <!-- Outlet Mapping -->
+                                    <div class="bg-pink-50 rounded-lg p-4 border-2 border-pink-200 hover:border-pink-400 transition-colors md:col-span-2">
+                                        <div class="flex items-center mb-3">
+                                            <i class="fas fa-map-marked-alt text-pink-600 mr-2"></i>
+                                            <label class="block text-sm font-semibold text-pink-900">Outlet Mapping</label>
+                                        </div>
                                         <input type="file" id="outletMappingFile" accept=".xlsx,.xls" 
-                                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100">
+                                               class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-pink-600 file:text-white hover:file:bg-pink-700 file:cursor-pointer cursor-pointer">
+                                        <p class="text-xs text-pink-600 mt-2">Outlet to AM/BM mapping data</p>
                                     </div>
                                 </div>
-                                <div class="mt-4 flex gap-4">
+                                
+                                <!-- Action Buttons -->
+                                <div class="mt-6 flex gap-4 pt-6 border-t border-gray-200">
                                     <button id="calculateIncentivesBtn" onclick="IncentiveCalculator.calculate()" 
-                                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                            class="flex-1 md:flex-none px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-semibold">
                                         <i class="fas fa-calculator mr-2"></i>Calculate Incentives
                                     </button>
                                     <button onclick="IncentiveCalculator.reset()" 
-                                            class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                                            class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors shadow-md hover:shadow-lg font-semibold">
                                         <i class="fas fa-redo mr-2"></i>Reset
                                     </button>
                                 </div>
@@ -887,51 +943,89 @@
                             
                             <!-- Results Section -->
                             <div id="incentiveResults" class="hidden">
+                                <!-- Success Message -->
+                                <div class="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 mb-6">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check-circle text-green-500 text-xl mr-3"></i>
+                                        <div>
+                                            <h4 class="font-semibold text-green-900">Calculation Complete!</h4>
+                                            <p class="text-sm text-green-700 mt-1">Incentives have been calculated successfully. Review the summary below.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <!-- Summary Cards -->
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
-                                        <div class="text-sm text-blue-600 mb-1">Total AM Rewards</div>
-                                        <div id="totalAmRewards" class="text-3xl font-bold text-blue-700">Rp 0</div>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 shadow-lg transform hover:scale-105 transition-transform">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="text-blue-100 text-sm font-semibold uppercase tracking-wide">Total AM Rewards</div>
+                                            <i class="fas fa-user-tie text-3xl text-blue-200"></i>
+                                        </div>
+                                        <div id="totalAmRewards" class="text-3xl font-bold text-white mb-2">Rp 0</div>
+                                        <div class="text-blue-100 text-xs">Area Manager Incentives</div>
                                     </div>
-                                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
-                                        <div class="text-sm text-green-600 mb-1">Total BM Rewards</div>
-                                        <div id="totalBmRewards" class="text-3xl font-bold text-green-700">Rp 0</div>
+                                    <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 shadow-lg transform hover:scale-105 transition-transform">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="text-green-100 text-sm font-semibold uppercase tracking-wide">Total BM Rewards</div>
+                                            <i class="fas fa-user-check text-3xl text-green-200"></i>
+                                        </div>
+                                        <div id="totalBmRewards" class="text-3xl font-bold text-white mb-2">Rp 0</div>
+                                        <div class="text-green-100 text-xs">Branch Manager Incentives</div>
                                     </div>
-                                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6 border border-purple-200">
-                                        <div class="text-sm text-purple-600 mb-1">Total Alproean Rewards</div>
-                                        <div id="totalAlproeanRewards" class="text-3xl font-bold text-purple-700">Rp 0</div>
+                                    <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-6 shadow-lg transform hover:scale-105 transition-transform">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="text-purple-100 text-sm font-semibold uppercase tracking-wide">Total Alproean Rewards</div>
+                                            <i class="fas fa-trophy text-3xl text-purple-200"></i>
+                                        </div>
+                                        <div id="totalAlproeanRewards" class="text-3xl font-bold text-white mb-2">Rp 0</div>
+                                        <div class="text-purple-100 text-xs">Alproean Incentives</div>
                                     </div>
                                 </div>
                                 
                                 <!-- Export Buttons -->
-                                <div class="flex gap-4 mb-6">
-                                    <button id="exportMatchedBtn" onclick="IncentiveCalculator.exportMatched()" 
-                                            class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                                        <i class="fas fa-file-excel mr-2"></i>Export Matched Results
-                                    </button>
-                                    <button id="exportUnmatchedBtn" onclick="IncentiveCalculator.exportUnmatched()" 
-                                            class="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
-                                        <i class="fas fa-file-excel mr-2"></i>Export Unmatched Results
-                                    </button>
+                                <div class="bg-white rounded-lg shadow-md p-6 mb-6 border border-gray-200">
+                                    <div class="flex items-center mb-4">
+                                        <i class="fas fa-download text-xl text-gray-700 mr-3"></i>
+                                        <h4 class="text-lg font-semibold text-gray-800">Export Results</h4>
+                                    </div>
+                                    <div class="flex flex-wrap gap-4">
+                                        <button id="exportMatchedBtn" onclick="IncentiveCalculator.exportMatched()" 
+                                                class="flex-1 md:flex-none px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-md hover:shadow-lg font-semibold">
+                                            <i class="fas fa-file-excel mr-2"></i>Export Matched Results
+                                        </button>
+                                        <button id="exportUnmatchedBtn" onclick="IncentiveCalculator.exportUnmatched()" 
+                                                class="flex-1 md:flex-none px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-700 hover:to-orange-800 transition-all shadow-md hover:shadow-lg font-semibold">
+                                            <i class="fas fa-file-excel mr-2"></i>Export Unmatched Results
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-3">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        Matched results include all employees with calculated incentives. Unmatched results show employees that couldn't be matched in the system.
+                                    </p>
                                 </div>
                                 
                                 <!-- Results Table -->
-                                <div class="bg-white rounded-lg shadow overflow-hidden">
-                                    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                                        <h4 class="text-lg font-semibold text-gray-800">Incentive Calculation Results</h4>
-                                        <p class="text-sm text-gray-600 mt-1">Detailed breakdown of all calculated incentives</p>
+                                <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+                                    <div class="bg-gradient-to-r from-gray-700 to-gray-800 px-6 py-4">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-table text-white text-xl mr-3"></i>
+                                            <div>
+                                                <h4 class="text-lg font-semibold text-white">Incentive Calculation Results</h4>
+                                                <p class="text-sm text-gray-300 mt-1">Detailed breakdown of all calculated incentives</p>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="overflow-x-auto">
                                         <table class="min-w-full" id="incentiveResultsTable">
-                                            <thead class="bg-gray-50">
+                                            <thead class="bg-gray-100">
                                                 <tr>
-                                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee Name</th>
-                                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Region</th>
-                                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">AM Reward</th>
-                                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">BM Reward</th>
-                                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Alproean Reward</th>
-                                                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total Reward</th>
+                                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">Employee Name</th>
+                                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">Role</th>
+                                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">Region</th>
+                                                    <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">AM Reward</th>
+                                                    <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">BM Reward</th>
+                                                    <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">Alproean Reward</th>
+                                                    <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider border-b-2 border-gray-300">Total Reward</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="incentiveResultsBody" class="bg-white divide-y divide-gray-200">
