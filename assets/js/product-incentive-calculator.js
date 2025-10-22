@@ -254,6 +254,7 @@ const ProductIncentiveCalculator = {
     // Extract outlet sales from Sales GP file (Column C = outlet name, Column G = net sales)
     extractOutletSales: function() {
         const outletSalesMap = {};
+        let processedRows = 0;
         
         this.data.salesGpData.forEach(row => {
             // Column C is index 2, Column G is index 6 (0-indexed)
@@ -266,10 +267,13 @@ const ProductIncentiveCalculator = {
                     outletSalesMap[cleanOutletName] = 0;
                 }
                 outletSalesMap[cleanOutletName] += netSales;
+                processedRows++;
             }
         });
         
-        console.log('Outlet Sales Map:', outletSalesMap);
+        console.log(`Outlet Sales Map created from ${processedRows} rows:`, Object.keys(outletSalesMap).length, 'outlets');
+        console.log('Sample outlets:', Object.keys(outletSalesMap).slice(0, 5));
+        console.log('Sample sales:', Object.entries(outletSalesMap).slice(0, 3).map(([k, v]) => `${k}: ${v.toFixed(2)}`));
         return outletSalesMap;
     },
     
@@ -331,7 +335,14 @@ const ProductIncentiveCalculator = {
         });
         
         console.log(`Processed ${processedCount} rows, skipped ${skippedCount} rows`);
-        console.log('Sample employees:', Object.keys(focusProductByEmployee).slice(0, 3));
+        console.log('Unique employees:', Object.keys(focusProductByEmployee).length);
+        console.log('Sample employee names:', Object.keys(focusProductByEmployee).slice(0, 5));
+        console.log('Sample employee data:', Object.values(focusProductByEmployee).slice(0, 3).map(e => ({
+            name: e.name,
+            outlet: e.outlet,
+            ethical: e.ethicalSales.toFixed(2),
+            nonEthical: e.nonEthicalSales.toFixed(2)
+        })));
         
         return focusProductByEmployee;
     },
@@ -381,7 +392,13 @@ const ProductIncentiveCalculator = {
         // Create employee lookup maps from both Active and Full Alproean lists
         const employeeLookup = this.createEmployeeLookup();
         
-        Object.values(focusProductByEmployee).forEach(employee => {
+        console.log('Employee lookup size:', Object.keys(employeeLookup).length);
+        console.log('Focus product employees:', Object.keys(focusProductByEmployee).length);
+        
+        let matchedCount = 0;
+        let unmatchedCount = 0;
+        
+        Object.values(focusProductByEmployee).forEach((employee, index) => {
             const employeeKey = employee.name.toLowerCase();
             const employeeInfo = employeeLookup[employeeKey];
             
@@ -394,6 +411,12 @@ const ProductIncentiveCalculator = {
                     nonEthicalSales: employee.nonEthicalSales,
                     reason: 'Employee not found in Alproean lists'
                 });
+                unmatchedCount++;
+                
+                // Log first few unmatched
+                if (unmatchedCount <= 3) {
+                    console.log(`Unmatched employee: "${employee.name}"`);
+                }
                 return;
             }
             
@@ -410,6 +433,11 @@ const ProductIncentiveCalculator = {
             const nonEthicalIncentive = nonEthicalIncentiveBase * thresholdInfo.multiplier;
             const totalIncentive = ethicalIncentive + nonEthicalIncentive;
             
+            // Log first few matches
+            if (matchedCount < 3) {
+                console.log(`Matched: ${employee.name} -> Ethical: ${ethicalIncentive.toFixed(2)}, Non-Ethical: ${nonEthicalIncentive.toFixed(2)}, Total: ${totalIncentive.toFixed(2)}`);
+            }
+            
             // Add to results
             this.data.results.push({
                 name: employeeInfo.name,
@@ -423,7 +451,11 @@ const ProductIncentiveCalculator = {
                 thresholdPercentage: thresholdInfo.percentage,
                 multiplier: thresholdInfo.multiplier
             });
+            matchedCount++;
         });
+        
+        console.log(`Employee matching complete: ${matchedCount} matched, ${unmatchedCount} unmatched`);
+        console.log(`Total results: ${this.data.results.length}`);
     },
     
     // Create employee lookup from Active and Full Alproean lists
