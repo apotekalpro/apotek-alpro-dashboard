@@ -163,7 +163,7 @@ def split_excel():
             } for f in split_files_info],
             'total_files': len(split_files_info),
             'zip_filename': zip_filename,
-            'temp_dir': temp_dir  # Will be used for download
+            'temp_dir': temp_dir  # Full path for backend use
         }
         
         return jsonify(response_data)
@@ -178,10 +178,13 @@ def split_excel():
 def download_zip(temp_dir, filename):
     """Download the zip file containing all split files"""
     try:
-        file_path = os.path.join('/', temp_dir, filename)
+        # Reconstruct the full path - temp_dir comes from URL without leading /
+        if not temp_dir.startswith('/'):
+            temp_dir = '/' + temp_dir
+        file_path = os.path.join(temp_dir, filename)
         
         if not os.path.exists(file_path):
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': f'File not found: {file_path}'}), 404
         
         def cleanup():
             """Cleanup temporary directory after download"""
@@ -210,10 +213,13 @@ def download_zip(temp_dir, filename):
 def download_individual(temp_dir, filename):
     """Download an individual split file"""
     try:
-        file_path = os.path.join('/', temp_dir, filename)
+        # Reconstruct the full path - temp_dir comes from URL without leading /
+        if not temp_dir.startswith('/'):
+            temp_dir = '/' + temp_dir
+        file_path = os.path.join(temp_dir, filename)
         
         if not os.path.exists(file_path):
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': f'File not found: {file_path}'}), 404
         
         return send_file(
             file_path,

@@ -374,14 +374,18 @@
         function downloadAll() {
             if (!splitResults) return;
             
-            const downloadUrl = `${API_BASE}/api/download-zip${splitResults.temp_dir}/${splitResults.zip_filename}`;
+            // Remove leading slash from temp_dir for URL construction
+            const tempDir = splitResults.temp_dir.startsWith('/') ? splitResults.temp_dir.substring(1) : splitResults.temp_dir;
+            const downloadUrl = `${API_BASE}/api/download-zip/${tempDir}/${splitResults.zip_filename}`;
             window.open(downloadUrl, '_blank');
         }
 
         window.downloadIndividual = function(filename) {
             if (!splitResults) return;
             
-            const downloadUrl = `${API_BASE}/api/download-individual${splitResults.temp_dir}/${encodeURIComponent(filename)}`;
+            // Remove leading slash from temp_dir for URL construction
+            const tempDir = splitResults.temp_dir.startsWith('/') ? splitResults.temp_dir.substring(1) : splitResults.temp_dir;
+            const downloadUrl = `${API_BASE}/api/download-individual/${tempDir}/${encodeURIComponent(filename)}`;
             window.open(downloadUrl, '_blank');
         };
 
