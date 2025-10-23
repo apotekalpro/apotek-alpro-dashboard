@@ -503,18 +503,42 @@
             // Store emails data for download function
             window.emailsData = emails;
 
-            // Add batch send button
-            const batchBtn = document.createElement('button');
-            batchBtn.className = 'w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 px-6 rounded-lg transition mt-4';
-            batchBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Open All Gmail Compose Windows';
-            batchBtn.onclick = () => {
-                emails.forEach(email => {
-                    setTimeout(() => {
-                        openGmail(email.to, email.subject, email.body);
-                    }, 500); // Small delay between windows
-                });
-            };
-            emailPreview.appendChild(batchBtn);
+            // Check if automated email is configured
+            checkEmailConfig().then(configured => {
+                if (configured) {
+                    // Add automated send button
+                    const autoSendBtn = document.createElement('button');
+                    autoSendBtn.id = 'autoSendBtn';
+                    autoSendBtn.className = 'w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition mt-4';
+                    autoSendBtn.innerHTML = '<i class="fas fa-rocket mr-2"></i>Send All Emails Automatically (' + emails.length + ')';
+                    autoSendBtn.onclick = () => sendEmailsAutomatically(emails);
+                    emailPreview.appendChild(autoSendBtn);
+                    
+                    // Add info box
+                    const infoBox = document.createElement('div');
+                    infoBox.className = 'bg-green-50 border border-green-200 rounded-lg p-3 mt-3';
+                    infoBox.innerHTML = `
+                        <div class="flex items-center text-sm text-green-800">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            <span>Automated email is configured and ready! Click the button above to send all emails with attachments automatically.</span>
+                        </div>
+                    `;
+                    emailPreview.appendChild(infoBox);
+                }
+                
+                // Add manual batch send button
+                const batchBtn = document.createElement('button');
+                batchBtn.className = 'w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 px-6 rounded-lg transition mt-4';
+                batchBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Open All Gmail Compose Windows (Manual)';
+                batchBtn.onclick = () => {
+                    emails.forEach(email => {
+                        setTimeout(() => {
+                            openGmail(email.to, email.subject, email.body);
+                        }, 500); // Small delay between windows
+                    });
+                };
+                emailPreview.appendChild(batchBtn);
+            });
         }
 
         window.openGmail = function(to, subject, body) {
@@ -532,6 +556,84 @@
                 }, index * 300); // Stagger downloads slightly
             });
         };
+        
+        async function checkEmailConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/api/test-email-config`);
+                const data = await response.json();
+                return data.configured;
+            } catch (error) {
+                console.error('Error checking email config:', error);
+                return false;
+            }
+        }
+        
+        async function sendEmailsAutomatically(emails) {
+            if (!splitResults) return;
+            
+            // Confirm with user
+            if (!confirm(`Are you sure you want to send ${emails.length} email(s) automatically?\n\nEmails will be sent to:\n${emails.map(e => '• ' + e.to).join('\n')}`)) {
+                return;
+            }
+            
+            const autoSendBtn = document.getElementById('autoSendBtn');
+            if (autoSendBtn) {
+                autoSendBtn.disabled = true;
+                autoSendBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending emails...';
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/send-emails`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        emails: emails,
+                        temp_dir: splitResults.temp_dir
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ Success!\n\n${result.sent} email(s) sent successfully!`);
+                    
+                    // Update button
+                    if (autoSendBtn) {
+                        autoSendBtn.innerHTML = '<i class="fas fa-check mr-2"></i>All Emails Sent!';
+                        autoSendBtn.className = 'w-full bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition mt-4 cursor-not-allowed';
+                    }
+                } else {
+                    let errorMsg = `⚠️ Partial Success\n\nSent: ${result.sent}\nFailed: ${result.failed}`;
+                    
+                    if (result.errors && result.errors.length > 0) {
+                        errorMsg += '\n\nErrors:\n';
+                        result.errors.forEach(err => {
+                            errorMsg += `• ${err.to}: ${err.error}\n`;
+                        });
+                    }
+                    
+                    alert(errorMsg);
+                    
+                    // Re-enable button
+                    if (autoSendBtn) {
+                        autoSendBtn.disabled = false;
+                        autoSendBtn.innerHTML = '<i class="fas fa-rocket mr-2"></i>Retry Failed Emails';
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error sending emails:', error);
+                alert(`❌ Error sending emails:\n\n${error.message}`);
+                
+                // Re-enable button
+                if (autoSendBtn) {
+                    autoSendBtn.disabled = false;
+                    autoSendBtn.innerHTML = '<i class="fas fa-rocket mr-2"></i>Send All Emails Automatically';
+                }
+            }
+        }
 
         function showError(message) {
             errorText.textContent = message;
