@@ -2562,7 +2562,7 @@
             console.log('🔧 ADMIN: Resetting password for user:', email);
             
             const newHash = legacyHash(newPassword);
-            console.log('🔐 ADMIN: New password hash:', newHash);
+            // Sensitive log removed for security
             
             return _db
                 .from('users')
@@ -2581,7 +2581,6 @@
                     }
                     
                     console.log('✅ ADMIN: Password reset successful for:', email);
-                    console.log('🔐 ADMIN: New password is:', newPassword);
                     return {
                         success: true,
                         email: email,
@@ -2645,14 +2644,7 @@
                         throw error;
                     }
                     
-                    console.log('👥 ADMIN: Found', users.length, 'users in database:');
-                    users.forEach(user => {
-                        const hashType = user.password_hash ? 
-                            (user.password_hash.length === 45 && /^[0-9a-f]+$/i.test(user.password_hash) ? 'HEX' :
-                             user.password_hash.startsWith('Q') ? 'BASE64' : 'OTHER') : 'EMPTY';
-                        
-                        console.log(`📧 ${user.email} (${user.name}) - ${user.role} - ${user.status} - Hash: ${hashType}`);
-                    });
+                    // User details logging removed for security
                     
                     return users;
                 })
@@ -3882,9 +3874,6 @@
                     
                     userManagementData.loginLogs = mappedLogs;
                     console.log('✅ Login logs loaded and mapped from database:', mappedLogs.length, 'entries');
-                    if (mappedLogs.length > 0) {
-                        console.log('📄 Sample mapped log entry:', mappedLogs[0]);
-                    }
                     
                     // Update the filtered logs and refresh the display
                     if (typeof filterLoginLogs === 'function') {
@@ -8284,4 +8273,5 @@ Ready for deployment! 🚀
     </script>
     
     <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    ript>
     
