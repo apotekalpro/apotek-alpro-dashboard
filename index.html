@@ -1356,6 +1356,11 @@
                                 <i class="fas fa-credit-card mr-2"></i>
                                 Invoice & Payment Analysis
                             </button>
+                            <button onclick="showFinanceSubtab('pv-split')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-file-excel mr-2"></i>
+                                PV Split
+                            </button>
                             <button onclick="showFinanceSubtab('d365-sync')" 
                                     class="subtab-button px-4 py-2">
                                 <i class="fas fa-sync-alt mr-2"></i>
@@ -1414,6 +1419,24 @@
                             </div>
                             <div class="iframe-container">
                                 <iframe data-src="./finance/payment-analysis.html" class="lazy-iframe iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- PV Split Subtab -->
+                        <div id="pvSplitSubtab" class="finance-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">PV Split Tool</h3>
+                                    <p class="text-gray-600">Split Excel files into individual files per sheet with email distribution</p>
+                                </div>
+                                <button onclick="openInNewTab('./finance/pv-split.html')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="./finance/pv-split.html" class="iframe-full"></iframe>
                             </div>
                         </div>
                         
@@ -4483,6 +4506,7 @@
                 'gd-analysis': 'gdAnalysisSubtab',
                 'coretax': 'coretaxSubtab',
                 'payment': 'paymentSubtab',
+                'pv-split': 'pvSplitSubtab',
                 'd365-sync': 'd365SyncSubtab'
             };
             
