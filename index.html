@@ -727,6 +727,11 @@
                                 <i class="fas fa-box-open mr-2"></i>
                                 Product Incentive Calculator
                             </button>
+                            <button onclick="showPpmSubtab('ot-calculator')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-clock mr-2"></i>
+                                OT Calculator
+                            </button>
                         </div>
                         
                         <!-- PPM Dashboard Subtab -->
@@ -1248,6 +1253,25 @@
                                         </table>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- OT Calculator Subtab -->
+                        <div id="otCalculatorSubtab" class="ppm-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">OT Calculator</h3>
+                                    <p class="text-gray-600">Overtime calculation and management system</p>
+                                </div>
+                                <button onclick="openInNewTab('https://overtime-calculator-alpro.pages.dev/upload')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="https://overtime-calculator-alpro.pages.dev/upload" 
+                                        class="iframe-full"></iframe>
                             </div>
                         </div>
                     </div>
@@ -4426,7 +4450,8 @@
                 'tes-kesehatan': 'tesKesehatanSubtab',
                 'salary-calculator': 'salaryCalculatorSubtab',
                 'incentive-calculator': 'incentiveCalculatorSubtab',
-                'product-incentive-calculator': 'productIncentiveCalculatorSubtab'
+                'product-incentive-calculator': 'productIncentiveCalculatorSubtab',
+                'ot-calculator': 'otCalculatorSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
