@@ -1,0 +1,501 @@
+/* ENHANCED MOBILE LAYOUT - User-Friendly Design */
+/* This stylesheet improves the mobile experience with larger, more accessible elements */
+
+/* ========================================
+   MOBILE PHONES (Portrait & Landscape)
+   ======================================== */
+
+@media (max-width: 767px) {
+    /* === GENERAL IMPROVEMENTS === */
+    body {
+        font-size: 16px !important; /* Prevents iOS zoom */
+        line-height: 1.5 !important;
+    }
+    
+    /* === HEADER IMPROVEMENTS === */
+    .header-compact {
+        padding: 0.875rem 0.75rem !important;
+        flex-direction: column !important;
+        gap: 0.75rem;
+    }
+    
+    .header-compact > div {
+        width: 100% !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+    
+    .header-compact .alpro-logo {
+        height: 36px !important;
+    }
+    
+    .header-compact h1 {
+        font-size: 1.125rem !important;
+        font-weight: 700 !important;
+    }
+    
+    .header-compact p {
+        font-size: 0.875rem !important;
+    }
+    
+    /* Hide IP display on mobile */
+    .ip-display {
+        display: none !important;
+    }
+    
+    /* User info section */
+    .header-compact .text-right {
+        text-align: center !important;
+        width: 100% !important;
+    }
+    
+    .header-compact #userEmail {
+        font-size: 0.9rem !important;
+        display: block !important;
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .header-compact #userRole {
+        font-size: 0.875rem !important;
+    }
+    
+    /* Action buttons - larger and touch-friendly */
+    .header-compact button {
+        width: 100% !important;
+        min-height: 52px !important;
+        font-size: 1rem !important;
+        padding: 0.875rem 1.25rem !important;
+        border-radius: 12px !important;
+        font-weight: 600 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0.5rem !important;
+    }
+    
+    .header-compact button i {
+        font-size: 1.125rem !important;
+    }
+    
+    .header-compact .flex.items-center.space-x-4 {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+        width: 100% !important;
+    }
+    
+    /* === DASHBOARD CONTAINER === */
+    .dashboard-container {
+        margin: 0.75rem 0.5rem !important;
+        padding: 1rem 0.875rem !important;
+        border-radius: 16px !important;
+    }
+    
+    /* === NAVIGATION TABS - VERTICAL LAYOUT === */
+    #tabNavigation {
+        flex-direction: column !important;
+        gap: 0.625rem !important;
+        padding: 0 !important;
+    }
+    
+    .tab-button {
+        width: 100% !important;
+        min-height: 56px !important;
+        padding: 1rem 1.25rem !important;
+        font-size: 1.0625rem !important;
+        border-radius: 14px !important;
+        text-align: left !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        font-weight: 600 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    }
+    
+    .tab-button i {
+        margin-right: 1rem !important;
+        font-size: 1.375rem !important;
+        width: 24px !important;
+        text-align: center !important;
+    }
+    
+    .tab-button.active {
+        box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3) !important;
+    }
+    
+    /* === CONTENT CARD IMPROVEMENTS === */
+    .content-card {
+        padding: 1.5rem 1.25rem !important;
+        margin: 0.75rem 0.5rem !important;
+        border-radius: 16px !important;
+    }
+    
+    .content-card h2 {
+        font-size: 1.625rem !important;
+        margin-bottom: 1.25rem !important;
+        font-weight: 700 !important;
+        line-height: 1.3 !important;
+    }
+    
+    .content-card h3 {
+        font-size: 1.3125rem !important;
+        margin-bottom: 1rem !important;
+        font-weight: 600 !important;
+    }
+    
+    .content-card p {
+        font-size: 1rem !important;
+        line-height: 1.6 !important;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    /* === SUBTABS - BETTER LAYOUT === */
+    .flex.flex-wrap.gap-2.mb-6 {
+        flex-direction: column !important;
+        gap: 0.625rem !important;
+    }
+    
+    .subtab-button {
+        width: 100% !important;
+        min-height: 52px !important;
+        padding: 0.875rem 1.125rem !important;
+        font-size: 1rem !important;
+        border-radius: 12px !important;
+        text-align: left !important;
+        display: flex !important;
+        align-items: center !important;
+        font-weight: 500 !important;
+    }
+    
+    .subtab-button i {
+        margin-right: 0.75rem !important;
+        font-size: 1.25rem !important;
+        width: 20px !important;
+        text-align: center !important;
+    }
+    
+    .subtab-button.active {
+        box-shadow: 0 3px 12px rgba(79, 70, 229, 0.25) !important;
+    }
+    
+    /* === IFRAME CONTAINER === */
+    .iframe-container {
+        height: calc(100vh - 380px) !important;
+        min-height: 450px !important;
+        border-radius: 14px !important;
+        margin: 1rem 0 !important;
+        border-width: 1px !important;
+    }
+    
+    /* === BUTTONS - ACTION BUTTONS === */
+    .flex.justify-between.items-center button,
+    .btn-primary {
+        min-height: 52px !important;
+        font-size: 1.0625rem !important;
+        padding: 0.875rem 1.5rem !important;
+        border-radius: 12px !important;
+        font-weight: 600 !important;
+    }
+    
+    .flex.justify-between.items-center {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+        align-items: stretch !important;
+    }
+    
+    .flex.justify-between.items-center > * {
+        width: 100% !important;
+    }
+    
+    /* === LOGIN PAGE === */
+    .login-container {
+        padding: 2rem 1.5rem !important;
+        margin: 1rem !important;
+        border-radius: 20px !important;
+    }
+    
+    .login-container h1 {
+        font-size: 1.75rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    .login-container p {
+        font-size: 1.0625rem !important;
+    }
+    
+    .login-input {
+        min-height: 52px !important;
+        font-size: 1.0625rem !important;
+        padding: 0.875rem 1.125rem !important;
+        border-radius: 12px !important;
+    }
+    
+    .login-container label {
+        font-size: 1rem !important;
+        margin-bottom: 0.625rem !important;
+        font-weight: 600 !important;
+    }
+    
+    .login-container .space-y-6 > * + * {
+        margin-top: 1.5rem !important;
+    }
+    
+    .login-container .btn-primary {
+        min-height: 56px !important;
+        font-size: 1.125rem !important;
+        font-weight: 700 !important;
+    }
+    
+    /* === TABLES === */
+    table {
+        font-size: 0.9375rem !important;
+        display: block !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        white-space: nowrap !important;
+    }
+    
+    table th {
+        padding: 0.875rem 0.75rem !important;
+        font-size: 0.9375rem !important;
+        font-weight: 700 !important;
+        background: rgba(79, 70, 229, 0.08) !important;
+    }
+    
+    table td {
+        padding: 0.875rem 0.75rem !important;
+        font-size: 0.9375rem !important;
+    }
+    
+    /* === MODALS/POPUPS === */
+    .fixed.inset-0 {
+        padding: 0.5rem !important;
+    }
+    
+    .fixed.inset-0 > div {
+        margin: 0 !important;
+        max-width: 100% !important;
+        max-height: calc(100vh - 1rem) !important;
+        overflow-y: auto !important;
+        border-radius: 16px !important;
+    }
+    
+    .fixed.inset-0 input,
+    .fixed.inset-0 select,
+    .fixed.inset-0 textarea {
+        min-height: 52px !important;
+        font-size: 1.0625rem !important;
+        padding: 0.875rem 1rem !important;
+        border-radius: 12px !important;
+    }
+    
+    .fixed.inset-0 label {
+        font-size: 1rem !important;
+        margin-bottom: 0.5rem !important;
+        font-weight: 600 !important;
+    }
+    
+    .fixed.inset-0 button {
+        min-height: 52px !important;
+        font-size: 1.0625rem !important;
+        padding: 0.875rem 1.25rem !important;
+        border-radius: 12px !important;
+    }
+    
+    /* === ERROR MESSAGES === */
+    .error-message {
+        padding: 1.125rem 1rem !important;
+        font-size: 1rem !important;
+        border-radius: 12px !important;
+        line-height: 1.5 !important;
+    }
+    
+    .error-message i {
+        font-size: 1.25rem !important;
+    }
+    
+    /* === USER MANAGEMENT === */
+    .user-mgmt-tab {
+        padding: 1rem 1.125rem !important;
+        font-size: 1rem !important;
+        min-height: 52px !important;
+        font-weight: 600 !important;
+    }
+    
+    /* === IMPROVE SPACING === */
+    .space-y-4 > * + * {
+        margin-top: 1.25rem !important;
+    }
+    
+    .space-y-6 > * + * {
+        margin-top: 1.75rem !important;
+    }
+    
+    .mb-4 {
+        margin-bottom: 1.25rem !important;
+    }
+    
+    .mb-6 {
+        margin-bottom: 1.75rem !important;
+    }
+    
+    /* === IMPROVE TOUCH TARGETS === */
+    a, button, .tab-button, .subtab-button {
+        -webkit-tap-highlight-color: rgba(79, 70, 229, 0.1);
+        touch-action: manipulation;
+    }
+    
+    /* === BETTER SCROLLING === */
+    * {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* === HIDE DESKTOP-ONLY ELEMENTS === */
+    .desktop-only {
+        display: none !important;
+    }
+}
+
+/* ========================================
+   LANDSCAPE MODE (Phones)
+   ======================================== */
+
+@media (max-width: 767px) and (orientation: landscape) {
+    .header-compact {
+        padding: 0.5rem !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+    }
+    
+    .header-compact > div:first-child {
+        flex: 0 0 auto !important;
+    }
+    
+    .header-compact > div:last-child {
+        flex: 1 !important;
+        flex-direction: row !important;
+        gap: 0.5rem !important;
+    }
+    
+    .header-compact button {
+        width: auto !important;
+        min-width: 140px !important;
+    }
+    
+    .iframe-container {
+        height: calc(100vh - 220px) !important;
+        min-height: 350px !important;
+    }
+    
+    #tabNavigation {
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        flex-wrap: nowrap !important;
+        gap: 0.5rem !important;
+    }
+    
+    .tab-button {
+        width: auto !important;
+        min-width: 160px !important;
+        flex-shrink: 0 !important;
+    }
+    
+    .subtab-button {
+        width: auto !important;
+        min-width: 140px !important;
+    }
+    
+    .flex.flex-wrap.gap-2.mb-6 {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+    }
+}
+
+/* ========================================
+   SMALL TABLETS (Portrait)
+   ======================================== */
+
+@media (min-width: 768px) and (max-width: 991px) {
+    .header-compact {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        padding: 1rem !important;
+    }
+    
+    .header-compact button {
+        width: auto !important;
+        min-width: 160px !important;
+    }
+    
+    #tabNavigation {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 0.75rem !important;
+    }
+    
+    .tab-button {
+        width: calc(50% - 0.375rem) !important;
+        min-height: 56px !important;
+    }
+    
+    .subtab-button {
+        width: auto !important;
+        min-width: 180px !important;
+    }
+    
+    .iframe-container {
+        height: calc(100vh - 260px) !important;
+    }
+    
+    .content-card {
+        padding: 2rem 1.75rem !important;
+    }
+}
+
+/* ========================================
+   LARGE TABLETS & SMALL DESKTOPS
+   ======================================== */
+
+@media (min-width: 992px) and (max-width: 1199px) {
+    .tab-button {
+        width: calc(33.333% - 0.5rem) !important;
+    }
+    
+    .content-card {
+        padding: 2rem !important;
+    }
+}
+
+/* ========================================
+   ACCESSIBILITY IMPROVEMENTS
+   ======================================== */
+
+/* Focus visible for keyboard navigation */
+@media (max-width: 767px) {
+    button:focus-visible,
+    .tab-button:focus-visible,
+    .subtab-button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+        outline: 3px solid #4f46e5 !important;
+        outline-offset: 2px !important;
+    }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .tab-button,
+    .subtab-button,
+    button {
+        border-width: 2px !important;
+    }
+}

@@ -1,0 +1,312 @@
+/* Mobile-Responsive Styles for Apotek Alpro Dashboard */
+
+/* Mobile-First Media Queries */
+
+/* Extra Small Devices (phones, less than 576px) */
+@media (max-width: 575px) {
+    /* Body adjustments */
+    body {
+        font-size: 14px;
+        overflow-x: hidden;
+    }
+    
+    /* Login Page Mobile Optimization */
+    .login-container {
+        padding: 1.5rem !important;
+        margin: 1rem;
+        border-radius: 15px !important;
+    }
+    
+    .login-container h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    .login-container .alpro-logo {
+        height: 60px !important;
+    }
+    
+    /* Dashboard Header Mobile */
+    .header-compact {
+        padding: 0.5rem 0.75rem !important;
+        flex-direction: column !important;
+        gap: 0.5rem;
+    }
+    
+    .header-compact > div {
+        width: 100%;
+        justify-content: center !important;
+        text-align: center;
+    }
+    
+    .header-compact .alpro-logo {
+        height: 30px !important;
+    }
+    
+    .header-compact h1 {
+        font-size: 1rem !important;
+    }
+    
+    .header-compact p {
+        font-size: 0.7rem !important;
+    }
+    
+    /* User info mobile layout */
+    .header-compact .flex.items-center.space-x-4 {
+        flex-direction: column;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    
+    .header-compact .text-right {
+        text-align: center !important;
+        width: 100%;
+    }
+    
+    .header-compact button {
+        width: 100%;
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem !important;
+    }
+    
+    /* Dashboard Container Mobile */
+    .dashboard-container {
+        margin: 0.5rem !important;
+        border-radius: 10px !important;
+    }
+    
+    /* Tab Navigation Mobile */
+    #tabNavigation {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+    }
+    
+    .tab-button {
+        width: 100%;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.875rem !important;
+        text-align: left;
+        border-radius: 10px !important;
+    }
+    
+    .tab-compact {
+        padding: 0.75rem 1rem !important;
+        margin: 0 !important;
+    }
+    
+    /* Content Card Mobile */
+    .content-card {
+        padding: 1rem !important;
+        margin: 0.5rem !important;
+        border-radius: 10px !important;
+    }
+    
+    .content-card h2 {
+        font-size: 1.25rem !important;
+    }
+    
+    .content-card h3 {
+        font-size: 1rem !important;
+    }
+    
+    /* Subtab Buttons Mobile */
+    .subtab-button {
+        width: 100%;
+        padding: 0.75rem 0.5rem !important;
+        font-size: 0.8rem !important;
+        text-align: center;
+        border-radius: 8px !important;
+    }
+    
+    /* Iframe Container Mobile */
+    .iframe-container {
+        height: calc(100vh - 400px) !important;
+        min-height: 400px;
+        border-radius: 10px !important;
+    }
+    
+    /* Table Responsive */
+    table {
+        font-size: 0.75rem !important;
+    }
+    
+    table th,
+    table td {
+        padding: 0.5rem 0.25rem !important;
+    }
+    
+    /* Hide less important columns on mobile */
+    .hide-mobile {
+        display: none !important;
+    }
+    
+    /* Button groups mobile */
+    .flex.justify-between {
+        flex-direction: column !important;
+        gap: 0.5rem;
+    }
+    
+    .flex.justify-between button,
+    .flex.justify-between .btn-primary {
+        width: 100% !important;
+    }
+    
+    /* Modal Mobile Optimization */
+    .fixed.inset-0 > div {
+        margin: 1rem !important;
+        max-width: calc(100% - 2rem) !important;
+    }
+    
+    /* Form inputs mobile */
+    input,
+    select,
+    textarea {
+        font-size: 16px !important; /* Prevents zoom on iOS */
+    }
+    
+    /* User Management Mobile */
+    .user-mgmt-tab {
+        font-size: 0.875rem !important;
+        padding: 0.5rem !important;
+    }
+    
+    /* Scrollable tabs */
+    .flex.flex-wrap.gap-2 {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+    
+    .flex.flex-wrap.gap-2 > * {
+        flex-shrink: 0;
+        scroll-snap-align: start;
+    }
+}
+
+/* Small Devices (landscape phones, 576px and up) */
+@media (min-width: 576px) and (max-width: 767px) {
+    .header-compact {
+        flex-direction: row !important;
+        flex-wrap: wrap;
+    }
+    
+    .tab-button {
+        width: calc(50% - 0.5rem);
+    }
+    
+    .subtab-button {
+        width: auto;
+        min-width: 150px;
+    }
+    
+    .iframe-container {
+        height: calc(100vh - 250px) !important;
+    }
+}
+
+/* Medium Devices (tablets, 768px and up) */
+@media (min-width: 768px) and (max-width: 991px) {
+    .header-compact {
+        flex-wrap: wrap;
+    }
+    
+    .tab-button {
+        width: calc(33.333% - 0.5rem);
+    }
+    
+    .iframe-container {
+        height: calc(100vh - 220px) !important;
+    }
+}
+
+/* Large Devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+    /* Desktop styles - keep original */
+    .tab-button {
+        width: auto;
+    }
+}
+
+/* Touch-specific improvements */
+@media (hover: none) and (pointer: coarse) {
+    /* Better touch targets */
+    button,
+    a,
+    .tab-button,
+    .subtab-button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Remove hover effects on touch devices */
+    .tab-button:hover,
+    .subtab-button:hover,
+    .btn-primary:hover {
+        transform: none;
+    }
+    
+    /* Active touch feedback */
+    button:active,
+    .tab-button:active,
+    .subtab-button:active {
+        opacity: 0.7;
+        transform: scale(0.98);
+    }
+}
+
+/* Landscape orientation specific */
+@media (max-width: 767px) and (orientation: landscape) {
+    .header-compact {
+        padding: 0.25rem 0.5rem !important;
+    }
+    
+    .dashboard-container {
+        margin: 0.25rem !important;
+    }
+    
+    .iframe-container {
+        height: calc(100vh - 180px) !important;
+    }
+}
+
+/* Safe area insets for notched devices (iOS) */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: max(0px, env(safe-area-inset-left));
+        padding-right: max(0px, env(safe-area-inset-right));
+        padding-bottom: max(0px, env(safe-area-inset-bottom));
+    }
+    
+    .header-compact {
+        padding-top: max(0.75rem, env(safe-area-inset-top));
+    }
+}
+
+/* Improve scrolling performance */
+.tab-content,
+.iframe-container,
+.content-card {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+}
+
+/* Prevent text selection on UI elements */
+.tab-button,
+.subtab-button,
+button {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Loading spinner mobile */
+@media (max-width: 575px) {
+    .fa-spinner {
+        font-size: 1.5rem !important;
+    }
+}
+
+/* Dark mode support for mobile */
+@media (prefers-color-scheme: dark) {
+    /* Optional: Add dark mode styles */
+}

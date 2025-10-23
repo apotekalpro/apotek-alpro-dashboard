@@ -1,0 +1,10 @@
+{
+  "appId": "com.apotekalpro.dashboard",
+  "appName": "Apotek Alpro",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}
