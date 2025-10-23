@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PV Splitter Tool</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .file-item {
+            transition: all 0.3s ease;
+        }
+        .file-item:hover {
+            background-color: #f3f4f6;
+            transform: translateX(5px);
+        }
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+        .upload-zone {
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+        }
+        .upload-zone.dragover {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+        }
+        .spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-file-excel text-green-600 mr-3"></i>
+                PV Splitter Tool
+            </h1>
+            <p class="text-gray-600">
+                Split your Excel file into individual files based on each sheet. Files will be named using company name (D9) and PV number (R9).
+            </p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-upload mr-2 text-blue-600"></i>
+                Step 1: Upload Excel File
+            </h2>
+            
+            <!-- Drop Zone -->
+            <div id="dropZone" class="upload-zone rounded-lg p-12 text-center cursor-pointer mb-4">
+                <i class="fas fa-cloud-upload-alt text-6xl text-gray-400 mb-4"></i>
+                <p class="text-lg text-gray-600 mb-2">
+                    Drag and drop your Excel file here or click to browse
+                </p>
+                <p class="text-sm text-gray-500">
+                    Supported formats: .xlsx, .xls
+                </p>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden">
+            </div>
+
+            <!-- Selected File Info -->
+            <div id="selectedFileInfo" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <i class="fas fa-file-excel text-green-600 text-2xl mr-3"></i>
+                        <div>
+                            <p class="font-semibold text-gray-800" id="fileName"></p>
+                            <p class="text-sm text-gray-600" id="fileSize"></p>
+                        </div>
+                    </div>
+                    <button id="removeFileBtn" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Split Button -->
+            <div class="mt-4">
+                <button id="splitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="fas fa-scissors mr-2"></i>
+                    Split Excel File
+                </button>
+            </div>
+        </div>
+
+        <!-- Processing Status -->
+        <div id="processingStatus" class="hidden bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center justify-center">
+                <div class="spinner mr-4"></div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-800">Processing your file...</h3>
+                    <p class="text-gray-600">Please wait while we split your Excel file</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            <!-- Summary Card -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-check-circle mr-2 text-green-600"></i>
+                    Step 2: Download Files
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-files-o text-3xl text-green-600 mr-4"></i>
+                            <div>
+                                <p class="text-2xl font-bold text-gray-800" id="totalFiles">0</p>
+                                <p class="text-sm text-gray-600">Files Created</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-envelope text-3xl text-blue-600 mr-4"></i>
+                            <div>
+                                <p class="text-2xl font-bold text-gray-800" id="totalEmails">0</p>
+                                <p class="text-sm text-gray-600">Email Recipients</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div class="flex items-center">
+                            <i class="fas fa-building text-3xl text-purple-600 mr-4"></i>
+                            <div>
+                                <p class="text-2xl font-bold text-gray-800" id="totalCompanies">0</p>
+                                <p class="text-sm text-gray-600">Companies</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Download All Button -->
+                <button id="downloadAllBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition mb-4">
+                    <i class="fas fa-download mr-2"></i>
+                    Download All Files (ZIP)
+                </button>
+            </div>
+
+            <!-- Files List -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-list mr-2"></i>
+                    Split Files
+                </h3>
+                <div id="filesList" class="space-y-2 max-h-96 overflow-y-auto"></div>
+            </div>
+
+            <!-- Email Section -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-paper-plane mr-2 text-purple-600"></i>
+                    Step 3: Send via Email
+                </h2>
+                
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <div class="flex">
+                        <i class="fas fa-info-circle text-yellow-600 text-xl mr-3 mt-1"></i>
+                        <div>
+                            <p class="font-semibold text-gray-800 mb-1">How Email Works:</p>
+                            <ul class="text-sm text-gray-700 list-disc list-inside space-y-1">
+                                <li>Files will be grouped by email address (from D12 of each sheet)</li>
+                                <li>Gmail compose window will open for each recipient</li>
+                                <li>You'll need to attach files manually and send</li>
+                                <li>Only sheets with valid email addresses will be included</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="emailBtn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition">
+                    <i class="fas fa-envelope mr-2"></i>
+                    Prepare Emails for Gmail
+                </button>
+
+                <!-- Email Preview -->
+                <div id="emailPreview" class="hidden mt-4 space-y-3 max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div class="flex">
+                <i class="fas fa-exclamation-circle text-red-600 text-xl mr-3"></i>
+                <div>
+                    <p class="font-semibold text-red-800">Error</p>
+                    <p class="text-red-700" id="errorText"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        // API Configuration - automatically detects the backend URL
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:5001'
+            : 'https://5001-iuy38bzhv3g2h09erp5i1-cbeee0f9.sandbox.novita.ai';
+
+        let uploadedFile = null;
+        let splitResults = null;
+
+        // DOM Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const selectedFileInfo = document.getElementById('selectedFileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const removeFileBtn = document.getElementById('removeFileBtn');
+        const splitBtn = document.getElementById('splitBtn');
+        const processingStatus = document.getElementById('processingStatus');
+        const resultsSection = document.getElementById('resultsSection');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+
+        // Event Listeners
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        removeFileBtn.addEventListener('click', clearFile);
+        splitBtn.addEventListener('click', splitFile);
+        document.getElementById('downloadAllBtn').addEventListener('click', downloadAll);
+        document.getElementById('emailBtn').addEventListener('click', prepareEmails);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFile(file) {
+            if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                showError('Please select an Excel file (.xlsx or .xls)');
+                return;
+            }
+
+            uploadedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            selectedFileInfo.classList.remove('hidden');
+            splitBtn.disabled = false;
+            hideError();
+        }
+
+        function clearFile() {
+            uploadedFile = null;
+            fileInput.value = '';
+            selectedFileInfo.classList.add('hidden');
+            splitBtn.disabled = true;
+            resultsSection.classList.add('hidden');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        async function splitFile() {
+            if (!uploadedFile) return;
+
+            hideError();
+            processingStatus.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            splitBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', uploadedFile);
+
+            try {
+                const response = await fetch(`${API_BASE}/api/split-excel`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to split file');
+                }
+
+                splitResults = data;
+                displayResults(data);
+                processingStatus.classList.add('hidden');
+                resultsSection.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+                processingStatus.classList.add('hidden');
+                splitBtn.disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            // Update summary
+            document.getElementById('totalFiles').textContent = data.total_files;
+            
+            // Count unique emails
+            const uniqueEmails = new Set(data.files.filter(f => f.email).map(f => f.email));
+            document.getElementById('totalEmails').textContent = uniqueEmails.size;
+            
+            // Count unique companies
+            const uniqueCompanies = new Set(data.files.map(f => f.company_name));
+            document.getElementById('totalCompanies').textContent = uniqueCompanies.size;
+
+            // Display files list
+            const filesList = document.getElementById('filesList');
+            filesList.innerHTML = '';
+
+            data.files.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200';
+                fileItem.innerHTML = `
+                    <div class="flex items-center flex-1">
+                        <i class="fas fa-file-excel text-green-600 text-2xl mr-4"></i>
+                        <div>
+                            <p class="font-semibold text-gray-800">${file.filename}</p>
+                            <div class="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                                <span><i class="fas fa-building mr-1"></i>${file.company_name}</span>
+                                <span><i class="fas fa-hashtag mr-1"></i>${file.pv_number}</span>
+                                ${file.email ? `<span><i class="fas fa-envelope mr-1"></i>${file.email}</span>` : '<span class="text-red-600"><i class="fas fa-exclamation-triangle mr-1"></i>No email</span>'}
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="downloadIndividual('${file.filename}')" class="ml-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                        <i class="fas fa-download mr-2"></i>Download
+                    </button>
+                `;
+                filesList.appendChild(fileItem);
+            });
+        }
+
+        function downloadAll() {
+            if (!splitResults) return;
+            
+            const downloadUrl = `${API_BASE}/api/download-zip${splitResults.temp_dir}/${splitResults.zip_filename}`;
+            window.open(downloadUrl, '_blank');
+        }
+
+        window.downloadIndividual = function(filename) {
+            if (!splitResults) return;
+            
+            const downloadUrl = `${API_BASE}/api/download-individual${splitResults.temp_dir}/${encodeURIComponent(filename)}`;
+            window.open(downloadUrl, '_blank');
+        };
+
+        async function prepareEmails() {
+            if (!splitResults) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/get-email-data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        files: splitResults.files
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to prepare emails');
+                }
+
+                displayEmailPreview(data.emails);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+            }
+        }
+
+        function displayEmailPreview(emails) {
+            const emailPreview = document.getElementById('emailPreview');
+            emailPreview.innerHTML = '';
+            emailPreview.classList.remove('hidden');
+
+            if (emails.length === 0) {
+                emailPreview.innerHTML = `
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <p class="text-yellow-800">No valid email addresses found in the Excel sheets (D12).</p>
+                    </div>
+                `;
+                return;
+            }
+
+            emails.forEach((email, index) => {
+                const emailCard = document.createElement('div');
+                emailCard.className = 'bg-gray-50 border border-gray-200 rounded-lg p-4';
+                emailCard.innerHTML = `
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex-1">
+                            <p class="font-semibold text-gray-800">
+                                <i class="fas fa-envelope mr-2 text-purple-600"></i>
+                                To: ${email.to}
+                            </p>
+                            <p class="text-sm text-gray-600 mt-1">Subject: ${email.subject}</p>
+                            <p class="text-sm text-gray-600">Files: ${email.files.length}</p>
+                        </div>
+                        <button onclick="openGmail('${email.to}', '${email.subject.replace(/'/g, "\\'")}', \`${email.body.replace(/`/g, '\\`')}\`)" 
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                            <i class="fab fa-google mr-2"></i>Open Gmail
+                        </button>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-500">
+                        <p class="font-semibold mb-1">Attachments:</p>
+                        <ul class="list-disc list-inside">
+                            ${email.files.map(f => `<li>${f.filename}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+                emailPreview.appendChild(emailCard);
+            });
+
+            // Add batch send button
+            const batchBtn = document.createElement('button');
+            batchBtn.className = 'w-full bg-purple-700 hover:bg-purple-800 text-white font-semibold py-3 px-6 rounded-lg transition mt-4';
+            batchBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Open All Gmail Compose Windows';
+            batchBtn.onclick = () => {
+                emails.forEach(email => {
+                    setTimeout(() => {
+                        openGmail(email.to, email.subject, email.body);
+                    }, 500); // Small delay between windows
+                });
+            };
+            emailPreview.appendChild(batchBtn);
+        }
+
+        window.openGmail = function(to, subject, body) {
+            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(gmailUrl, '_blank');
+        };
+
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        // Check API health on load
+        fetch(`${API_BASE}/health`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('PV Splitter API Status:', data);
+            })
+            .catch(error => {
+                console.error('API health check failed:', error);
+                showError('Backend service is not available. Please ensure the PV Splitter service is running on port 5001.');
+            });
+    </script>
+</body>
+</html>
