@@ -80,9 +80,9 @@ def split_excel():
                 email = str(email).strip()
             
             # Create safe filename
-            # Replace invalid filename characters
+            # Replace invalid filename characters (including /)
             safe_company = "".join(c for c in company_name if c.isalnum() or c in (' ', '-', '_')).strip()
-            safe_pv = "".join(c for c in pv_number if c.isalnum() or c in (' ', '-', '_', '/')).strip()
+            safe_pv = "".join(c if (c.isalnum() or c in (' ', '-', '_')) else '-' for c in pv_number).strip()
             
             # Create filename: "CompanyName PV_Number.xlsx"
             filename = f"{safe_company} {safe_pv}.xlsx"
