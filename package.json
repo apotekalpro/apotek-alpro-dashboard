@@ -1,0 +1,21 @@
+{
+  "name": "apotek-alpro-dashboard",
+  "version": "1.0.0",
+  "description": "Apotek Alpro Executive Dashboard - Mobile App",
+  "main": "supabase-config.js",
+  "scripts": {
+    "build": "cp index.html mobile-styles.css supabase-config.js www/ && cp -r assets www/ 2>/dev/null || true",
+    "sync": "npm run build && npx cap sync",
+    "open:android": "npx cap open android",
+    "build:apk": "cd android && ./gradlew assembleDebug && cd ..",
+    "build:apk-release": "cd android && ./gradlew assembleRelease && cd .."
+  },
+  "keywords": ["apotek", "alpro", "dashboard", "mobile"],
+  "author": "Apotek Alpro",
+  "license": "ISC",
+  "devDependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4"
+  }
+}
