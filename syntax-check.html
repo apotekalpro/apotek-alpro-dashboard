@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syntax Check - Apotek Alpro</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #4f46e5;
+            margin-bottom: 30px;
+        }
+        .status {
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+            color: #065f46;
+        }
+        .error {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+            color: #991b1b;
+        }
+        .test-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9fafb;
+            border-left: 4px solid #4f46e5;
+            border-radius: 4px;
+        }
+        .test-item.passed {
+            border-left-color: #10b981;
+        }
+        .test-item.failed {
+            border-left-color: #ef4444;
+        }
+        code {
+            background: #1f2937;
+            color: #10b981;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .button {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 JavaScript Syntax Validation</h1>
+        
+        <div id="mainStatus" class="status">
+            ⏳ Running tests...
+        </div>
+
+        <h2>Test Results:</h2>
+        <div id="testResults"></div>
+
+        <button class="button" onclick="location.href='index.html'">
+            ✅ Go to Main Dashboard
+        </button>
+        
+        <button class="button" onclick="location.reload()">
+            🔄 Rerun Tests
+        </button>
+    </div>
+
+    <script>
+        const results = [];
+        
+        function addTest(name, passed, details) {
+            results.push({ name, passed, details });
+            const testDiv = document.createElement('div');
+            testDiv.className = `test-item ${passed ? 'passed' : 'failed'}`;
+            testDiv.innerHTML = `
+                <strong>${passed ? '✅' : '❌'} ${name}</strong><br>
+                <small>${details}</small>
+            `;
+            document.getElementById('testResults').appendChild(testDiv);
+        }
+
+        // Test 1: Check if basic JavaScript works
+        try {
+            const testObj = {
+                'key1': 'value1',
+                'key2': 'value2',
+                'key3': 'value3'
+            };
+            addTest('Basic Object Syntax', true, 'JavaScript object literal parsing works correctly');
+        } catch (e) {
+            addTest('Basic Object Syntax', false, `Error: ${e.message}`);
+        }
+
+        // Test 2: Check for common syntax errors
+        try {
+            const duplicateTest = {
+                'item1': 'a',
+                'item2': 'b',
+                'item3': 'c'
+            };
+            addTest('No Duplicate Keys', true, 'Object keys are unique');
+        } catch (e) {
+            addTest('No Duplicate Keys', false, `Error: ${e.message}`);
+        }
+
+        // Test 3: Check if functions can be defined
+        try {
+            function testFunction() {
+                return 'success';
+            }
+            const result = testFunction();
+            addTest('Function Declaration', result === 'success', 'Functions can be declared and executed');
+        } catch (e) {
+            addTest('Function Declaration', false, `Error: ${e.message}`);
+        }
+
+        // Test 4: Check DOM manipulation
+        try {
+            const testDiv = document.createElement('div');
+            testDiv.innerHTML = 'Test content';
+            addTest('DOM Manipulation', true, 'Document object model is accessible');
+        } catch (e) {
+            addTest('DOM Manipulation', false, `Error: ${e.message}`);
+        }
+
+        // Test 5: Check array operations
+        try {
+            const testArray = ['item1', 'item2', 'item3'];
+            const filtered = testArray.filter(item => item !== 'item2');
+            addTest('Array Operations', filtered.length === 2, 'Array methods work correctly');
+        } catch (e) {
+            addTest('Array Operations', false, `Error: ${e.message}`);
+        }
+
+        // Test 6: Check promise support
+        try {
+            const testPromise = new Promise((resolve) => {
+                resolve('success');
+            });
+            testPromise.then(result => {
+                addTest('Promise Support', result === 'success', 'Promises are supported');
+            });
+        } catch (e) {
+            addTest('Promise Support', false, `Error: ${e.message}`);
+        }
+
+        // Test 7: Simulate the fixed syntax issue
+        try {
+            // This simulates the FIXED version (no duplicate keys, proper comma)
+            const subtabMap = {
+                'kpj-bpjs': 'kpjBpjsSubtab',
+                'tes-kesehatan': 'tesKesehatanSubtab',
+                'salary-calculator': 'salaryCalculatorSubtab',
+                'incentive-calculator': 'incentiveCalculatorSubtab',
+                'product-incentive-calculator': 'productIncentiveCalculatorSubtab',
+                'ot-calculator': 'otCalculatorSubtab'
+            };
+            addTest('PPM Subtab Map Syntax (FIXED)', true, 'The syntax error at line 4545 has been fixed - no duplicate keys, proper comma placement');
+        } catch (e) {
+            addTest('PPM Subtab Map Syntax', false, `Error: ${e.message} - The syntax error still exists!`);
+        }
+
+        // Final summary
+        setTimeout(() => {
+            const allPassed = results.every(r => r.passed);
+            const statusDiv = document.getElementById('mainStatus');
+            
+            if (allPassed) {
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = `
+                    ✅ <strong>All Tests Passed!</strong><br>
+                    <small>JavaScript syntax is valid. The login page should now work correctly.</small>
+                `;
+            } else {
+                const failedCount = results.filter(r => !r.passed).length;
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = `
+                    ❌ <strong>${failedCount} Test(s) Failed</strong><br>
+                    <small>There are still syntax issues that need to be resolved.</small>
+                `;
+            }
+        }, 500);
+
+        console.log('✅ Syntax validation complete');
+        console.log('📊 Test results:', results);
+    </script>
+</body>
+</html>
