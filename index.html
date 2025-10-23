@@ -4153,7 +4153,29 @@
                         console.error('❌ JWT session creation error:', error);
                     });
                     
-                    showDashboard();
+                    // Show dashboard and reset button state
+                    try {
+                        console.log('📊 Calling showDashboard()...');
+                        showDashboard();
+                        console.log('✅ showDashboard() completed successfully');
+                        
+                        // Reset button state after successful dashboard load
+                        loginButton.disabled = false;
+                        loginButtonContent.classList.remove('hidden');
+                        loginLoadingContent.classList.add('hidden');
+                    } catch (dashboardError) {
+                        console.error('❌ Error showing dashboard:', dashboardError);
+                        console.error('Stack trace:', dashboardError.stack);
+                        
+                        // Reset button state on error
+                        loginButton.disabled = false;
+                        loginButtonContent.classList.remove('hidden');
+                        loginLoadingContent.classList.add('hidden');
+                        
+                        // Show error to user
+                        errorText.textContent = 'Error loading dashboard. Please refresh and try again.';
+                        errorMessage.classList.remove('hidden');
+                    }
                 } else {
                     console.log('☁️ Cloud authentication failed, trying Google Sheets fallback...');
                     
@@ -4164,7 +4186,30 @@
                         currentUser = sheetsUser.email;
                         currentUserRole = sheetsUser.role;
                         currentUserName = sheetsUser.name;
-                        showDashboard();
+                        
+                        // Show dashboard and reset button state
+                        try {
+                            console.log('📊 Calling showDashboard()...');
+                            showDashboard();
+                            console.log('✅ showDashboard() completed successfully');
+                            
+                            // Reset button state after successful dashboard load
+                            loginButton.disabled = false;
+                            loginButtonContent.classList.remove('hidden');
+                            loginLoadingContent.classList.add('hidden');
+                        } catch (dashboardError) {
+                            console.error('❌ Error showing dashboard:', dashboardError);
+                            console.error('Stack trace:', dashboardError.stack);
+                            
+                            // Reset button state on error
+                            loginButton.disabled = false;
+                            loginButtonContent.classList.remove('hidden');
+                            loginLoadingContent.classList.add('hidden');
+                            
+                            // Show error to user
+                            errorText.textContent = 'Error loading dashboard. Please refresh and try again.';
+                            errorMessage.classList.remove('hidden');
+                        }
                     } else {
                         console.log('❌ Authentication failed in both cloud and Google Sheets');
                         
@@ -4204,31 +4249,76 @@
             console.log('🔐 Current role:', currentUserRole);
             
             try {
+                console.log('📋 Step 1: Loading configuration...');
                 // Load configuration first
                 loadConfiguration();
+                console.log('✅ Configuration loaded');
                 
+                console.log('💾 Step 2: Storing login time...');
                 // Store login time for session tracking
                 localStorage.setItem('loginTime', Date.now());
+                console.log('✅ Login time stored');
                 
+                console.log('🎭 Step 3: Hiding login page...');
                 // Hide login page and show dashboard
-                document.getElementById('loginPage').classList.add('hidden');
-                document.getElementById('dashboard').classList.remove('hidden');
+                const loginPage = document.getElementById('loginPage');
+                const dashboard = document.getElementById('dashboard');
                 
+                if (!loginPage) {
+                    throw new Error('Login page element not found!');
+                }
+                if (!dashboard) {
+                    throw new Error('Dashboard element not found!');
+                }
+                
+                loginPage.classList.add('hidden');
+                dashboard.classList.remove('hidden');
+                console.log('✅ Page visibility toggled');
+                
+                console.log('👤 Step 4: Setting user info...');
                 // Set user info
-                document.getElementById('userEmail').textContent = currentUser;
-                document.getElementById('userRole').textContent = currentUserRole;
+                const userEmailEl = document.getElementById('userEmail');
+                const userRoleEl = document.getElementById('userRole');
                 
+                if (userEmailEl) {
+                    userEmailEl.textContent = currentUser;
+                } else {
+                    console.warn('⚠️ userEmail element not found');
+                }
+                
+                if (userRoleEl) {
+                    userRoleEl.textContent = currentUserRole;
+                } else {
+                    console.warn('⚠️ userRole element not found');
+                }
+                console.log('✅ User info set');
+                
+                console.log('🌐 Step 5: Getting user IP...');
                 // Get and display user IP (fast, local)
                 const userIP = getUserIP();
-                document.getElementById('userIP').textContent = userIP;
+                const userIPEl = document.getElementById('userIP');
+                if (userIPEl) {
+                    userIPEl.textContent = userIP;
+                } else {
+                    console.warn('⚠️ userIP element not found');
+                }
+                console.log('✅ User IP set:', userIP);
                 
+                console.log('📑 Step 6: Generating tabs...');
                 generateTabs();
-                setDefaultTab();
+                console.log('✅ Tabs generated');
                 
-                console.log('✅ Dashboard loaded successfully');
+                console.log('🎯 Step 7: Setting default tab...');
+                setDefaultTab();
+                console.log('✅ Default tab set');
+                
+                console.log('✅✅✅ Dashboard loaded successfully!');
                 
             } catch (error) {
                 console.error('❌ Dashboard error:', error);
+                console.error('❌ Error stack:', error.stack);
+                console.error('❌ Error at step - check logs above');
+                throw error; // Re-throw to be caught by the login handler
             }
         }
 
