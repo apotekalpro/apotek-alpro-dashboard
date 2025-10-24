@@ -15,9 +15,24 @@ import json
 from datetime import datetime
 import tempfile
 import shutil
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
 
 app = Flask(__name__)
 CORS(app)
+
+# Email Configuration
+# These should be set via environment variables or config file
+EMAIL_CONFIG = {
+    'smtp_server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
+    'smtp_port': int(os.getenv('SMTP_PORT', '587')),
+    'sender_email': os.getenv('SENDER_EMAIL', ''),
+    'sender_password': os.getenv('SENDER_PASSWORD', ''),
+    'sender_name': os.getenv('SENDER_NAME', 'Apotek Alpro Finance Team')
+}
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -276,6 +291,129 @@ Apotek Alpro Finance Team""",
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/send-emails', methods=['POST'])
+def send_emails():
+    """
+    Send emails with file attachments automatically
+    Requires email configuration to be set
+    """
+    try:
+        data = request.json
+        emails_to_send = data.get('emails', [])
+        temp_dir = data.get('temp_dir', '')
+        
+        # Check if email is configured
+        if not EMAIL_CONFIG['sender_email'] or not EMAIL_CONFIG['sender_password']:
+            return jsonify({
+                'error': 'Email not configured. Please set SENDER_EMAIL and SENDER_PASSWORD environment variables.',
+                'configured': False
+            }), 400
+        
+        results = []
+        errors = []
+        
+        for email_data in emails_to_send:
+            try:
+                # Send individual email
+                success = send_single_email(
+                    to_email=email_data['to'],
+                    subject=email_data['subject'],
+                    body=email_data['body'],
+                    files=email_data['files'],
+                    temp_dir=temp_dir
+                )
+                
+                if success:
+                    results.append({
+                        'to': email_data['to'],
+                        'status': 'sent',
+                        'files_count': len(email_data['files'])
+                    })
+                else:
+                    errors.append({
+                        'to': email_data['to'],
+                        'error': 'Failed to send email'
+                    })
+                    
+            except Exception as e:
+                errors.append({
+                    'to': email_data.get('to', 'unknown'),
+                    'error': str(e)
+                })
+        
+        return jsonify({
+            'success': len(errors) == 0,
+            'sent': len(results),
+            'failed': len(errors),
+            'results': results,
+            'errors': errors
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def send_single_email(to_email, subject, body, files, temp_dir):
+    """
+    Send a single email with attachments using SMTP
+    """
+    try:
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = f"{EMAIL_CONFIG['sender_name']} <{EMAIL_CONFIG['sender_email']}>"
+        msg['To'] = to_email
+        msg['Subject'] = subject
+        
+        # Add body
+        msg.attach(MIMEText(body, 'plain'))
+        
+        # Reconstruct temp_dir path if needed
+        if not temp_dir.startswith('/'):
+            temp_dir = '/' + temp_dir
+        
+        # Attach files
+        for file_info in files:
+            filename = file_info['filename']
+            file_path = os.path.join(temp_dir, filename)
+            
+            if os.path.exists(file_path):
+                with open(file_path, 'rb') as f:
+                    part = MIMEBase('application', 'octet-stream')
+                    part.set_payload(f.read())
+                    encoders.encode_base64(part)
+                    part.add_header(
+                        'Content-Disposition',
+                        f'attachment; filename= {filename}'
+                    )
+                    msg.attach(part)
+        
+        # Connect to SMTP server and send
+        with smtplib.SMTP(EMAIL_CONFIG['smtp_server'], EMAIL_CONFIG['smtp_port']) as server:
+            server.starttls()
+            server.login(EMAIL_CONFIG['sender_email'], EMAIL_CONFIG['sender_password'])
+            server.send_message(msg)
+        
+        return True
+        
+    except Exception as e:
+        print(f"Error sending email to {to_email}: {str(e)}")
+        return False
+
+@app.route('/api/test-email-config', methods=['GET'])
+def test_email_config():
+    """
+    Test if email configuration is set up correctly
+    """
+    config_status = {
+        'configured': bool(EMAIL_CONFIG['sender_email'] and EMAIL_CONFIG['sender_password']),
+        'smtp_server': EMAIL_CONFIG['smtp_server'],
+        'smtp_port': EMAIL_CONFIG['smtp_port'],
+        'sender_email': EMAIL_CONFIG['sender_email'][:3] + '***' if EMAIL_CONFIG['sender_email'] else 'Not set',
+        'sender_name': EMAIL_CONFIG['sender_name'],
+        'password_set': bool(EMAIL_CONFIG['sender_password'])
+    }
+    
+    return jsonify(config_status)
+
 if __name__ == '__main__':
     print("Starting PV Splitter Service on port 5001...")
     print("Service endpoints:")
@@ -283,5 +421,13 @@ if __name__ == '__main__':
     print("  - GET  /api/download-zip/<temp_dir>/<filename> - Download all files as zip")
     print("  - GET  /api/download-individual/<temp_dir>/<filename> - Download individual file")
     print("  - POST /api/get-email-data - Get email data for Gmail integration")
+    print("  - POST /api/send-emails - Send emails automatically with attachments")
+    print("  - GET  /api/test-email-config - Test email configuration")
     print("  - GET  /health - Health check")
+    print("")
+    print("Email Configuration:")
+    print(f"  - SMTP Server: {EMAIL_CONFIG['smtp_server']}:{EMAIL_CONFIG['smtp_port']}")
+    print(f"  - Sender Email: {EMAIL_CONFIG['sender_email'] if EMAIL_CONFIG['sender_email'] else 'NOT CONFIGURED'}")
+    print(f"  - Status: {'READY' if EMAIL_CONFIG['sender_email'] and EMAIL_CONFIG['sender_password'] else 'NOT CONFIGURED - Set SENDER_EMAIL and SENDER_PASSWORD'}")
+    print("")
     app.run(host='0.0.0.0', port=5001, debug=True)
