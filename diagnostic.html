@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Diagnostic - Apotek Alpro Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold mb-2 text-gray-800">
+                <i class="fas fa-stethoscope mr-2 text-blue-600"></i>
+                System Diagnostic
+            </h1>
+            <p class="text-gray-600">Apotek Alpro Dashboard - Health Check</p>
+        </div>
+
+        <div id="results" class="space-y-4">
+            <!-- Results will be inserted here -->
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6 mt-6">
+            <h2 class="text-xl font-bold mb-4">Manual Tests</h2>
+            <div class="space-y-2">
+                <button onclick="testIMSplitterAPI()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    Test IM Splitter API
+                </button>
+                <button onclick="testFileAccess()" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    Test File Access
+                </button>
+                <button onclick="checkJavaScript()" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+                    Check JavaScript Functions
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const results = document.getElementById('results');
+
+        function addResult(title, status, message, details = null) {
+            const colors = {
+                success: 'bg-green-50 border-green-500 text-green-800',
+                error: 'bg-red-50 border-red-500 text-red-800',
+                warning: 'bg-yellow-50 border-yellow-500 text-yellow-800',
+                info: 'bg-blue-50 border-blue-500 text-blue-800'
+            };
+
+            const icons = {
+                success: 'fa-check-circle text-green-600',
+                error: 'fa-times-circle text-red-600',
+                warning: 'fa-exclamation-triangle text-yellow-600',
+                info: 'fa-info-circle text-blue-600'
+            };
+
+            const card = document.createElement('div');
+            card.className = `border-l-4 p-4 rounded ${colors[status]}`;
+            card.innerHTML = `
+                <div class="flex items-start">
+                    <i class="fas ${icons[status]} text-2xl mr-3 mt-1"></i>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-lg mb-1">${title}</h3>
+                        <p class="mb-2">${message}</p>
+                        ${details ? `<pre class="bg-gray-800 text-white p-3 rounded text-xs overflow-x-auto">${details}</pre>` : ''}
+                    </div>
+                </div>
+            `;
+            results.appendChild(card);
+        }
+
+        // Run automatic checks on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            addResult('Environment Info', 'info', 
+                `Hostname: ${window.location.hostname}<br>
+                Port: ${window.location.port || '(default)'}<br>
+                Protocol: ${window.location.protocol}<br>
+                URL: ${window.location.href}`
+            );
+
+            // Check browser info
+            addResult('Browser Info', 'info',
+                `User Agent: ${navigator.userAgent}<br>
+                Language: ${navigator.language}<br>
+                Online: ${navigator.onLine ? 'Yes' : 'No'}`
+            );
+
+            // Check if main page files exist
+            checkFileExists('/finance/serah-terima-im-split.html');
+            checkFileExists('/finance/pv-split.html');
+            checkFileExists('/index.html');
+        });
+
+        async function checkFileExists(path) {
+            try {
+                const response = await fetch(path, { method: 'HEAD' });
+                if (response.ok) {
+                    addResult(`File Check: ${path}`, 'success', `File exists and is accessible (Status: ${response.status})`);
+                } else {
+                    addResult(`File Check: ${path}`, 'error', `File not accessible (Status: ${response.status})`);
+                }
+            } catch (error) {
+                addResult(`File Check: ${path}`, 'error', `Failed to check file: ${error.message}`);
+            }
+        }
+
+        async function testIMSplitterAPI() {
+            // Auto-detect API URL (same logic as IM splitter)
+            const hostname = window.location.hostname;
+            const protocol = window.location.protocol;
+            
+            let apiBase;
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                apiBase = 'http://localhost:5002';
+            } else if (hostname.includes('sandbox.novita.ai')) {
+                const sandboxId = hostname.split('-').slice(1).join('-');
+                apiBase = `https://5002-${sandboxId}`;
+            } else {
+                apiBase = `${protocol}//${hostname}:5002`;
+            }
+
+            addResult('API Detection', 'info', `Detected API Base URL: ${apiBase}`);
+
+            try {
+                const response = await fetch(`${apiBase}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult('IM Splitter API Health', 'success', 
+                        `API is healthy and responding`,
+                        JSON.stringify(data, null, 2)
+                    );
+                } else {
+                    addResult('IM Splitter API Health', 'error', 
+                        `API returned error (Status: ${response.status})`,
+                        JSON.stringify(data, null, 2)
+                    );
+                }
+            } catch (error) {
+                addResult('IM Splitter API Health', 'error', 
+                    `Cannot connect to API. Is the backend server running?`,
+                    `Error: ${error.message}\nAPI URL: ${apiBase}/health`
+                );
+            }
+        }
+
+        async function testFileAccess() {
+            const files = [
+                '/finance/serah-terima-im-split.html',
+                '/finance/pv-split.html',
+                '/finance/invoice-matching.html',
+                '/assets/images/alpro-logo.png'
+            ];
+
+            for (const file of files) {
+                await checkFileExists(file);
+            }
+        }
+
+        function checkJavaScript() {
+            // Check if common functions exist (if loaded from index.html)
+            const functions = [
+                'showDashboard',
+                'showTab',
+                'showFinanceSubtab',
+                'authenticateUser'
+            ];
+
+            functions.forEach(func => {
+                if (typeof window[func] === 'function') {
+                    addResult(`JavaScript Check: ${func}()`, 'success', `Function is defined and ready`);
+                } else {
+                    addResult(`JavaScript Check: ${func}()`, 'warning', `Function not found (may be normal if not on main page)`);
+                }
+            });
+
+            // Check for required libraries
+            const libraries = {
+                'Tailwind CSS': typeof tailwind !== 'undefined',
+                'Supabase': typeof window.supabase !== 'undefined',
+                'XLSX': typeof XLSX !== 'undefined'
+            };
+
+            Object.entries(libraries).forEach(([name, loaded]) => {
+                if (loaded) {
+                    addResult(`Library Check: ${name}`, 'success', `Library is loaded`);
+                } else {
+                    addResult(`Library Check: ${name}`, 'info', `Library not detected (may be lazy-loaded)`);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
