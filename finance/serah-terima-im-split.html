@@ -202,7 +202,7 @@
                     <button onclick="downloadAll()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition">
                         <i class="fas fa-download mr-2"></i>Download All Files (ZIP)
                     </button>
-                    <button onclick="sendAllEmails()" id="sendAllEmailsBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition">
+                    <button onclick="sendAllEmails()" id="sendAllEmailsBtn" class="hidden bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition">
                         <i class="fas fa-envelope-open-text mr-2"></i>Send All Emails
                     </button>
                 </div>
@@ -540,6 +540,15 @@
                 filesList.appendChild(fileCard);
             });
 
+            // Show/hide Send All Emails button based on email mappings
+            const hasAnyEmail = data.files.some(f => f.email);
+            const sendAllEmailsBtn = document.getElementById('sendAllEmailsBtn');
+            if (hasAnyEmail) {
+                sendAllEmailsBtn.classList.remove('hidden');
+            } else {
+                sendAllEmailsBtn.classList.add('hidden');
+            }
+
             // Show results section
             document.getElementById('resultsSection').classList.remove('hidden');
         }
@@ -838,6 +847,10 @@ Instructions:
                 const result = await response.json();
 
                 if (!response.ok) {
+                    // Check if it's an email configuration error
+                    if (result.configured === false) {
+                        throw new Error('Email not configured on server. Please set SENDER_EMAIL and SENDER_PASSWORD environment variables.');
+                    }
                     throw new Error(result.error || 'Failed to send emails');
                 }
 
@@ -845,7 +858,7 @@ Instructions:
                 const failCount = result.failed || 0;
 
                 if (failCount > 0) {
-                    showNotification(`Sent ${successCount} emails, ${failCount} failed`, 'warning');
+                    showNotification(`Sent ${successCount} emails, ${failCount} failed. Check console for details.`, 'warning');
                     console.error('Failed emails:', result.errors);
                 } else {
                     showNotification(`All ${successCount} emails sent successfully!`, 'success');
