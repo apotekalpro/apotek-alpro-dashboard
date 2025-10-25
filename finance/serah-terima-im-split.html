@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serah Terima IM Split</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .drag-drop-area {
+            transition: all 0.3s ease;
+        }
+        .drag-drop-area.drag-over {
+            background-color: #dbeafe;
+            border-color: #3b82f6;
+            transform: scale(1.02);
+        }
+        .file-item {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg shadow-lg p-6 mb-8 text-white">
+            <h1 class="text-3xl font-bold mb-2">
+                <i class="fas fa-file-excel mr-3"></i>Serah Terima IM Split
+            </h1>
+            <p class="text-purple-100">Upload Excel files to split by supplier and generate WhatsApp distribution links</p>
+        </div>
+
+        <!-- Instructions -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded">
+            <div class="flex items-start">
+                <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                <div>
+                    <h3 class="font-semibold text-blue-900 mb-2">How it works:</h3>
+                    <ol class="list-decimal list-inside text-blue-800 space-y-1">
+                        <li>Upload the completed IM Excel file</li>
+                        <li>Upload the WhatsApp group mapping file (Supplier → WA Group Name)</li>
+                        <li>System will delete unwanted columns (B, C, E, F, H, I, M, P, S, T, U)</li>
+                        <li>Files will be split by supplier with format: {SupplierName}_{Date}.xlsx</li>
+                        <li>Download individual files or bulk ZIP</li>
+                        <li>Use WhatsApp buttons to send files to designated groups</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="grid md:grid-cols-2 gap-6 mb-8">
+            <!-- Completed File Upload -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                    <i class="fas fa-file-upload mr-2 text-purple-600"></i>1. Upload Completed IM File
+                </h2>
+                <div id="dropZoneCompleted" class="drag-drop-area border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-purple-500 hover:bg-purple-50">
+                    <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Drag & drop your completed file here</p>
+                    <p class="text-sm text-gray-500 mb-4">or click to browse</p>
+                    <input type="file" id="fileInputCompleted" accept=".xlsx,.xls" class="hidden">
+                    <button id="btnChooseCompleted" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition">
+                        Choose File
+                    </button>
+                </div>
+                <div id="fileInfoCompleted" class="mt-4 hidden">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                        <span id="fileNameCompleted" class="text-green-800 font-medium"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WA Mapping Upload -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                    <i class="fas fa-address-book mr-2 text-green-600"></i>2. Upload WA Group Mapping (Optional)
+                </h2>
+                <div id="dropZoneWA" class="drag-drop-area border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-green-500 hover:bg-green-50">
+                    <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Drag & drop WA mapping file here</p>
+                    <p class="text-xs text-gray-500 mb-4">
+                        <strong>Format:</strong> Column A = Supplier Name<br>
+                        Column B = WhatsApp Target (see options below)
+                    </p>
+                    <input type="file" id="fileInputWA" accept=".xlsx,.xls" class="hidden">
+                    <button id="btnChooseWA" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition">
+                        Choose File
+                    </button>
+                </div>
+                <!-- WhatsApp Mapping Info -->
+                <div class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs">
+                    <p class="font-semibold text-blue-900 mb-2">📱 WhatsApp Target Options (Column B):</p>
+                    <ul class="text-blue-800 space-y-1">
+                        <li>✅ <strong>Group Invite Link:</strong> https://chat.whatsapp.com/XXXXX (Best - Opens directly)</li>
+                        <li>✅ <strong>Phone Number:</strong> +628123456789 (Opens chat directly)</li>
+                        <li>⚠️ <strong>Group Name:</strong> "Finance Group" (Requires manual search)</li>
+                    </ul>
+                    <button onclick="downloadMappingTemplate()" class="mt-2 text-xs bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded">
+                        <i class="fas fa-download mr-1"></i>Download Template
+                    </button>
+                </div>
+                <div id="fileInfoWA" class="mt-4 hidden">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                        <span id="fileNameWA" class="text-green-800 font-medium"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Mapping Upload -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">
+                    <i class="fas fa-envelope mr-2 text-blue-600"></i>3. Upload Email Mapping (Optional)
+                </h2>
+                <div id="dropZoneEmail" class="drag-drop-area border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50">
+                    <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Drag & drop email mapping file here</p>
+                    <p class="text-xs text-gray-500 mb-4">
+                        <strong>Format:</strong> Column A = Supplier Name<br>
+                        Column B = Email Address
+                    </p>
+                    <input type="file" id="fileInputEmail" accept=".xlsx,.xls" class="hidden">
+                    <button id="btnChooseEmail" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition">
+                        Choose File
+                    </button>
+                </div>
+                <div id="fileInfoEmail" class="mt-4 hidden">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                        <span id="fileNameEmail" class="text-green-800 font-medium"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Process Button -->
+        <div class="text-center mb-8">
+            <button id="processBtn" disabled class="bg-gray-400 text-white px-8 py-3 rounded-lg font-semibold text-lg cursor-not-allowed transition" onclick="processFiles()">
+                <i class="fas fa-cog mr-2"></i>Process & Split Files
+            </button>
+        </div>
+
+        <!-- Processing Status -->
+        <div id="processingStatus" class="hidden bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex items-center justify-center">
+                <div class="spinner mr-4"></div>
+                <div>
+                    <p class="text-lg font-semibold text-gray-800">Processing your files...</p>
+                    <p class="text-sm text-gray-600">Deleting columns, splitting by supplier, and generating files...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            <!-- Summary -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-chart-bar mr-2 text-indigo-600"></i>Processing Complete!
+                </h2>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="bg-indigo-50 rounded-lg p-4">
+                        <p class="text-sm text-indigo-600 mb-1">Total Suppliers</p>
+                        <p id="totalSuppliers" class="text-3xl font-bold text-indigo-800">0</p>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <p class="text-sm text-green-600 mb-1">Files Generated</p>
+                        <p id="totalFiles" class="text-3xl font-bold text-green-800">0</p>
+                    </div>
+                    <div class="bg-purple-50 rounded-lg p-4">
+                        <p class="text-sm text-purple-600 mb-1">Processing Date</p>
+                        <p id="processingDate" class="text-3xl font-bold text-purple-800">-</p>
+                    </div>
+                </div>
+                
+                <!-- Bulk Actions -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="downloadAll()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-lg transition">
+                        <i class="fas fa-download mr-2"></i>Download All Files (ZIP)
+                    </button>
+                    <button onclick="sendAllEmails()" id="sendAllEmailsBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition">
+                        <i class="fas fa-envelope-open-text mr-2"></i>Send All Emails
+                    </button>
+                </div>
+            </div>
+
+            <!-- Files List -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-bold mb-4 text-gray-800">
+                    <i class="fas fa-list mr-2 text-purple-600"></i>Split Files by Supplier
+                </h3>
+                <div id="filesList" class="space-y-3">
+                    <!-- Files will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        // Auto-detect the correct API base URL
+        const API_BASE = (() => {
+            const hostname = window.location.hostname;
+            const port = window.location.port;
+            const protocol = window.location.protocol;
+            
+            // Localhost development
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                return 'http://localhost:5002';
+            }
+            
+            // Sandbox environment (novita.ai)
+            if (hostname.includes('sandbox.novita.ai')) {
+                // Extract sandbox ID from hostname like: 8000-iuy38bzhv3g2h09erp5i1-cbeee0f9.sandbox.novita.ai
+                const sandboxId = hostname.split('-').slice(1).join('-');
+                return `https://5002-${sandboxId}`;
+            }
+            
+            // Production or other environments - assume API is on same host, different port
+            // You can customize this based on your actual production setup
+            return `${protocol}//${hostname}:5002`;
+        })();
+        
+        console.log('IM Splitter API Base URL:', API_BASE);
+
+        let completedFile = null;
+        let waFile = null;
+        let emailFile = null;
+        let splitResults = null;
+
+        // Setup drag and drop for completed file
+        const dropZoneCompleted = document.getElementById('dropZoneCompleted');
+        const fileInputCompleted = document.getElementById('fileInputCompleted');
+        const btnChooseCompleted = document.getElementById('btnChooseCompleted');
+
+        dropZoneCompleted.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZoneCompleted.classList.add('drag-over');
+        });
+
+        dropZoneCompleted.addEventListener('dragleave', () => {
+            dropZoneCompleted.classList.remove('drag-over');
+        });
+
+        dropZoneCompleted.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZoneCompleted.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleCompletedFile(files[0]);
+            }
+        });
+
+        // Only trigger on drop zone click, not button click
+        dropZoneCompleted.addEventListener('click', (e) => {
+            // Don't trigger if clicking the button
+            if (e.target === btnChooseCompleted || btnChooseCompleted.contains(e.target)) {
+                return;
+            }
+            fileInputCompleted.click();
+        });
+
+        // Button click handler
+        btnChooseCompleted.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent parent click event
+            fileInputCompleted.click();
+        });
+
+        fileInputCompleted.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleCompletedFile(e.target.files[0]);
+            }
+        });
+
+        // Setup drag and drop for WA mapping file
+        const dropZoneWA = document.getElementById('dropZoneWA');
+        const fileInputWA = document.getElementById('fileInputWA');
+        const btnChooseWA = document.getElementById('btnChooseWA');
+
+        dropZoneWA.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZoneWA.classList.add('drag-over');
+        });
+
+        dropZoneWA.addEventListener('dragleave', () => {
+            dropZoneWA.classList.remove('drag-over');
+        });
+
+        dropZoneWA.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZoneWA.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleWAFile(files[0]);
+            }
+        });
+
+        // Only trigger on drop zone click, not button click
+        dropZoneWA.addEventListener('click', (e) => {
+            // Don't trigger if clicking the button
+            if (e.target === btnChooseWA || btnChooseWA.contains(e.target)) {
+                return;
+            }
+            fileInputWA.click();
+        });
+
+        // Button click handler
+        btnChooseWA.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent parent click event
+            fileInputWA.click();
+        });
+
+        fileInputWA.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleWAFile(e.target.files[0]);
+            }
+        });
+
+        // Email file upload
+        const fileInputEmail = document.getElementById('fileInputEmail');
+        const btnChooseEmail = document.getElementById('btnChooseEmail');
+        const dropZoneEmail = document.getElementById('dropZoneEmail');
+
+        btnChooseEmail.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInputEmail.click();
+        });
+
+        dropZoneEmail.addEventListener('click', (e) => {
+            if (e.target === btnChooseEmail || btnChooseEmail.contains(e.target)) {
+                return;
+            }
+            fileInputEmail.click();
+        });
+
+        dropZoneEmail.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZoneEmail.classList.add('border-blue-500', 'bg-blue-50');
+        });
+
+        dropZoneEmail.addEventListener('dragleave', () => {
+            dropZoneEmail.classList.remove('border-blue-500', 'bg-blue-50');
+        });
+
+        dropZoneEmail.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZoneEmail.classList.remove('border-blue-500', 'bg-blue-50');
+            if (e.dataTransfer.files.length > 0) {
+                handleEmailFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInputEmail.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleEmailFile(e.target.files[0]);
+            }
+        });
+
+        function handleCompletedFile(file) {
+            if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                alert('Please upload an Excel file (.xlsx or .xls)');
+                // Reset file input
+                document.getElementById('fileInputCompleted').value = '';
+                return;
+            }
+
+            completedFile = file;
+            document.getElementById('fileNameCompleted').textContent = file.name;
+            document.getElementById('fileInfoCompleted').classList.remove('hidden');
+            checkProcessButton();
+            
+            // Reset file input to allow re-upload of same file if needed
+            document.getElementById('fileInputCompleted').value = '';
+        }
+
+        function handleWAFile(file) {
+            if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                alert('Please upload an Excel file (.xlsx or .xls)');
+                // Reset file input
+                document.getElementById('fileInputWA').value = '';
+                return;
+            }
+
+            waFile = file;
+            document.getElementById('fileNameWA').textContent = file.name;
+            document.getElementById('fileInfoWA').classList.remove('hidden');
+            checkProcessButton();
+            
+            // Reset file input to allow re-upload of same file if needed
+            document.getElementById('fileInputWA').value = '';
+        }
+
+        function handleEmailFile(file) {
+            if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                alert('Please upload an Excel file (.xlsx or .xls)');
+                // Reset file input
+                document.getElementById('fileInputEmail').value = '';
+                return;
+            }
+
+            emailFile = file;
+            document.getElementById('fileNameEmail').textContent = file.name;
+            document.getElementById('fileInfoEmail').classList.remove('hidden');
+            checkProcessButton();
+            
+            // Reset file input to allow re-upload of same file if needed
+            document.getElementById('fileInputEmail').value = '';
+        }
+
+        function checkProcessButton() {
+            const processBtn = document.getElementById('processBtn');
+            // Process button enabled if completed file is uploaded
+            // WA and Email mappings are optional
+            if (completedFile) {
+                processBtn.disabled = false;
+                processBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                processBtn.classList.add('bg-purple-600', 'hover:bg-purple-700', 'cursor-pointer');
+            }
+        }
+
+        async function processFiles() {
+            if (!completedFile) {
+                alert('Please upload the completed IM file');
+                return;
+            }
+
+            // Show processing status
+            document.getElementById('processingStatus').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('file', completedFile);
+            if (waFile) {
+                formData.append('wa_mapping', waFile);
+            }
+            if (emailFile) {
+                formData.append('email_mapping', emailFile);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/split-im-excel`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Processing failed');
+                }
+
+                splitResults = data;
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Error processing files: ${error.message}`);
+            } finally {
+                document.getElementById('processingStatus').classList.add('hidden');
+            }
+        }
+
+        function displayResults(data) {
+            // Update summary
+            document.getElementById('totalSuppliers').textContent = data.total_suppliers;
+            document.getElementById('totalFiles').textContent = data.files.length;
+            document.getElementById('processingDate').textContent = data.date;
+
+            // Display files list
+            const filesList = document.getElementById('filesList');
+            filesList.innerHTML = '';
+
+            data.files.forEach((file, index) => {
+                const fileCard = document.createElement('div');
+                fileCard.className = 'file-item border border-gray-200 rounded-lg p-4 hover:shadow-md transition';
+                
+                const hasWATarget = file.wa_target && file.wa_target.trim() !== '';
+                
+                fileCard.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-file-excel text-green-600 text-2xl mr-3"></i>
+                                <div>
+                                    <h4 class="font-semibold text-gray-800">${file.filename}</h4>
+                                    <p class="text-sm text-gray-600">${file.supplier}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 text-sm text-gray-600 ml-11">
+                                <span><i class="fas fa-box mr-1"></i>${file.row_count} rows</span>
+                                ${hasWATarget ? `<span class="text-green-600"><i class="fab fa-whatsapp mr-1"></i>${file.wa_target}</span>` : '<span class="text-orange-600"><i class="fas fa-exclamation-triangle mr-1"></i>No WA mapping</span>'}
+                                ${file.email ? `<span class="text-blue-600"><i class="fas fa-envelope mr-1"></i>${file.email}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2 ml-4">
+                            <button onclick="downloadFile('${file.filename}')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition">
+                                <i class="fas fa-download mr-1"></i>Download
+                            </button>
+                            ${hasWATarget ? `
+                                <button onclick="sendToWhatsAppWeb('${file.filename}', '${file.wa_target}', '${file.supplier_clean}')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm transition">
+                                    <i class="fab fa-whatsapp mr-1"></i>WA Web
+                                </button>
+                                <button onclick="sendToWhatsAppApp('${file.filename}', '${file.wa_target}', '${file.supplier_clean}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-sm transition">
+                                    <i class="fas fa-mobile-alt mr-1"></i>WA App
+                                </button>
+                            ` : ''}
+                            ${file.email ? `
+                                <button onclick="sendEmail('${file.filename}', '${file.email}', '${file.supplier_clean}')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm transition">
+                                    <i class="fas fa-envelope mr-1"></i>Send Email
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+
+                filesList.appendChild(fileCard);
+            });
+
+            // Show results section
+            document.getElementById('resultsSection').classList.remove('hidden');
+        }
+
+        function downloadAll() {
+            if (!splitResults) return;
+            
+            const tempDir = splitResults.temp_dir.startsWith('/') ? splitResults.temp_dir.substring(1) : splitResults.temp_dir;
+            const downloadUrl = `${API_BASE}/api/download-zip/${tempDir}/${splitResults.zip_filename}`;
+            window.open(downloadUrl, '_blank');
+        }
+
+        function downloadFile(filename) {
+            if (!splitResults) return;
+            
+            const tempDir = splitResults.temp_dir.startsWith('/') ? splitResults.temp_dir.substring(1) : splitResults.temp_dir;
+            const downloadUrl = `${API_BASE}/api/download-file/${tempDir}/${filename}`;
+            window.open(downloadUrl, '_blank');
+        }
+
+        async function sendToWhatsAppWeb(filename, waTarget, supplierClean) {
+            if (!waTarget) {
+                showNotification('No WhatsApp target mapped for this supplier', 'error');
+                return;
+            }
+
+            // First, download the file
+            downloadFile(filename);
+
+            // Wait a moment for download to start
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Generate WhatsApp message
+            const message = `Serah Terima IM - ${supplierClean}\n\nFile: ${filename}\n\nMohon di-download dan di-check. Terima kasih!`;
+            const encodedMessage = encodeURIComponent(message);
+
+            // Determine WhatsApp link based on target type
+            let waLink;
+            
+            // Check if waTarget is a WhatsApp group invite link
+            if (waTarget.includes('chat.whatsapp.com/')) {
+                // Extract invite code
+                const inviteCode = waTarget.split('chat.whatsapp.com/')[1];
+                waLink = `https://web.whatsapp.com/accept?code=${inviteCode}&text=${encodedMessage}`;
+            }
+            // Check if waTarget is a phone number (digits only, may have +)
+            else if (/^[+]?[0-9]{10,15}$/.test(waTarget.replace(/[-\s]/g, ''))) {
+                // Clean phone number
+                const phone = waTarget.replace(/[-\s]/g, '');
+                waLink = `https://web.whatsapp.com/send?phone=${phone}&text=${encodedMessage}`;
+            }
+            // Otherwise, it's a group name (fallback to search)
+            else {
+                waLink = `https://web.whatsapp.com/send?text=${encodedMessage}`;
+            }
+            
+            // Show instructions
+            showWhatsAppInstructions(waTarget, 'Web', filename);
+
+            // Open WhatsApp Web
+            window.open(waLink, '_blank');
+        }
+
+        async function sendToWhatsAppApp(filename, waTarget, supplierClean) {
+            if (!waTarget) {
+                showNotification('No WhatsApp target mapped for this supplier', 'error');
+                return;
+            }
+
+            // First, download the file
+            downloadFile(filename);
+
+            // Wait a moment for download to start
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Generate WhatsApp message
+            const message = `Serah Terima IM - ${supplierClean}\n\nFile: ${filename}\n\nMohon di-download dan di-check. Terima kasih!`;
+            const encodedMessage = encodeURIComponent(message);
+
+            // Determine WhatsApp link based on target type
+            let waLink;
+            
+            // Check if waTarget is a WhatsApp group invite link
+            if (waTarget.includes('chat.whatsapp.com/')) {
+                // For mobile app, use the full invite link directly
+                waLink = `${waTarget}?text=${encodedMessage}`;
+            }
+            // Check if waTarget is a phone number (digits only, may have +)
+            else if (/^[+]?[0-9]{10,15}$/.test(waTarget.replace(/[-\s]/g, ''))) {
+                // Clean phone number
+                const phone = waTarget.replace(/[-\s]/g, '');
+                waLink = `https://wa.me/${phone}?text=${encodedMessage}`;
+            }
+            // Otherwise, it's a group name (fallback to search)
+            else {
+                waLink = `https://wa.me/?text=${encodedMessage}`;
+            }
+            
+            // Show instructions
+            showWhatsAppInstructions(waTarget, 'App', filename);
+
+            // Open WhatsApp App
+            window.open(waLink, '_blank');
+        }
+
+        function showWhatsAppInstructions(waTarget, type, filename) {
+            const instructionDiv = document.createElement('div');
+            instructionDiv.className = 'fixed top-4 right-4 bg-green-50 border-l-4 border-green-500 p-4 rounded shadow-lg max-w-md z-50';
+            
+            // Determine if target is invite link, phone number, or group name
+            const isInviteLink = waTarget.includes('chat.whatsapp.com/');
+            const isPhoneNumber = /^[+]?[0-9]{10,15}$/.test(waTarget.replace(/[-\s]/g, ''));
+            
+            let targetInfo = '';
+            if (isInviteLink) {
+                targetInfo = '<li>✅ Opening directly via group invite link</li>';
+            } else if (isPhoneNumber) {
+                targetInfo = `<li>✅ Opening chat with: <strong>${waTarget}</strong></li>`;
+            } else {
+                targetInfo = `<li>⚠️ Manual search required for: <strong>${waTarget}</strong></li>`;
+            }
+            
+            const webInstructions = `
+                <ol class="text-sm text-green-700 space-y-1 list-decimal list-inside">
+                    <li>📥 Downloaded: <strong>${filename}</strong></li>
+                    ${targetInfo}
+                    <li>📎 Click attachment icon and upload the file</li>
+                    <li>✉️ Click Send ➤</li>
+                </ol>
+            `;
+            
+            const appInstructions = `
+                <ol class="text-sm text-green-700 space-y-1 list-decimal list-inside">
+                    <li>📥 Downloaded: <strong>${filename}</strong></li>
+                    ${targetInfo}
+                    <li>📎 Click attachment icon and select the file</li>
+                    <li>✉️ Click Send ➤</li>
+                </ol>
+            `;
+            
+            // Add copy filename button
+            const copyButton = `
+                <button onclick="copyToClipboard('${filename}')" class="mt-2 text-xs bg-green-100 hover:bg-green-200 px-3 py-1 rounded">
+                    <i class="fas fa-copy mr-1"></i>Copy filename
+                </button>
+            `;
+            
+            instructionDiv.innerHTML = `
+                <div class="flex items-start">
+                    <i class="fab fa-whatsapp text-green-600 text-2xl mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="font-semibold text-green-800 mb-2">
+                            ${type === 'Web' ? '🌐 WhatsApp Web' : '📱 WhatsApp App'} Instructions
+                        </h4>
+                        ${type === 'Web' ? webInstructions : appInstructions}
+                        ${copyButton}
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="mt-3 text-green-600 hover:text-green-800 text-sm font-semibold">
+                            <i class="fas fa-times mr-1"></i>Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(instructionDiv);
+
+            // Auto-remove after 25 seconds
+            setTimeout(() => {
+                if (instructionDiv.parentElement) {
+                    instructionDiv.remove();
+                }
+            }, 25000);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification(`Copied: ${text}`, 'success');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
+        function downloadMappingTemplate() {
+            // Create a simple CSV template
+            const csvContent = `Supplier Name,WhatsApp Target,Notes
+"Example: PV001 - PT MARGA NUSANTARA JAYA","https://chat.whatsapp.com/XXXXX","Recommended: Use group invite link"
+"Example: PT SUPPLIER ABC","+628123456789","Alternative: Use phone number for direct chat"
+"Example: CV SUPPLIER XYZ","Finance Group Name","Fallback: Group name (requires manual search)"
+
+Instructions:
+- Column A: Enter the exact supplier name as it appears in the IM file
+- Column B: Enter one of these options:
+  1. WhatsApp Group Invite Link (https://chat.whatsapp.com/XXXXX) - BEST OPTION - Opens group directly
+  2. Phone Number (+628123456789) - Opens individual/group chat directly
+  3. Group Name ("Finance Group") - Requires manual search in WhatsApp
+- Delete these example rows and add your actual suppliers
+- Save as .xlsx file before uploading`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'WA_Mapping_Template.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification('Template downloaded! Open in Excel and save as .xlsx', 'success');
+        }
+
+        // Email Functions
+        async function sendEmail(filename, email, supplierName) {
+            if (!email) {
+                showNotification('No email address mapped for this supplier', 'error');
+                return;
+            }
+
+            const confirmSend = confirm(`Send file "${filename}" to ${email}?`);
+            if (!confirmSend) return;
+
+            try {
+                const emailData = {
+                    emails: [{
+                        to: email,
+                        subject: `Serah Terima IM - ${supplierName}`,
+                        body: `Dear ${supplierName},\n\nPlease find attached your Serah Terima IM document.\n\nFile: ${filename}\n\nBest regards,\nApotek Alpro Finance Team`,
+                        files: [{ filename: filename }]
+                    }],
+                    temp_dir: splitResults.temp_dir
+                };
+
+                showNotification('Sending email...', 'info');
+
+                const response = await fetch(`${API_BASE}/api/send-emails`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(emailData)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to send email');
+                }
+
+                if (result.success) {
+                    showNotification(`Email sent successfully to ${email}!`, 'success');
+                } else {
+                    throw new Error(result.errors[0]?.error || 'Failed to send email');
+                }
+
+            } catch (error) {
+                console.error('Error sending email:', error);
+                showNotification(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function sendAllEmails() {
+            if (!splitResults || !splitResults.files) {
+                showNotification('No files to send', 'error');
+                return;
+            }
+
+            // Filter files that have email addresses
+            const filesWithEmail = splitResults.files.filter(f => f.email);
+
+            if (filesWithEmail.length === 0) {
+                showNotification('No email mappings found. Please upload an email mapping file.', 'warning');
+                return;
+            }
+
+            const confirmSend = confirm(`Send ${filesWithEmail.length} emails to suppliers?`);
+            if (!confirmSend) return;
+
+            try {
+                // Prepare email data
+                const emailData = {
+                    emails: filesWithEmail.map(file => ({
+                        to: file.email,
+                        subject: `Serah Terima IM - ${file.supplier_clean}`,
+                        body: `Dear ${file.supplier_clean},\n\nPlease find attached your Serah Terima IM document.\n\nFile: ${file.filename}\n\nBest regards,\nApotek Alpro Finance Team`,
+                        files: [{ filename: file.filename }]
+                    })),
+                    temp_dir: splitResults.temp_dir
+                };
+
+                showNotification(`Sending ${filesWithEmail.length} emails...`, 'info');
+
+                const response = await fetch(`${API_BASE}/api/send-emails`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(emailData)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to send emails');
+                }
+
+                const successCount = result.sent || 0;
+                const failCount = result.failed || 0;
+
+                if (failCount > 0) {
+                    showNotification(`Sent ${successCount} emails, ${failCount} failed`, 'warning');
+                    console.error('Failed emails:', result.errors);
+                } else {
+                    showNotification(`All ${successCount} emails sent successfully!`, 'success');
+                }
+
+            } catch (error) {
+                console.error('Error sending emails:', error);
+                showNotification(`Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
