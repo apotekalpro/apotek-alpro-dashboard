@@ -934,7 +934,13 @@
                     });
                     tracker.accumulatedBalance += balance;
                     
-                    console.log(`CDM ${outletCode} ${dateStr}: Gross ${grossAmount}, Rounded ${roundedAmount}, Balance ${balance}, Accumulated ${tracker.accumulatedBalance}`);\n                }\n            }\n            \n            console.log(`Tracked CDM balances for ${cdmBalanceTracker.size} outlets`);\n            return cdmBalanceTracker;\n        }
+                    console.log(`CDM ${outletCode} ${dateStr}: Gross ${grossAmount}, Rounded ${roundedAmount}, Balance ${balance}, Accumulated ${tracker.accumulatedBalance}`);
+                }
+            }
+            
+            console.log(`Tracked CDM balances for ${cdmBalanceTracker.size} outlets`);
+            return cdmBalanceTracker;
+        }
         
         // Main reconciliation function
         async function startReconciliation() {
