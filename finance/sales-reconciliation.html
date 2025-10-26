@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Reconciliation - Apotek Alpro</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .upload-zone {
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            background: #f7fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+
+        .upload-zone.has-file {
+            border-color: #10b981;
+            background: #ecfdf5;
+        }
+
+        .upload-zone.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .result-table {
+            max-height: 500px;
+            overflow: auto;
+        }
+
+        .result-table table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .result-table th {
+            position: sticky;
+            top: 0;
+            background: #4f46e5;
+            color: white;
+            z-index: 10;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #4f46e5;
+            border: 2px solid #4f46e5;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            transition: width 0.3s ease;
+        }
+
+        .tab-button {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            background: #f3f4f6;
+            color: #6b7280;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="card">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-calculator mr-3 text-indigo-600"></i>
+                        Sales Reconciliation System
+                    </h1>
+                    <p class="text-gray-600 mt-2">BCA Statement reconciliation with transaction summary matching</p>
+                </div>
+                <button onclick="resetAll()" class="btn-secondary">
+                    <i class="fas fa-redo mr-2"></i>Reset All
+                </button>
+            </div>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="card">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-upload mr-2 text-indigo-600"></i>
+                Step 1: Upload Required Files
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- File 1: Transaction Summary ACMM -->
+                <div class="upload-container">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        1. Transaction Summary ACMM
+                    </label>
+                    <div class="upload-zone" id="upload-zone-1" onclick="document.getElementById('file-1').click()">
+                        <input type="file" id="file-1" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(1, this.files[0])">
+                        <div class="p-4 text-center">
+                            <i class="fas fa-file-excel text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600" id="file-name-1">Click to upload Excel file</p>
+                            <p class="text-xs text-gray-400 mt-1" id="file-status-1"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File 2: BCA Statement -->
+                <div class="upload-container">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        2. BCA Statement (Master)
+                        <span class="text-red-500">*</span>
+                    </label>
+                    <div class="upload-zone" id="upload-zone-2" onclick="document.getElementById('file-2').click()">
+                        <input type="file" id="file-2" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(2, this.files[0])">
+                        <div class="p-4 text-center">
+                            <i class="fas fa-file-excel text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600" id="file-name-2">Click to upload Excel file</p>
+                            <p class="text-xs text-gray-400 mt-1" id="file-status-2"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File 3: Master MID Outlet -->
+                <div class="upload-container">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        3. Master MID Outlet
+                    </label>
+                    <div class="upload-zone" id="upload-zone-3" onclick="document.getElementById('file-3').click()">
+                        <input type="file" id="file-3" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(3, this.files[0])">
+                        <div class="p-4 text-center">
+                            <i class="fas fa-file-excel text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600" id="file-name-3">Click to upload Excel file</p>
+                            <p class="text-xs text-gray-400 mt-1" id="file-status-3"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File 4: Master Kartu Debit Outlet -->
+                <div class="upload-container">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        4. Master Kartu Debit Outlet
+                    </label>
+                    <div class="upload-zone" id="upload-zone-4" onclick="document.getElementById('file-4').click()">
+                        <input type="file" id="file-4" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(4, this.files[0])">
+                        <div class="p-4 text-center">
+                            <i class="fas fa-file-excel text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600" id="file-name-4">Click to upload Excel file</p>
+                            <p class="text-xs text-gray-400 mt-1" id="file-status-4"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File 5: Merchant Rate Matching Checker -->
+                <div class="upload-container">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        5. Merchant Rate Matching Checker
+                    </label>
+                    <div class="upload-zone" id="upload-zone-5" onclick="document.getElementById('file-5').click()">
+                        <input type="file" id="file-5" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(5, this.files[0])">
+                        <div class="p-4 text-center">
+                            <i class="fas fa-file-excel text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600" id="file-name-5">Click to upload Excel file</p>
+                            <p class="text-xs text-gray-400 mt-1" id="file-status-5"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File 6: Master BCA Cabang x Alpro Matching -->
+                <div class="upload-container">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        6. Master BCA Cabang x Alpro
+                    </label>
+                    <div class="upload-zone" id="upload-zone-6" onclick="document.getElementById('file-6').click()">
+                        <input type="file" id="file-6" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(6, this.files[0])">
+                        <div class="p-4 text-center">
+                            <i class="fas fa-file-excel text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600" id="file-name-6">Click to upload Excel file</p>
+                            <p class="text-xs text-gray-400 mt-1" id="file-status-6"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="mt-6">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-semibold text-gray-700">Upload Progress</span>
+                    <span class="text-sm text-gray-600" id="upload-progress-text">0/6 files uploaded</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Process Button -->
+        <div class="card">
+            <button onclick="startReconciliation()" id="process-btn" class="btn-primary w-full" disabled>
+                <i class="fas fa-cogs mr-2"></i>
+                Start Reconciliation Process
+            </button>
+            <div class="mt-4 hidden" id="processing-status">
+                <div class="flex items-center justify-center">
+                    <div class="loading-spinner mr-4"></div>
+                    <span class="text-gray-700 font-semibold" id="processing-text">Processing...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="card hidden" id="results-section">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-chart-bar mr-2 text-indigo-600"></i>
+                Reconciliation Results
+            </h2>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-blue-600 font-semibold">Total Records</p>
+                            <p class="text-2xl font-bold text-blue-800" id="total-records">0</p>
+                        </div>
+                        <i class="fas fa-file-alt text-3xl text-blue-400"></i>
+                    </div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-green-600 font-semibold">Matched</p>
+                            <p class="text-2xl font-bold text-green-800" id="matched-count">0</p>
+                        </div>
+                        <i class="fas fa-check-circle text-3xl text-green-400"></i>
+                    </div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-red-600 font-semibold">Unmatched</p>
+                            <p class="text-2xl font-bold text-red-800" id="unmatched-count">0</p>
+                        </div>
+                        <i class="fas fa-times-circle text-3xl text-red-400"></i>
+                    </div>
+                </div>
+                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-yellow-600 font-semibold">Match Rate</p>
+                            <p class="text-2xl font-bold text-yellow-800" id="match-rate">0%</p>
+                        </div>
+                        <i class="fas fa-percentage text-3xl text-yellow-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Tabs -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button class="tab-button active" onclick="showResultTab('all')">
+                    <i class="fas fa-list mr-2"></i>All Results
+                </button>
+                <button class="tab-button" onclick="showResultTab('cdm')">
+                    <i class="fas fa-money-bill-wave mr-2"></i>CDM (Cash)
+                </button>
+                <button class="tab-button" onclick="showResultTab('creditcard')">
+                    <i class="fas fa-credit-card mr-2"></i>Credit Card
+                </button>
+                <button class="tab-button" onclick="showResultTab('qris')">
+                    <i class="fas fa-qrcode mr-2"></i>QRIS
+                </button>
+                <button class="tab-button" onclick="showResultTab('debit')">
+                    <i class="fas fa-credit-card mr-2"></i>Debit Card
+                </button>
+                <button class="tab-button" onclick="showResultTab('setoran')">
+                    <i class="fas fa-hand-holding-usd mr-2"></i>Setoran Tunai
+                </button>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button onclick="exportResults('all')" class="btn-secondary">
+                    <i class="fas fa-download mr-2"></i>Export All
+                </button>
+                <button onclick="exportResults('matched')" class="btn-secondary">
+                    <i class="fas fa-check mr-2"></i>Export Matched
+                </button>
+                <button onclick="exportResults('unmatched')" class="btn-secondary">
+                    <i class="fas fa-times mr-2"></i>Export Unmatched
+                </button>
+                <button onclick="exportResults('cdm')" class="btn-secondary">
+                    <i class="fas fa-money-bill-wave mr-2"></i>Export CDM
+                </button>
+                <button onclick="exportResults('creditcard')" class="btn-secondary">
+                    <i class="fas fa-credit-card mr-2"></i>Export Credit Card
+                </button>
+                <button onclick="exportResults('qris')" class="btn-secondary">
+                    <i class="fas fa-qrcode mr-2"></i>Export QRIS
+                </button>
+                <button onclick="exportResults('debit')" class="btn-secondary">
+                    <i class="fas fa-credit-card mr-2"></i>Export Debit
+                </button>
+                <button onclick="exportResults('setoran')" class="btn-secondary">
+                    <i class="fas fa-hand-holding-usd mr-2"></i>Export Setoran
+                </button>
+            </div>
+
+            <!-- Results Table -->
+            <div class="result-table">
+                <table class="w-full text-sm" id="results-table">
+                    <thead>
+                        <tr>
+                            <th class="px-4 py-3 text-left">#</th>
+                            <th class="px-4 py-3 text-left">BCA Date</th>
+                            <th class="px-4 py-3 text-left">Transaction Type</th>
+                            <th class="px-4 py-3 text-left">Outlet Code</th>
+                            <th class="px-4 py-3 text-left">BCA Amount</th>
+                            <th class="px-4 py-3 text-left">ACMM Amount</th>
+                            <th class="px-4 py-3 text-left">Difference</th>
+                            <th class="px-4 py-3 text-left">Status</th>
+                            <th class="px-4 py-3 text-left">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-tbody">
+                        <tr>
+                            <td colspan="9" class="text-center py-8 text-gray-500">
+                                No results to display. Please upload files and start reconciliation.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let uploadedFiles = {};
+        let reconciliationResults = [];
+        let currentTab = 'all';
+
+        // File upload handler
+        function handleFileUpload(fileNumber, file) {
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+                    uploadedFiles[fileNumber] = {
+                        name: file.name,
+                        data: jsonData,
+                        workbook: workbook
+                    };
+
+                    // Update UI
+                    const zone = document.getElementById(`upload-zone-${fileNumber}`);
+                    const fileName = document.getElementById(`file-name-${fileNumber}`);
+                    const fileStatus = document.getElementById(`file-status-${fileNumber}`);
+
+                    zone.classList.add('has-file');
+                    fileName.textContent = file.name;
+                    fileStatus.innerHTML = `<span class="status-badge status-success"><i class="fas fa-check mr-1"></i>Uploaded (${jsonData.length} rows)</span>`;
+
+                    updateProgress();
+                } catch (error) {
+                    console.error('Error reading file:', error);
+                    const zone = document.getElementById(`upload-zone-${fileNumber}`);
+                    const fileStatus = document.getElementById(`file-status-${fileNumber}`);
+                    zone.classList.add('error');
+                    fileStatus.innerHTML = `<span class="status-badge status-error"><i class="fas fa-exclamation-triangle mr-1"></i>Error reading file</span>`;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const uploadedCount = Object.keys(uploadedFiles).length;
+            const progressPercent = (uploadedCount / 6) * 100;
+            document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+            document.getElementById('upload-progress-text').textContent = `${uploadedCount}/6 files uploaded`;
+
+            // Enable process button if BCA statement is uploaded
+            if (uploadedFiles[2]) {
+                document.getElementById('process-btn').disabled = false;
+            }
+        }
+
+        // Parse date from various formats
+        function parseDate(dateValue) {
+            if (!dateValue) return null;
+            
+            // If it's already a Date object
+            if (dateValue instanceof Date) return dateValue;
+            
+            // If it's a string
+            if (typeof dateValue === 'string') {
+                // Try DD/MM format
+                const parts = dateValue.trim().split('/');
+                if (parts.length === 2) {
+                    const day = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1;
+                    const year = new Date().getFullYear();
+                    return new Date(year, month, day);
+                }
+                
+                // Try standard date parsing
+                const parsed = new Date(dateValue);
+                if (!isNaN(parsed.getTime())) return parsed;
+            }
+            
+            // If it's an Excel serial number
+            if (typeof dateValue === 'number') {
+                const excelEpoch = new Date(1899, 11, 30);
+                return new Date(excelEpoch.getTime() + dateValue * 86400000);
+            }
+            
+            return null;
+        }
+
+        // Subtract one day from date
+        function subtractOneDay(date) {
+            const newDate = new Date(date);
+            newDate.setDate(newDate.getDate() - 1);
+            return newDate;
+        }
+
+        // Format date as DD/MM
+        function formatDate(date) {
+            if (!date) return '';
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            return `${day}/${month}`;
+        }
+
+        // Parse outlet code from description (JKJSKR1) format
+        function parseOutletCode(description) {
+            if (!description) return null;
+            const match = description.match(/\(([^)]+)\)/);
+            return match ? match[1] : null;
+        }
+
+        // Extract last N digits from a string
+        function extractLastDigits(str, n) {
+            if (!str) return '';
+            const cleaned = str.toString().replace(/\D/g, '');
+            return cleaned.slice(-n);
+        }
+
+        // Parse amount from BCA statement (handles CR suffix and decimal)
+        function parseBCAAmount(amountStr) {
+            if (!amountStr) return 0;
+            
+            // Convert to string and clean up
+            let cleanAmount = amountStr.toString().trim();
+            
+            // Remove "CR" suffix if present
+            cleanAmount = cleanAmount.replace(/\s*CR\s*$/i, '');
+            
+            // Remove any non-numeric characters except decimal point and minus
+            cleanAmount = cleanAmount.replace(/[^0-9.-]/g, '');
+            
+            // Parse to float
+            const amount = parseFloat(cleanAmount) || 0;
+            
+            return amount;
+        }
+
+        // Round down to nearest 50,000
+        function roundDownTo50k(amount) {
+            return Math.floor(amount / 50000) * 50000;
+        }
+
+        // Parse BCA description for CDM
+        function parseCDM(description) {
+            const cdmMatch = description.match(/SETORAN VIA CDM.*?(\d{12,})/i);
+            if (cdmMatch) {
+                return extractLastDigits(cdmMatch[1], 12);
+            }
+            return null;
+        }
+
+        // Parse BCA description for Credit Card MID
+        function parseCreditCardMID(description) {
+            const midMatch = description.match(/KARTU KREDIT.*?MID:(\d+)/i);
+            if (midMatch) {
+                return extractLastDigits(midMatch[1], 7);
+            }
+            return null;
+        }
+
+        // Parse BCA description for QRIS MID
+        function parseQRIS(description) {
+            if (description.includes('QR :')) {
+                const midMatch = description.match(/MID\s*:\s*(\d+)/i);
+                if (midMatch) {
+                    return extractLastDigits(midMatch[1], 7);
+                }
+            }
+            return null;
+        }
+
+        // Parse BCA description for Debit Card MID
+        function parseDebitCard(description) {
+            const krMatch = description.match(/KR OTOMATIS.*?MID\s*:\s*(\d+)/i);
+            if (krMatch && !description.includes('QR :')) {
+                return extractLastDigits(krMatch[1], 7);
+            }
+            return null;
+        }
+
+        // Parse BCA description for Setoran Tunai outlet
+        function parseSetoranTunai(description) {
+            const setoranMatch = description.match(/SETORAN TUNAI.*?([A-Z0-9]{6,})/i);
+            if (setoranMatch) {
+                return setoranMatch[1];
+            }
+            return null;
+        }
+
+        // Determine transaction type from BCA description
+        function determineTransactionType(description) {
+            if (!description) return 'UNKNOWN';
+            
+            if (description.includes('SETORAN VIA CDM')) return 'CDM';
+            if (description.includes('KARTU KREDIT')) return 'CREDITCARD';
+            if (description.includes('QR :')) return 'QRIS';
+            if (description.includes('KR OTOMATIS') && !description.includes('QR :')) return 'DEBIT';
+            if (description.includes('SETORAN TUNAI')) return 'SETORAN_TUNAI';
+            
+            return 'OTHER';
+        }
+
+        // Build lookup maps from master files
+        function buildMasterLookups() {
+            const lookups = {
+                kartuDebit: new Map(),
+                mid: new Map(),
+                cabang: new Map(),
+                merchantRate: {
+                    byCard: new Map(),
+                    byPaymentType: new Map()
+                }
+            };
+
+            console.log('=== Building Master Lookups ===');
+
+            // Master Kartu Debit Outlet (File 4)
+            if (uploadedFiles[4]) {
+                const data = uploadedFiles[4].data;
+                console.log(`Processing Kartu Debit file: ${data.length - 1} rows`);
+                for (let i = 1; i < data.length; i++) {
+                    const row = data[i];
+                    const kartuDebit = extractLastDigits(row[5], 12); // Column F (index 5)
+                    const outletCode = row[6]; // Column G (index 6)
+                    if (kartuDebit && outletCode) {
+                        lookups.kartuDebit.set(kartuDebit, outletCode);
+                    }
+                }
+                console.log(`Loaded ${lookups.kartuDebit.size} Kartu Debit mappings`);
+            }
+
+            // Master MID Outlet (File 3)
+            if (uploadedFiles[3]) {
+                const data = uploadedFiles[3].data;
+                console.log(`Processing MID file: ${data.length - 1} rows`);
+                console.log('Sample header row:', data[0]);
+                
+                for (let i = 1; i < data.length; i++) {
+                    const row = data[i];
+                    // Extract last 7 digits from Column D MID
+                    const midFull = row[3]?.toString() || '';
+                    const mid = extractLastDigits(midFull, 7);
+                    const outletCode = row[4]; // Column E (index 4)
+                    
+                    if (mid && outletCode) {
+                        lookups.mid.set(mid, outletCode);
+                        // Debug first few entries
+                        if (i <= 3) {
+                            console.log(`MID mapping [${i}]: Full="${midFull}" -> Last7="${mid}" -> Outlet="${outletCode}"`);
+                        }
+                    }
+                }
+                console.log(`Loaded ${lookups.mid.size} MID mappings`);
+                // Show some sample MIDs
+                const sampleMIDs = Array.from(lookups.mid.keys()).slice(0, 10);
+                console.log('Sample MIDs in lookup:', sampleMIDs);
+            }
+
+            // Master BCA Cabang (File 6)
+            if (uploadedFiles[6]) {
+                const data = uploadedFiles[6].data;
+                console.log(`Processing Cabang file: ${data.length - 1} rows`);
+                console.log('Sample header row:', data[0]);
+                
+                // Try to detect correct columns - look at first few rows
+                for (let i = 1; i < Math.min(5, data.length); i++) {
+                    console.log(`Cabang row ${i}:`, data[i].slice(0, 6));
+                }
+                
+                // Parse all rows - try multiple column combinations
+                for (let i = 1; i < data.length; i++) {
+                    const row = data[i];
+                    
+                    // Try different column indices (user's file structure may vary)
+                    // Option 1: Column A (index 0) = cabang code
+                    let cabangCode = row[0]?.toString() || '';
+                    let outletCode = row[1]?.toString() || '';
+                    
+                    // Option 2: If first option doesn't look right, try Column B (index 1) and Column C (index 2)
+                    if (!cabangCode || cabangCode === '') {
+                        cabangCode = row[1]?.toString() || '';
+                        outletCode = row[2]?.toString() || '';
+                    }
+                    
+                    // Option 3: Try Column C (index 2) and Column D (index 3) - original logic
+                    if (!cabangCode || cabangCode === '') {
+                        cabangCode = row[2]?.toString() || '';
+                        outletCode = row[3]?.toString() || '';
+                    }
+                    
+                    // Convert cabang code to string and handle numeric codes
+                    cabangCode = cabangCode.toString().trim();
+                    outletCode = outletCode?.toString().trim();
+                    
+                    if (cabangCode && outletCode) {
+                        // Store with string key to handle numeric codes like "6355", "75", etc.
+                        lookups.cabang.set(cabangCode, outletCode);
+                        if (i <= 3) {
+                            console.log(`Cabang mapping [${i}]: Cabang="${cabangCode}" -> Outlet="${outletCode}"`);
+                        }
+                    }
+                }
+                console.log(`Loaded ${lookups.cabang.size} Cabang mappings`);
+                // Show some sample cabang codes
+                const sampleCabang = Array.from(lookups.cabang.keys()).slice(0, 20);
+                console.log('Sample Cabang codes in lookup:', sampleCabang);
+            }
+
+            // Merchant Rate Checker (File 5)
+            if (uploadedFiles[5]) {
+                const data = uploadedFiles[5].data;
+                console.log(`Processing Merchant Rate file: ${data.length - 1} rows`);
+                
+                for (let i = 1; i < data.length; i++) {
+                    const row = data[i];
+                    const cardLast6 = row[0]?.toString() || ''; // Column A - last 6 digits of card
+                    const paymentType = row[1]?.toString() || ''; // Column B - payment type description
+                    const rate = parseFloat(row[2]) || 0; // Column C - merchant rate
+                    
+                    // For card number matching (Column A) - STORE BOTH RATE AND PAYMENT TYPE OVERRIDE
+                    if (cardLast6 && cardLast6 !== '000000') {
+                        // Store card-specific rate AND the correct payment type for override
+                        lookups.merchantRate.byCard.set(cardLast6, {
+                            rate: rate,
+                            paymentType: paymentType // Store correct payment type for override
+                        });
+                    }
+                    
+                    // For payment type matching (Column B) - PRIORITY!
+                    if (paymentType) {
+                        const paymentUpper = paymentType.toUpperCase();
+                        // Store with exact payment type as key
+                        // If multiple rates for same type, last one wins (but shouldn't happen in clean data)
+                        if (!lookups.merchantRate.byPaymentType.has(paymentUpper) || cardLast6 === '000000') {
+                            // Priority: 000000 entries (general rules) or first occurrence
+                            lookups.merchantRate.byPaymentType.set(paymentUpper, rate);
+                        }
+                    }
+                }
+                console.log(`Loaded ${lookups.merchantRate.byCard.size} card-specific rates with payment type overrides`);
+                console.log(`Loaded ${lookups.merchantRate.byPaymentType.size} payment type rates`);
+            }
+
+            console.log('=== Lookup Building Complete ===');
+            return lookups;
+        }
+
+        // Pivot Transaction Summary by date, outlet, and payment method
+        function pivotTransactionSummary(lookups) {
+            if (!uploadedFiles[1]) return new Map();
+
+            const pivotMap = new Map();
+            const data = uploadedFiles[1].data;
+
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                const date = parseDate(row[0]); // Column A
+                const storeName = row[2]; // Column C
+                let paymentMethod = row[5]; // Column F - may be overridden by card number match
+                const cardNum = row[6]; // Column G
+                const amount = parseFloat(row[13]) || 0; // Column N (index 13)
+                const commission = parseFloat(row[10]) || 0; // Column K (index 10)
+
+                if (!date || !storeName) continue;
+
+                const outletCode = parseOutletCode(storeName);
+                if (!outletCode) continue;
+
+                // Determine merchant rate and apply card number overrides
+                let merchantRate = 0;
+                const cardLast6 = extractLastDigits(cardNum, 6);
+                let matchSource = '';
+                let paymentTypeOverridden = false;
+                
+                // Priority 0: CARD NUMBER OVERRIDE - If card matches, override payment type AND rate
+                // This fixes incorrect payment types entered by team
+                if (cardLast6 && cardLast6 !== '000000' && lookups.merchantRate.byCard.has(cardLast6)) {
+                    const cardMatch = lookups.merchantRate.byCard.get(cardLast6);
+                    merchantRate = cardMatch.rate;
+                    const originalPaymentMethod = paymentMethod;
+                    paymentMethod = cardMatch.paymentType; // OVERRIDE with correct payment type
+                    matchSource = `card ${cardLast6} (override)`;
+                    paymentTypeOverridden = true;
+                    
+                    if (originalPaymentMethod !== paymentMethod) {
+                        console.log(`Payment type override: Card ${cardLast6} - "${originalPaymentMethod}" -> "${paymentMethod}" (rate: ${merchantRate}%)`);
+                    }
+                }
+                // Priority 1: For QRIS, ALWAYS use payment type (not card number) - unless already overridden
+                else if (paymentMethod && paymentMethod.toUpperCase() === 'QRIS') {
+                    if (lookups.merchantRate.byPaymentType.has('QRIS')) {
+                        merchantRate = lookups.merchantRate.byPaymentType.get('QRIS');
+                        matchSource = 'QRIS type';
+                    }
+                }
+                // Priority 2: Check by payment type description
+                else if (paymentMethod) {
+                    const paymentUpper = paymentMethod.toUpperCase();
+                    // Try exact match first
+                    if (lookups.merchantRate.byPaymentType.has(paymentUpper)) {
+                        merchantRate = lookups.merchantRate.byPaymentType.get(paymentUpper);
+                        matchSource = `type ${paymentUpper}`;
+                    } else {
+                        // Try partial match (for generic types)
+                        for (let [key, rate] of lookups.merchantRate.byPaymentType) {
+                            if (paymentUpper.includes(key) || key.includes(paymentUpper)) {
+                                merchantRate = rate;
+                                matchSource = `partial ${key}`;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Calculate net amount after commission
+                let netAmount = amount;
+                if (merchantRate > 0) {
+                    netAmount = amount - (amount * merchantRate / 100);
+                } else if (commission > 0) {
+                    netAmount = amount - commission;
+                }
+
+                // Create pivot key
+                const dateStr = formatDate(date);
+                const key = `${dateStr}|${outletCode}|${paymentMethod}`;
+
+                if (!pivotMap.has(key)) {
+                    pivotMap.set(key, {
+                        date: date,
+                        outletCode: outletCode,
+                        paymentMethod: paymentMethod,
+                        amount: 0,
+                        netAmount: 0,
+                        merchantRate: 0,
+                        count: 0,
+                        transactions: []
+                    });
+                }
+
+                const pivot = pivotMap.get(key);
+                pivot.amount += amount;
+                pivot.netAmount += netAmount;
+                pivot.merchantRate = merchantRate; // Store the rate used
+                pivot.count++;
+                pivot.transactions.push({
+                    cardNum: cardNum,
+                    amount: amount,
+                    netAmount: netAmount,
+                    merchantRate: merchantRate,
+                    commission: commission
+                });
+            }
+
+            return pivotMap;
+        }
+
+        // Calculate CDM balances and match with Setoran Tunai
+        // This function tracks the accumulated "balance" from CDM rounding over multiple days
+        // and matches it with Setoran Tunai transactions
+        function buildCDMBalanceTracker(lookups, pivotMap) {
+            // Returns a map that tracks accumulated CDM balances by outlet
+            // Key: outlet code
+            // Value: { balanceHistory: [{date, balance}], lastSetoranDate: date }
+            const cdmBalanceTracker = new Map();
+            
+            console.log('=== Building CDM Balance Tracker ===');
+            
+            // Go through all pivoted ACMM CASH transactions to find CDM balances
+            for (const [key, pivot] of pivotMap.entries()) {
+                const parts = key.split('|');
+                const dateStr = parts[0];
+                const outletCode = parts[1];
+                const paymentMethod = parts[2];
+                
+                if (paymentMethod === 'CASH') {
+                    // This is a CDM transaction
+                    const grossAmount = pivot.amount;
+                    const roundedAmount = roundDownTo50k(grossAmount);
+                    const balance = grossAmount - roundedAmount;
+                    
+                    if (!cdmBalanceTracker.has(outletCode)) {
+                        cdmBalanceTracker.set(outletCode, {
+                            balanceHistory: [],
+                            accumulatedBalance: 0
+                        });
+                    }
+                    
+                    const tracker = cdmBalanceTracker.get(outletCode);
+                    tracker.balanceHistory.push({
+                        date: dateStr,
+                        grossAmount: grossAmount,
+                        roundedAmount: roundedAmount,
+                        balance: balance
+                    });
+                    tracker.accumulatedBalance += balance;
+                    
+                    console.log(`CDM ${outletCode} ${dateStr}: Gross ${grossAmount}, Rounded ${roundedAmount}, Balance ${balance}, Accumulated ${tracker.accumulatedBalance}`);\n                }\n            }\n            \n            console.log(`Tracked CDM balances for ${cdmBalanceTracker.size} outlets`);\n            return cdmBalanceTracker;\n        }
+        
+        // Main reconciliation function
+        async function startReconciliation() {
+            if (!uploadedFiles[2]) {
+                alert('Please upload BCA Statement file first!');
+                return;
+            }
+
+            // Show processing status
+            document.getElementById('process-btn').disabled = true;
+            document.getElementById('processing-status').classList.remove('hidden');
+            document.getElementById('processing-text').textContent = 'Building lookup maps...';
+
+            // Simulate async processing
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            try {
+                // Build master lookups
+                const lookups = buildMasterLookups();
+                
+                document.getElementById('processing-text').textContent = 'Pivoting transaction summary...';
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Pivot transaction summary (now with card number overrides)
+                const pivotMap = pivotTransactionSummary(lookups);
+                
+                // Build CDM balance tracker for Setoran Tunai matching
+                const cdmBalanceTracker = buildCDMBalanceTracker(lookups, pivotMap);
+
+                document.getElementById('processing-text').textContent = 'Processing BCA statement...';
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Process BCA Statement
+                const bcaData = uploadedFiles[2].data;
+                reconciliationResults = [];
+                
+                console.log('=== Processing BCA Statement ===');
+                console.log(`Total BCA rows: ${bcaData.length - 1}`);
+
+                // STEP 1: Aggregate BCA transactions (for CDM and Setoran Tunai)
+                // Group by: date + transaction type + outlet code
+                const bcaAggregated = new Map();
+                const bcaRawTransactions = [];
+                
+                for (let i = 1; i < bcaData.length; i++) {
+                    const row = bcaData[i];
+                    const tglTransaksi = parseDate(row[0]); // Column A
+                    const description = row[1]?.toString() || ''; // Column B
+                    const cabang = row[2]?.toString() || ''; // Column C
+                    const amount = parseBCAAmount(row[3]); // Column D - with CR handling
+
+                    if (!tglTransaksi || !description) continue;
+                    
+                    const transactionType = determineTransactionType(description);
+                    
+                    // Store raw transaction
+                    bcaRawTransactions.push({
+                        row: i,
+                        tglTransaksi,
+                        description,
+                        cabang,
+                        amount,
+                        transactionType
+                    });
+                }
+                
+                console.log(`Loaded ${bcaRawTransactions.length} BCA transactions`);
+                
+                // Aggregate CDM and Setoran Tunai transactions by date + outlet + type
+                for (const txn of bcaRawTransactions) {
+                    const transactionType = txn.transactionType;
+                    let outletCode = null;
+                    
+                    // Get outlet code for CDM/Setoran Tunai
+                    if (transactionType === 'CDM') {
+                        const kartuDebit = parseCDM(txn.description);
+                        if (kartuDebit && lookups.kartuDebit.has(kartuDebit)) {
+                            outletCode = lookups.kartuDebit.get(kartuDebit);
+                        }
+                    } else if (transactionType === 'SETORAN_TUNAI') {
+                        // Try to find outlet via cabang
+                        const cabangStr = txn.cabang.toString().trim();
+                        if (lookups.cabang.has(cabangStr)) {
+                            outletCode = lookups.cabang.get(cabangStr);
+                        }
+                    }
+                    
+                    // For CDM and Setoran Tunai with valid outlet, aggregate
+                    if ((transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') && outletCode) {
+                        const dateStr = formatDate(txn.tglTransaksi);
+                        const aggKey = `${dateStr}|${transactionType}|${outletCode}`;
+                        
+                        if (!bcaAggregated.has(aggKey)) {
+                            bcaAggregated.set(aggKey, {
+                                date: txn.tglTransaksi,
+                                transactionType: transactionType,
+                                outletCode: outletCode,
+                                totalAmount: 0,
+                                transactions: [],
+                                cabang: txn.cabang
+                            });
+                        }
+                        
+                        const agg = bcaAggregated.get(aggKey);
+                        agg.totalAmount += txn.amount;
+                        agg.transactions.push(txn);
+                    }
+                }
+                
+                console.log(`Aggregated ${bcaAggregated.size} CDM/Setoran groups`);
+                if (bcaAggregated.size > 0) {
+                    console.log('Sample aggregations:');
+                    let count = 0;
+                    for (const [key, agg] of bcaAggregated.entries()) {
+                        if (count++ < 5) {
+                            console.log(`  ${key}: ${agg.transactions.length} txns, total ${agg.totalAmount}`);
+                        }
+                    }
+                }
+                
+                // STEP 2: Process all transactions (use aggregated for CDM/Setoran, individual for others)
+                const processedKeys = new Set(); // Track which transactions we've already processed via aggregation
+                
+                for (let i = 1; i < bcaData.length; i++) {
+                    const row = bcaData[i];
+                    const tglTransaksi = parseDate(row[0]); // Column A
+                    const description = row[1]?.toString() || ''; // Column B
+                    const cabang = row[2]?.toString() || ''; // Column C
+                    const amount = parseBCAAmount(row[3]); // Column D - with CR handling
+
+                    if (!tglTransaksi || !description) continue;
+
+                    const transactionType = determineTransactionType(description);
+                    const matchDate = subtractOneDay(tglTransaksi);
+                    let outletCode = null;
+                    let matchedAmount = null;
+                    let matchStatus = 'UNMATCHED';
+                    let details = '';
+                    
+                    // Check if this transaction is part of an aggregated group
+                    let isAggregated = false;
+                    let aggregatedData = null;
+                    
+                    if (transactionType === 'CDM') {
+                        const kartuDebit = parseCDM(description);
+                        if (kartuDebit && lookups.kartuDebit.has(kartuDebit)) {
+                            outletCode = lookups.kartuDebit.get(kartuDebit);
+                            const dateStr = formatDate(tglTransaksi);
+                            const aggKey = `${dateStr}|${transactionType}|${outletCode}`;
+                            
+                            if (bcaAggregated.has(aggKey)) {
+                                // This transaction is part of an aggregated group
+                                if (processedKeys.has(aggKey)) {
+                                    // Already processed this group, skip individual transaction
+                                    continue;
+                                }
+                                isAggregated = true;
+                                aggregatedData = bcaAggregated.get(aggKey);
+                                processedKeys.add(aggKey);
+                            }
+                        }
+                    } else if (transactionType === 'SETORAN_TUNAI') {
+                        const cabangStr = cabang.toString().trim();
+                        if (lookups.cabang.has(cabangStr)) {
+                            outletCode = lookups.cabang.get(cabangStr);
+                            const dateStr = formatDate(tglTransaksi);
+                            const aggKey = `${dateStr}|${transactionType}|${outletCode}`;
+                            
+                            if (bcaAggregated.has(aggKey)) {
+                                // This transaction is part of an aggregated group
+                                if (processedKeys.has(aggKey)) {
+                                    // Already processed this group, skip individual transaction
+                                    continue;
+                                }
+                                isAggregated = true;
+                                aggregatedData = bcaAggregated.get(aggKey);
+                                processedKeys.add(aggKey);
+                            }
+                        }
+                    }
+                    
+                    // Use aggregated amount if applicable
+                    const bcaAmount = isAggregated ? aggregatedData.totalAmount : amount;
+                    const transactionCount = isAggregated ? aggregatedData.transactions.length : 1;
+
+                    // Process based on transaction type
+                    if (transactionType === 'CDM') {
+                        const kartuDebit = parseCDM(description);
+                        if (kartuDebit && lookups.kartuDebit.has(kartuDebit)) {
+                            outletCode = lookups.kartuDebit.get(kartuDebit);
+                            const key = `${formatDate(matchDate)}|${outletCode}|CASH`;
+                            let grossAmount = null;
+                            
+                            if (pivotMap.has(key)) {
+                                const pivot = pivotMap.get(key);
+                                // Round down ACMM amount to nearest 50,000
+                                grossAmount = pivot.amount;
+                                matchedAmount = roundDownTo50k(grossAmount);
+                                const balance = grossAmount - matchedAmount;
+                                
+                                // Tolerance: ±100 Rp
+                                if (Math.abs(bcaAmount - matchedAmount) <= 100) {
+                                    matchStatus = 'MATCHED';
+                                } else {
+                                    matchStatus = 'AMOUNT_MISMATCH';
+                                }
+                                
+                                if (isAggregated) {
+                                    details = `Kartu: ${kartuDebit}, Aggregated ${transactionCount} BCA txns (${bcaAmount.toFixed(2)}), ACMM Gross: ${grossAmount.toFixed(2)}, Rounded: ${matchedAmount.toFixed(2)}, Balance: ${balance.toFixed(2)}, ACMM Txns: ${pivot.count}`;
+                                } else {
+                                    details = `Kartu: ${kartuDebit}, ACMM Gross: ${grossAmount.toFixed(2)}, Rounded: ${matchedAmount.toFixed(2)}, Balance: ${balance.toFixed(2)}, ACMM Txns: ${pivot.count}`;
+                                }
+                            } else {
+                                details = `Kartu: ${kartuDebit}, No matching CASH transaction found in ACMM`;
+                            }
+                            
+                            reconciliationResults.push({
+                                bcaDate: formatDate(tglTransaksi),
+                                matchDate: formatDate(matchDate),
+                                transactionType: transactionType,
+                                outletCode: outletCode || 'N/A',
+                                description: isAggregated ? `[AGG ${transactionCount}x] ${description}` : description,
+                                cabang: cabang,
+                                bcaAmount: bcaAmount,
+                                acmmAmount: matchedAmount,
+                                acmmGrossAmount: grossAmount,
+                                merchantRate: 0,
+                                difference: matchedAmount !== null ? bcaAmount - matchedAmount : null,
+                                status: matchStatus,
+                                details: details
+                            });
+                            continue; // Skip the generic push at the end
+                        } else {
+                            details = `Kartu Debit not found: ${kartuDebit}`;
+                        }
+                    }
+                    else if (transactionType === 'CREDITCARD') {
+                        const mid = parseCreditCardMID(description);
+                        
+                        // Debug MID matching
+                        if (mid) {
+                            const hasMID = lookups.mid.has(mid);
+                            if (!hasMID) {
+                                console.log(`⚠️ MID not found in lookup: "${mid}" from description: "${description}"`);
+                            }
+                        }
+                        
+                        if (mid && lookups.mid.has(mid)) {
+                            outletCode = lookups.mid.get(mid);
+                            
+                            // Look for credit card payment types
+                            const paymentTypes = ['OTHER CARD', 'MASTER', 'VISA', 'BCA CARD', 'JCB CARD', 'AMEX CARD'];
+                            let found = false;
+                            let grossAmount = null;
+                            let usedRate = null;
+                            
+                            for (const paymentType of paymentTypes) {
+                                const key = `${formatDate(matchDate)}|${outletCode}|${paymentType}`;
+                                if (pivotMap.has(key)) {
+                                    const pivot = pivotMap.get(key);
+                                    grossAmount = pivot.amount;
+                                    matchedAmount = pivot.netAmount;
+                                    usedRate = pivot.merchantRate || 0;
+                                    
+                                    // Tolerance: ±100 Rp
+                                    if (Math.abs(amount - matchedAmount) <= 100) {
+                                        matchStatus = 'MATCHED';
+                                    } else {
+                                        matchStatus = 'AMOUNT_MISMATCH';
+                                    }
+                                    details = `MID: ${mid}, Payment: ${paymentType}, Gross: ${grossAmount.toFixed(2)}, Rate: ${usedRate}%, Net: ${matchedAmount.toFixed(2)}`;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (!found) {
+                                details = `MID: ${mid}, No matching credit card transaction found`;
+                            }
+                            
+                            // Store gross and rate for export
+                            reconciliationResults.push({
+                                bcaDate: formatDate(tglTransaksi),
+                                matchDate: formatDate(matchDate),
+                                transactionType: transactionType,
+                                outletCode: outletCode || 'N/A',
+                                description: description,
+                                cabang: cabang,
+                                bcaAmount: amount,
+                                acmmAmount: matchedAmount,
+                                acmmGrossAmount: grossAmount,
+                                merchantRate: usedRate,
+                                difference: matchedAmount !== null ? amount - matchedAmount : null,
+                                status: matchStatus,
+                                details: details
+                            });
+                            continue; // Skip the generic push at the end
+                        } else {
+                            details = `MID not found: ${mid}`;
+                        }
+                    }
+                    else if (transactionType === 'QRIS') {
+                        const mid = parseQRIS(description);
+                        if (mid && lookups.mid.has(mid)) {
+                            outletCode = lookups.mid.get(mid);
+                            const key = `${formatDate(matchDate)}|${outletCode}|QRIS`;
+                            let grossAmount = null;
+                            let usedRate = null;
+                            
+                            if (pivotMap.has(key)) {
+                                const pivot = pivotMap.get(key);
+                                grossAmount = pivot.amount;
+                                matchedAmount = pivot.netAmount;
+                                usedRate = pivot.merchantRate || 0;
+                                
+                                // Tolerance: ±100 Rp
+                                if (Math.abs(amount - matchedAmount) <= 100) {
+                                    matchStatus = 'MATCHED';
+                                } else {
+                                    matchStatus = 'AMOUNT_MISMATCH';
+                                }
+                                details = `MID: ${mid}, Gross: ${grossAmount.toFixed(2)}, Rate: ${usedRate}%, Net: ${matchedAmount.toFixed(2)}`;
+                            } else {
+                                details = `MID: ${mid}, No matching QRIS transaction found`;
+                            }
+                            
+                            reconciliationResults.push({
+                                bcaDate: formatDate(tglTransaksi),
+                                matchDate: formatDate(matchDate),
+                                transactionType: transactionType,
+                                outletCode: outletCode || 'N/A',
+                                description: description,
+                                cabang: cabang,
+                                bcaAmount: amount,
+                                acmmAmount: matchedAmount,
+                                acmmGrossAmount: grossAmount,
+                                merchantRate: usedRate,
+                                difference: matchedAmount !== null ? amount - matchedAmount : null,
+                                status: matchStatus,
+                                details: details
+                            });
+                            continue; // Skip the generic push at the end
+                        } else {
+                            details = `MID not found: ${mid}`;
+                        }
+                    }
+                    else if (transactionType === 'DEBIT') {
+                        const mid = parseDebitCard(description);
+                        if (mid && lookups.mid.has(mid)) {
+                            outletCode = lookups.mid.get(mid);
+                            
+                            // Look for debit payment types
+                            const paymentTypes = ['DEBIT BANK LAIN', 'DEBIT BANK SAMA'];
+                            let found = false;
+                            let grossAmount = null;
+                            let usedRate = null;
+                            
+                            for (const paymentType of paymentTypes) {
+                                const key = `${formatDate(matchDate)}|${outletCode}|${paymentType}`;
+                                if (pivotMap.has(key)) {
+                                    const pivot = pivotMap.get(key);
+                                    grossAmount = pivot.amount;
+                                    matchedAmount = pivot.netAmount;
+                                    usedRate = pivot.merchantRate || 0;
+                                    
+                                    // Tolerance: ±100 Rp
+                                    if (Math.abs(amount - matchedAmount) <= 100) {
+                                        matchStatus = 'MATCHED';
+                                    } else {
+                                        matchStatus = 'AMOUNT_MISMATCH';
+                                    }
+                                    details = `MID: ${mid}, Payment: ${paymentType}, Gross: ${grossAmount.toFixed(2)}, Rate: ${usedRate}%, Net: ${matchedAmount.toFixed(2)}`;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (!found) {
+                                details = `MID: ${mid}, No matching debit transaction found`;
+                            }
+                            
+                            reconciliationResults.push({
+                                bcaDate: formatDate(tglTransaksi),
+                                matchDate: formatDate(matchDate),
+                                transactionType: transactionType,
+                                outletCode: outletCode || 'N/A',
+                                description: description,
+                                cabang: cabang,
+                                bcaAmount: amount,
+                                acmmAmount: matchedAmount,
+                                acmmGrossAmount: grossAmount,
+                                merchantRate: usedRate,
+                                difference: matchedAmount !== null ? amount - matchedAmount : null,
+                                status: matchStatus,
+                                details: details
+                            });
+                            continue; // Skip the generic push at the end
+                        } else {
+                            details = `MID not found: ${mid}`;
+                        }
+                    }
+                    else if (transactionType === 'SETORAN_TUNAI') {
+                        // For Setoran Tunai, use cabang to find outlet and match against accumulated CDM balances
+                        const cabangStr = cabang.toString().trim();
+                        
+                        // Debug cabang matching
+                        const hasCabang = lookups.cabang.has(cabangStr);
+                        if (!hasCabang) {
+                            console.log(`⚠️ Cabang not found in lookup: "${cabangStr}" (type: ${typeof cabangStr})`);
+                            // Try to find similar cabang codes
+                            const allCabangCodes = Array.from(lookups.cabang.keys());
+                            const similar = allCabangCodes.filter(c => c.toString().includes(cabangStr) || cabangStr.includes(c.toString()));
+                            if (similar.length > 0) {
+                                console.log(`  Similar cabang codes found: ${similar.slice(0, 5).join(', ')}`);
+                            }
+                        }
+                        
+                        if (hasCabang) {
+                            outletCode = lookups.cabang.get(cabangStr);
+                            
+                            // Match against accumulated CDM balance for this outlet
+                            if (cdmBalanceTracker.has(outletCode)) {
+                                const tracker = cdmBalanceTracker.get(outletCode);
+                                const accumulatedBalance = tracker.accumulatedBalance;
+                                matchedAmount = accumulatedBalance;
+                                
+                                // Tolerance: ±100 Rp
+                                if (Math.abs(bcaAmount - accumulatedBalance) <= 100) {
+                                    matchStatus = 'MATCHED';
+                                } else {
+                                    matchStatus = 'AMOUNT_MISMATCH';
+                                }
+                                
+                                // Build detail string showing accumulated days
+                                const balanceDates = tracker.balanceHistory.map(h => h.date).join(', ');
+                                const balanceCount = tracker.balanceHistory.length;
+                                
+                                if (isAggregated) {
+                                    details = `Cabang: ${cabangStr}, Aggregated ${transactionCount} BCA txns (${bcaAmount.toFixed(2)}), Matches accumulated CDM balance from ${balanceCount} days (${balanceDates}): ${accumulatedBalance.toFixed(2)}`;
+                                } else {
+                                    details = `Cabang: ${cabangStr}, Matches accumulated CDM balance from ${balanceCount} days (${balanceDates}): ${accumulatedBalance.toFixed(2)}`;
+                                }
+                                
+                                // Reset accumulated balance for this outlet after matching
+                                tracker.accumulatedBalance = 0;
+                                tracker.balanceHistory = [];
+                                
+                            } else {
+                                // No CDM balance found for this outlet
+                                if (isAggregated) {
+                                    details = `Cabang: ${cabangStr}, Aggregated ${transactionCount} BCA txns (${bcaAmount.toFixed(2)}), No CDM balance found for outlet`;
+                                } else {
+                                    details = `Cabang: ${cabangStr}, No CDM transactions found to accumulate balance`;
+                                }
+                                matchStatus = 'UNMATCHED';
+                            }
+                        } else {
+                            details = `Cabang not found: ${cabangStr}`;
+                        }
+                    }
+
+                    reconciliationResults.push({
+                        bcaDate: formatDate(tglTransaksi),
+                        matchDate: formatDate(matchDate),
+                        transactionType: transactionType,
+                        outletCode: outletCode || 'N/A',
+                        description: isAggregated ? `[AGG ${transactionCount}x] ${description}` : description,
+                        cabang: cabang,
+                        bcaAmount: bcaAmount,
+                        acmmAmount: matchedAmount,
+                        acmmGrossAmount: null,
+                        merchantRate: null,
+                        difference: matchedAmount !== null ? bcaAmount - matchedAmount : null,
+                        status: matchStatus,
+                        details: details
+                    });
+                }
+
+                // Display results
+                displayResults();
+                document.getElementById('processing-status').classList.add('hidden');
+                document.getElementById('results-section').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error during reconciliation:', error);
+                alert('An error occurred during reconciliation. Please check the console for details.');
+                document.getElementById('processing-status').classList.add('hidden');
+                document.getElementById('process-btn').disabled = false;
+            }
+        }
+
+        // Display reconciliation results
+        function displayResults() {
+            const totalRecords = reconciliationResults.length;
+            const matched = reconciliationResults.filter(r => r.status === 'MATCHED').length;
+            const unmatched = totalRecords - matched;
+            const matchRate = totalRecords > 0 ? ((matched / totalRecords) * 100).toFixed(1) : 0;
+
+            document.getElementById('total-records').textContent = totalRecords;
+            document.getElementById('matched-count').textContent = matched;
+            document.getElementById('unmatched-count').textContent = unmatched;
+            document.getElementById('match-rate').textContent = `${matchRate}%`;
+
+            updateResultsTable();
+        }
+
+        // Update results table based on current filter
+        function updateResultsTable() {
+            const tbody = document.getElementById('results-tbody');
+            tbody.innerHTML = '';
+
+            let filteredResults = reconciliationResults;
+
+            // Filter by tab
+            if (currentTab !== 'all') {
+                const typeMap = {
+                    'cdm': 'CDM',
+                    'creditcard': 'CREDITCARD',
+                    'qris': 'QRIS',
+                    'debit': 'DEBIT',
+                    'setoran': 'SETORAN_TUNAI'
+                };
+                const filterType = typeMap[currentTab];
+                filteredResults = reconciliationResults.filter(r => r.transactionType === filterType);
+            }
+
+            if (filteredResults.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center py-8 text-gray-500">
+                            No results found for this filter.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filteredResults.forEach((result, index) => {
+                const statusClass = result.status === 'MATCHED' ? 'status-success' : 
+                                   result.status === 'AMOUNT_MISMATCH' ? 'status-warning' : 'status-error';
+                
+                const difference = result.difference !== null ? result.difference.toFixed(2) : '-';
+                const diffClass = result.difference !== null && Math.abs(result.difference) > 0.01 ? 'text-red-600 font-bold' : 'text-gray-600';
+
+                const row = `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="px-4 py-3">${index + 1}</td>
+                        <td class="px-4 py-3">${result.bcaDate}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">
+                                ${result.transactionType}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 font-semibold">${result.outletCode}</td>
+                        <td class="px-4 py-3 text-right font-mono">${result.bcaAmount.toFixed(2)}</td>
+                        <td class="px-4 py-3 text-right font-mono">${result.acmmAmount !== null ? result.acmmAmount.toFixed(2) : '-'}</td>
+                        <td class="px-4 py-3 text-right font-mono ${diffClass}">${difference}</td>
+                        <td class="px-4 py-3">
+                            <span class="status-badge ${statusClass}">${result.status}</span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${result.details}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Show specific result tab
+        function showResultTab(tab) {
+            currentTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update table
+            updateResultsTable();
+        }
+
+        // Export results to Excel
+        function exportResults(type) {
+            let dataToExport = [];
+            let filename = 'reconciliation_results';
+
+            if (type === 'all') {
+                dataToExport = reconciliationResults;
+                filename += '_all';
+            } else if (type === 'matched') {
+                dataToExport = reconciliationResults.filter(r => r.status === 'MATCHED');
+                filename += '_matched';
+            } else if (type === 'unmatched') {
+                dataToExport = reconciliationResults.filter(r => r.status !== 'MATCHED');
+                filename += '_unmatched';
+            } else {
+                // Export by transaction type
+                const typeMap = {
+                    'cdm': 'CDM',
+                    'creditcard': 'CREDITCARD',
+                    'qris': 'QRIS',
+                    'debit': 'DEBIT',
+                    'setoran': 'SETORAN_TUNAI'
+                };
+                const filterType = typeMap[type];
+                dataToExport = reconciliationResults.filter(r => r.transactionType === filterType);
+                filename += `_${type}`;
+            }
+
+            if (dataToExport.length === 0) {
+                alert('No data to export for this selection.');
+                return;
+            }
+
+            // Convert to Excel format
+            const wsData = [
+                ['BCA Date', 'Match Date', 'Transaction Type', 'Outlet Code', 'Cabang', 'BCA Amount', 'ACMM Gross Amount', 'Merchant Rate (%)', 'ACMM Net Amount', 'Difference', 'Status', 'Details', 'Description']
+            ];
+
+            dataToExport.forEach(row => {
+                wsData.push([
+                    row.bcaDate,
+                    row.matchDate,
+                    row.transactionType,
+                    row.outletCode,
+                    row.cabang || '',
+                    row.bcaAmount,
+                    row.acmmGrossAmount || '',
+                    row.merchantRate || '',
+                    row.acmmAmount || '',
+                    row.difference !== null ? row.difference : '',
+                    row.status,
+                    row.details,
+                    row.description
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Reconciliation');
+
+            // Auto-size columns
+            const colWidths = [
+                { wch: 12 }, // BCA Date
+                { wch: 12 }, // Match Date
+                { wch: 15 }, // Transaction Type
+                { wch: 12 }, // Outlet Code
+                { wch: 10 }, // Cabang
+                { wch: 15 }, // BCA Amount
+                { wch: 18 }, // ACMM Gross Amount
+                { wch: 12 }, // Merchant Rate
+                { wch: 18 }, // ACMM Net Amount
+                { wch: 12 }, // Difference
+                { wch: 20 }, // Status
+                { wch: 50 }, // Details
+                { wch: 60 }  // Description
+            ];
+            ws['!cols'] = colWidths;
+
+            // Export
+            XLSX.writeFile(wb, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
+
+        // Reset all data
+        function resetAll() {
+            if (!confirm('Are you sure you want to reset all data? This will clear all uploaded files and results.')) {
+                return;
+            }
+
+            uploadedFiles = {};
+            reconciliationResults = [];
+            currentTab = 'all';
+
+            // Reset UI
+            for (let i = 1; i <= 6; i++) {
+                const zone = document.getElementById(`upload-zone-${i}`);
+                const fileName = document.getElementById(`file-name-${i}`);
+                const fileStatus = document.getElementById(`file-status-${i}`);
+                const fileInput = document.getElementById(`file-${i}`);
+
+                zone.classList.remove('has-file', 'error');
+                fileName.textContent = 'Click to upload Excel file';
+                fileStatus.innerHTML = '';
+                fileInput.value = '';
+            }
+
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('upload-progress-text').textContent = '0/6 files uploaded';
+            document.getElementById('process-btn').disabled = true;
+            document.getElementById('results-section').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
