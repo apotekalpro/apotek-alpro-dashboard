@@ -1280,6 +1280,7 @@
                             let found = false;
                             let grossAmount = null;
                             let usedRate = null;
+                            let matchedCardLast6 = '';
                             
                             for (const paymentType of paymentTypes) {
                                 const key = `${formatDate(matchDate)}|${outletCode}|${paymentType}`;
@@ -1288,6 +1289,9 @@
                                     grossAmount = pivot.amount;
                                     matchedAmount = pivot.netAmount;
                                     usedRate = pivot.merchantRate || 0;
+                                    
+                                    // Get card last 6 from first transaction in pivot (after override)
+                                    matchedCardLast6 = pivot.transactions && pivot.transactions.length > 0 ? pivot.transactions[0].cardLast6 : '';
                                     
                                     // Tolerance: ±100 Rp
                                     if (Math.abs(amount - matchedAmount) <= 100) {
@@ -1305,7 +1309,7 @@
                                 details = `MID: ${mid}, No matching credit card transaction found`;
                             }
                             
-                            // Store gross and rate for export
+                            // Store gross, rate, and card last 6 for export
                             reconciliationResults.push({
                                 bcaDate: formatDate(tglTransaksi),
                                 matchDate: formatDate(matchDate),
@@ -1313,6 +1317,7 @@
                                 outletCode: outletCode || 'N/A',
                                 description: description,
                                 cabang: cabang,
+                                cardLast6: matchedCardLast6,
                                 bcaAmount: amount,
                                 acmmAmount: matchedAmount,
                                 acmmGrossAmount: grossAmount,
@@ -1333,12 +1338,16 @@
                             const key = `${formatDate(matchDate)}|${outletCode}|QRIS`;
                             let grossAmount = null;
                             let usedRate = null;
+                            let matchedCardLast6 = '';
                             
                             if (pivotMap.has(key)) {
                                 const pivot = pivotMap.get(key);
                                 grossAmount = pivot.amount;
                                 matchedAmount = pivot.netAmount;
                                 usedRate = pivot.merchantRate || 0;
+                                
+                                // Get card last 6 from first transaction in pivot (after override)
+                                matchedCardLast6 = pivot.transactions && pivot.transactions.length > 0 ? pivot.transactions[0].cardLast6 : '';
                                 
                                 // Tolerance: ±100 Rp
                                 if (Math.abs(amount - matchedAmount) <= 100) {
@@ -1358,6 +1367,7 @@
                                 outletCode: outletCode || 'N/A',
                                 description: description,
                                 cabang: cabang,
+                                cardLast6: matchedCardLast6,
                                 bcaAmount: amount,
                                 acmmAmount: matchedAmount,
                                 acmmGrossAmount: grossAmount,
@@ -1381,6 +1391,7 @@
                             let found = false;
                             let grossAmount = null;
                             let usedRate = null;
+                            let matchedCardLast6 = '';
                             
                             for (const paymentType of paymentTypes) {
                                 const key = `${formatDate(matchDate)}|${outletCode}|${paymentType}`;
@@ -1389,6 +1400,9 @@
                                     grossAmount = pivot.amount;
                                     matchedAmount = pivot.netAmount;
                                     usedRate = pivot.merchantRate || 0;
+                                    
+                                    // Get card last 6 from first transaction in pivot (after override)
+                                    matchedCardLast6 = pivot.transactions && pivot.transactions.length > 0 ? pivot.transactions[0].cardLast6 : '';
                                     
                                     // Tolerance: ±100 Rp
                                     if (Math.abs(amount - matchedAmount) <= 100) {
@@ -1413,6 +1427,7 @@
                                 outletCode: outletCode || 'N/A',
                                 description: description,
                                 cabang: cabang,
+                                cardLast6: matchedCardLast6,
                                 bcaAmount: amount,
                                 acmmAmount: matchedAmount,
                                 acmmGrossAmount: grossAmount,
