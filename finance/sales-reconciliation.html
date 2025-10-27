@@ -889,6 +889,7 @@
                 pivot.count++;
                 pivot.transactions.push({
                     cardNum: cardNum,
+                    cardLast6: cardLast6,
                     amount: amount,
                     netAmount: netAmount,
                     merchantRate: merchantRate,
@@ -899,18 +900,51 @@
             return pivotMap;
         }
 
-        // Calculate CDM balances and match with Setoran Tunai
-        // This function tracks the accumulated "balance" from CDM rounding over multiple days
-        // and matches it with Setoran Tunai transactions
-        function buildCDMBalanceTracker(lookups, pivotMap) {
-            // Returns a map that tracks accumulated CDM balances by outlet
-            // Key: outlet code
-            // Value: { balanceHistory: [{date, balance}], lastSetoranDate: date }
-            const cdmBalanceTracker = new Map();
+        // Build Setoran Tunai timeline and calculate balances between Setoran dates
+        // Each Setoran should match the accumulated CDM balances since the LAST Setoran
+        function buildSetoranTunaiMatcher(lookups, pivotMap, bcaData) {
+            console.log('=== Building Setoran Tunai Matcher ===');
             
-            console.log('=== Building CDM Balance Tracker ===');
+            // Step 1: Extract all Setoran Tunai dates by outlet from BCA
+            const setoranTimeline = new Map(); // outlet -> [{date, amount}] sorted by date
             
-            // Go through all pivoted ACMM CASH transactions to find CDM balances
+            for (let i = 1; i < bcaData.length; i++) {
+                const row = bcaData[i];
+                const tglTransaksi = parseDate(row[0]);
+                const description = row[1]?.toString() || '';
+                const cabang = row[2]?.toString() || '';
+                const amount = parseBCAAmount(row[3]);
+                
+                if (!tglTransaksi || !description) continue;
+                
+                const transactionType = determineTransactionType(description);
+                if (transactionType === 'SETORAN_TUNAI') {
+                    const cabangStr = cabang.toString().trim();
+                    if (lookups.cabang.has(cabangStr)) {
+                        const outletCode = lookups.cabang.get(cabangStr);
+                        
+                        if (!setoranTimeline.has(outletCode)) {
+                            setoranTimeline.set(outletCode, []);
+                        }
+                        
+                        setoranTimeline.get(outletCode).push({
+                            date: tglTransaksi,
+                            amount: amount,
+                            dateStr: formatDate(tglTransaksi)
+                        });
+                    }
+                }
+            }
+            
+            // Sort Setoran dates for each outlet
+            for (const [outlet, setorans] of setoranTimeline.entries()) {
+                setorans.sort((a, b) => a.date - b.date);
+                console.log(`Outlet ${outlet}: ${setorans.length} Setoran Tunai dates: ${setorans.map(s => s.dateStr).join(', ')}`);
+            }
+            
+            // Step 2: Build CDM balance map by outlet and date
+            const cdmBalances = new Map(); // outlet -> Map(dateStr -> balance)
+            
             for (const [key, pivot] of pivotMap.entries()) {
                 const parts = key.split('|');
                 const dateStr = parts[0];
@@ -918,33 +952,78 @@
                 const paymentMethod = parts[2];
                 
                 if (paymentMethod === 'CASH') {
-                    // This is a CDM transaction
                     const grossAmount = pivot.amount;
                     const roundedAmount = roundDownTo50k(grossAmount);
                     const balance = grossAmount - roundedAmount;
                     
-                    if (!cdmBalanceTracker.has(outletCode)) {
-                        cdmBalanceTracker.set(outletCode, {
-                            balanceHistory: [],
-                            accumulatedBalance: 0
-                        });
+                    if (!cdmBalances.has(outletCode)) {
+                        cdmBalances.set(outletCode, new Map());
                     }
                     
-                    const tracker = cdmBalanceTracker.get(outletCode);
-                    tracker.balanceHistory.push({
-                        date: dateStr,
-                        grossAmount: grossAmount,
-                        roundedAmount: roundedAmount,
-                        balance: balance
+                    cdmBalances.get(outletCode).set(dateStr, {
+                        gross: grossAmount,
+                        rounded: roundedAmount,
+                        balance: balance,
+                        date: pivot.date
                     });
-                    tracker.accumulatedBalance += balance;
-                    
-                    console.log(`CDM ${outletCode} ${dateStr}: Gross ${grossAmount}, Rounded ${roundedAmount}, Balance ${balance}, Accumulated ${tracker.accumulatedBalance}`);
                 }
             }
             
-            console.log(`Tracked CDM balances for ${cdmBalanceTracker.size} outlets`);
-            return cdmBalanceTracker;
+            // Step 3: Calculate accumulated balances between Setoran dates
+            const setoranMatches = new Map(); // dateStr|outlet -> expected amount
+            
+            for (const [outlet, setorans] of setoranTimeline.entries()) {
+                if (!cdmBalances.has(outlet)) continue;
+                
+                const outletCDM = cdmBalances.get(outlet);
+                
+                for (let i = 0; i < setorans.length; i++) {
+                    const currentSetoran = setorans[i];
+                    const prevSetoran = i > 0 ? setorans[i - 1] : null;
+                    
+                    // Accumulate CDM balances between prevSetoran and currentSetoran
+                    let accumulatedBalance = 0;
+                    const contributingDates = [];
+                    const balanceDetails = [];
+                    
+                    for (const [cdmDateStr, cdmData] of outletCDM.entries()) {
+                        const cdmDate = cdmData.date;
+                        
+                        // Include CDM if:
+                        // - After previous Setoran (or from start if no previous)
+                        // - Before or equal to current Setoran date
+                        const afterPrev = !prevSetoran || cdmDate > prevSetoran.date;
+                        const beforeCurrent = cdmDate < currentSetoran.date;
+                        
+                        if (afterPrev && beforeCurrent) {
+                            accumulatedBalance += cdmData.balance;
+                            contributingDates.push(cdmDateStr);
+                            balanceDetails.push({
+                                date: cdmDateStr,
+                                gross: cdmData.gross,
+                                rounded: cdmData.rounded,
+                                balance: cdmData.balance
+                            });
+                        }
+                    }
+                    
+                    if (contributingDates.length > 0) {
+                        const key = `${currentSetoran.dateStr}|${outlet}`;
+                        setoranMatches.set(key, {
+                            expectedBalance: accumulatedBalance,
+                            bcaAmount: currentSetoran.amount,
+                            contributingDates: contributingDates.sort(),
+                            balanceDetails: balanceDetails,
+                            dateRange: prevSetoran ? `${formatDate(prevSetoran.date)}-${contributingDates[contributingDates.length-1]}` : `start-${contributingDates[contributingDates.length-1]}`
+                        });
+                        
+                        console.log(`Setoran ${outlet} ${currentSetoran.dateStr}: Expects ${accumulatedBalance.toFixed(2)} from ${contributingDates.length} CDM days (${contributingDates.join(', ')})`);
+                    }
+                }
+            }
+            
+            console.log(`Built ${setoranMatches.size} Setoran Tunai matches`);
+            return setoranMatches;
         }
         
         // Main reconciliation function
@@ -972,8 +1051,8 @@
                 // Pivot transaction summary (now with card number overrides)
                 const pivotMap = pivotTransactionSummary(lookups);
                 
-                // Build CDM balance tracker for Setoran Tunai matching
-                const cdmBalanceTracker = buildCDMBalanceTracker(lookups, pivotMap);
+                // Build Setoran Tunai matcher with balance accumulation between Setoran dates
+                const setoranMatcher = buildSetoranTunaiMatcher(lookups, pivotMap, bcaData);
 
                 document.getElementById('processing-text').textContent = 'Processing BCA statement...';
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -1366,39 +1445,44 @@
                         if (hasCabang) {
                             outletCode = lookups.cabang.get(cabangStr);
                             
-                            // Match against accumulated CDM balance for this outlet
-                            if (cdmBalanceTracker.has(outletCode)) {
-                                const tracker = cdmBalanceTracker.get(outletCode);
-                                const accumulatedBalance = tracker.accumulatedBalance;
-                                matchedAmount = accumulatedBalance;
+                            // Match against accumulated CDM balance BETWEEN Setoran dates
+                            const setoranKey = `${formatDate(tglTransaksi)}|${outletCode}`;
+                            
+                            if (setoranMatcher.has(setoranKey)) {
+                                const match = setoranMatcher.get(setoranKey);
+                                const expectedBalance = match.expectedBalance;
+                                matchedAmount = expectedBalance;
                                 
                                 // Tolerance: ±100 Rp
-                                if (Math.abs(bcaAmount - accumulatedBalance) <= 100) {
+                                if (Math.abs(bcaAmount - expectedBalance) <= 100) {
                                     matchStatus = 'MATCHED';
                                 } else {
                                     matchStatus = 'AMOUNT_MISMATCH';
                                 }
                                 
-                                // Build detail string showing accumulated days
-                                const balanceDates = tracker.balanceHistory.map(h => h.date).join(', ');
-                                const balanceCount = tracker.balanceHistory.length;
+                                // Build detail string showing accumulated days and verification
+                                const balanceDates = match.contributingDates.join(', ');
+                                const balanceCount = match.contributingDates.length;
+                                const dateRange = match.dateRange;
                                 
-                                if (isAggregated) {
-                                    details = `Cabang: ${cabangStr}, Aggregated ${transactionCount} BCA txns (${bcaAmount.toFixed(2)}), Matches accumulated CDM balance from ${balanceCount} days (${balanceDates}): ${accumulatedBalance.toFixed(2)}`;
-                                } else {
-                                    details = `Cabang: ${cabangStr}, Matches accumulated CDM balance from ${balanceCount} days (${balanceDates}): ${accumulatedBalance.toFixed(2)}`;
+                                // Calculate total CDM + total Setoran for verification
+                                let totalCDM = 0;
+                                for (const detail of match.balanceDetails) {
+                                    totalCDM += detail.rounded;
                                 }
+                                const verification = `Total CDM (${dateRange}): ${totalCDM.toFixed(2)} + Setoran: ${bcaAmount.toFixed(2)} = ${(totalCDM + bcaAmount).toFixed(2)}`;
                                 
-                                // Reset accumulated balance for this outlet after matching
-                                tracker.accumulatedBalance = 0;
-                                tracker.balanceHistory = [];
-                                
-                            } else {
-                                // No CDM balance found for this outlet
                                 if (isAggregated) {
-                                    details = `Cabang: ${cabangStr}, Aggregated ${transactionCount} BCA txns (${bcaAmount.toFixed(2)}), No CDM balance found for outlet`;
+                                    details = `Cabang: ${cabangStr}, Aggregated ${transactionCount} BCA txns (${bcaAmount.toFixed(2)}), Balance from ${balanceCount} CDM days (${balanceDates}): ${expectedBalance.toFixed(2)}. Verify: ${verification}`;
                                 } else {
-                                    details = `Cabang: ${cabangStr}, No CDM transactions found to accumulate balance`;
+                                    details = `Cabang: ${cabangStr}, Balance from ${balanceCount} CDM days (${balanceDates}): ${expectedBalance.toFixed(2)}. Verify: ${verification}`;
+                                }
+                            } else {
+                                // No CDM balance match found for this Setoran date
+                                if (isAggregated) {
+                                    details = `Cabang: ${cabangStr}, Aggregated ${transactionCount} BCA txns (${bcaAmount.toFixed(2)}), No CDM balance calculated for this Setoran date`;
+                                } else {
+                                    details = `Cabang: ${cabangStr}, No CDM balance calculated for this Setoran date (check if CDM transactions exist between last Setoran and this one)`;
                                 }
                                 matchStatus = 'UNMATCHED';
                             }
@@ -1562,7 +1646,7 @@
 
             // Convert to Excel format
             const wsData = [
-                ['BCA Date', 'Match Date', 'Transaction Type', 'Outlet Code', 'Cabang', 'BCA Amount', 'ACMM Gross Amount', 'Merchant Rate (%)', 'ACMM Net Amount', 'Difference', 'Status', 'Details', 'Description']
+                ['BCA Date', 'Match Date', 'Transaction Type', 'Outlet Code', 'Cabang', 'Card Last 6 Digits', 'BCA Amount', 'ACMM Gross Amount', 'Merchant Rate (%)', 'ACMM Net Amount', 'Difference', 'Status', 'Details', 'Description']
             ];
 
             dataToExport.forEach(row => {
@@ -1572,6 +1656,7 @@
                     row.transactionType,
                     row.outletCode,
                     row.cabang || '',
+                    row.cardLast6 || '',
                     row.bcaAmount,
                     row.acmmGrossAmount || '',
                     row.merchantRate || '',
@@ -1594,6 +1679,7 @@
                 { wch: 15 }, // Transaction Type
                 { wch: 12 }, // Outlet Code
                 { wch: 10 }, // Cabang
+                { wch: 12 }, // Card Last 6 Digits
                 { wch: 15 }, // BCA Amount
                 { wch: 18 }, // ACMM Gross Amount
                 { wch: 12 }, // Merchant Rate
