@@ -796,7 +796,7 @@
                 const row = data[i];
                 const date = parseDate(row[0]); // Column A
                 const storeName = row[2]; // Column C
-                let paymentMethod = row[5]; // Column F - may be overridden by card number match
+                let paymentMethod = row[5]; // Column F - will be overridden by card number match
                 const cardNum = row[6]; // Column G
                 const amount = parseFloat(row[13]) || 0; // Column N (index 13)
                 const commission = parseFloat(row[10]) || 0; // Column K (index 10)
@@ -806,47 +806,52 @@
                 const outletCode = parseOutletCode(storeName);
                 if (!outletCode) continue;
 
-                // Determine merchant rate and apply card number overrides
-                let merchantRate = 0;
+                // STEP 1: CARD NUMBER OVERRIDE FIRST (HIGHEST PRIORITY)
+                // If card matches CC Merchant Checker Column A, override payment type with Column B
                 const cardLast6 = extractLastDigits(cardNum, 6);
+                let merchantRate = 0;
                 let matchSource = '';
-                let paymentTypeOverridden = false;
+                let wasOverridden = false;
                 
-                // Priority 0: CARD NUMBER OVERRIDE - If card matches, override payment type AND rate
-                // This fixes incorrect payment types entered by team
                 if (cardLast6 && cardLast6 !== '000000' && lookups.merchantRate.byCard.has(cardLast6)) {
                     const cardMatch = lookups.merchantRate.byCard.get(cardLast6);
-                    merchantRate = cardMatch.rate;
                     const originalPaymentMethod = paymentMethod;
-                    paymentMethod = cardMatch.paymentType; // OVERRIDE with correct payment type
+                    
+                    // OVERRIDE: Replace payment type with the correct one from CC Merchant Checker
+                    paymentMethod = cardMatch.paymentType;
+                    merchantRate = cardMatch.rate;
                     matchSource = `card ${cardLast6} (override)`;
-                    paymentTypeOverridden = true;
+                    wasOverridden = true;
                     
                     if (originalPaymentMethod !== paymentMethod) {
-                        console.log(`Payment type override: Card ${cardLast6} - "${originalPaymentMethod}" -> "${paymentMethod}" (rate: ${merchantRate}%)`);
+                        console.log(`✓ Override Row ${i}: Card ${cardLast6} - "${originalPaymentMethod}" → "${paymentMethod}" (rate: ${merchantRate}%)`);
                     }
                 }
-                // Priority 1: For QRIS, ALWAYS use payment type (not card number) - unless already overridden
-                else if (paymentMethod && paymentMethod.toUpperCase() === 'QRIS') {
-                    if (lookups.merchantRate.byPaymentType.has('QRIS')) {
-                        merchantRate = lookups.merchantRate.byPaymentType.get('QRIS');
-                        matchSource = 'QRIS type';
+                
+                // STEP 2: If not overridden, determine merchant rate based on payment type
+                if (!wasOverridden) {
+                    // For QRIS, use QRIS rate
+                    if (paymentMethod && paymentMethod.toUpperCase() === 'QRIS') {
+                        if (lookups.merchantRate.byPaymentType.has('QRIS')) {
+                            merchantRate = lookups.merchantRate.byPaymentType.get('QRIS');
+                            matchSource = 'QRIS type';
+                        }
                     }
-                }
-                // Priority 2: Check by payment type description
-                else if (paymentMethod) {
-                    const paymentUpper = paymentMethod.toUpperCase();
-                    // Try exact match first
-                    if (lookups.merchantRate.byPaymentType.has(paymentUpper)) {
-                        merchantRate = lookups.merchantRate.byPaymentType.get(paymentUpper);
-                        matchSource = `type ${paymentUpper}`;
-                    } else {
-                        // Try partial match (for generic types)
-                        for (let [key, rate] of lookups.merchantRate.byPaymentType) {
-                            if (paymentUpper.includes(key) || key.includes(paymentUpper)) {
-                                merchantRate = rate;
-                                matchSource = `partial ${key}`;
-                                break;
+                    // For other payment types, match by payment type description
+                    else if (paymentMethod) {
+                        const paymentUpper = paymentMethod.toUpperCase();
+                        // Try exact match first
+                        if (lookups.merchantRate.byPaymentType.has(paymentUpper)) {
+                            merchantRate = lookups.merchantRate.byPaymentType.get(paymentUpper);
+                            matchSource = `type ${paymentUpper}`;
+                        } else {
+                            // Try partial match (for generic types)
+                            for (let [key, rate] of lookups.merchantRate.byPaymentType) {
+                                if (paymentUpper.includes(key) || key.includes(paymentUpper)) {
+                                    merchantRate = rate;
+                                    matchSource = `partial ${key}`;
+                                    break;
+                                }
                             }
                         }
                     }
