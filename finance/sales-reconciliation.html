@@ -1080,6 +1080,13 @@
 
                     if (!tglTransaksi || !description) continue;
                     
+                    // Filter out transactions that don't need matching
+                    if (description.includes('BI-FAST') || 
+                        description.includes('TRSF E-BANKING') || 
+                        description.includes('BYR')) {
+                        continue; // Skip this transaction
+                    }
+                    
                     const transactionType = determineTransactionType(description);
                     
                     // Store raw transaction
@@ -1663,7 +1670,7 @@
 
             // Convert to Excel format
             const wsData = [
-                ['BCA Date', 'Match Date', 'Transaction Type', 'Outlet Code', 'Cabang', 'Card Last 6 Digits', 'BCA Amount', 'ACMM Gross Amount', 'Merchant Rate (%)', 'ACMM Net Amount', 'Difference', 'Status', 'Details', 'Description']
+                ['BCA Date', 'Match Date', 'Transaction Type', 'Outlet Code', 'Cabang', 'BCA Amount', 'ACMM Gross Amount', 'Merchant Rate (%)', 'ACMM Net Amount', 'Difference', 'Status', 'Details', 'BCA Description']
             ];
 
             dataToExport.forEach(row => {
@@ -1673,7 +1680,6 @@
                     row.transactionType,
                     row.outletCode,
                     row.cabang || '',
-                    row.cardLast6 || '',
                     row.bcaAmount,
                     row.acmmGrossAmount || '',
                     row.merchantRate || '',
@@ -1696,7 +1702,6 @@
                 { wch: 15 }, // Transaction Type
                 { wch: 12 }, // Outlet Code
                 { wch: 10 }, // Cabang
-                { wch: 12 }, // Card Last 6 Digits
                 { wch: 15 }, // BCA Amount
                 { wch: 18 }, // ACMM Gross Amount
                 { wch: 12 }, // Merchant Rate
@@ -1704,7 +1709,7 @@
                 { wch: 12 }, // Difference
                 { wch: 20 }, // Status
                 { wch: 50 }, // Details
-                { wch: 60 }  // Description
+                { wch: 60 }  // BCA Description
             ];
             ws['!cols'] = colWidths;
 
