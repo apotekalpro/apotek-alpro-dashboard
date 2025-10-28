@@ -1051,6 +1051,9 @@
                 // Pivot transaction summary (now with card number overrides)
                 const pivotMap = pivotTransactionSummary(lookups);
                 
+                // Get BCA data first (needed for Setoran matcher)
+                const bcaData = uploadedFiles[2].data;
+                
                 // Build Setoran Tunai matcher with balance accumulation between Setoran dates
                 const setoranMatcher = buildSetoranTunaiMatcher(lookups, pivotMap, bcaData);
 
@@ -1058,7 +1061,6 @@
                 await new Promise(resolve => setTimeout(resolve, 100));
 
                 // Process BCA Statement
-                const bcaData = uploadedFiles[2].data;
                 reconciliationResults = [];
                 
                 console.log('=== Processing BCA Statement ===');
