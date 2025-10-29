@@ -1670,13 +1670,14 @@
 
             // Convert to Excel format
             const wsData = [
-                ['BCA Date', 'Match Date', 'Transaction Type', 'Outlet Code', 'Cabang', 'BCA Amount', 'ACMM Gross Amount', 'Merchant Rate (%)', 'ACMM Net Amount', 'Difference', 'Status', 'Details', 'BCA Description']
+                ['BCA Date', 'Match Date', 'BCA Description', 'Transaction Type', 'Outlet Code', 'Cabang', 'BCA Amount', 'ACMM Gross Amount', 'Merchant Rate (%)', 'ACMM Net Amount', 'Difference', 'Status', 'Details']
             ];
 
             dataToExport.forEach(row => {
                 wsData.push([
                     row.bcaDate,
                     row.matchDate,
+                    row.description,
                     row.transactionType,
                     row.outletCode,
                     row.cabang || '',
@@ -1686,8 +1687,7 @@
                     row.acmmAmount || '',
                     row.difference !== null ? row.difference : '',
                     row.status,
-                    row.details,
-                    row.description
+                    row.details
                 ]);
             });
 
@@ -1699,6 +1699,7 @@
             const colWidths = [
                 { wch: 12 }, // BCA Date
                 { wch: 12 }, // Match Date
+                { wch: 60 }, // BCA Description
                 { wch: 15 }, // Transaction Type
                 { wch: 12 }, // Outlet Code
                 { wch: 10 }, // Cabang
@@ -1708,8 +1709,7 @@
                 { wch: 18 }, // ACMM Net Amount
                 { wch: 12 }, // Difference
                 { wch: 20 }, // Status
-                { wch: 50 }, // Details
-                { wch: 60 }  // BCA Description
+                { wch: 50 }  // Details
             ];
             ws['!cols'] = colWidths;
 
