@@ -917,6 +917,13 @@
                 
                 if (!tglTransaksi || !description) continue;
                 
+                // Filter out transactions that don't need matching
+                if (description.includes('BI-FAST') || 
+                    description.includes('TRSF E-BANKING') || 
+                    description.includes('BYR')) {
+                    continue; // Skip this transaction
+                }
+                
                 const transactionType = determineTransactionType(description);
                 if (transactionType === 'SETORAN_TUNAI') {
                     const cabangStr = cabang.toString().trim();
@@ -1165,6 +1172,13 @@
                     const amount = parseBCAAmount(row[3]); // Column D - with CR handling
 
                     if (!tglTransaksi || !description) continue;
+                    
+                    // Filter out transactions that don't need matching
+                    if (description.includes('BI-FAST') || 
+                        description.includes('TRSF E-BANKING') || 
+                        description.includes('BYR')) {
+                        continue; // Skip this transaction
+                    }
 
                     const transactionType = determineTransactionType(description);
                     const matchDate = subtractOneDay(tglTransaksi);
