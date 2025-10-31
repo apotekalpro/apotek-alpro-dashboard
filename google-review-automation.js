@@ -138,38 +138,80 @@ async function fetchReviewData(outlet, browser, index = 0) {
             timeout: 30000
         });
         
-        // Wait a bit for dynamic content to load
-        await page.waitForTimeout(2000);
+        // Wait for key elements to be present
+        try {
+            await page.waitForSelector('h1', { timeout: 5000 });
+            await page.waitForSelector('[role="img"]', { timeout: 5000 });
+        } catch (e) {
+            console.log(`  ⚠️ Some elements didn't load in time for ${outlet.name}`);
+        }
+        
+        // Additional wait for dynamic content to stabilize
+        await page.waitForTimeout(5000); // Increased to 5 seconds for full load
+        
+        // Get the actual URL after navigation (in case of redirects)
+        const actualURL = page.url();
         
         // Extract review count and rating using page.evaluate
         const reviewData = await page.evaluate(() => {
             let reviewCount = 0;
             let rating = 0.0;
+            let pageName = '';
+            let debugInfo = [];
             
-            // Strategy 1: Find rating and review count in aria-labels (most reliable)
-            const elements = document.querySelectorAll('[aria-label]');
-            for (const el of elements) {
-                const label = el.getAttribute('aria-label');
+            // Try to extract the place name from the page
+            const h1 = document.querySelector('h1');
+            if (h1) pageName = h1.innerText.trim();
+            
+            // Strategy 1A: Look for the main rating button (most reliable for current Google Maps)
+            // This element typically has format like "4.9 stars 549 reviews"
+            const ratingButtons = document.querySelectorAll('button[aria-label*="star"]');
+            for (const button of ratingButtons) {
+                const label = button.getAttribute('aria-label');
                 if (!label) continue;
                 
-                // Pattern: "4.5 stars 123 reviews" or "4,5 stars 123 reviews" (Indonesian format)
-                const match = label.match(/([\d,\.]+)\s*(?:stars?|bintang)\s+([\d,\.]+)\s*(?:reviews?|ulasan)/i);
+                debugInfo.push(`Button: ${label}`);
+                
+                // Pattern: "4.9 stars 549 reviews" or "4,9 bintang 549 ulasan"
+                const match = label.match(/([\d,\.]+)\s*(?:stars?|bintang)[^\d]*([\d,\.]+)\s*(?:reviews?|ulasan)/i);
                 if (match) {
-                    rating = parseFloat(match[1].replace(',', '.'));
-                    reviewCount = parseInt(match[2].replace(/[,\.]/g, ''));
-                    break;
+                    const extractedRating = parseFloat(match[1].replace(',', '.'));
+                    const extractedReviews = parseInt(match[2].replace(/[^\d]/g, ''));
+                    
+                    // Validate: rating should be between 1-5, reviews should be > 0
+                    if (extractedRating >= 1.0 && extractedRating <= 5.0 && extractedReviews > 0) {
+                        rating = extractedRating;
+                        reviewCount = extractedReviews;
+                        debugInfo.push(`✅ MATCHED: ${rating} stars, ${reviewCount} reviews`);
+                        break;
+                    }
                 }
-                
-                // Pattern: "Rated 4.5 out of 5" or similar
-                const ratingMatch = label.match(/(?:rated|rating|nilai)\s+([\d,\.]+)\s*(?:out of|dari)?\s*5/i);
-                if (ratingMatch && rating === 0) {
-                    rating = parseFloat(ratingMatch[1].replace(',', '.'));
-                }
-                
-                // Pattern: "123 reviews" or "123 ulasan"
-                const reviewMatch = label.match(/([\d,\.]+)\s*(?:reviews?|ulasan)/i);
-                if (reviewMatch && reviewCount === 0) {
-                    reviewCount = parseInt(reviewMatch[1].replace(/[,\.]/g, ''));
+            }
+            
+            // Strategy 1B: Check all other aria-labels if button search failed
+            if (rating === 0 || reviewCount === 0) {
+                const elements = document.querySelectorAll('[aria-label]');
+                for (const el of elements) {
+                    const label = el.getAttribute('aria-label');
+                    if (!label) continue;
+                    
+                    // Log relevant labels
+                    if (label.match(/(?:star|review|rating|ulasan|bintang)/i)) {
+                        debugInfo.push(`Element: ${label}`);
+                    }
+                    
+                    // Pattern: "4.5 stars 123 reviews"
+                    const match = label.match(/([\d,\.]+)\s*(?:stars?|bintang)[^\d]*([\d,\.]+)\s*(?:reviews?|ulasan)/i);
+                    if (match) {
+                        const r = parseFloat(match[1].replace(',', '.'));
+                        const c = parseInt(match[2].replace(/[^\d]/g, ''));
+                        if (r >= 1.0 && r <= 5.0 && c > 0 && rating === 0) {
+                            rating = r;
+                            reviewCount = c;
+                            debugInfo.push(`✅ MATCHED (aria-label): ${rating} stars, ${reviewCount} reviews`);
+                            break;
+                        }
+                    }
                 }
             }
             
@@ -209,22 +251,52 @@ async function fetchReviewData(outlet, browser, index = 0) {
                 }
             }
             
-            // Strategy 3: Look for rating and review text on page
+            // Strategy 3: Look for rating and review text separately in page content
             if (rating === 0 || reviewCount === 0) {
+                // Get all text content
                 const bodyText = document.body.innerText;
                 
-                // Look for patterns like "4.5★ (123)"
-                const pattern1 = bodyText.match(/([\d,\.]+)\s*[★⭐]\s*\(([\d,\.]+)\)/);
-                if (pattern1) {
-                    if (rating === 0) rating = parseFloat(pattern1[1].replace(',', '.'));
-                    if (reviewCount === 0) reviewCount = parseInt(pattern1[2].replace(/[,\.]/g, ''));
+                // Try to find rating if not found yet
+                if (rating === 0) {
+                    // Look for patterns like "4.5★" or "4.9 ⭐"
+                    const ratingPatterns = [
+                        /([1-5]\.[0-9])[\s]*[★⭐]/,
+                        /([1-5],[0-9])[\s]*[★⭐]/,
+                        /rating[:\s]+([1-5]\.[0-9])/i,
+                        /([1-5]\.[0-9])[\s]+stars?/i
+                    ];
+                    
+                    for (const pattern of ratingPatterns) {
+                        const match = bodyText.match(pattern);
+                        if (match) {
+                            const r = parseFloat(match[1].replace(',', '.'));
+                            if (r >= 1.0 && r <= 5.0) {
+                                rating = r;
+                                debugInfo.push(`✅ Found rating in body: ${rating}`);\n                                break;
+                            }
+                        }
+                    }
                 }
                 
-                // Look for patterns like "4.5 (123 reviews)"
-                const pattern2 = bodyText.match(/([\d,\.]+)\s*\(([\d,\.]+)\s*(?:reviews?|ulasan)/i);
-                if (pattern2) {
-                    if (rating === 0) rating = parseFloat(pattern2[1].replace(',', '.'));
-                    if (reviewCount === 0) reviewCount = parseInt(pattern2[2].replace(/[,\.]/g, ''));
+                // Try to find review count if not found yet
+                if (reviewCount === 0) {
+                    // Look for patterns like "549 reviews" or "(123 ulasan)"
+                    const reviewPatterns = [
+                        /([0-9,\.]+)[\s]*(?:reviews?|ulasan)/i,
+                        /\(([0-9,\.]+)[\s]*(?:reviews?|ulasan)\)/i,
+                        /([0-9,\.]+)[\s]*Google reviews?/i
+                    ];
+                    
+                    for (const pattern of reviewPatterns) {
+                        const match = bodyText.match(pattern);
+                        if (match) {
+                            const count = parseInt(match[1].replace(/[^0-9]/g, ''));
+                            if (count > 0) {
+                                reviewCount = count;
+                                debugInfo.push(`✅ Found reviews in body: ${reviewCount}`);\n                                break;
+                            }
+                        }
+                    }
                 }
             }
             
@@ -248,18 +320,30 @@ async function fetchReviewData(outlet, browser, index = 0) {
                 rating = 0; // Invalid rating
             }
             
-            return { reviewCount, rating };
+            return { reviewCount, rating, pageName, debugInfo };
         });
         
-        // Log results
+        // Log results with diagnostic info
+        const nameMatch = reviewData.pageName && reviewData.pageName.toLowerCase().includes(outlet.name.toLowerCase().replace('apotek alpro ', ''));
+        
         if (reviewData.reviewCount > 0 && reviewData.rating === 0) {
             console.log(`  ⚠️ ${outlet.name}: ${reviewData.reviewCount} reviews but NO RATING extracted`);
+            console.log(`     📍 Page name: "${reviewData.pageName}" | URL: ${actualURL}`);
         } else if (reviewData.reviewCount === 0 && reviewData.rating > 0) {
             console.log(`  ⚠️ ${outlet.name}: Rating ${reviewData.rating} but NO REVIEW COUNT extracted`);
+            console.log(`     📍 Page name: "${reviewData.pageName}" | URL: ${actualURL}`);
         } else if (reviewData.reviewCount === 0 && reviewData.rating === 0) {
             console.log(`  ⚠️ ${outlet.name}: NO DATA extracted (might be a new listing or incorrect link)`);
+            console.log(`     📍 Page name: "${reviewData.pageName}" | URL: ${actualURL}`);
+            if (reviewData.debugInfo.length > 0) {
+                console.log(`     🔍 Found aria-labels: ${reviewData.debugInfo.slice(0, 3).join(' | ')}`);
+            }
         } else {
             console.log(`  ✅ ${outlet.name}: ${reviewData.reviewCount} reviews, ${reviewData.rating} rating`);
+            if (!nameMatch) {
+                console.log(`     ⚠️ NAME MISMATCH! Expected: "${outlet.name}" | Page shows: "${reviewData.pageName}"`);
+                console.log(`     📍 URL: ${actualURL}`);
+            }
         }
         
         await page.close();
