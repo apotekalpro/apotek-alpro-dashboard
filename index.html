@@ -1451,7 +1451,7 @@
                                                         Last Checked <i class="fas fa-sort ml-1"></i>
                                                     </th>
                                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                        Medal & Reward
+                                                        Medal Tier
                                                     </th>
                                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                         Status
@@ -9102,10 +9102,7 @@ Ready for deployment! 🚀
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center gap-2">
                                 <span class="text-2xl" title="${medalInfo.name} Medal">${medalInfo.emoji}</span>
-                                <div>
-                                    <div class="text-xs font-semibold ${medalInfo.color}">${medalInfo.name}</div>
-                                    <div class="text-xs font-medium text-gray-600">${medalInfo.reward}</div>
-                                </div>
+                                <div class="text-sm font-semibold ${medalInfo.color}">${medalInfo.name}</div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -9831,7 +9828,8 @@ Ready for deployment! 🚀
                     bgColor: 'bg-yellow-50',
                     borderColor: 'border-yellow-300',
                     gradient: 'from-yellow-400 to-yellow-600',
-                    reward: 'Rp 5,000,000'
+                    podiumGradient: 'bg-gradient-to-br from-yellow-400 to-yellow-600',
+                    textColor: 'text-yellow-900'
                 };
             } else if (reviewCount >= 500) {
                 return {
@@ -9842,7 +9840,8 @@ Ready for deployment! 🚀
                     bgColor: 'bg-gray-50',
                     borderColor: 'border-gray-300',
                     gradient: 'from-gray-300 to-gray-500',
-                    reward: 'Rp 3,000,000'
+                    podiumGradient: 'bg-gradient-to-br from-gray-300 to-gray-500',
+                    textColor: 'text-gray-900'
                 };
             } else if (reviewCount >= 100) {
                 return {
@@ -9853,7 +9852,8 @@ Ready for deployment! 🚀
                     bgColor: 'bg-orange-50',
                     borderColor: 'border-orange-300',
                     gradient: 'from-orange-400 to-orange-600',
-                    reward: 'Rp 1,000,000'
+                    podiumGradient: 'bg-gradient-to-br from-orange-400 to-orange-600',
+                    textColor: 'text-orange-900'
                 };
             } else {
                 return {
@@ -9864,7 +9864,8 @@ Ready for deployment! 🚀
                     bgColor: 'bg-white',
                     borderColor: 'border-gray-200',
                     gradient: 'from-gray-100 to-gray-200',
-                    reward: '-'
+                    podiumGradient: 'bg-gradient-to-br from-gray-100 to-gray-300',
+                    textColor: 'text-gray-700'
                 };
             }
         }
@@ -9933,12 +9934,9 @@ Ready for deployment! 🚀
                                                     ⭐ <span class="font-bold">${outlet.rating.toFixed(1)}</span>
                                                 </span>
                                             </div>
-                                            <div class="mt-2 text-xs font-semibold ${medalInfo.color}">
-                                                🎁 ${medalInfo.reward}
-                                            </div>
                                         </div>
-                                        <div class="bg-gradient-to-br ${medalInfo.gradient} ${height} rounded-t-lg shadow-xl flex items-end justify-center pb-3">
-                                            <div class="text-white font-bold text-lg">${position}</div>
+                                        <div class="${medalInfo.podiumGradient} ${height} rounded-t-lg shadow-xl flex items-end justify-center pb-3">
+                                            <div class="${medalInfo.textColor} font-bold text-lg">${position}</div>
                                         </div>
                                     </div>
                                 `;
@@ -9981,12 +9979,6 @@ Ready for deployment! 🚀
                                                         <span>⭐</span>
                                                         <span class="font-bold text-yellow-600">${outlet.rating.toFixed(1)}</span>
                                                     </span>
-                                                    ${medalInfo.reward !== '-' ? `
-                                                        <span class="inline-flex items-center gap-1 text-xs font-semibold ${medalInfo.color}">
-                                                            <span>🎁</span>
-                                                            <span>${medalInfo.reward}</span>
-                                                        </span>
-                                                    ` : ''}
                                                 </div>
                                             </div>
                                         </div>
