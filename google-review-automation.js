@@ -299,6 +299,40 @@ function parseGoogleMapsHTML(html) {
             }
         }
         
+        // Pattern 8: Look in window.__INITIAL_DATA__ or similar JavaScript variables
+        if (rating === 0) {
+            const jsData = html.match(/window\.__[A-Z_]+__\s*=\s*({[\s\S]+?});/);
+            if (jsData) {
+                try {
+                    const dataStr = jsData[1];
+                    const ratingInJs = dataStr.match(/"rating(?:Value)?"\s*:\s*"?([\d.]+)"?/);
+                    if (ratingInJs) {
+                        rating = parseFloat(ratingInJs[1]);
+                    }
+                } catch (e) {
+                    // Ignore JSON parse errors
+                }
+            }
+        }
+        
+        // Pattern 9: Look for rating in any JSON structure
+        if (rating === 0) {
+            const allJsonRatings = html.match(/"(?:rating|ratingValue|averageRating)"\s*:\s*"?([\d.]+)"?/g);
+            if (allJsonRatings && allJsonRatings.length > 0) {
+                // Take the first valid rating found
+                for (const match of allJsonRatings) {
+                    const val = match.match(/([\d.]+)/);
+                    if (val) {
+                        const possibleRating = parseFloat(val[1]);
+                        if (possibleRating >= 1.0 && possibleRating <= 5.0) {
+                            rating = possibleRating;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
         // Validate rating range
         if (rating > 0 && (rating < 1.0 || rating > 5.0)) {
             rating = 0; // Invalid rating
