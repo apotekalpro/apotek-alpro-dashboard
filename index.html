@@ -9807,7 +9807,7 @@ Ready for deployment! 🚀
             renderOutletsTable();
         }
         
-        // Update leaderboard
+        // Update leaderboard with visual podium design
         function updateLeaderboard() {
             const container = document.getElementById('leaderboardContainer');
             
@@ -9829,28 +9829,115 @@ Ready for deployment! 🚀
                 return;
             }
             
-            container.innerHTML = rankedOutlets.map((outlet, index) => {
-                const medalColors = ['text-yellow-500', 'text-gray-400', 'text-orange-600'];
-                const medalColor = index < 3 ? medalColors[index] : 'text-gray-300';
-                const bgColors = ['bg-yellow-50', 'bg-gray-50', 'bg-orange-50'];
-                const bgColor = index < 3 ? bgColors[index] : 'bg-white';
+            // Split into top 3 (podium) and rest (4-10)
+            const topThree = rankedOutlets.slice(0, 3);
+            const restOfTop10 = rankedOutlets.slice(3, 10);
+            
+            // Build podium for top 3 (2nd, 1st, 3rd order for visual effect)
+            let podiumHTML = '';
+            if (topThree.length > 0) {
+                const podiumOrder = topThree.length >= 3 ? [1, 0, 2] : topThree.length === 2 ? [1, 0] : [0];
+                const podiumHeights = ['h-32', 'h-40', 'h-28']; // 2nd tallest, 1st tallest, 3rd tallest
+                const podiumPositions = ['2nd', '1st', '3rd'];
+                const medalEmojis = ['🥈', '🥇', '🥉'];
+                const bgGradients = [
+                    'bg-gradient-to-br from-gray-300 to-gray-400',
+                    'bg-gradient-to-br from-yellow-400 to-yellow-600',
+                    'bg-gradient-to-br from-orange-400 to-orange-600'
+                ];
+                const textColors = ['text-gray-800', 'text-yellow-900', 'text-orange-900'];
                 
-                return `
-                    <div class="flex items-center justify-between p-3 ${bgColor} rounded-lg hover:shadow-md transition-shadow">
-                        <div class="flex items-center gap-3 flex-1">
-                            <div class="text-2xl ${medalColor} font-bold w-8 text-center">
-                                ${index < 3 ? '🏆' : `#${index + 1}`}
-                            </div>
-                            <div class="flex-1">
-                                <div class="font-semibold text-gray-800">${outlet.name}</div>
-                                <div class="text-sm text-gray-600">
-                                    ${outlet.reviewCount} reviews • ⭐ ${outlet.rating.toFixed(1)}
-                                </div>
-                            </div>
+                podiumHTML = `
+                    <div class="mb-8">
+                        <h3 class="text-center text-xl font-bold text-gray-700 mb-6">🏆 Top 3 Champions 🏆</h3>
+                        <div class="flex items-end justify-center gap-4">
+                            ${podiumOrder.map((actualIndex, displayIndex) => {
+                                if (actualIndex >= topThree.length) return '';
+                                const outlet = topThree[actualIndex];
+                                const height = podiumHeights[displayIndex];
+                                const position = podiumPositions[displayIndex];
+                                const medal = medalEmojis[displayIndex];
+                                const gradient = bgGradients[displayIndex];
+                                const textColor = textColors[displayIndex];
+                                const rank = actualIndex + 1;
+                                
+                                return `
+                                    <div class="flex-1 max-w-xs">
+                                        <div class="text-center mb-3 transform hover:scale-105 transition-transform">
+                                            <div class="inline-block bg-white rounded-full p-4 shadow-lg mb-2">
+                                                <div class="text-5xl">${medal}</div>
+                                            </div>
+                                            <div class="font-bold text-gray-800 text-sm">#${rank}</div>
+                                            <div class="font-semibold text-gray-900 text-sm px-2 leading-tight mt-1">
+                                                ${outlet.name}
+                                            </div>
+                                            <div class="flex items-center justify-center gap-3 mt-2 text-sm font-medium text-gray-700">
+                                                <span class="flex items-center gap-1">
+                                                    💬 <span class="font-bold">${outlet.reviewCount}</span>
+                                                </span>
+                                                <span class="flex items-center gap-1">
+                                                    ⭐ <span class="font-bold">${outlet.rating.toFixed(1)}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="${gradient} ${height} rounded-t-lg shadow-xl flex items-end justify-center pb-3">
+                                            <div class="${textColor} font-bold text-lg">${position}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
-            }).join('');
+            }
+            
+            // Build cards for positions 4-10
+            let cardsHTML = '';
+            if (restOfTop10.length > 0) {
+                cardsHTML = `
+                    <div class="space-y-3">
+                        <h3 class="text-center text-lg font-semibold text-gray-600 mb-4">Top 4-10</h3>
+                        ${restOfTop10.map((outlet, index) => {
+                            const rank = index + 4;
+                            const progressPercentage = (outlet.reviewCount / rankedOutlets[0].reviewCount) * 100;
+                            
+                            return `
+                                <div class="bg-white border-2 border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-blue-300 transition-all duration-200 transform hover:-translate-y-1">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center gap-3 flex-1">
+                                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                                                ${rank}
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="font-semibold text-gray-800 text-sm truncate">${outlet.name}</div>
+                                                <div class="flex items-center gap-3 mt-1">
+                                                    <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-600">
+                                                        <span class="text-blue-500">💬</span>
+                                                        <span class="font-bold text-gray-800">${outlet.reviewCount}</span>
+                                                        <span class="text-gray-500">reviews</span>
+                                                    </span>
+                                                    <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-600">
+                                                        <span>⭐</span>
+                                                        <span class="font-bold text-yellow-600">${outlet.rating.toFixed(1)}</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                            <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-500" 
+                                                 style="width: ${progressPercentage}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = podiumHTML + cardsHTML;
         }
         
         // ========================================
