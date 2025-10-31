@@ -1,0 +1,32 @@
+name: Google Review Daily Sync
+
+on:
+  schedule:
+    - cron: '0 1 * * *'  # Daily at 1:00 AM UTC (8:00 AM Jakarta)
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  sync-reviews:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm install @supabase/supabase-js node-fetch
+      
+      - name: Run Google Review Sync
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: node google-review-automation.js
+      
+      - name: Send notification on failure
+        if: failure()
+        run: echo "❌ Google Review sync failed"

@@ -1,9 +1,9 @@
 // Supabase Configuration and Helper Functions
 // Replace the localStorage functionality with cloud database
 
-// Supabase client setup - YOU NEED TO ADD YOUR CREDENTIALS HERE
-const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Replace with your Project URL
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // Replace with your anon public key
+// Supabase client setup - CONFIGURED
+const SUPABASE_URL = 'https://sudchiscctcihsznewan.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1ZGNoaXNjY3RjaWhzem5ld2FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4OTM2NzUsImV4cCI6MjA3NzQ2OTY3NX0.qwT4DbDY0CvyjG5ubsrVZHvmHF67A1t2y4NXUZSczTQ';
 
 // Import Supabase client (we'll add this to your HTML)
 // <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

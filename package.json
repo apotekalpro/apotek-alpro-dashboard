@@ -2,6 +2,7 @@
   "name": "apotek-alpro-dashboard",
   "version": "1.0.0",
   "description": "Apotek Alpro Executive Dashboard - Mobile App",
+  "type": "module",
   "main": "supabase-config.js",
   "scripts": {
     "build": "cp index.html mobile-styles.css mobile-styles-enhanced.css supabase-config.js www/ && cp -r assets www/ 2>/dev/null || true",
@@ -13,6 +14,11 @@
   "keywords": ["apotek", "alpro", "dashboard", "mobile"],
   "author": "Apotek Alpro",
   "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "node-fetch": "^3.3.2",
+    "puppeteer": "^21.7.0"
+  },
   "devDependencies": {
     "@capacitor/android": "^7.4.4",
     "@capacitor/cli": "^7.4.4",
