@@ -3,13 +3,13 @@
  * 
  * This script automates the daily sync of Google Reviews:
  * 1. Fetches outlets from Google Sheets
- * 2. Gets review data from Google Maps
+ * 2. Gets review data from Google Maps using Puppeteer (headless browser)
  * 3. Stores results in Supabase
  * 
  * Schedule: Daily at 1:00 AM
  * 
  * Setup Instructions:
- * 1. Install dependencies: npm install @supabase/supabase-js node-fetch
+ * 1. Install dependencies: npm install @supabase/supabase-js node-fetch puppeteer
  * 2. Set environment variables:
  *    - SUPABASE_URL=your_supabase_url
  *    - SUPABASE_KEY=your_supabase_service_key
@@ -18,6 +18,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import fetch from 'node-fetch';
+import puppeteer from 'puppeteer';
 
 // Configuration
 const GOOGLE_SHEETS_ID = '1nTSZFKFZRt1owO-hKUk2lkzvlGxcyrBTC47yDTiu1YQ'; // Public sheet
@@ -117,106 +118,151 @@ async function fetchOutletsFromGoogleSheets() {
 }
 
 /**
- * Fetch review data for a single outlet
+ * Fetch review data for a single outlet using Puppeteer
  */
-async function fetchReviewData(outlet, index = 0) {
+async function fetchReviewData(outlet, browser, index = 0) {
+    const page = await browser.newPage();
+    
     try {
-        console.log(`  🔍 Fetching reviews for: ${outlet.name}`);
+        console.log(`  🔍 [${index + 1}] Fetching reviews for: ${outlet.name}`);
         
-        // Try different approaches to fetch the page
-        let html = '';
-        let fetchSuccess = false;
+        // Set user agent
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         
-        // Approach 1: Try direct fetch (works in Node.js server environment)
-        try {
-            const directResponse = await fetch(outlet.link, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                },
-                redirect: 'follow'
-            });
-            html = await directResponse.text();
-            if (html.length > 1000) {
-                fetchSuccess = true;
-                if (index === 0) console.log(`  ✅ Direct fetch successful`);
-            }
-        } catch (directError) {
-            if (index === 0) console.log(`  ⚠️ Direct fetch failed: ${directError.message}`);
-        }
+        // Set viewport
+        await page.setViewport({ width: 1920, height: 1080 });
         
-        // Approach 2: Try with CORS proxy if direct failed
-        if (!fetchSuccess) {
-            try {
-                const proxyResponse = await fetch(CORS_PROXY + encodeURIComponent(outlet.link));
-                html = await proxyResponse.text();
-                if (html.length > 1000) {
-                    fetchSuccess = true;
-                    if (index === 0) console.log(`  ✅ CORS proxy fetch successful`);
-                }
-            } catch (proxyError) {
-                if (index === 0) console.log(`  ⚠️ CORS proxy failed: ${proxyError.message}`);
-            }
-        }
+        // Navigate to the Google Maps page
+        await page.goto(outlet.link, {
+            waitUntil: 'networkidle2',
+            timeout: 30000
+        });
         
-        // Debug: Show HTML info for first outlet
-        if (index === 0) {
-            console.log(`  📄 HTML length: ${html.length}`);
-            if (html.length < 1000) {
-                console.log(`  ⚠️ HTML too short, might be error page`);
-                console.log(`  📄 HTML preview: ${html.substring(0, 200)}`);
-            }
-        }
+        // Wait a bit for dynamic content to load
+        await page.waitForTimeout(2000);
         
-        // If we got very little HTML, it's probably an error
-        if (html.length < 500) {
-            console.log(`  ⚠️ ${outlet.name}: Failed to fetch page (HTML length: ${html.length})`);
-            return {
-                ...outlet,
-                reviewCount: 0,
-                rating: 0,
-                lastChecked: new Date().toISOString(),
-                error: 'Failed to fetch page content'
-            };
-        }
-        
-        // Parse review count and rating
-        const reviewData = parseGoogleMapsHTML(html);
-        
-        // Enhanced debugging for outlets with missing ratings
-        if (reviewData.reviewCount > 0 && reviewData.rating === 0) {
-            // Log warning for outlets with reviews but no rating
-            console.log(`  ⚠️ ${outlet.name}: ${reviewData.reviewCount} reviews but NO RATING extracted`);
+        // Extract review count and rating using page.evaluate
+        const reviewData = await page.evaluate(() => {
+            let reviewCount = 0;
+            let rating = 0.0;
             
-            // For first 3 outlets with this issue, show HTML snippets
-            if (index < 3) {
-                console.log(`  📄 HTML snippet (first 500 chars):`);
-                console.log(html.substring(0, 500));
-                console.log(`  ...`);
+            // Strategy 1: Find rating and review count in aria-labels (most reliable)
+            const elements = document.querySelectorAll('[aria-label]');
+            for (const el of elements) {
+                const label = el.getAttribute('aria-label');
+                if (!label) continue;
                 
-                // Try to find any decimal numbers that might be ratings
-                const decimals = html.match(/[1-5]\.\d+/g);
-                if (decimals) {
-                    console.log(`  🔍 Found decimals in HTML: ${decimals.slice(0, 10).join(', ')}`);
+                // Pattern: "4.5 stars 123 reviews" or "4,5 stars 123 reviews" (Indonesian format)
+                const match = label.match(/([\d,\.]+)\s*(?:stars?|bintang)\s+([\d,\.]+)\s*(?:reviews?|ulasan)/i);
+                if (match) {
+                    rating = parseFloat(match[1].replace(',', '.'));
+                    reviewCount = parseInt(match[2].replace(/[,\.]/g, ''));
+                    break;
+                }
+                
+                // Pattern: "Rated 4.5 out of 5" or similar
+                const ratingMatch = label.match(/(?:rated|rating|nilai)\s+([\d,\.]+)\s*(?:out of|dari)?\s*5/i);
+                if (ratingMatch && rating === 0) {
+                    rating = parseFloat(ratingMatch[1].replace(',', '.'));
+                }
+                
+                // Pattern: "123 reviews" or "123 ulasan"
+                const reviewMatch = label.match(/([\d,\.]+)\s*(?:reviews?|ulasan)/i);
+                if (reviewMatch && reviewCount === 0) {
+                    reviewCount = parseInt(reviewMatch[1].replace(/[,\.]/g, ''));
                 }
             }
-        }
-        
-        // Debug rating extraction for first outlet
-        if (index === 0) {
-            if (reviewData.rating > 0) {
-                console.log(`  ✅ Successfully extracted rating: ${reviewData.rating}`);
-            } else {
-                // Look for rating patterns in HTML
-                const ratingSnippet = html.match(/([1-5][\.,]\d+)[^\d]*\([\d,]+\)/);
-                if (ratingSnippet) {
-                    console.log(`  📝 Found rating pattern: ${ratingSnippet[0]}`);
-                } else {
-                    console.log(`  ⚠️ No rating pattern found in HTML`);
+            
+            // Strategy 2: Look in structured data (JSON-LD)
+            if (rating === 0 || reviewCount === 0) {
+                const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+                for (const script of scripts) {
+                    try {
+                        const data = JSON.parse(script.textContent);
+                        
+                        // Check for aggregateRating
+                        if (data.aggregateRating) {
+                            if (rating === 0 && data.aggregateRating.ratingValue) {
+                                rating = parseFloat(data.aggregateRating.ratingValue);
+                            }
+                            if (reviewCount === 0 && data.aggregateRating.reviewCount) {
+                                reviewCount = parseInt(data.aggregateRating.reviewCount);
+                            }
+                        }
+                        
+                        // Check for nested objects
+                        if (Array.isArray(data)) {
+                            for (const item of data) {
+                                if (item.aggregateRating) {
+                                    if (rating === 0 && item.aggregateRating.ratingValue) {
+                                        rating = parseFloat(item.aggregateRating.ratingValue);
+                                    }
+                                    if (reviewCount === 0 && item.aggregateRating.reviewCount) {
+                                        reviewCount = parseInt(item.aggregateRating.reviewCount);
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // Ignore JSON parse errors
+                    }
                 }
             }
+            
+            // Strategy 3: Look for rating and review text on page
+            if (rating === 0 || reviewCount === 0) {
+                const bodyText = document.body.innerText;
+                
+                // Look for patterns like "4.5★ (123)"
+                const pattern1 = bodyText.match(/([\d,\.]+)\s*[★⭐]\s*\(([\d,\.]+)\)/);
+                if (pattern1) {
+                    if (rating === 0) rating = parseFloat(pattern1[1].replace(',', '.'));
+                    if (reviewCount === 0) reviewCount = parseInt(pattern1[2].replace(/[,\.]/g, ''));
+                }
+                
+                // Look for patterns like "4.5 (123 reviews)"
+                const pattern2 = bodyText.match(/([\d,\.]+)\s*\(([\d,\.]+)\s*(?:reviews?|ulasan)/i);
+                if (pattern2) {
+                    if (rating === 0) rating = parseFloat(pattern2[1].replace(',', '.'));
+                    if (reviewCount === 0) reviewCount = parseInt(pattern2[2].replace(/[,\.]/g, ''));
+                }
+            }
+            
+            // Strategy 4: Look for specific Google Maps classes (may change, but worth trying)
+            if (rating === 0) {
+                const ratingElements = document.querySelectorAll('[role="img"]');
+                for (const el of ratingElements) {
+                    const ariaLabel = el.getAttribute('aria-label');
+                    if (ariaLabel && ariaLabel.includes('star')) {
+                        const match = ariaLabel.match(/([\d,\.]+)\s*star/i);
+                        if (match) {
+                            rating = parseFloat(match[1].replace(',', '.'));
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Validate rating range
+            if (rating > 0 && (rating < 1.0 || rating > 5.0)) {
+                rating = 0; // Invalid rating
+            }
+            
+            return { reviewCount, rating };
+        });
+        
+        // Log results
+        if (reviewData.reviewCount > 0 && reviewData.rating === 0) {
+            console.log(`  ⚠️ ${outlet.name}: ${reviewData.reviewCount} reviews but NO RATING extracted`);
+        } else if (reviewData.reviewCount === 0 && reviewData.rating > 0) {
+            console.log(`  ⚠️ ${outlet.name}: Rating ${reviewData.rating} but NO REVIEW COUNT extracted`);
+        } else if (reviewData.reviewCount === 0 && reviewData.rating === 0) {
+            console.log(`  ⚠️ ${outlet.name}: NO DATA extracted (might be a new listing or incorrect link)`);
+        } else {
+            console.log(`  ✅ ${outlet.name}: ${reviewData.reviewCount} reviews, ${reviewData.rating} rating`);
         }
         
-        console.log(`  ✅ ${outlet.name}: ${reviewData.reviewCount} reviews, ${reviewData.rating} rating`);
+        await page.close();
         
         return {
             ...outlet,
@@ -226,7 +272,9 @@ async function fetchReviewData(outlet, index = 0) {
         };
         
     } catch (error) {
-        console.error(`  ❌ Error fetching reviews for ${outlet.name}:`, error);
+        console.error(`  ❌ Error fetching reviews for ${outlet.name}:`, error.message);
+        await page.close();
+        
         return {
             ...outlet,
             reviewCount: 0,
@@ -237,179 +285,7 @@ async function fetchReviewData(outlet, index = 0) {
     }
 }
 
-/**
- * Parse Google Maps HTML for review count and rating
- */
-function parseGoogleMapsHTML(html) {
-    let reviewCount = 0;
-    let rating = 0.0;
-    
-    try {
-        // ===== REVIEW COUNT PARSING =====
-        
-        // Pattern 1: Review count with text
-        const reviewMatch = html.match(/(\d+(?:[,\.]\d+)*)\s*(?:reviews|ulasan|google reviews)/i);
-        if (reviewMatch) {
-            reviewCount = parseInt(reviewMatch[1].replace(/[,\.]/g, ''));
-        }
-        
-        // Pattern 2: Parentheses format (123)
-        if (reviewCount === 0) {
-            const reviewMatch2 = html.match(/\((\d+(?:[,\.]\d+)*)\)/);
-            if (reviewMatch2) {
-                const potentialCount = parseInt(reviewMatch2[1].replace(/[,\.]/g, ''));
-                if (potentialCount > 0 && potentialCount < 100000) {
-                    reviewCount = potentialCount;
-                }
-            }
-        }
-        
-        // ===== RATING PARSING =====
-        
-        // Pattern 1: Rating before review count (most common)
-        // Format: "4.5 (123)" or "4.5★ (123)"
-        const ratingBeforeCount = html.match(/([1-5][\.,]\d)\s*[★⭐]?\s*\([\d,\.]+\)/);
-        if (ratingBeforeCount) {
-            rating = parseFloat(ratingBeforeCount[1].replace(',', '.'));
-        }
-        
-        // Pattern 2: Rating in structured data (JSON-LD)
-        if (rating === 0) {
-            const ratingMatch = html.match(/"ratingValue"\s*:\s*"?([\d.,]+)"?/);
-            if (ratingMatch) {
-                rating = parseFloat(ratingMatch[1].replace(',', '.'));
-            }
-        }
-        
-        // Pattern 3: aggregateRating
-        if (rating === 0) {
-            const aggRating = html.match(/"aggregateRating"[^}]*"ratingValue"\s*:\s*"?([\d.,]+)"?/);
-            if (aggRating) {
-                rating = parseFloat(aggRating[1].replace(',', '.'));
-            }
-        }
-        
-        // Pattern 4: Rating near stars
-        if (rating === 0) {
-            const pattern3 = html.match(/([1-5][.,]\d+)\s*[★⭐]/);
-            if (pattern3) {
-                rating = parseFloat(pattern3[1].replace(',', '.'));
-            }
-        }
-        
-        // Pattern 5: Aria-label
-        if (rating === 0) {
-            const altRatingMatch = html.match(/aria-label="([\d.,]+)\s*(?:stars?|bintang)/i);
-            if (altRatingMatch) {
-                rating = parseFloat(altRatingMatch[1].replace(',', '.'));
-            }
-        }
-        
-        // Pattern 6: Rating in title or alt text
-        if (rating === 0) {
-            const titleRating = html.match(/(?:rating|nilai):\s*([1-5][.,]\d+)/i);
-            if (titleRating) {
-                rating = parseFloat(titleRating[1].replace(',', '.'));
-            }
-        }
-        
-        // Pattern 7: Simple decimal before reviews
-        if (rating === 0 && reviewCount > 0) {
-            // Look for a decimal number (1.0-5.0) near the review count
-            const nearbyRating = html.match(new RegExp(`([1-5][\\.\\,]\\d)\\D*${reviewCount}`));
-            if (nearbyRating) {
-                rating = parseFloat(nearbyRating[1].replace(',', '.'));
-            }
-        }
-        
-        // Pattern 8: Look in window.__INITIAL_DATA__ or similar JavaScript variables
-        if (rating === 0) {
-            const jsData = html.match(/window\.__[A-Z_]+__\s*=\s*({[\s\S]+?});/);
-            if (jsData) {
-                try {
-                    const dataStr = jsData[1];
-                    const ratingInJs = dataStr.match(/"rating(?:Value)?"\s*:\s*"?([\d.]+)"?/);
-                    if (ratingInJs) {
-                        rating = parseFloat(ratingInJs[1]);
-                    }
-                } catch (e) {
-                    // Ignore JSON parse errors
-                }
-            }
-        }
-        
-        // Pattern 9: Look for rating in any JSON structure
-        if (rating === 0) {
-            const allJsonRatings = html.match(/"(?:rating|ratingValue|averageRating)"\s*:\s*"?([\d.]+)"?/g);
-            if (allJsonRatings && allJsonRatings.length > 0) {
-                // Take the first valid rating found
-                for (const match of allJsonRatings) {
-                    const val = match.match(/([\d.]+)/);
-                    if (val) {
-                        const possibleRating = parseFloat(val[1]);
-                        if (possibleRating >= 1.0 && possibleRating <= 5.0) {
-                            rating = possibleRating;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Pattern 10: Meta tags (og:rating, rating meta)
-        if (rating === 0) {
-            const metaRating = html.match(/<meta[^>]*(?:property|name)="(?:og:)?rating"[^>]*content="([\d.]+)"/i);
-            if (metaRating) {
-                rating = parseFloat(metaRating[1]);
-            }
-        }
-        
-        // Pattern 11: Look for rating in data attributes
-        if (rating === 0) {
-            const dataRating = html.match(/data-rating="([\d.]+)"/i);
-            if (dataRating) {
-                rating = parseFloat(dataRating[1]);
-            }
-        }
-        
-        // Pattern 12: Schema.org LocalBusiness rating
-        if (rating === 0) {
-            const schemaRating = html.match(/"@type"\s*:\s*"LocalBusiness"[\s\S]{0,500}"ratingValue"\s*:\s*"?([\d.]+)"?/);
-            if (schemaRating) {
-                rating = parseFloat(schemaRating[1]);
-            }
-        }
-        
-        // Pattern 13: Extract from the specific review count context
-        // If we have review count, look for rating immediately before it in various formats
-        if (rating === 0 && reviewCount > 0) {
-            // Try multiple patterns around the review count
-            const patterns = [
-                new RegExp(`([1-5][\\.\\,]\\d)\\s*(?:stars?)?\\s*[\\(\\[]?${reviewCount}[\\)\\]]?`),
-                new RegExp(`([1-5][\\.\\,]\\d)[^\\d]{0,20}${reviewCount}`),
-                new RegExp(`rating[^\\d]*([1-5][\\.\\,]\\d)[^\\d]*${reviewCount}`, 'i')
-            ];
-            
-            for (const pattern of patterns) {
-                const match = html.match(pattern);
-                if (match) {
-                    rating = parseFloat(match[1].replace(',', '.'));
-                    break;
-                }
-            }
-        }
-        
-        // Validate rating range
-        if (rating > 0 && (rating < 1.0 || rating > 5.0)) {
-            rating = 0; // Invalid rating
-        }
-        
-    } catch (error) {
-        console.error('Error parsing HTML:', error);
-    }
-    
-    return { reviewCount, rating };
-}
+// Removed parseGoogleMapsHTML function - now using Puppeteer for reliable extraction
 
 /**
  * Save outlets to Supabase
@@ -474,22 +350,40 @@ function sleep(ms) {
  * Main automation function
  */
 async function main() {
-    console.log('🚀 Starting Google Review Automation');
+    console.log('🚀 Starting Google Review Automation (Puppeteer Edition)');
     console.log(`⏰ Time: ${new Date().toISOString()}`);
     console.log('');
     
+    let browser;
+    
     try {
-        // Step 1: Fetch outlets from Google Sheets
+        // Step 1: Launch Puppeteer browser
+        console.log('🌐 Launching headless browser...');
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu',
+                '--window-size=1920x1080'
+            ]
+        });
+        console.log('✅ Browser launched successfully');
+        console.log('');
+        
+        // Step 2: Fetch outlets from Google Sheets
         const outlets = await fetchOutletsFromGoogleSheets();
         console.log('');
         
-        // Step 2: Fetch reviews for each outlet
+        // Step 3: Fetch reviews for each outlet
         console.log('📊 Fetching reviews for all outlets...');
         const outletsWithReviews = [];
         
         for (let i = 0; i < outlets.length; i++) {
             const outlet = outlets[i];
-            const outletWithReview = await fetchReviewData(outlet, i);
+            const outletWithReview = await fetchReviewData(outlet, browser, i);
             outletsWithReviews.push(outletWithReview);
             
             // Delay between requests to avoid rate limiting
@@ -499,24 +393,34 @@ async function main() {
         }
         console.log('');
         
-        // Step 3: Save to Supabase
+        // Step 4: Save to Supabase
         await saveToSupabase(outletsWithReviews);
         console.log('');
         
         // Summary
         const totalReviews = outletsWithReviews.reduce((sum, o) => sum + o.reviewCount, 0);
-        const avgRating = outletsWithReviews.filter(o => o.rating > 0).reduce((sum, o) => sum + o.rating, 0) / outletsWithReviews.filter(o => o.rating > 0).length;
+        const outletsWithRatings = outletsWithReviews.filter(o => o.rating > 0);
+        const avgRating = outletsWithRatings.length > 0 
+            ? outletsWithRatings.reduce((sum, o) => sum + o.rating, 0) / outletsWithRatings.length 
+            : 0;
         
         console.log('✅ Automation completed successfully!');
         console.log('📊 Summary:');
         console.log(`   • Total Outlets: ${outletsWithReviews.length}`);
+        console.log(`   • Outlets with Ratings: ${outletsWithRatings.length}`);
         console.log(`   • Total Reviews: ${totalReviews}`);
-        console.log(`   • Average Rating: ${avgRating.toFixed(2)}`);
+        console.log(`   • Average Rating: ${avgRating > 0 ? avgRating.toFixed(2) : 'N/A'}`);
         console.log('');
         
     } catch (error) {
         console.error('❌ Automation failed:', error);
         process.exit(1);
+    } finally {
+        // Close browser
+        if (browser) {
+            await browser.close();
+            console.log('🌐 Browser closed');
+        }
     }
 }
 
