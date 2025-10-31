@@ -9320,20 +9320,58 @@ Ready for deployment! 🚀
                 
                 // Show headers around columns J (9), P (15), AC (28)
                 console.log('📋 Target Column Headers:');
-                console.log(`   [9] (Column J - Name): "${headers[9] || 'NOT FOUND'}"`);
-                console.log(`   [15] (Column P - Status): "${headers[15] || 'NOT FOUND'}"`);
-                console.log(`   [28] (Column AC - Maps Link): "${headers[28] || 'NOT FOUND'}"`);
+                console.log(`   [9] (Column J): "${headers[9] || 'NOT FOUND'}"`);
+                console.log(`   [15] (Column P): "${headers[15] || 'NOT FOUND'}"`);
+                console.log(`   [28] (Column AC): "${headers[28] || 'NOT FOUND'}"`);
                 console.log('');
                 
-                // Find column indices
-                const nameColIndex = headers.findIndex(h => h === 'J' || h.toLowerCase().includes('outlet') || h.toLowerCase().includes('name'));
-                const linkColIndex = headers.findIndex(h => h === 'AC' || h.toLowerCase().includes('gmap') || h.toLowerCase().includes('link'));
-                const statusColIndex = headers.findIndex(h => h === 'P' || h.toLowerCase().includes('status'));
+                // Find column indices by looking for Excel column letters
+                let nameColIndex = headers.findIndex(h => h === 'J');
+                let linkColIndex = headers.findIndex(h => h === 'AC');
+                let statusColIndex = headers.findIndex(h => h === 'P');
                 
-                console.log('🔍 Column Detection Results:');
-                console.log(`   Name Column Index: ${nameColIndex} (using ${nameColIndex >= 0 ? 'detected' : 'fallback'})`);
-                console.log(`   Link Column Index: ${linkColIndex} (using ${linkColIndex >= 0 ? 'detected' : 'fallback'})`);
-                console.log(`   Status Column Index: ${statusColIndex} (using ${statusColIndex >= 0 ? 'detected' : 'fallback'})`);
+                console.log('🔍 Looking for Excel Column Letters (J, AC, P):');
+                console.log(`   'J' found at index: ${nameColIndex}`);
+                console.log(`   'AC' found at index: ${linkColIndex}`);
+                console.log(`   'P' found at index: ${statusColIndex}`);
+                console.log('');
+                
+                // If not found by letter, try smart detection by content
+                if (nameColIndex < 0) {
+                    console.log('⚠️ Column J not found, trying smart detection for name column...');
+                    nameColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('outlet') || 
+                        h.toLowerCase().includes('name') ||
+                        h.toLowerCase().includes('apotek')
+                    );
+                    console.log(`   Smart detection result: ${nameColIndex >= 0 ? 'Found at ' + nameColIndex : 'Not found'}`);
+                }
+                
+                if (linkColIndex < 0) {
+                    console.log('⚠️ Column AC not found, trying smart detection for link column...');
+                    linkColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('gmap') || 
+                        h.toLowerCase().includes('maps') ||
+                        h.toLowerCase().includes('link') ||
+                        h.toLowerCase().includes('url')
+                    );
+                    console.log(`   Smart detection result: ${linkColIndex >= 0 ? 'Found at ' + linkColIndex : 'Not found'}`);
+                }
+                
+                if (statusColIndex < 0) {
+                    console.log('⚠️ Column P not found, trying smart detection for status column...');
+                    statusColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('status') ||
+                        h.toLowerCase().includes('state')
+                    );
+                    console.log(`   Smart detection result: ${statusColIndex >= 0 ? 'Found at ' + statusColIndex : 'Not found'}`);
+                }
+                console.log('');
+                
+                console.log('🎯 Final Column Indices:');
+                console.log(`   Name Column: ${nameColIndex >= 0 ? nameColIndex : 'NOT FOUND - will use index 9'}`);
+                console.log(`   Link Column: ${linkColIndex >= 0 ? linkColIndex : 'NOT FOUND - will use index 28'}`);
+                console.log(`   Status Column: ${statusColIndex >= 0 ? statusColIndex : 'NOT FOUND - will use index 15'}`);
                 console.log('');
                 
                 let imported = 0;
@@ -9352,9 +9390,9 @@ Ready for deployment! 🚀
                     if (!line.trim()) continue;
                     
                     const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
-                    const name = cols[nameColIndex] || cols[9];
-                    const link = cols[linkColIndex] || cols[28];
-                    const status = cols[statusColIndex] || cols[15];
+                    const name = nameColIndex >= 0 ? cols[nameColIndex] : cols[9];
+                    const link = linkColIndex >= 0 ? cols[linkColIndex] : cols[28];
+                    const status = statusColIndex >= 0 ? cols[statusColIndex] : cols[15];
                     
                     console.log(`   Row ${i}:`);
                     console.log(`     Name [${nameColIndex >= 0 ? nameColIndex : 9}]: "${name || 'EMPTY'}"`);
@@ -9371,9 +9409,10 @@ Ready for deployment! 🚀
                     
                     const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
                     
-                    const name = cols[nameColIndex] || cols[9]; // J is 10th column (index 9)
-                    const link = cols[linkColIndex] || cols[28]; // AC is 29th column (index 28)
-                    const status = cols[statusColIndex] || cols[15]; // P is 16th column (index 15)
+                    // Use detected index if found, otherwise fallback to hardcoded
+                    const name = nameColIndex >= 0 ? cols[nameColIndex] : cols[9];
+                    const link = linkColIndex >= 0 ? cols[linkColIndex] : cols[28];
+                    const status = statusColIndex >= 0 ? cols[statusColIndex] : cols[15];
                     
                     // Debug first few rows
                     if (i <= 3) {
@@ -9545,13 +9584,53 @@ Ready for deployment! 🚀
                 
                 // Show headers
                 const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                
+                // Find column indices
+                let nameColIndex = headers.findIndex(h => h === 'J');
+                let linkColIndex = headers.findIndex(h => h === 'AC');
+                let statusColIndex = headers.findIndex(h => h === 'P');
+                
+                // Smart detection fallback
+                if (nameColIndex < 0) {
+                    nameColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('outlet') || 
+                        h.toLowerCase().includes('name') ||
+                        h.toLowerCase().includes('apotek')
+                    );
+                }
+                if (linkColIndex < 0) {
+                    linkColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('gmap') || 
+                        h.toLowerCase().includes('maps') ||
+                        h.toLowerCase().includes('link') ||
+                        h.toLowerCase().includes('url')
+                    );
+                }
+                if (statusColIndex < 0) {
+                    statusColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('status') ||
+                        h.toLowerCase().includes('state')
+                    );
+                }
+                
+                // Use fallback if still not found
+                if (nameColIndex < 0) nameColIndex = 9;
+                if (linkColIndex < 0) linkColIndex = 28;
+                if (statusColIndex < 0) statusColIndex = 15;
+                
                 console.log(`📋 All ${headers.length} Column Headers:`);
                 headers.forEach((h, i) => {
-                    const marker = (i === 9 || i === 15 || i === 28) ? ' ⭐' : '';
+                    let marker = '';
+                    if (i === nameColIndex) marker = ' ⭐ NAME';
+                    if (i === linkColIndex) marker = ' ⭐ LINK';
+                    if (i === statusColIndex) marker = ' ⭐ STATUS';
                     console.log(`   [${i}] ${h}${marker}`);
                 });
                 console.log('');
-                console.log('Legend: ⭐ = Target columns (9=J, 15=P, 28=AC)');
+                console.log('Legend: ⭐ = Detected target columns');
+                console.log(`Name Column: [${nameColIndex}] = "${headers[nameColIndex]}"`);
+                console.log(`Link Column: [${linkColIndex}] = "${headers[linkColIndex]}"`);
+                console.log(`Status Column: [${statusColIndex}] = "${headers[statusColIndex]}"`);
                 console.log('');
                 
                 // Show first 10 data rows
@@ -9565,9 +9644,9 @@ Ready for deployment! 🚀
                     
                     const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
                     console.log(`\nRow ${i} (${cols.length} columns):`);
-                    console.log(`   [9] Name: "${cols[9] || 'EMPTY'}"`);
-                    console.log(`   [15] Status: "${cols[15] || 'EMPTY'}"`);
-                    console.log(`   [28] Maps Link: "${cols[28] || 'EMPTY'}"`);
+                    console.log(`   [${nameColIndex}] Name: "${cols[nameColIndex] || 'EMPTY'}"`);
+                    console.log(`   [${statusColIndex}] Status: "${cols[statusColIndex] || 'EMPTY'}"`);
+                    console.log(`   [${linkColIndex}] Maps Link: "${cols[linkColIndex] || 'EMPTY'}"`);
                     
                     // Show all columns for first row
                     if (i === 1) {
@@ -9592,9 +9671,9 @@ Ready for deployment! 🚀
                     if (!line.trim()) continue;
                     
                     const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
-                    const name = cols[9];
-                    const link = cols[28];
-                    const status = cols[15];
+                    const name = cols[nameColIndex];
+                    const link = cols[linkColIndex];
+                    const status = cols[statusColIndex];
                     
                     if (status && status.toUpperCase() === 'CLOSED') {
                         closedRows++;
@@ -9614,8 +9693,8 @@ Ready for deployment! 🚀
                 
                 console.log(`   ✅ Valid rows (has name + valid link): ${validRows}`);
                 console.log(`   🚫 Closed status: ${closedRows}`);
-                console.log(`   ❌ Missing name (column 9): ${missingName}`);
-                console.log(`   ❌ Missing link (column 28): ${missingLink}`);
+                console.log(`   ❌ Missing name (column ${nameColIndex}): ${missingName}`);
+                console.log(`   ❌ Missing link (column ${linkColIndex}): ${missingLink}`);
                 console.log(`   ❌ Invalid Google Maps links: ${invalidLink}`);
                 console.log('');
                 
@@ -9627,9 +9706,9 @@ Ready for deployment! 🚀
                     if (!line.trim()) continue;
                     
                     const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
-                    const name = cols[9];
-                    const link = cols[28];
-                    const status = cols[15];
+                    const name = cols[nameColIndex];
+                    const link = cols[linkColIndex];
+                    const status = cols[statusColIndex];
                     
                     if (name && link && (link.includes('google.com/maps') || link.includes('maps.app.goo.gl') || link.includes('goo.gl')) && 
                         (!status || status.toUpperCase() !== 'CLOSED')) {
