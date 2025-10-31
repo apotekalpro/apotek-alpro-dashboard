@@ -4606,6 +4606,13 @@
                 setDefaultTab();
                 console.log('✅ Default tab set');
                 
+                console.log('📊 Step 8: Loading Google Review data from Supabase...');
+                // Load Google Review data immediately on dashboard load
+                loadOutlets().catch(error => {
+                    console.warn('⚠️ Failed to load outlets data:', error);
+                });
+                console.log('✅ Outlets data loading initiated');
+                
                 console.log('✅✅✅ Dashboard loaded successfully!');
                 
             } catch (error) {
