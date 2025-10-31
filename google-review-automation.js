@@ -272,7 +272,8 @@ async function fetchReviewData(outlet, browser, index = 0) {
                             const r = parseFloat(match[1].replace(',', '.'));
                             if (r >= 1.0 && r <= 5.0) {
                                 rating = r;
-                                debugInfo.push(`✅ Found rating in body: ${rating}`);\n                                break;
+                                debugInfo.push(`✅ Found rating in body: ${rating}`);
+                                break;
                             }
                         }
                     }
@@ -293,7 +294,8 @@ async function fetchReviewData(outlet, browser, index = 0) {
                             const count = parseInt(match[1].replace(/[^0-9]/g, ''));
                             if (count > 0) {
                                 reviewCount = count;
-                                debugInfo.push(`✅ Found reviews in body: ${reviewCount}`);\n                                break;
+                                debugInfo.push(`✅ Found reviews in body: ${reviewCount}`);
+                                break;
                             }
                         }
                     }
