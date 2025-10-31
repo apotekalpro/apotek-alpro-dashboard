@@ -20,8 +20,8 @@ const { createClient } = require('@supabase/supabase-js');
 const fetch = require('node-fetch');
 
 // Configuration
-const GOOGLE_SHEETS_ID = '1Li6_bE_kTM5N5BlBS6-CqqaottR-oaU9YlY1BIo15Dc';
-const SHEET_NAME = 'MAIN OPERATION';
+const GOOGLE_SHEETS_ID = '1nTSZFKFZRt1owO-hKUk2lkzvlGxcyrBTC47yDTiu1YQ'; // Public sheet
+const SHEET_NAME = 'Sheet1';
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 const DELAY_BETWEEN_REQUESTS = 2000; // 2 seconds
 
@@ -59,10 +59,10 @@ async function fetchOutletsFromGoogleSheets() {
             
             const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
             
-            // Column indices (adjust if needed)
-            const name = cols[9]; // Column J (index 9)
-            const link = cols[28]; // Column AC (index 28)
-            const status = cols[15]; // Column P (index 15)
+            // Column indices for public sheet: A=Name, B=Status, C=Link
+            const name = cols[0]; // Column A (index 0)
+            const status = cols[1]; // Column B (index 1)
+            const link = cols[2]; // Column C (index 2)
             
             // Skip CLOSED outlets
             if (status && status.toUpperCase() === 'CLOSED') {
