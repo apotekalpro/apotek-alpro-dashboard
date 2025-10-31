@@ -1362,50 +1362,13 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Add Outlet Form -->
-                                <div class="content-card p-6 mb-4">
-                                    <div class="flex justify-between items-center mb-4">
-                                        <h4 class="text-lg font-semibold text-gray-800">
-                                            <i class="fas fa-sync-alt mr-2 text-blue-600"></i>
-                                            Outlet Management
-                                        </h4>
-                                        <div class="flex gap-2">
-                                            <button onclick="syncFromGoogleSheets()" 
-                                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">
-                                                <i class="fas fa-table mr-2"></i>
-                                                Sync from Google Sheets
-                                            </button>
-                                            <button onclick="debugGoogleSheets()" 
-                                                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm">
-                                                <i class="fas fa-bug mr-2"></i>
-                                                Debug CSV
-                                            </button>
-                                            <button onclick="showAutomationSettings()" 
-                                                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm">
-                                                <i class="fas fa-cog mr-2"></i>
-                                                Auto-Sync Settings
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Info Banner -->
+                                <div class="content-card p-4 mb-4 bg-blue-50 border-l-4 border-blue-500">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas fa-info-circle text-blue-600 text-xl"></i>
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Outlet Name</label>
-                                            <input type="text" id="outletName" 
-                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                                                   placeholder="e.g., Apotek Alpro Tebet Timur">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Google Maps Link</label>
-                                            <input type="url" id="outletGmapsLink" 
-                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                                                   placeholder="https://maps.app.goo.gl/...">
-                                        </div>
-                                        <div class="flex items-end">
-                                            <button onclick="addOutlet()" 
-                                                    class="w-full btn-primary text-white px-4 py-2 rounded-lg">
-                                                <i class="fas fa-plus mr-2"></i>
-                                                Add Outlet
-                                            </button>
+                                            <p class="text-sm font-semibold text-gray-800">Auto-Updated Daily</p>
+                                            <p class="text-xs text-gray-600">Data automatically syncs at 1 AM UTC (8 AM Jakarta) via GitHub Actions</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1422,7 +1385,7 @@
                                 </div>
                                 
                                 <!-- Statistics Cards -->
-                                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                                     <div class="content-card p-4">
                                         <div class="flex items-center justify-between">
                                             <div>
@@ -1441,15 +1404,7 @@
                                             <i class="fas fa-check-circle text-3xl text-green-600 opacity-50"></i>
                                         </div>
                                     </div>
-                                    <div class="content-card p-4">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <p class="text-sm text-gray-600">Pending</p>
-                                                <p class="text-2xl font-bold text-orange-600" id="outletsPending">0</p>
-                                            </div>
-                                            <i class="fas fa-hourglass-half text-3xl text-orange-600 opacity-50"></i>
-                                        </div>
-                                    </div>
+
                                     <div class="content-card p-4">
                                         <div class="flex items-center justify-between">
                                             <div>
@@ -1472,17 +1427,9 @@
                                 
                                 <!-- Last Updated Info Banner -->
                                 <div class="content-card p-3 mb-4" id="lastUpdatedBanner">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center gap-2">
-                                            <i class="fas fa-clock text-purple-600"></i>
-                                            <span class="text-sm text-gray-600">Last Updated: <span class="font-semibold text-gray-800" id="lastUpdated">Never</span></span>
-                                        </div>
-                                        <div id="pendingWarning" class="hidden">
-                                            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full flex items-center gap-1">
-                                                <i class="fas fa-exclamation-triangle"></i>
-                                                <span id="pendingCount">0</span> outlets need review fetch
-                                            </span>
-                                        </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-clock text-purple-600"></i>
+                                        <span class="text-sm text-gray-600">Last Updated: <span class="font-semibold text-gray-800" id="lastUpdated">Never</span></span>
                                     </div>
                                 </div>
                                 
@@ -1500,13 +1447,6 @@
                                                     class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg">
                                                 <i class="fas fa-times mr-2"></i>
                                                 Clear
-                                            </button>
-                                            <button onclick="togglePendingFilter()" 
-                                                    id="pendingFilterBtn"
-                                                    class="px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg border border-orange-300"
-                                                    title="Toggle to show/hide outlets without reviews">
-                                                <i class="fas fa-eye-slash mr-2"></i>
-                                                <span id="pendingFilterText">Hide Pending</span>
                                             </button>
                                         </div>
                                     </div>
@@ -9192,9 +9132,8 @@ Ready for deployment! 🚀
                 ? outletsWithRatings.reduce((sum, o) => sum + o.rating, 0) / outletsWithRatings.length 
                 : 0;
             
-            // Count outlets with/without reviews
+            // Count outlets with reviews
             const outletsWithReviews = outletsData.filter(o => o.reviewCount > 0).length;
-            const outletsWithoutReviews = outletsData.filter(o => o.reviewCount === 0 || !o.reviewCount).length;
             
             const lastUpdated = outletsData.length > 0 && outletsData.some(o => o.lastChecked)
                 ? new Date(Math.max(...outletsData.filter(o => o.lastChecked).map(o => new Date(o.lastChecked)))).toLocaleString('en-US', { 
@@ -9207,33 +9146,16 @@ Ready for deployment! 🚀
             
             document.getElementById('totalOutlets').textContent = totalOutlets;
             document.getElementById('outletsWithReviews').textContent = outletsWithReviews;
-            document.getElementById('outletsPending').textContent = outletsWithoutReviews;
             document.getElementById('totalReviews').textContent = totalReviews;
             document.getElementById('avgRating').textContent = avgRating > 0 ? avgRating.toFixed(1) : '0.0';
             document.getElementById('lastUpdated').textContent = lastUpdated;
             
-            // Show/hide pending warning
-            const pendingWarning = document.getElementById('pendingWarning');
-            if (outletsWithoutReviews > 0) {
-                pendingWarning.classList.remove('hidden');
-                document.getElementById('pendingCount').textContent = outletsWithoutReviews;
-            } else {
-                pendingWarning.classList.add('hidden');
-            }
-            
             // Log helpful debug information
             console.log('📊 Statistics Update:');
             console.log(`  Total Outlets: ${totalOutlets}`);
-            console.log(`  ✅ With Reviews: ${outletsWithReviews}`);
-            console.log(`  ⏳ Pending/No Reviews: ${outletsWithoutReviews}`);
+            console.log(`  With Reviews: ${outletsWithReviews}`);
             console.log(`  Total Reviews: ${totalReviews}`);
             console.log(`  Average Rating: ${avgRating.toFixed(2)}`);
-            
-            if (outletsWithoutReviews > 0) {
-                console.log(`\n⚠️ NOTICE: ${outletsWithoutReviews} outlets are pending review fetch.`);
-                console.log('💡 Click "Refresh All" button to fetch reviews for all outlets.');
-                console.log('⏱️ Estimated time: ~' + Math.ceil(outletsWithoutReviews * 2 / 60) + ' minutes (2 sec delay per outlet)');
-            }
         }
         
         // Export review data to Excel
