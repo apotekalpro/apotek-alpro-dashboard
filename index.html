@@ -1290,6 +1290,11 @@
                                 <i class="fas fa-bullseye mr-2"></i>
                                 Phoenix OKR
                             </button>
+                            <button onclick="showStrategySubtab('google-review')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-star mr-2"></i>
+                                Google Review
+                            </button>
                         </div>
                         
                         <!-- Strategy Dashboard Subtab -->
@@ -1326,6 +1331,311 @@
                             <div class="iframe-container">
                                 <iframe data-src="https://apotekalpro.github.io/Strategy-Phoenix/okr-login.html" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- Google Review Tracker Subtab -->
+                        <div id="googleReviewSubtab" class="strategy-subtab hidden">
+                            <div class="mb-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-gray-800">Google Review Tracker</h3>
+                                        <p class="text-gray-600">Automated outlet Google review monitoring system</p>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button onclick="refreshAllReviews()" 
+                                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                                            <i class="fas fa-sync-alt mr-2"></i>
+                                            Refresh All
+                                        </button>
+                                        <button onclick="quickFixRatings()" 
+                                                class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg"
+                                                title="Quickly update ratings for outlets with 1.0">
+                                            <i class="fas fa-magic mr-2"></i>
+                                            Fix Ratings
+                                        </button>
+                                        <button onclick="exportReviewData()" 
+                                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                                            <i class="fas fa-file-excel mr-2"></i>
+                                            Export
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Add Outlet Form -->
+                                <div class="content-card p-6 mb-4">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h4 class="text-lg font-semibold text-gray-800">
+                                            <i class="fas fa-sync-alt mr-2 text-blue-600"></i>
+                                            Outlet Management
+                                        </h4>
+                                        <div class="flex gap-2">
+                                            <button onclick="syncFromGoogleSheets()" 
+                                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">
+                                                <i class="fas fa-table mr-2"></i>
+                                                Sync from Google Sheets
+                                            </button>
+                                            <button onclick="debugGoogleSheets()" 
+                                                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm">
+                                                <i class="fas fa-bug mr-2"></i>
+                                                Debug CSV
+                                            </button>
+                                            <button onclick="showAutomationSettings()" 
+                                                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm">
+                                                <i class="fas fa-cog mr-2"></i>
+                                                Auto-Sync Settings
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Outlet Name</label>
+                                            <input type="text" id="outletName" 
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                                   placeholder="e.g., Apotek Alpro Tebet Timur">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Google Maps Link</label>
+                                            <input type="url" id="outletGmapsLink" 
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                                   placeholder="https://maps.app.goo.gl/...">
+                                        </div>
+                                        <div class="flex items-end">
+                                            <button onclick="addOutlet()" 
+                                                    class="w-full btn-primary text-white px-4 py-2 rounded-lg">
+                                                <i class="fas fa-plus mr-2"></i>
+                                                Add Outlet
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Leaderboard -->
+                                <div class="content-card p-6 mb-4">
+                                    <h4 class="text-lg font-semibold text-gray-800 mb-4">
+                                        <i class="fas fa-trophy mr-2 text-yellow-500"></i>
+                                        Top 10 Outlets - Leaderboard
+                                    </h4>
+                                    <div id="leaderboardContainer" class="space-y-2">
+                                        <p class="text-center text-gray-500 py-4">No data available. Add outlets to see leaderboard.</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Statistics Cards -->
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                                    <div class="content-card p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-sm text-gray-600">Total Outlets</p>
+                                                <p class="text-2xl font-bold text-gray-800" id="totalOutlets">0</p>
+                                            </div>
+                                            <i class="fas fa-store text-3xl text-blue-600 opacity-50"></i>
+                                        </div>
+                                    </div>
+                                    <div class="content-card p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-sm text-gray-600">With Reviews</p>
+                                                <p class="text-2xl font-bold text-green-600" id="outletsWithReviews">0</p>
+                                            </div>
+                                            <i class="fas fa-check-circle text-3xl text-green-600 opacity-50"></i>
+                                        </div>
+                                    </div>
+                                    <div class="content-card p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-sm text-gray-600">Pending</p>
+                                                <p class="text-2xl font-bold text-orange-600" id="outletsPending">0</p>
+                                            </div>
+                                            <i class="fas fa-hourglass-half text-3xl text-orange-600 opacity-50"></i>
+                                        </div>
+                                    </div>
+                                    <div class="content-card p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-sm text-gray-600">Total Reviews</p>
+                                                <p class="text-2xl font-bold text-gray-800" id="totalReviews">0</p>
+                                            </div>
+                                            <i class="fas fa-star text-3xl text-yellow-500 opacity-50"></i>
+                                        </div>
+                                    </div>
+                                    <div class="content-card p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-sm text-gray-600">Avg Rating</p>
+                                                <p class="text-2xl font-bold text-gray-800" id="avgRating">0.0</p>
+                                            </div>
+                                            <i class="fas fa-chart-line text-3xl text-green-600 opacity-50"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Last Updated Info Banner -->
+                                <div class="content-card p-3 mb-4" id="lastUpdatedBanner">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-clock text-purple-600"></i>
+                                            <span class="text-sm text-gray-600">Last Updated: <span class="font-semibold text-gray-800" id="lastUpdated">Never</span></span>
+                                        </div>
+                                        <div id="pendingWarning" class="hidden">
+                                            <span class="px-3 py-1 bg-orange-100 text-orange-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                <span id="pendingCount">0</span> outlets need review fetch
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Outlets Table -->
+                                <div class="content-card overflow-hidden">
+                                    <div class="p-4 border-b border-gray-200">
+                                        <div class="flex items-center gap-4">
+                                            <div class="flex-1">
+                                                <input type="text" id="searchOutlet" 
+                                                       onkeyup="searchOutlets()"
+                                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                                       placeholder="🔍 Search by outlet name...">
+                                            </div>
+                                            <button onclick="clearSearch()" 
+                                                    class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg">
+                                                <i class="fas fa-times mr-2"></i>
+                                                Clear
+                                            </button>
+                                            <button onclick="togglePendingFilter()" 
+                                                    id="pendingFilterBtn"
+                                                    class="px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg border border-orange-300"
+                                                    title="Toggle to show/hide outlets without reviews">
+                                                <i class="fas fa-eye-slash mr-2"></i>
+                                                <span id="pendingFilterText">Hide Pending</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th onclick="sortTable('name')" 
+                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                        Outlet Name <i class="fas fa-sort ml-1"></i>
+                                                    </th>
+                                                    <th onclick="sortTable('reviewCount')" 
+                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                        Review Count <i class="fas fa-sort ml-1"></i>
+                                                    </th>
+                                                    <th onclick="sortTable('rating')" 
+                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                        Rating <i class="fas fa-sort ml-1"></i>
+                                                    </th>
+                                                    <th onclick="sortTable('lastChecked')" 
+                                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                        Last Checked <i class="fas fa-sort ml-1"></i>
+                                                    </th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Status
+                                                    </th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Actions
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="outletsTableBody" class="bg-white divide-y divide-gray-200">
+                                                <tr>
+                                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                                                        No outlets added yet. Add your first outlet above.
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                
+                                <!-- Automation Settings Modal -->
+                                <div id="automationModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                                    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h3 class="text-xl font-semibold text-gray-800">
+                                                <i class="fas fa-cog mr-2 text-purple-600"></i>
+                                                Automation Settings
+                                            </h3>
+                                            <button onclick="closeAutomationModal()" class="text-gray-400 hover:text-gray-600">
+                                                <i class="fas fa-times text-2xl"></i>
+                                            </button>
+                                        </div>
+                                        <div class="space-y-6">
+                                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                <h4 class="font-semibold text-blue-900 mb-2">
+                                                    <i class="fas fa-info-circle mr-2"></i>
+                                                    How It Works
+                                                </h4>
+                                                <ol class="text-sm text-blue-800 space-y-1 ml-4 list-decimal">
+                                                    <li>System syncs with Google Sheets daily at 1:00 AM</li>
+                                                    <li>Fetches all active outlets (Status ≠ "CLOSED")</li>
+                                                    <li>Updates review counts and ratings automatically</li>
+                                                    <li>Stores data in Supabase for instant access</li>
+                                                    <li>Dashboard displays latest cached data</li>
+                                                </ol>
+                                            </div>
+                                            
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                    Google Sheets URL
+                                                </label>
+                                                <input type="url" id="googleSheetsUrl" 
+                                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                                                       value="https://docs.google.com/spreadsheets/d/1Li6_bE_kTM5N5BlBS6-CqqaottR-oaU9YlY1BIo15Dc/edit"
+                                                       readonly>
+                                                <p class="text-xs text-gray-500 mt-1">Sheet: MAIN OPERATION</p>
+                                            </div>
+                                            
+                                            <div class="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                        Auto-Sync Time
+                                                    </label>
+                                                    <input type="time" id="autoSyncTime" 
+                                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" 
+                                                           value="01:00">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                                        Status
+                                                    </label>
+                                                    <div class="flex items-center h-full">
+                                                        <span id="automationStatus" class="px-3 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-semibold">
+                                                            <i class="fas fa-check-circle mr-1"></i> Active
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                                <h4 class="font-semibold text-yellow-900 mb-2">
+                                                    <i class="fas fa-database mr-2"></i>
+                                                    Supabase Configuration Required
+                                                </h4>
+                                                <p class="text-sm text-yellow-800 mb-2">
+                                                    For automated syncing, you need to set up a backend service:
+                                                </p>
+                                                <ul class="text-sm text-yellow-800 space-y-1 ml-4 list-disc">
+                                                    <li>Create Supabase table: <code>google_reviews</code></li>
+                                                    <li>Deploy backend cron job (Node.js/Python)</li>
+                                                    <li>Configure Google Sheets API access</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="flex justify-end gap-2 mt-6">
+                                            <button onclick="closeAutomationModal()" 
+                                                    class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg">
+                                                Close
+                                            </button>
+                                            <button onclick="testGoogleSheetsSync()" 
+                                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                                <i class="fas fa-play mr-2"></i>
+                                                Test Sync Now
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1370,6 +1680,11 @@
                                     class="subtab-button px-4 py-2">
                                 <i class="fas fa-sync-alt mr-2"></i>
                                 D365 Sync Check
+                            </button>
+                            <button onclick="showFinanceSubtab('sales-reconciliation')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-calculator mr-2"></i>
+                                Sales Reconciliation
                             </button>
                         </div>
                         
@@ -1478,6 +1793,24 @@
                             </div>
                             <div class="iframe-container">
                                 <iframe data-src="https://script.google.com/macros/s/AKfycbw-Fd3oknK99wrN7p0YaeLt-PawQtKRXyKQXzJr5ff9TPN0xEBfJ4Yiw8IN_R8l7XJP/exec" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- Sales Reconciliation Subtab -->
+                        <div id="salesReconciliationSubtab" class="finance-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Sales Reconciliation System</h3>
+                                    <p class="text-gray-600">BCA statement reconciliation with transaction summary matching</p>
+                                </div>
+                                <button onclick="openInNewTab('./finance/sales-reconciliation.html')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe src="./finance/sales-reconciliation.html" class="iframe-full"></iframe>
                             </div>
                         </div>
                     </div>
@@ -4531,7 +4864,8 @@
                 'payment': 'paymentSubtab',
                 'pv-split': 'pvSplitSubtab',
                 'im-split': 'imSplitSubtab',
-                'd365-sync': 'd365SyncSubtab'
+                'd365-sync': 'd365SyncSubtab',
+                'sales-reconciliation': 'salesReconciliationSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
@@ -4592,7 +4926,8 @@
             // Show selected subtab
             const subtabMap = {
                 'dashboard': 'strategyDashboardSubtab',
-                'phoenix-okr': 'phoenixOkrSubtab'
+                'phoenix-okr': 'phoenixOkrSubtab',
+                'google-review': 'googleReviewSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
@@ -4602,6 +4937,11 @@
             
             // Add active class to clicked button
             event.target.classList.add('active');
+            
+            // If opening google review tab, load stored outlets
+            if (subtabId === 'google-review') {
+                loadOutlets();
+            }
         }
 
         // Operations Subtab Functions
@@ -8246,6 +8586,1348 @@ Ready for deployment! 🚀
         };
         
         // ========================================
+        // 📊 GOOGLE REVIEW TRACKER FUNCTIONS
+        // ========================================
+        
+        // Store outlets data
+        let outletsData = [];
+        let sortColumn = 'name';
+        let sortDirection = 'asc';
+        let searchQuery = '';
+        let autoRefreshTriggered = false;
+        let hidePending = false; // Filter to hide outlets without reviews
+        
+        // Load outlets from Supabase or localStorage
+        async function loadOutlets() {
+            // Try loading from Supabase first
+            if (supabase) {
+                try {
+                    await loadReviewsFromSupabase();
+                    if (outletsData.length > 0) {
+                        console.log('✅ Using Supabase data');
+                        return;
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Supabase load failed, falling back to localStorage');
+                }
+            }
+            
+            // Fall back to localStorage
+            const stored = localStorage.getItem('apotek_outlets');
+            if (stored) {
+                try {
+                    outletsData = JSON.parse(stored);
+                    renderOutletsTable();
+                    updateStatistics();
+                    updateLeaderboard();
+                    
+                    console.log('✅ Using localStorage data');
+                    
+                    // Auto-refresh all outlets once on page load (only once per session)
+                    // Disabled for now since we'll use Supabase cached data
+                    // if (!autoRefreshTriggered && outletsData.length > 0) {
+                    //     autoRefreshTriggered = true;
+                    //     console.log('Auto-refreshing all outlets on page load...');
+                    //     setTimeout(() => {
+                    //         refreshAllReviews(true);
+                    //     }, 1000);
+                    // }
+                } catch (e) {
+                    console.error('Error loading outlets:', e);
+                    outletsData = [];
+                }
+            }
+        }
+        
+        // Save outlets to localStorage
+        function saveOutlets() {
+            localStorage.setItem('apotek_outlets', JSON.stringify(outletsData));
+        }
+        
+        // Add new outlet
+        function addOutlet() {
+            const nameInput = document.getElementById('outletName');
+            const linkInput = document.getElementById('outletGmapsLink');
+            
+            const name = nameInput.value.trim();
+            const link = linkInput.value.trim();
+            
+            if (!name || !link) {
+                alert('Please fill in both outlet name and Google Maps link');
+                return;
+            }
+            
+            // Validate Google Maps link
+            if (!link.includes('google.com/maps') && !link.includes('maps.app.goo.gl')) {
+                alert('Please provide a valid Google Maps link');
+                return;
+            }
+            
+            // Extract place ID or use link as identifier
+            const placeId = extractPlaceId(link);
+            
+            // Check if outlet already exists
+            if (outletsData.some(o => o.link === link)) {
+                alert('This outlet already exists!');
+                return;
+            }
+            
+            const outlet = {
+                id: Date.now(),
+                name: name,
+                link: link,
+                placeId: placeId,
+                reviewCount: 0,
+                rating: 0,
+                lastChecked: null,
+                status: 'pending',
+                addedDate: new Date().toISOString()
+            };
+            
+            outletsData.push(outlet);
+            saveOutlets();
+            renderOutletsTable();
+            updateStatistics();
+            
+            // Clear inputs
+            nameInput.value = '';
+            linkInput.value = '';
+            
+            // Fetch reviews for this outlet
+            fetchOutletReviews(outlet.id);
+        }
+        
+        // Extract Place ID from Google Maps link
+        function extractPlaceId(link) {
+            // Try to extract place_id from URL
+            const placeIdMatch = link.match(/place_id=([^&]+)/);
+            if (placeIdMatch) {
+                return placeIdMatch[1];
+            }
+            
+            // Try to extract from data parameter
+            const dataMatch = link.match(/data=([^!]+)/);
+            if (dataMatch) {
+                return dataMatch[1];
+            }
+            
+            // If short link, return as is (will need to be resolved)
+            return link;
+        }
+        
+        // Fetch review data for an outlet using web scraping approach
+        async function fetchOutletReviews(outletId) {
+            const outlet = outletsData.find(o => o.id === outletId);
+            if (!outlet) return;
+            
+            outlet.status = 'loading';
+            renderOutletsTable();
+            
+            try {
+                console.log('Fetching reviews for:', outlet.name);
+                console.log('Google Maps URL:', outlet.link);
+                
+                // Use a CORS proxy to fetch the Google Maps page
+                const corsProxy = 'https://api.allorigins.win/get?url=';
+                const url = encodeURIComponent(outlet.link);
+                
+                console.log('Fetching through proxy...');
+                const response = await fetch(corsProxy + url);
+                const data = await response.json();
+                const html = data.contents;
+                
+                console.log('HTML fetched, length:', html.length);
+                
+                // Parse review count and rating from HTML
+                const reviewData = parseGoogleMapsHTML(html);
+                
+                console.log('Parsed data:', reviewData);
+                
+                outlet.reviewCount = reviewData.reviewCount;
+                outlet.rating = reviewData.rating;
+                outlet.lastChecked = new Date().toISOString();
+                outlet.status = reviewData.reviewCount > 0 || reviewData.rating > 0 ? 'success' : 'error';
+                
+                if (outlet.status === 'error') {
+                    console.warn('No review data found. HTML might need manual inspection.');
+                }
+                
+            } catch (error) {
+                console.error('Error fetching reviews for', outlet.name, error);
+                outlet.status = 'error';
+                outlet.lastChecked = new Date().toISOString();
+            }
+            
+            saveOutlets();
+            renderOutletsTable();
+            updateStatistics();
+        }
+        
+        // Parse Google Maps HTML to extract review count and rating
+        function parseGoogleMapsHTML(html) {
+            let reviewCount = 0;
+            let rating = 0.0;
+            
+            try {
+                console.log('Parsing HTML for review data...');
+                
+                // Look for review count patterns in the HTML
+                // Pattern 1: "X reviews" or "X ulasan" (with comma support)
+                const reviewMatch = html.match(/(\d+(?:[,\.]\d+)*)\s*(?:reviews|ulasan|google reviews)/i);
+                if (reviewMatch) {
+                    reviewCount = parseInt(reviewMatch[1].replace(/[,\.]/g, ''));
+                    console.log('Found review count (pattern 1):', reviewCount);
+                }
+                
+                // Pattern 1b: In parentheses like "(148)"
+                if (reviewCount === 0) {
+                    const reviewMatch2 = html.match(/\((\d+(?:[,\.]\d+)*)\)/);
+                    if (reviewMatch2) {
+                        const potentialCount = parseInt(reviewMatch2[1].replace(/[,\.]/g, ''));
+                        if (potentialCount > 0 && potentialCount < 100000) {
+                            reviewCount = potentialCount;
+                            console.log('Found review count (pattern 1b):', reviewCount);
+                        }
+                    }
+                }
+                
+                // Pattern 1c: Look for patterns like "148 Google reviews"
+                if (reviewCount === 0) {
+                    const reviewMatch3 = html.match(/(\d+(?:[,\.]\d+)*)\s*google\s*reviews/i);
+                    if (reviewMatch3) {
+                        reviewCount = parseInt(reviewMatch3[1].replace(/[,\.]/g, ''));
+                        console.log('Found review count (pattern 1c):', reviewCount);
+                    }
+                }
+                
+                // Pattern 2: Rating value in JSON (e.g., "ratingValue":"4.5")
+                const ratingMatch = html.match(/"ratingValue"\s*:\s*"?([\d.]+)"?/);
+                if (ratingMatch) {
+                    rating = parseFloat(ratingMatch[1]);
+                    console.log('Found rating (pattern 2):', rating);
+                }
+                
+                // Pattern 2b: Look for rating near review count
+                if (rating === 0 && reviewCount > 0) {
+                    // Try to find pattern like "5.0★" or "5,0★" near the review count
+                    const nearbyRating = html.match(/([1-5][.,]\d)\s*[★⭐]/);
+                    if (nearbyRating) {
+                        rating = parseFloat(nearbyRating[1].replace(',', '.'));
+                        console.log('Found rating (pattern 2b - near stars):', rating);
+                    }
+                }
+                
+                // Pattern 3: Alternative rating pattern in aria-label
+                if (rating === 0) {
+                    const altRatingMatch = html.match(/aria-label="([\d.,]+)\s*(?:stars?|bintang)/i);
+                    if (altRatingMatch) {
+                        rating = parseFloat(altRatingMatch[1].replace(',', '.'));
+                        console.log('Found rating (pattern 3):', rating);
+                    }
+                }
+                
+                // Pattern 4: Rating in aggregateRating
+                if (rating === 0) {
+                    const aggRatingMatch = html.match(/"aggregateRating"\s*:\s*{[^}]*"ratingValue"\s*:\s*"?([\d.,]+)"?/);
+                    if (aggRatingMatch) {
+                        rating = parseFloat(aggRatingMatch[1].replace(',', '.'));
+                        console.log('Found rating (pattern 4):', rating);
+                    }
+                }
+                
+                // Pattern 5: Look for rating followed by stars or parentheses
+                if (rating === 0) {
+                    const pattern5 = html.match(/([1-5][.,]\d+)\s*[★⭐(]/);
+                    if (pattern5) {
+                        rating = parseFloat(pattern5[1].replace(',', '.'));
+                        console.log('Found rating (pattern 5):', rating);
+                    }
+                }
+                
+                // Pattern 6: Rating in meta tags
+                if (rating === 0) {
+                    const metaRating = html.match(/content="([1-5][.,]\d+)"\s+itemprop="ratingValue"/i);
+                    if (metaRating) {
+                        rating = parseFloat(metaRating[1].replace(',', '.'));
+                        console.log('Found rating (pattern 6 - meta):', rating);
+                    }
+                }
+                
+                // Pattern 7: Look for common rating format with review count
+                if (rating === 0 && reviewCount > 0) {
+                    // Pattern like "4.8 (148 reviews)"
+                    const pattern7 = html.match(/([1-5][.,]\d+)\s*\(\s*\d+/);
+                    if (pattern7) {
+                        rating = parseFloat(pattern7[1].replace(',', '.'));
+                        console.log('Found rating (pattern 7):', rating);
+                    }
+                }
+                
+                // If still no rating found but we have reviews, prompt for manual entry
+                if (rating === 0 && reviewCount > 0) {
+                    console.warn('⚠️ Rating not found automatically. Review count:', reviewCount);
+                    console.warn('Please use the Edit button to manually enter the rating.');
+                }
+                
+                console.log('Final parsed values - Reviews:', reviewCount, 'Rating:', rating);
+                
+            } catch (error) {
+                console.error('Error parsing HTML:', error);
+            }
+            
+            return { reviewCount, rating };
+        }
+        
+        // Refresh all outlets
+        async function refreshAllReviews(isAutoRefresh = false) {
+            if (outletsData.length === 0) {
+                if (!isAutoRefresh) {
+                    alert('No outlets to refresh. Please add outlets first.');
+                }
+                return;
+            }
+            
+            // Show loading message
+            let btn, originalHTML;
+            if (!isAutoRefresh && event && event.target) {
+                btn = event.target;
+                originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Refreshing...';
+                btn.disabled = true;
+            }
+            
+            if (isAutoRefresh) {
+                console.log('🔄 Auto-refreshing all outlets...');
+            }
+            
+            // Fetch reviews for all outlets sequentially
+            for (let i = 0; i < outletsData.length; i++) {
+                await fetchOutletReviews(outletsData[i].id);
+                // Add delay to avoid rate limiting
+                if (i < outletsData.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+            }
+            
+            // Restore button
+            if (!isAutoRefresh && btn) {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                alert('All outlets refreshed successfully!');
+            } else if (isAutoRefresh) {
+                console.log('✅ Auto-refresh completed for all outlets');
+            }
+            
+            // Update leaderboard after refresh
+            updateLeaderboard();
+        }
+        
+        // Manual edit outlet data
+        function editOutletManually(outletId) {
+            const outlet = outletsData.find(o => o.id === outletId);
+            if (!outlet) return;
+            
+            const reviewCount = prompt(`Enter review count for ${outlet.name}:`, outlet.reviewCount || '0');
+            if (reviewCount === null) return;
+            
+            const rating = prompt(`Enter rating (0-5) for ${outlet.name}:`, outlet.rating || '0');
+            if (rating === null) return;
+            
+            const parsedReviewCount = parseInt(reviewCount);
+            const parsedRating = parseFloat(rating);
+            
+            if (isNaN(parsedReviewCount) || parsedReviewCount < 0) {
+                alert('Invalid review count. Please enter a positive number.');
+                return;
+            }
+            
+            if (isNaN(parsedRating) || parsedRating < 0 || parsedRating > 5) {
+                alert('Invalid rating. Please enter a number between 0 and 5.');
+                return;
+            }
+            
+            outlet.reviewCount = parsedReviewCount;
+            outlet.rating = parsedRating;
+            outlet.lastChecked = new Date().toISOString();
+            outlet.status = 'success';
+            
+            saveOutlets();
+            renderOutletsTable();
+            updateStatistics();
+            updateLeaderboard();
+            
+            alert(`Updated ${outlet.name} successfully!\nReviews: ${parsedReviewCount}\nRating: ${parsedRating}`);
+        }
+        
+        // Quick fix ratings - batch update for outlets with suspicious ratings
+        function quickFixRatings() {
+            // Find outlets with rating of exactly 1.0 or 0 but have review counts
+            const outletsToFix = outletsData.filter(o => 
+                o.reviewCount > 0 && (o.rating === 1.0 || o.rating === 0)
+            );
+            
+            if (outletsToFix.length === 0) {
+                alert('No outlets need rating fixes. All ratings look good!');
+                return;
+            }
+            
+            const proceed = confirm(
+                `Found ${outletsToFix.length} outlet(s) with suspicious ratings (1.0 or 0):\n\n` +
+                outletsToFix.map(o => `• ${o.name}: ${o.reviewCount} reviews, rating ${o.rating}`).join('\n') +
+                `\n\nWould you like to manually enter ratings for these outlets?`
+            );
+            
+            if (!proceed) return;
+            
+            let updated = 0;
+            for (const outlet of outletsToFix) {
+                const rating = prompt(
+                    `${outlet.name}\n` +
+                    `Reviews: ${outlet.reviewCount}\n` +
+                    `Current rating: ${outlet.rating}\n\n` +
+                    `Enter correct rating (0-5):`,
+                    '5.0'
+                );
+                
+                if (rating === null) continue; // User clicked cancel
+                
+                const parsedRating = parseFloat(rating);
+                if (isNaN(parsedRating) || parsedRating < 0 || parsedRating > 5) {
+                    alert(`Invalid rating for ${outlet.name}. Skipping...`);
+                    continue;
+                }
+                
+                outlet.rating = parsedRating;
+                outlet.lastChecked = new Date().toISOString();
+                outlet.status = 'success';
+                updated++;
+            }
+            
+            if (updated > 0) {
+                saveOutlets();
+                renderOutletsTable();
+                updateStatistics();
+                updateLeaderboard();
+                alert(`✅ Successfully updated ${updated} outlet rating(s)!`);
+            } else {
+                alert('No ratings were updated.');
+            }
+        }
+        
+        // Delete outlet
+        function deleteOutlet(outletId) {
+            if (!confirm('Are you sure you want to delete this outlet?')) {
+                return;
+            }
+            
+            outletsData = outletsData.filter(o => o.id !== outletId);
+            saveOutlets();
+            renderOutletsTable();
+            updateStatistics();
+        }
+        
+        // View outlet on Google Maps
+        function viewOutlet(outletId) {
+            const outlet = outletsData.find(o => o.id === outletId);
+            if (outlet) {
+                window.open(outlet.link, '_blank');
+            }
+        }
+        
+        // Render outlets table
+        function renderOutletsTable() {
+            const tbody = document.getElementById('outletsTableBody');
+            
+            // Debug logging
+            console.log('🔄 Rendering table with', outletsData.length, 'outlets');
+            
+            if (outletsData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                            No outlets added yet. Add your first outlet above.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // Filter by search query
+            let filteredData = outletsData;
+            if (searchQuery) {
+                filteredData = outletsData.filter(o => 
+                    o.name.toLowerCase().includes(searchQuery)
+                );
+            }
+            
+            // Filter by pending status if enabled
+            if (hidePending) {
+                filteredData = filteredData.filter(o => o.reviewCount > 0);
+            }
+            
+            // Sort data
+            const sortedData = [...filteredData].sort((a, b) => {
+                let aVal = a[sortColumn];
+                let bVal = b[sortColumn];
+                
+                // Handle null/undefined values
+                if (aVal === null || aVal === undefined) aVal = '';
+                if (bVal === null || bVal === undefined) bVal = '';
+                
+                // Convert to comparable types
+                if (sortColumn === 'reviewCount' || sortColumn === 'rating') {
+                    aVal = Number(aVal) || 0;
+                    bVal = Number(bVal) || 0;
+                } else if (sortColumn === 'lastChecked') {
+                    aVal = aVal ? new Date(aVal).getTime() : 0;
+                    bVal = bVal ? new Date(bVal).getTime() : 0;
+                } else {
+                    aVal = String(aVal).toLowerCase();
+                    bVal = String(bVal).toLowerCase();
+                }
+                
+                if (sortDirection === 'asc') {
+                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+            });
+            
+            if (sortedData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                            No outlets found matching "${searchQuery}".
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = sortedData.map(outlet => {
+                const statusBadge = getStatusBadge(outlet.status);
+                const lastChecked = outlet.lastChecked 
+                    ? new Date(outlet.lastChecked).toLocaleString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    })
+                    : 'Never';
+                
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">${outlet.name}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">${outlet.reviewCount > 0 ? outlet.reviewCount : '-'}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                <span class="text-sm text-gray-900">${outlet.rating > 0 ? outlet.rating.toFixed(1) : '-'}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-500">${lastChecked}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${statusBadge}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="${outlet.link}" target="_blank" 
+                               class="text-blue-600 hover:text-blue-900 hover:underline"
+                               title="Open in Google Maps">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                View Map
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button onclick="fetchOutletReviews(${outlet.id})" 
+                                    class="text-blue-600 hover:text-blue-900 mr-3" 
+                                    title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button onclick="editOutletManually(${outlet.id})" 
+                                    class="text-purple-600 hover:text-purple-900 mr-3" 
+                                    title="Edit Manually">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="viewOutlet(${outlet.id})" 
+                                    class="text-green-600 hover:text-green-900 mr-3" 
+                                    title="View on Google Maps">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                            <button onclick="deleteOutlet(${outlet.id})" 
+                                    class="text-red-600 hover:text-red-900" 
+                                    title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // Get status badge HTML
+        function getStatusBadge(status) {
+            const badges = {
+                'pending': '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Pending</span>',
+                'loading': '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800"><i class="fas fa-spinner fa-spin mr-1"></i>Loading</span>',
+                'success': '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Success</span>',
+                'error': '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Error</span>'
+            };
+            return badges[status] || badges['pending'];
+        }
+        
+        // Update statistics
+        function updateStatistics() {
+            const totalOutlets = outletsData.length;
+            const totalReviews = outletsData.reduce((sum, o) => sum + (o.reviewCount || 0), 0);
+            
+            // Calculate average rating only from outlets with ratings > 0
+            const outletsWithRatings = outletsData.filter(o => o.rating > 0);
+            const avgRating = outletsWithRatings.length > 0 
+                ? outletsWithRatings.reduce((sum, o) => sum + o.rating, 0) / outletsWithRatings.length 
+                : 0;
+            
+            // Count outlets with/without reviews
+            const outletsWithReviews = outletsData.filter(o => o.reviewCount > 0).length;
+            const outletsWithoutReviews = outletsData.filter(o => o.reviewCount === 0 || !o.reviewCount).length;
+            
+            const lastUpdated = outletsData.length > 0 && outletsData.some(o => o.lastChecked)
+                ? new Date(Math.max(...outletsData.filter(o => o.lastChecked).map(o => new Date(o.lastChecked)))).toLocaleString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                })
+                : 'Never';
+            
+            document.getElementById('totalOutlets').textContent = totalOutlets;
+            document.getElementById('outletsWithReviews').textContent = outletsWithReviews;
+            document.getElementById('outletsPending').textContent = outletsWithoutReviews;
+            document.getElementById('totalReviews').textContent = totalReviews;
+            document.getElementById('avgRating').textContent = avgRating > 0 ? avgRating.toFixed(1) : '0.0';
+            document.getElementById('lastUpdated').textContent = lastUpdated;
+            
+            // Show/hide pending warning
+            const pendingWarning = document.getElementById('pendingWarning');
+            if (outletsWithoutReviews > 0) {
+                pendingWarning.classList.remove('hidden');
+                document.getElementById('pendingCount').textContent = outletsWithoutReviews;
+            } else {
+                pendingWarning.classList.add('hidden');
+            }
+            
+            // Log helpful debug information
+            console.log('📊 Statistics Update:');
+            console.log(`  Total Outlets: ${totalOutlets}`);
+            console.log(`  ✅ With Reviews: ${outletsWithReviews}`);
+            console.log(`  ⏳ Pending/No Reviews: ${outletsWithoutReviews}`);
+            console.log(`  Total Reviews: ${totalReviews}`);
+            console.log(`  Average Rating: ${avgRating.toFixed(2)}`);
+            
+            if (outletsWithoutReviews > 0) {
+                console.log(`\n⚠️ NOTICE: ${outletsWithoutReviews} outlets are pending review fetch.`);
+                console.log('💡 Click "Refresh All" button to fetch reviews for all outlets.');
+                console.log('⏱️ Estimated time: ~' + Math.ceil(outletsWithoutReviews * 2 / 60) + ' minutes (2 sec delay per outlet)');
+            }
+        }
+        
+        // Export review data to Excel
+        function exportReviewData() {
+            if (outletsData.length === 0) {
+                alert('No data to export. Please add outlets first.');
+                return;
+            }
+            
+            // Prepare data for export
+            const exportData = outletsData.map(outlet => ({
+                'Outlet Name': outlet.name,
+                'Review Count': outlet.reviewCount,
+                'Rating': outlet.rating,
+                'Last Checked': outlet.lastChecked ? new Date(outlet.lastChecked).toLocaleString() : 'Never',
+                'Status': outlet.status,
+                'Google Maps Link': outlet.link,
+                'Added Date': new Date(outlet.addedDate).toLocaleDateString()
+            }));
+            
+            // Create worksheet
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            
+            // Create workbook
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Google Reviews');
+            
+            // Generate filename with current date
+            const filename = `Apotek_Google_Reviews_${new Date().toISOString().split('T')[0]}.xlsx`;
+            
+            // Save file
+            XLSX.writeFile(wb, filename);
+        }
+        
+        // Google Sheets Integration
+        // Using public sheet with columns: A=Name, B=Status, C=Google Maps Link
+        const GOOGLE_SHEETS_ID = '1nTSZFKFZRt1owO-hKUk2lkzvlGxcyrBTC47yDTiu1YQ';
+        const SHEET_NAME = 'Sheet1'; // Default sheet name
+        
+        // Sync from Google Sheets
+        async function syncFromGoogleSheets() {
+            const btn = event.target;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Syncing...';
+            btn.disabled = true;
+            
+            try {
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log('🔄 GOOGLE SHEETS SYNC DEBUG - START');
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log(`📋 Sheet ID: ${GOOGLE_SHEETS_ID}`);
+                console.log(`📋 Sheet Name: ${SHEET_NAME}`);
+                console.log(`📊 Current outlets in memory: ${outletsData.length}`);
+                console.log('');
+                
+                // Build Google Sheets CSV export URL
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+                console.log('🔗 CSV URL:', csvUrl);
+                
+                // Fetch using CORS proxy
+                const corsProxy = 'https://api.allorigins.win/raw?url=';
+                console.log('🔗 CORS Proxy:', corsProxy);
+                console.log('');
+                
+                console.log('⏳ Fetching CSV data...');
+                const response = await fetch(corsProxy + encodeURIComponent(csvUrl));
+                const csvText = await response.text();
+                console.log(`✅ CSV data fetched! Size: ${csvText.length} characters`);
+                console.log('');
+                
+                // Parse CSV
+                const lines = csvText.split('\n');
+                console.log(`📄 Total lines in CSV: ${lines.length}`);
+                
+                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                console.log(`📋 Total columns: ${headers.length}`);
+                console.log('');
+                
+                // Show first 10 headers
+                console.log('📋 First 10 Headers:');
+                headers.slice(0, 10).forEach((h, i) => {
+                    console.log(`   [${i}] ${h}`);
+                });
+                console.log('');
+                
+                // Show headers around columns A (0), B (1), C (2)
+                console.log('📋 Target Column Headers:');
+                console.log(`   [0] (Column A - Name): "${headers[0] || 'NOT FOUND'}"`);
+                console.log(`   [1] (Column B - Status): "${headers[1] || 'NOT FOUND'}"`);
+                console.log(`   [2] (Column C - Maps Link): "${headers[2] || 'NOT FOUND'}"`);
+                console.log('');
+                
+                // Find column indices by looking for Excel column letters A, B, C
+                let nameColIndex = headers.findIndex(h => h === 'A');
+                let statusColIndex = headers.findIndex(h => h === 'B');
+                let linkColIndex = headers.findIndex(h => h === 'C');
+                
+                console.log('🔍 Looking for Excel Column Letters (A, B, C):');
+                console.log(`   'A' (Name) found at index: ${nameColIndex}`);
+                console.log(`   'B' (Status) found at index: ${statusColIndex}`);
+                console.log(`   'C' (Link) found at index: ${linkColIndex}`);
+                console.log('');
+                
+                // If not found by letter, try smart detection by content
+                if (nameColIndex < 0) {
+                    console.log('⚠️ Column A not found, trying smart detection for name column...');
+                    nameColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('outlet') || 
+                        h.toLowerCase().includes('name') ||
+                        h.toLowerCase().includes('apotek')
+                    );
+                    console.log(`   Smart detection result: ${nameColIndex >= 0 ? 'Found at ' + nameColIndex : 'Not found'}`);
+                }
+                
+                if (statusColIndex < 0) {
+                    console.log('⚠️ Column B not found, trying smart detection for status column...');
+                    statusColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('status') ||
+                        h.toLowerCase().includes('state')
+                    );
+                    console.log(`   Smart detection result: ${statusColIndex >= 0 ? 'Found at ' + statusColIndex : 'Not found'}`);
+                }
+                
+                if (linkColIndex < 0) {
+                    console.log('⚠️ Column C not found, trying smart detection for link column...');
+                    linkColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('gmap') || 
+                        h.toLowerCase().includes('maps') ||
+                        h.toLowerCase().includes('link') ||
+                        h.toLowerCase().includes('url')
+                    );
+                    console.log(`   Smart detection result: ${linkColIndex >= 0 ? 'Found at ' + linkColIndex : 'Not found'}`);
+                }
+                console.log('');
+                
+                console.log('🎯 Final Column Indices:');
+                console.log(`   Name Column: ${nameColIndex >= 0 ? nameColIndex : 'NOT FOUND - will use index 0'}`);
+                console.log(`   Status Column: ${statusColIndex >= 0 ? statusColIndex : 'NOT FOUND - will use index 1'}`);
+                console.log(`   Link Column: ${linkColIndex >= 0 ? linkColIndex : 'NOT FOUND - will use index 2'}`);
+                console.log('');
+                
+                let imported = 0;
+                let skipped = 0;
+                let closed = 0;
+                let invalidData = 0;
+                let invalidLink = 0;
+                
+                console.log('🔄 Processing rows...');
+                console.log('');
+                
+                // Debug: Show first 5 data rows
+                console.log('📊 First 5 Data Rows (Sample):');
+                for (let i = 1; i <= Math.min(5, lines.length - 1); i++) {
+                    const line = lines[i];
+                    if (!line.trim()) continue;
+                    
+                    const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+                    const name = nameColIndex >= 0 ? cols[nameColIndex] : cols[0];
+                    const status = statusColIndex >= 0 ? cols[statusColIndex] : cols[1];
+                    const link = linkColIndex >= 0 ? cols[linkColIndex] : cols[2];
+                    
+                    console.log(`   Row ${i}:`);
+                    console.log(`     Name [${nameColIndex >= 0 ? nameColIndex : 0}]: "${name || 'EMPTY'}"`);
+                    console.log(`     Status [${statusColIndex >= 0 ? statusColIndex : 1}]: "${status || 'EMPTY'}"`);
+                    console.log(`     Link [${linkColIndex >= 0 ? linkColIndex : 2}]: "${link || 'EMPTY'}"`);
+                }
+                console.log('');
+                
+                console.log('🔄 Processing all rows...');
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (!line.trim()) continue;
+                    
+                    const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+                    
+                    // Use detected index if found, otherwise fallback to A=0, B=1, C=2
+                    const name = nameColIndex >= 0 ? cols[nameColIndex] : cols[0];
+                    const status = statusColIndex >= 0 ? cols[statusColIndex] : cols[1];
+                    const link = linkColIndex >= 0 ? cols[linkColIndex] : cols[2];
+                    
+                    // Debug first few rows
+                    if (i <= 3) {
+                        console.log(`📌 Row ${i} Details:`);
+                        console.log(`   Name: "${name}"`);
+                        console.log(`   Link: "${link}"`);
+                        console.log(`   Status: "${status}"`);
+                    }
+                    
+                    // Skip if status is CLOSED
+                    if (status && status.toUpperCase() === 'CLOSED') {
+                        if (i <= 3) console.log(`   ❌ Skipped: CLOSED status`);
+                        closed++;
+                        continue;
+                    }
+                    
+                    // Validate
+                    if (!name || !link) {
+                        if (i <= 3) console.log(`   ❌ Skipped: Missing name or link`);
+                        invalidData++;
+                        skipped++;
+                        continue;
+                    }
+                    
+                    if (!link.includes('google.com/maps') && !link.includes('maps.app.goo.gl') && !link.includes('goo.gl')) {
+                        if (i <= 3) console.log(`   ❌ Skipped: Invalid Google Maps link`);
+                        invalidLink++;
+                        skipped++;
+                        continue;
+                    }
+                    
+                    // Check if already exists
+                    const existingOutlet = outletsData.find(o => o.link === link || o.name === name);
+                    if (existingOutlet) {
+                        if (i <= 3) console.log(`   ⏭️ Skipped: Already exists`);
+                        // Update existing outlet
+                        existingOutlet.name = name;
+                        existingOutlet.link = link;
+                        skipped++;
+                        continue;
+                    }
+                    
+                    if (i <= 3) console.log(`   ✅ Will import: NEW outlet`);
+                    
+                    // Log the first few imports
+                    if (imported < 5) {
+                        console.log(`🆕 Importing outlet #${imported + 1}:`, name);
+                    }
+                    
+                    // Add new outlet
+                    const placeId = extractPlaceId(link);
+                    const outlet = {
+                        id: Date.now() + imported,
+                        name: name,
+                        link: link,
+                        placeId: placeId,
+                        reviewCount: 0,
+                        rating: 0,
+                        lastChecked: null,
+                        status: 'pending',
+                        addedDate: new Date().toISOString(),
+                        source: 'google_sheets'
+                    };
+                    
+                    outletsData.push(outlet);
+                    imported++;
+                }
+                
+                console.log('');
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log('📊 SYNC SUMMARY');
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log(`✅ New outlets imported: ${imported}`);
+                console.log(`⏭️ Already exists (skipped): ${skipped - invalidData - invalidLink - closed}`);
+                console.log(`🚫 Closed outlets (excluded): ${closed}`);
+                console.log(`❌ Invalid data (no name/link): ${invalidData}`);
+                console.log(`❌ Invalid links (not Google Maps): ${invalidLink}`);
+                console.log(`📊 Total processed: ${lines.length - 1} rows`);
+                console.log('');
+                console.log(`📍 Outlets in memory before: ${outletsData.length - imported}`);
+                console.log(`📍 Outlets in memory after: ${outletsData.length}`);
+                console.log('');
+                
+                if (imported > 0) {
+                    console.log('🆕 Newly imported outlets:');
+                    outletsData.slice(-imported).forEach((outlet, idx) => {
+                        console.log(`   ${idx + 1}. ${outlet.name}`);
+                        console.log(`      Link: ${outlet.link}`);
+                    });
+                    console.log('');
+                } else {
+                    console.log('ℹ️ No new outlets imported. Possible reasons:');
+                    console.log('   1. All outlets already exist in the system');
+                    console.log('   2. All rows have CLOSED status');
+                    console.log('   3. Data in wrong columns (check column indices above)');
+                    console.log('   4. Missing or invalid Google Maps links');
+                    console.log('');
+                }
+                
+                saveOutlets();
+                renderOutletsTable();
+                updateStatistics();
+                updateLeaderboard();
+                
+                // Count outlets needing refresh
+                const needsRefresh = outletsData.filter(o => o.reviewCount === 0 || !o.reviewCount).length;
+                
+                console.log('📈 Current Status:');
+                console.log(`   Total Outlets: ${outletsData.length}`);
+                console.log(`   With Reviews: ${outletsData.filter(o => o.reviewCount > 0).length}`);
+                console.log(`   Pending Reviews: ${needsRefresh}`);
+                console.log('');
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log('🔄 GOOGLE SHEETS SYNC DEBUG - END');
+                console.log('═══════════════════════════════════════════════════════════════');
+                
+                let message = `Google Sheets sync complete!\n\n✅ New outlets imported: ${imported}\n⏭️ Already exists (skipped): ${skipped - invalidData - invalidLink - closed}\n🚫 Closed outlets (excluded): ${closed}`;
+                
+                if (invalidData > 0 || invalidLink > 0) {
+                    message += `\n\n⚠️ Skipped Due to Errors:\n   • Missing name/link: ${invalidData}\n   • Invalid Google Maps links: ${invalidLink}`;
+                }
+                
+                if (needsRefresh > 0) {
+                    const estimatedMinutes = Math.ceil(needsRefresh * 2 / 60);
+                    message += `\n\n⚠️ ${needsRefresh} outlets need review data fetched.\n⏱️ Estimated time: ~${estimatedMinutes} minutes\n\n💡 Click "Refresh All" to fetch reviews for all outlets.\n(Or manually refresh individual outlets)`;
+                }
+                
+                message += `\n\n🐛 Check browser console (F12) for detailed debug logs.`;
+                
+                alert(message);
+                
+            } catch (error) {
+                console.error('❌ Error syncing from Google Sheets:', error);
+                alert('Failed to sync from Google Sheets. Please check console for details.');
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
+        }
+        
+        // Debug Google Sheets - Show raw CSV data
+        async function debugGoogleSheets() {
+            try {
+                console.clear();
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log('🐛 DEBUG: RAW GOOGLE SHEETS DATA');
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log(`📋 Sheet ID: ${GOOGLE_SHEETS_ID}`);
+                console.log(`📋 Sheet Name: ${SHEET_NAME}`);
+                console.log('');
+                
+                // Build Google Sheets CSV export URL
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+                console.log('🔗 CSV URL:', csvUrl);
+                console.log('');
+                
+                // Fetch using CORS proxy
+                const corsProxy = 'https://api.allorigins.win/raw?url=';
+                console.log('⏳ Fetching CSV data...');
+                const response = await fetch(corsProxy + encodeURIComponent(csvUrl));
+                const csvText = await response.text();
+                console.log(`✅ CSV data fetched! Size: ${csvText.length} characters`);
+                console.log('');
+                
+                // Parse CSV
+                const lines = csvText.split('\n');
+                console.log(`📄 Total lines in CSV: ${lines.length}`);
+                console.log('');
+                
+                // Show headers
+                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                
+                // Find column indices - looking for A, B, C
+                let nameColIndex = headers.findIndex(h => h === 'A');
+                let statusColIndex = headers.findIndex(h => h === 'B');
+                let linkColIndex = headers.findIndex(h => h === 'C');
+                
+                // Smart detection fallback
+                if (nameColIndex < 0) {
+                    nameColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('outlet') || 
+                        h.toLowerCase().includes('name') ||
+                        h.toLowerCase().includes('apotek')
+                    );
+                }
+                if (statusColIndex < 0) {
+                    statusColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('status') ||
+                        h.toLowerCase().includes('state')
+                    );
+                }
+                if (linkColIndex < 0) {
+                    linkColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('gmap') || 
+                        h.toLowerCase().includes('maps') ||
+                        h.toLowerCase().includes('link') ||
+                        h.toLowerCase().includes('url')
+                    );
+                }
+                
+                // Use fallback if still not found - A=0, B=1, C=2
+                if (nameColIndex < 0) nameColIndex = 0;
+                if (statusColIndex < 0) statusColIndex = 1;
+                if (linkColIndex < 0) linkColIndex = 2;
+                
+                console.log(`📋 All ${headers.length} Column Headers:`);
+                headers.forEach((h, i) => {
+                    let marker = '';
+                    if (i === nameColIndex) marker = ' ⭐ NAME';
+                    if (i === linkColIndex) marker = ' ⭐ LINK';
+                    if (i === statusColIndex) marker = ' ⭐ STATUS';
+                    console.log(`   [${i}] ${h}${marker}`);
+                });
+                console.log('');
+                console.log('Legend: ⭐ = Detected target columns');
+                console.log(`Name Column: [${nameColIndex}] = "${headers[nameColIndex]}"`);
+                console.log(`Link Column: [${linkColIndex}] = "${headers[linkColIndex]}"`);
+                console.log(`Status Column: [${statusColIndex}] = "${headers[statusColIndex]}"`);
+                console.log('');
+                
+                // Show first 10 data rows
+                console.log('📊 First 10 Data Rows (Full):');
+                for (let i = 1; i <= Math.min(10, lines.length - 1); i++) {
+                    const line = lines[i];
+                    if (!line.trim()) {
+                        console.log(`Row ${i}: EMPTY`);
+                        continue;
+                    }
+                    
+                    const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+                    console.log(`\nRow ${i} (${cols.length} columns):`);
+                    console.log(`   [${nameColIndex}] Name: "${cols[nameColIndex] || 'EMPTY'}"`);
+                    console.log(`   [${statusColIndex}] Status: "${cols[statusColIndex] || 'EMPTY'}"`);
+                    console.log(`   [${linkColIndex}] Maps Link: "${cols[linkColIndex] || 'EMPTY'}"`);
+                    
+                    // Show all columns for first row
+                    if (i === 1) {
+                        console.log(`\n   All columns for Row 1:`);
+                        cols.forEach((col, idx) => {
+                            if (col) console.log(`      [${idx}]: "${col}"`);
+                        });
+                    }
+                }
+                console.log('');
+                
+                // Analyze data quality
+                console.log('📈 Data Quality Analysis:');
+                let validRows = 0;
+                let closedRows = 0;
+                let missingName = 0;
+                let missingLink = 0;
+                let invalidLink = 0;
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (!line.trim()) continue;
+                    
+                    const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+                    const name = cols[nameColIndex];
+                    const link = cols[linkColIndex];
+                    const status = cols[statusColIndex];
+                    
+                    if (status && status.toUpperCase() === 'CLOSED') {
+                        closedRows++;
+                        continue;
+                    }
+                    
+                    if (!name) missingName++;
+                    if (!link) missingLink++;
+                    if (link && !link.includes('google.com/maps') && !link.includes('maps.app.goo.gl') && !link.includes('goo.gl')) {
+                        invalidLink++;
+                    }
+                    
+                    if (name && link && (link.includes('google.com/maps') || link.includes('maps.app.goo.gl') || link.includes('goo.gl'))) {
+                        validRows++;
+                    }
+                }
+                
+                console.log(`   ✅ Valid rows (has name + valid link): ${validRows}`);
+                console.log(`   🚫 Closed status: ${closedRows}`);
+                console.log(`   ❌ Missing name (column ${nameColIndex}): ${missingName}`);
+                console.log(`   ❌ Missing link (column ${linkColIndex}): ${missingLink}`);
+                console.log(`   ❌ Invalid Google Maps links: ${invalidLink}`);
+                console.log('');
+                
+                // Show sample of valid data
+                console.log('✅ Sample of Valid Outlets (First 5):');
+                let sampleCount = 0;
+                for (let i = 1; i < lines.length && sampleCount < 5; i++) {
+                    const line = lines[i];
+                    if (!line.trim()) continue;
+                    
+                    const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+                    const name = cols[nameColIndex];
+                    const link = cols[linkColIndex];
+                    const status = cols[statusColIndex];
+                    
+                    if (name && link && (link.includes('google.com/maps') || link.includes('maps.app.goo.gl') || link.includes('goo.gl')) && 
+                        (!status || status.toUpperCase() !== 'CLOSED')) {
+                        sampleCount++;
+                        console.log(`${sampleCount}. ${name}`);
+                        console.log(`   Link: ${link}`);
+                        console.log(`   Status: ${status || 'N/A'}`);
+                    }
+                }
+                console.log('');
+                
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log('🐛 DEBUG END');
+                console.log('═══════════════════════════════════════════════════════════════');
+                
+                alert(`Debug complete!\n\n📊 Analysis:\n✅ Valid rows: ${validRows}\n🚫 Closed: ${closedRows}\n❌ Missing name: ${missingName}\n❌ Missing link: ${missingLink}\n❌ Invalid links: ${invalidLink}\n\nCheck console (F12) for detailed output.`);
+                
+            } catch (error) {
+                console.error('❌ Debug error:', error);
+                alert('Debug failed. Check console for details.');
+            }
+        }
+        
+        // Automation Settings
+        function showAutomationSettings() {
+            document.getElementById('automationModal').classList.remove('hidden');
+        }
+        
+        function closeAutomationModal() {
+            document.getElementById('automationModal').classList.add('hidden');
+        }
+        
+        async function testGoogleSheetsSync() {
+            alert('Testing Google Sheets sync...\n\nThis will fetch latest data from your sheet.');
+            await syncFromGoogleSheets();
+        }
+        
+        // Supabase Integration for Reviews
+        async function saveReviewsToSupabase() {
+            if (!supabase) {
+                console.warn('⚠️ Supabase not initialized');
+                return;
+            }
+            
+            try {
+                console.log('💾 Saving reviews to Supabase...');
+                
+                // Prepare data for Supabase
+                const reviewsData = outletsData.map(outlet => ({
+                    outlet_name: outlet.name,
+                    google_maps_link: outlet.link,
+                    review_count: outlet.reviewCount || 0,
+                    rating: outlet.rating || 0,
+                    last_checked: outlet.lastChecked,
+                    status: outlet.status,
+                    place_id: outlet.placeId,
+                    updated_at: new Date().toISOString()
+                }));
+                
+                // Upsert to Supabase (insert or update)
+                const { data, error } = await supabase
+                    .from('google_reviews')
+                    .upsert(reviewsData, { onConflict: 'outlet_name' });
+                
+                if (error) throw error;
+                
+                console.log('✅ Reviews saved to Supabase');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Error saving to Supabase:', error);
+                return false;
+            }
+        }
+        
+        async function loadReviewsFromSupabase() {
+            if (!supabase) {
+                console.warn('⚠️ Supabase not initialized, using localStorage');
+                return;
+            }
+            
+            try {
+                console.log('📥 Loading reviews from Supabase...');
+                
+                const { data, error } = await supabase
+                    .from('google_reviews')
+                    .select('*')
+                    .order('review_count', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    outletsData = data.map(row => ({
+                        id: row.id || Date.now(),
+                        name: row.outlet_name,
+                        link: row.google_maps_link,
+                        placeId: row.place_id,
+                        reviewCount: row.review_count || 0,
+                        rating: row.rating || 0,
+                        lastChecked: row.last_checked,
+                        status: row.status || 'pending',
+                        addedDate: row.created_at || new Date().toISOString()
+                    }));
+                    
+                    renderOutletsTable();
+                    updateStatistics();
+                    updateLeaderboard();
+                    
+                    console.log('✅ Loaded', data.length, 'outlets from Supabase');
+                } else {
+                    console.log('ℹ️ No data in Supabase, using localStorage');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading from Supabase:', error);
+            }
+        }
+        
+        // Search function
+        function searchOutlets() {
+            searchQuery = document.getElementById('searchOutlet').value.toLowerCase();
+            renderOutletsTable();
+        }
+        
+        function clearSearch() {
+            document.getElementById('searchOutlet').value = '';
+            searchQuery = '';
+            renderOutletsTable();
+        }
+        
+        // Toggle pending filter
+        function togglePendingFilter() {
+            hidePending = !hidePending;
+            const btn = document.getElementById('pendingFilterBtn');
+            const text = document.getElementById('pendingFilterText');
+            
+            if (hidePending) {
+                btn.classList.remove('bg-orange-100', 'hover:bg-orange-200', 'text-orange-700', 'border-orange-300');
+                btn.classList.add('bg-green-100', 'hover:bg-green-200', 'text-green-700', 'border-green-300');
+                btn.querySelector('i').classList.remove('fa-eye-slash');
+                btn.querySelector('i').classList.add('fa-eye');
+                text.textContent = 'Show Pending';
+            } else {
+                btn.classList.remove('bg-green-100', 'hover:bg-green-200', 'text-green-700', 'border-green-300');
+                btn.classList.add('bg-orange-100', 'hover:bg-orange-200', 'text-orange-700', 'border-orange-300');
+                btn.querySelector('i').classList.remove('fa-eye');
+                btn.querySelector('i').classList.add('fa-eye-slash');
+                text.textContent = 'Hide Pending';
+            }
+            
+            renderOutletsTable();
+        }
+        
+        // Sort function
+        function sortTable(column) {
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'asc';
+            }
+            renderOutletsTable();
+        }
+        
+        // Update leaderboard
+        function updateLeaderboard() {
+            const container = document.getElementById('leaderboardContainer');
+            
+            // Filter outlets with reviews and sort by review count
+            const rankedOutlets = outletsData
+                .filter(o => o.reviewCount > 0)
+                .sort((a, b) => {
+                    // First sort by review count
+                    if (b.reviewCount !== a.reviewCount) {
+                        return b.reviewCount - a.reviewCount;
+                    }
+                    // Then by rating
+                    return b.rating - a.rating;
+                })
+                .slice(0, 10);
+            
+            if (rankedOutlets.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-4">No data available. Add outlets to see leaderboard.</p>';
+                return;
+            }
+            
+            container.innerHTML = rankedOutlets.map((outlet, index) => {
+                const medalColors = ['text-yellow-500', 'text-gray-400', 'text-orange-600'];
+                const medalColor = index < 3 ? medalColors[index] : 'text-gray-300';
+                const bgColors = ['bg-yellow-50', 'bg-gray-50', 'bg-orange-50'];
+                const bgColor = index < 3 ? bgColors[index] : 'bg-white';
+                
+                return `
+                    <div class="flex items-center justify-between p-3 ${bgColor} rounded-lg hover:shadow-md transition-shadow">
+                        <div class="flex items-center gap-3 flex-1">
+                            <div class="text-2xl ${medalColor} font-bold w-8 text-center">
+                                ${index < 3 ? '🏆' : `#${index + 1}`}
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-800">${outlet.name}</div>
+                                <div class="text-sm text-gray-600">
+                                    ${outlet.reviewCount} reviews • ⭐ ${outlet.rating.toFixed(1)}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="viewOutlet(${outlet.id})" 
+                                    class="text-blue-600 hover:text-blue-900" 
+                                    title="View on Google Maps">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // ========================================
         // 🔒 SECURITY: SUPPRESS IFRAME CONSOLE LOGS IN PRODUCTION
         // ========================================
         // Prevent iframe console logs from appearing in main window (production only)
@@ -8321,5 +10003,7 @@ Ready for deployment! 🚀
     </script>
     
     <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+    ript>
+    script>
     ript>
     
