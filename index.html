@@ -2618,7 +2618,6 @@
                       'ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5SNGJYSjJibVp4Y1hwaWIzVndZMjFoZFhCMElpd2ljbTlzWlNJNkluTmxjblpwWTJWZmNtOXNaU0lzSW1saGRDSTZNVGMyTURBeE1UYzNNaXdpWlhod0lqb3lNRGMxTlRnM056Y3lmUS5iRFVPZ0NTc0tjUC1hSlhiYVMwQzdVTUE5Y0pGRzJ3N2J6S0R1MUVMVzY0Cg=='];
         
         let _db, _mode = false;
-        let supabase; // Global Supabase client for Google Review module
         const PROD_MODE = false; // Set to false to show all console logs for debugging
         
         // Initialize secure database immediately when script loads
@@ -2642,15 +2641,9 @@
                 secureLog(`API Key length: ${key.length}`, 'info', true);
                 
                 _db = window.supabase.createClient(url, key);
-                
-                // CRITICAL FIX: Also set global supabase variable for Google Review module
-                window.supabase = _db;
-                supabase = _db;
-                
                 _mode = true;
                 secureDatabaseReady = true;
                 secureLog('✅ Database connection established', 'success', true);
-                secureLog('✅ Global supabase variable set for Google Review module', 'success', true);
                 return true;
             } catch (error) {
                 secureLog(`❌ Database connection failed: ${error.message}`, 'error', true);
@@ -8530,6 +8523,45 @@ Ready for deployment! 🚀
         let searchQuery = '';
         let autoRefreshTriggered = false;
         let hidePending = false; // Filter to hide outlets without reviews
+        
+        // ===== GOOGLE REVIEW SUPABASE CLIENT (SEPARATE FROM AUTH) =====
+        let supabase; // Separate Supabase client for Google Reviews ONLY
+        
+        // Initialize Google Review Supabase client (separate from authentication)
+        function initGoogleReviewSupabase() {
+            try {
+                // Use PUBLIC Supabase credentials for Google Reviews
+                const GOOGLE_REVIEW_SUPABASE_URL = 'https://sudchiscctcihsznewan.supabase.co';
+                const GOOGLE_REVIEW_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1ZGNoaXNjY3RjaWhzem5ld2FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4OTM2NzUsImV4cCI6MjA3NzQ2OTY3NX0.qwT4DbDY0CvyjG5ubsrVZHvmHF67A1t2y4NXUZSczTQ';
+                
+                if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
+                    console.warn('⚠️ Supabase library not loaded for Google Reviews');
+                    return false;
+                }
+                
+                // Create SEPARATE client for Google Reviews (does NOT affect authentication)
+                supabase = window.supabase.createClient(GOOGLE_REVIEW_SUPABASE_URL, GOOGLE_REVIEW_SUPABASE_ANON_KEY);
+                console.log('✅ Google Review Supabase client initialized (separate from auth)');
+                console.log('📊 Google Review Supabase URL:', GOOGLE_REVIEW_SUPABASE_URL);
+                return true;
+            } catch (error) {
+                console.error('❌ Error initializing Google Review Supabase:', error);
+                return false;
+            }
+        }
+        
+        // Initialize Google Review Supabase when page loads
+        if (typeof window !== 'undefined') {
+            // Wait for Supabase library to load
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                initGoogleReviewSupabase();
+            } else {
+                // Retry initialization after a short delay
+                setTimeout(() => {
+                    initGoogleReviewSupabase();
+                }, 500);
+            }
+        }
         
         // Load outlets from Supabase or localStorage
         async function loadOutlets() {
