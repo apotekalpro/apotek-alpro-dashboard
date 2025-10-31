@@ -16,8 +16,8 @@
  * 3. Deploy to cron service (GitHub Actions, Vercel Cron, etc.)
  */
 
-const { createClient } = require('@supabase/supabase-js');
-const fetch = require('node-fetch');
+import { createClient } from '@supabase/supabase-js';
+import fetch from 'node-fetch';
 
 // Configuration
 const GOOGLE_SHEETS_ID = '1nTSZFKFZRt1owO-hKUk2lkzvlGxcyrBTC47yDTiu1YQ'; // Public sheet
@@ -265,9 +265,5 @@ async function main() {
     }
 }
 
-// Run if called directly
-if (require.main === module) {
-    main();
-}
-
-module.exports = { main };
+// Run the main function
+main();

@@ -2,6 +2,7 @@
   "name": "apotek-alpro-dashboard",
   "version": "1.0.0",
   "description": "Apotek Alpro Executive Dashboard - Mobile App",
+  "type": "module",
   "main": "supabase-config.js",
   "scripts": {
     "build": "cp index.html mobile-styles.css mobile-styles-enhanced.css supabase-config.js www/ && cp -r assets www/ 2>/dev/null || true",
