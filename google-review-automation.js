@@ -182,14 +182,37 @@ async function fetchReviewData(outlet, index = 0) {
         // Parse review count and rating
         const reviewData = parseGoogleMapsHTML(html);
         
+        // Enhanced debugging for outlets with missing ratings
+        if (reviewData.reviewCount > 0 && reviewData.rating === 0) {
+            // Log warning for outlets with reviews but no rating
+            console.log(`  ⚠️ ${outlet.name}: ${reviewData.reviewCount} reviews but NO RATING extracted`);
+            
+            // For first 3 outlets with this issue, show HTML snippets
+            if (index < 3) {
+                console.log(`  📄 HTML snippet (first 500 chars):`);
+                console.log(html.substring(0, 500));
+                console.log(`  ...`);
+                
+                // Try to find any decimal numbers that might be ratings
+                const decimals = html.match(/[1-5]\.\d+/g);
+                if (decimals) {
+                    console.log(`  🔍 Found decimals in HTML: ${decimals.slice(0, 10).join(', ')}`);
+                }
+            }
+        }
+        
         // Debug rating extraction for first outlet
-        if (index === 0 && reviewData.rating === 0) {
-            // Look for rating patterns in HTML
-            const ratingSnippet = html.match(/([1-5][\.,]\d+)[^\d]*\([\d,]+\)/);
-            if (ratingSnippet) {
-                console.log(`  📝 Found rating pattern: ${ratingSnippet[0]}`);
+        if (index === 0) {
+            if (reviewData.rating > 0) {
+                console.log(`  ✅ Successfully extracted rating: ${reviewData.rating}`);
             } else {
-                console.log(`  ⚠️ No rating pattern found in HTML`);
+                // Look for rating patterns in HTML
+                const ratingSnippet = html.match(/([1-5][\.,]\d+)[^\d]*\([\d,]+\)/);
+                if (ratingSnippet) {
+                    console.log(`  📝 Found rating pattern: ${ratingSnippet[0]}`);
+                } else {
+                    console.log(`  ⚠️ No rating pattern found in HTML`);
+                }
             }
         }
         
@@ -329,6 +352,49 @@ function parseGoogleMapsHTML(html) {
                             break;
                         }
                     }
+                }
+            }
+        }
+        
+        // Pattern 10: Meta tags (og:rating, rating meta)
+        if (rating === 0) {
+            const metaRating = html.match(/<meta[^>]*(?:property|name)="(?:og:)?rating"[^>]*content="([\d.]+)"/i);
+            if (metaRating) {
+                rating = parseFloat(metaRating[1]);
+            }
+        }
+        
+        // Pattern 11: Look for rating in data attributes
+        if (rating === 0) {
+            const dataRating = html.match(/data-rating="([\d.]+)"/i);
+            if (dataRating) {
+                rating = parseFloat(dataRating[1]);
+            }
+        }
+        
+        // Pattern 12: Schema.org LocalBusiness rating
+        if (rating === 0) {
+            const schemaRating = html.match(/"@type"\s*:\s*"LocalBusiness"[\s\S]{0,500}"ratingValue"\s*:\s*"?([\d.]+)"?/);
+            if (schemaRating) {
+                rating = parseFloat(schemaRating[1]);
+            }
+        }
+        
+        // Pattern 13: Extract from the specific review count context
+        // If we have review count, look for rating immediately before it in various formats
+        if (rating === 0 && reviewCount > 0) {
+            // Try multiple patterns around the review count
+            const patterns = [
+                new RegExp(`([1-5][\\.\\,]\\d)\\s*(?:stars?)?\\s*[\\(\\[]?${reviewCount}[\\)\\]]?`),
+                new RegExp(`([1-5][\\.\\,]\\d)[^\\d]{0,20}${reviewCount}`),
+                new RegExp(`rating[^\\d]*([1-5][\\.\\,]\\d)[^\\d]*${reviewCount}`, 'i')
+            ];
+            
+            for (const pattern of patterns) {
+                const match = html.match(pattern);
+                if (match) {
+                    rating = parseFloat(match[1].replace(',', '.'));
+                    break;
                 }
             }
         }
