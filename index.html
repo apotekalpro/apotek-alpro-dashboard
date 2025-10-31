@@ -1375,6 +1375,11 @@
                                                 <i class="fas fa-table mr-2"></i>
                                                 Sync from Google Sheets
                                             </button>
+                                            <button onclick="debugGoogleSheets()" 
+                                                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm">
+                                                <i class="fas fa-bug mr-2"></i>
+                                                Debug CSV
+                                            </button>
                                             <button onclick="showAutomationSettings()" 
                                                     class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm">
                                                 <i class="fas fa-cog mr-2"></i>
@@ -9275,34 +9280,90 @@ Ready for deployment! 🚀
             btn.disabled = true;
             
             try {
-                console.log('🔄 Syncing from Google Sheets...');
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log('🔄 GOOGLE SHEETS SYNC DEBUG - START');
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log(`📋 Sheet ID: ${GOOGLE_SHEETS_ID}`);
+                console.log(`📋 Sheet Name: ${SHEET_NAME}`);
+                console.log(`📊 Current outlets in memory: ${outletsData.length}`);
+                console.log('');
                 
                 // Build Google Sheets CSV export URL
                 const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+                console.log('🔗 CSV URL:', csvUrl);
                 
                 // Fetch using CORS proxy
                 const corsProxy = 'https://api.allorigins.win/raw?url=';
+                console.log('🔗 CORS Proxy:', corsProxy);
+                console.log('');
+                
+                console.log('⏳ Fetching CSV data...');
                 const response = await fetch(corsProxy + encodeURIComponent(csvUrl));
                 const csvText = await response.text();
-                
-                console.log('📄 CSV data fetched, parsing...');
+                console.log(`✅ CSV data fetched! Size: ${csvText.length} characters`);
+                console.log('');
                 
                 // Parse CSV
                 const lines = csvText.split('\n');
-                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                console.log(`📄 Total lines in CSV: ${lines.length}`);
                 
-                console.log('📋 Headers:', headers);
+                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                console.log(`📋 Total columns: ${headers.length}`);
+                console.log('');
+                
+                // Show first 10 headers
+                console.log('📋 First 10 Headers:');
+                headers.slice(0, 10).forEach((h, i) => {
+                    console.log(`   [${i}] ${h}`);
+                });
+                console.log('');
+                
+                // Show headers around columns J (9), P (15), AC (28)
+                console.log('📋 Target Column Headers:');
+                console.log(`   [9] (Column J - Name): "${headers[9] || 'NOT FOUND'}"`);
+                console.log(`   [15] (Column P - Status): "${headers[15] || 'NOT FOUND'}"`);
+                console.log(`   [28] (Column AC - Maps Link): "${headers[28] || 'NOT FOUND'}"`);
+                console.log('');
                 
                 // Find column indices
                 const nameColIndex = headers.findIndex(h => h === 'J' || h.toLowerCase().includes('outlet') || h.toLowerCase().includes('name'));
                 const linkColIndex = headers.findIndex(h => h === 'AC' || h.toLowerCase().includes('gmap') || h.toLowerCase().includes('link'));
                 const statusColIndex = headers.findIndex(h => h === 'P' || h.toLowerCase().includes('status'));
                 
-                console.log('Column indices - Name:', nameColIndex, 'Link:', linkColIndex, 'Status:', statusColIndex);
+                console.log('🔍 Column Detection Results:');
+                console.log(`   Name Column Index: ${nameColIndex} (using ${nameColIndex >= 0 ? 'detected' : 'fallback'})`);
+                console.log(`   Link Column Index: ${linkColIndex} (using ${linkColIndex >= 0 ? 'detected' : 'fallback'})`);
+                console.log(`   Status Column Index: ${statusColIndex} (using ${statusColIndex >= 0 ? 'detected' : 'fallback'})`);
+                console.log('');
                 
                 let imported = 0;
                 let skipped = 0;
                 let closed = 0;
+                let invalidData = 0;
+                let invalidLink = 0;
+                
+                console.log('🔄 Processing rows...');
+                console.log('');
+                
+                // Debug: Show first 5 data rows
+                console.log('📊 First 5 Data Rows (Sample):');
+                for (let i = 1; i <= Math.min(5, lines.length - 1); i++) {
+                    const line = lines[i];
+                    if (!line.trim()) continue;
+                    
+                    const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+                    const name = cols[nameColIndex] || cols[9];
+                    const link = cols[linkColIndex] || cols[28];
+                    const status = cols[statusColIndex] || cols[15];
+                    
+                    console.log(`   Row ${i}:`);
+                    console.log(`     Name [${nameColIndex >= 0 ? nameColIndex : 9}]: "${name || 'EMPTY'}"`);
+                    console.log(`     Link [${linkColIndex >= 0 ? linkColIndex : 28}]: "${link || 'EMPTY'}"`);
+                    console.log(`     Status [${statusColIndex >= 0 ? statusColIndex : 15}]: "${status || 'EMPTY'}"`);
+                }
+                console.log('');
+                
+                console.log('🔄 Processing all rows...');
                 
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i];
@@ -9314,19 +9375,32 @@ Ready for deployment! 🚀
                     const link = cols[linkColIndex] || cols[28]; // AC is 29th column (index 28)
                     const status = cols[statusColIndex] || cols[15]; // P is 16th column (index 15)
                     
+                    // Debug first few rows
+                    if (i <= 3) {
+                        console.log(`📌 Row ${i} Details:`);
+                        console.log(`   Name: "${name}"`);
+                        console.log(`   Link: "${link}"`);
+                        console.log(`   Status: "${status}"`);
+                    }
+                    
                     // Skip if status is CLOSED
                     if (status && status.toUpperCase() === 'CLOSED') {
+                        if (i <= 3) console.log(`   ❌ Skipped: CLOSED status`);
                         closed++;
                         continue;
                     }
                     
                     // Validate
                     if (!name || !link) {
+                        if (i <= 3) console.log(`   ❌ Skipped: Missing name or link`);
+                        invalidData++;
                         skipped++;
                         continue;
                     }
                     
                     if (!link.includes('google.com/maps') && !link.includes('maps.app.goo.gl') && !link.includes('goo.gl')) {
+                        if (i <= 3) console.log(`   ❌ Skipped: Invalid Google Maps link`);
+                        invalidLink++;
                         skipped++;
                         continue;
                     }
@@ -9334,11 +9408,19 @@ Ready for deployment! 🚀
                     // Check if already exists
                     const existingOutlet = outletsData.find(o => o.link === link || o.name === name);
                     if (existingOutlet) {
+                        if (i <= 3) console.log(`   ⏭️ Skipped: Already exists`);
                         // Update existing outlet
                         existingOutlet.name = name;
                         existingOutlet.link = link;
                         skipped++;
                         continue;
+                    }
+                    
+                    if (i <= 3) console.log(`   ✅ Will import: NEW outlet`);
+                    
+                    // Log the first few imports
+                    if (imported < 5) {
+                        console.log(`🆕 Importing outlet #${imported + 1}:`, name);
                     }
                     
                     // Add new outlet
@@ -9360,22 +9442,66 @@ Ready for deployment! 🚀
                     imported++;
                 }
                 
+                console.log('');
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log('📊 SYNC SUMMARY');
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log(`✅ New outlets imported: ${imported}`);
+                console.log(`⏭️ Already exists (skipped): ${skipped - invalidData - invalidLink - closed}`);
+                console.log(`🚫 Closed outlets (excluded): ${closed}`);
+                console.log(`❌ Invalid data (no name/link): ${invalidData}`);
+                console.log(`❌ Invalid links (not Google Maps): ${invalidLink}`);
+                console.log(`📊 Total processed: ${lines.length - 1} rows`);
+                console.log('');
+                console.log(`📍 Outlets in memory before: ${outletsData.length - imported}`);
+                console.log(`📍 Outlets in memory after: ${outletsData.length}`);
+                console.log('');
+                
+                if (imported > 0) {
+                    console.log('🆕 Newly imported outlets:');
+                    outletsData.slice(-imported).forEach((outlet, idx) => {
+                        console.log(`   ${idx + 1}. ${outlet.name}`);
+                        console.log(`      Link: ${outlet.link}`);
+                    });
+                    console.log('');
+                } else {
+                    console.log('ℹ️ No new outlets imported. Possible reasons:');
+                    console.log('   1. All outlets already exist in the system');
+                    console.log('   2. All rows have CLOSED status');
+                    console.log('   3. Data in wrong columns (check column indices above)');
+                    console.log('   4. Missing or invalid Google Maps links');
+                    console.log('');
+                }
+                
                 saveOutlets();
                 renderOutletsTable();
                 updateStatistics();
                 updateLeaderboard();
                 
-                console.log('✅ Sync complete!');
-                
                 // Count outlets needing refresh
                 const needsRefresh = outletsData.filter(o => o.reviewCount === 0 || !o.reviewCount).length;
                 
-                let message = `Google Sheets sync complete!\n\n✅ New outlets imported: ${imported}\n⏭️ Already exists (skipped): ${skipped}\n🚫 Closed outlets (excluded): ${closed}`;
+                console.log('📈 Current Status:');
+                console.log(`   Total Outlets: ${outletsData.length}`);
+                console.log(`   With Reviews: ${outletsData.filter(o => o.reviewCount > 0).length}`);
+                console.log(`   Pending Reviews: ${needsRefresh}`);
+                console.log('');
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log('🔄 GOOGLE SHEETS SYNC DEBUG - END');
+                console.log('═══════════════════════════════════════════════════════════════');
+                
+                let message = `Google Sheets sync complete!\n\n✅ New outlets imported: ${imported}\n⏭️ Already exists (skipped): ${skipped - invalidData - invalidLink - closed}\n🚫 Closed outlets (excluded): ${closed}`;
+                
+                if (invalidData > 0 || invalidLink > 0) {
+                    message += `\n\n⚠️ Skipped Due to Errors:\n   • Missing name/link: ${invalidData}\n   • Invalid Google Maps links: ${invalidLink}`;
+                }
                 
                 if (needsRefresh > 0) {
                     const estimatedMinutes = Math.ceil(needsRefresh * 2 / 60);
                     message += `\n\n⚠️ ${needsRefresh} outlets need review data fetched.\n⏱️ Estimated time: ~${estimatedMinutes} minutes\n\n💡 Click "Refresh All" to fetch reviews for all outlets.\n(Or manually refresh individual outlets)`;
                 }
+                
+                message += `\n\n🐛 Check browser console (F12) for detailed debug logs.`;
                 
                 alert(message);
                 
@@ -9385,6 +9511,145 @@ Ready for deployment! 🚀
             } finally {
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
+            }
+        }
+        
+        // Debug Google Sheets - Show raw CSV data
+        async function debugGoogleSheets() {
+            try {
+                console.clear();
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log('🐛 DEBUG: RAW GOOGLE SHEETS DATA');
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log(`📋 Sheet ID: ${GOOGLE_SHEETS_ID}`);
+                console.log(`📋 Sheet Name: ${SHEET_NAME}`);
+                console.log('');
+                
+                // Build Google Sheets CSV export URL
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+                console.log('🔗 CSV URL:', csvUrl);
+                console.log('');
+                
+                // Fetch using CORS proxy
+                const corsProxy = 'https://api.allorigins.win/raw?url=';
+                console.log('⏳ Fetching CSV data...');
+                const response = await fetch(corsProxy + encodeURIComponent(csvUrl));
+                const csvText = await response.text();
+                console.log(`✅ CSV data fetched! Size: ${csvText.length} characters`);
+                console.log('');
+                
+                // Parse CSV
+                const lines = csvText.split('\n');
+                console.log(`📄 Total lines in CSV: ${lines.length}`);
+                console.log('');
+                
+                // Show headers
+                const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                console.log(`📋 All ${headers.length} Column Headers:`);
+                headers.forEach((h, i) => {
+                    const marker = (i === 9 || i === 15 || i === 28) ? ' ⭐' : '';
+                    console.log(`   [${i}] ${h}${marker}`);
+                });
+                console.log('');
+                console.log('Legend: ⭐ = Target columns (9=J, 15=P, 28=AC)');
+                console.log('');
+                
+                // Show first 10 data rows
+                console.log('📊 First 10 Data Rows (Full):');
+                for (let i = 1; i <= Math.min(10, lines.length - 1); i++) {
+                    const line = lines[i];
+                    if (!line.trim()) {
+                        console.log(`Row ${i}: EMPTY`);
+                        continue;
+                    }
+                    
+                    const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+                    console.log(`\nRow ${i} (${cols.length} columns):`);
+                    console.log(`   [9] Name: "${cols[9] || 'EMPTY'}"`);
+                    console.log(`   [15] Status: "${cols[15] || 'EMPTY'}"`);
+                    console.log(`   [28] Maps Link: "${cols[28] || 'EMPTY'}"`);
+                    
+                    // Show all columns for first row
+                    if (i === 1) {
+                        console.log(`\n   All columns for Row 1:`);
+                        cols.forEach((col, idx) => {
+                            if (col) console.log(`      [${idx}]: "${col}"`);
+                        });
+                    }
+                }
+                console.log('');
+                
+                // Analyze data quality
+                console.log('📈 Data Quality Analysis:');
+                let validRows = 0;
+                let closedRows = 0;
+                let missingName = 0;
+                let missingLink = 0;
+                let invalidLink = 0;
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (!line.trim()) continue;
+                    
+                    const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+                    const name = cols[9];
+                    const link = cols[28];
+                    const status = cols[15];
+                    
+                    if (status && status.toUpperCase() === 'CLOSED') {
+                        closedRows++;
+                        continue;
+                    }
+                    
+                    if (!name) missingName++;
+                    if (!link) missingLink++;
+                    if (link && !link.includes('google.com/maps') && !link.includes('maps.app.goo.gl') && !link.includes('goo.gl')) {
+                        invalidLink++;
+                    }
+                    
+                    if (name && link && (link.includes('google.com/maps') || link.includes('maps.app.goo.gl') || link.includes('goo.gl'))) {
+                        validRows++;
+                    }
+                }
+                
+                console.log(`   ✅ Valid rows (has name + valid link): ${validRows}`);
+                console.log(`   🚫 Closed status: ${closedRows}`);
+                console.log(`   ❌ Missing name (column 9): ${missingName}`);
+                console.log(`   ❌ Missing link (column 28): ${missingLink}`);
+                console.log(`   ❌ Invalid Google Maps links: ${invalidLink}`);
+                console.log('');
+                
+                // Show sample of valid data
+                console.log('✅ Sample of Valid Outlets (First 5):');
+                let sampleCount = 0;
+                for (let i = 1; i < lines.length && sampleCount < 5; i++) {
+                    const line = lines[i];
+                    if (!line.trim()) continue;
+                    
+                    const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+                    const name = cols[9];
+                    const link = cols[28];
+                    const status = cols[15];
+                    
+                    if (name && link && (link.includes('google.com/maps') || link.includes('maps.app.goo.gl') || link.includes('goo.gl')) && 
+                        (!status || status.toUpperCase() !== 'CLOSED')) {
+                        sampleCount++;
+                        console.log(`${sampleCount}. ${name}`);
+                        console.log(`   Link: ${link}`);
+                        console.log(`   Status: ${status || 'N/A'}`);
+                    }
+                }
+                console.log('');
+                
+                console.log('═══════════════════════════════════════════════════════════════');
+                console.log('🐛 DEBUG END');
+                console.log('═══════════════════════════════════════════════════════════════');
+                
+                alert(`Debug complete!\n\n📊 Analysis:\n✅ Valid rows: ${validRows}\n🚫 Closed: ${closedRows}\n❌ Missing name: ${missingName}\n❌ Missing link: ${missingLink}\n❌ Invalid links: ${invalidLink}\n\nCheck console (F12) for detailed output.`);
+                
+            } catch (error) {
+                console.error('❌ Debug error:', error);
+                alert('Debug failed. Check console for details.');
             }
         }
         
