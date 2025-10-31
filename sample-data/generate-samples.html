@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample Data Generator - Sales Reconciliation</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="card">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-download mr-3 text-indigo-600"></i>
+                Sample Data Generator
+            </h1>
+            <p class="text-gray-600 mb-6">Click the buttons below to download sample Excel files for testing the Sales Reconciliation system.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button onclick="generateTransactionSummary()" class="btn-primary">
+                    <i class="fas fa-file-excel mr-2"></i>
+                    1. Transaction Summary ACMM
+                </button>
+                <button onclick="generateBCAStatement()" class="btn-primary">
+                    <i class="fas fa-file-excel mr-2"></i>
+                    2. BCA Statement
+                </button>
+                <button onclick="generateMasterMID()" class="btn-primary">
+                    <i class="fas fa-file-excel mr-2"></i>
+                    3. Master MID Outlet
+                </button>
+                <button onclick="generateMasterKartuDebit()" class="btn-primary">
+                    <i class="fas fa-file-excel mr-2"></i>
+                    4. Master Kartu Debit Outlet
+                </button>
+                <button onclick="generateMerchantRate()" class="btn-primary">
+                    <i class="fas fa-file-excel mr-2"></i>
+                    5. Merchant Rate Checker
+                </button>
+                <button onclick="generateMasterCabang()" class="btn-primary">
+                    <i class="fas fa-file-excel mr-2"></i>
+                    6. Master BCA Cabang
+                </button>
+            </div>
+            
+            <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+                <h3 class="font-bold text-blue-800 mb-2">Instructions:</h3>
+                <ol class="list-decimal list-inside text-blue-700 space-y-1">
+                    <li>Download all 6 sample files using the buttons above</li>
+                    <li>Navigate to Finance → Sales Reconciliation in the main dashboard</li>
+                    <li>Upload the downloaded files</li>
+                    <li>Click "Start Reconciliation Process"</li>
+                    <li>Review the matched and unmatched results</li>
+                    <li>Try exporting different result categories</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateTransactionSummary() {
+            const data = [
+                ['Date', 'Invoice', 'Store Name', 'Transaction', 'Amount', 'Payment Method', 'Card Number', '', '', '', 'Commission', '', '', 'Net Amount'],
+                ['01/10/2024', 'INV001', '(JKJSKR1) APOTEK ALPRO KALIBATA RESIDENCE', 'TRX001', 2532111, 'CASH', '', '', '', '', 0, '', '', 2532111],
+                ['01/10/2024', 'INV002', '(JKBSI1) APOTEK ALPRO SEMANAN INDA', 'TRX002', 1787200, 'VISA', '123456', '', '', '', 20987, '', '', 1766213],
+                ['01/10/2024', 'INV003', '(JKBSI1) APOTEK ALPRO SEMANAN INDA', 'TRX003', 500000, 'MASTER', '789012', '', '', '', 5000, '', '', 495000],
+                ['01/10/2024', 'INV004', '(JBBSLH1) APOTEK ALPRO LEMBAH HIJAU', 'TRX004', 910400, 'VISA', '654321', '', '', '', 12018, '', '', 898382],
+                ['11/10/2024', 'INV005', '(JKRKS1) APOTEK ALPRO RAYA KUKUSAN', 'TRX005', 1321536, 'QRIS', '', '', '', '', 13215, '', '', 1308321],
+                ['11/10/2024', 'INV006', '(JKKHP1) APOTEK ALPRO KOTA HARAPAN', 'TRX006', 788200, 'DEBIT BANK LAIN', '345678', '', '', '', 1182, '', '', 787018],
+                ['02/10/2024', 'INV007', '(JKJSKR1) APOTEK ALPRO KALIBATA RESIDENCE', 'TRX007', 800000, 'CASH', '', '', '', '', 0, '', '', 800000],
+                ['03/10/2024', 'INV008', '(JKBSI1) APOTEK ALPRO SEMANAN INDA', 'TRX008', 2500000, 'BCA CARD', '456789', '', '', '', 25000, '', '', 2475000],
+            ];
+            
+            exportToExcel(data, 'Transaction_Summary_ACMM_Sample.xlsx', 'Transaction Summary');
+        }
+
+        function generateBCAStatement() {
+            const data = [
+                ['Tgl Transaksi', 'Description', 'Cabang', 'Amount'],
+                ['02/10/2024', 'SETORAN VIA CDM 01/10 WSID:ZP8E1 0147000100793458', 'CAB001', '2,500,000.00 CR'],
+                ['02/10/2024', 'KARTU KREDIT MID:001731819 ALPRO SEMANAN INDA TGH:00001787200.00 ADM:00000020987.00', 'CAB002', '1,766,213.00 CR'],
+                ['02/10/2024', 'KARTU KREDIT MID:001999617 ALPRO LEMBAH HIJAU TGH:00000910400.00 ADM:00000012018.00', 'CAB005', '898,382.00 CR'],
+                ['03/10/2024', 'SETORAN VIA CDM 02/10 WSID:ZP8E2 0147000100793458', 'CAB001', '800,000.00 CR'],
+                ['04/10/2024', 'KARTU KREDIT MID:001731819 ALPRO SEMANAN INDA TGH:00002500000.00 ADM:00000025000.00', 'CAB002', '2,475,000.00 CR'],
+                ['12/10/2024', 'KR OTOMATIS TANGGAL:12/10 MID:885003068737 ALPRO RAYA KUKUSAN QR: 1308321.00 DDR: 0.00', 'CAB003', '1,308,321.00 CR'],
+                ['12/10/2024', 'KR OTOMATIS MID:885001857445 ALPRO KOTA HARAPAN TGH:00000788200.00 DDR:00000001182.30', 'CAB004', '787,018.00 CR'],
+                ['15/10/2024', 'SETORAN TUNAI SETORAN SALES B TTGRS1 300925', 'TTGRS1', '32,111.00 CR'],
+            ];
+            
+            exportToExcel(data, 'BCA_Statement_Sample.xlsx', 'BCA Statement');
+        }
+
+        function generateMasterMID() {
+            const data = [
+                ['No', 'Outlet Name', 'Region', 'MID', 'Outlet Code'],
+                [1, 'APOTEK ALPRO SEMANAN INDA', 'Jakarta', '885001731819', 'JKBSI1'],
+                [2, 'APOTEK ALPRO RAYA KUKUSAN', 'Jakarta', '885003068737', 'JKRKS1'],
+                [3, 'APOTEK ALPRO KOTA HARAPAN', 'Jakarta', '885001857445', 'JKKHP1'],
+                [4, 'APOTEK ALPRO LEMBAH HIJAU', 'Jakarta', '885001999617', 'JBBSLH1'],
+                [5, 'APOTEK ALPRO KELAPA GADING', 'Jakarta', '885002345678', 'JKKG1'],
+                [6, 'APOTEK ALPRO MENTENG', 'Jakarta', '885003456789', 'JKMTG1'],
+            ];
+            
+            exportToExcel(data, 'Master_MID_Outlet_Sample.xlsx', 'Master MID');
+        }
+
+        function generateMasterKartuDebit() {
+            const data = [
+                ['No', 'Outlet Name', 'Region', 'Bank', 'Account Number', 'Kartu Debit Number', 'Outlet Code'],
+                [1, 'APOTEK ALPRO KALIBATA RESIDENCE', 'Jakarta', 'BCA', '1470001234', '147000100793458', 'JKJSKR1'],
+                [2, 'APOTEK ALPRO SEMANAN INDA', 'Jakarta', 'BCA', '1470005678', '147000100793459', 'JKBSI1'],
+                [3, 'APOTEK ALPRO RAYA KUKUSAN', 'Jakarta', 'BCA', '1470009012', '147000100793460', 'JKRKS1'],
+                [4, 'APOTEK ALPRO KOTA HARAPAN', 'Jakarta', 'BCA', '1470003456', '147000100793461', 'JKKHP1'],
+            ];
+            
+            exportToExcel(data, 'Master_Kartu_Debit_Outlet_Sample.xlsx', 'Master Kartu Debit');
+        }
+
+        function generateMerchantRate() {
+            const data = [
+                ['Card Last 6 Digits', 'Payment Type', 'Merchant Rate (%)'],
+                ['000000', 'QRIS', 0.4],
+                ['000000', 'VISA', 1.4],
+                ['000000', 'MASTER', 1.4],
+                ['000000', 'BCA CARD', 0.9],
+                ['000000', 'AMEX CARD', 1.5],
+                ['000000', 'JCB CARD', 1.5],
+                ['000000', 'DEBIT BANK LAIN', 1],
+                ['000000', 'DEBIT BANK SAMA', 0.15],
+                ['123456', 'VISA', 1.4],
+                ['789012', 'MASTER', 1.4],
+                ['456789', 'BCA CARD', 0.9],
+                ['345678', 'DEBIT BANK LAIN', 1],
+                ['379991', 'AMEX CARD', 1.9],
+            ];
+            
+            exportToExcel(data, 'Merchant_Rate_Matching_Checker_Sample.xlsx', 'Merchant Rate');
+        }
+
+        function generateMasterCabang() {
+            const data = [
+                ['No', 'Cabang Name', 'Cabang Code', 'Outlet Code'],
+                [1, 'BCA TANGERANG RAYA', 'TTGRS1', 'JKJSKR1'],
+                [2, 'BCA JAKARTA PUSAT', 'CAB001', 'JKJSKR1'],
+                [3, 'BCA JAKARTA BARAT', 'CAB002', 'JKBSI1'],
+                [4, 'BCA JAKARTA SELATAN', 'CAB003', 'JKRKS1'],
+                [5, 'BCA JAKARTA TIMUR', 'CAB004', 'JKKHP1'],
+            ];
+            
+            exportToExcel(data, 'Master_BCA_Cabang_Sample.xlsx', 'Master Cabang');
+        }
+
+        function exportToExcel(data, filename, sheetName) {
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            
+            // Auto-size columns
+            const maxWidth = data.reduce((w, r) => Math.max(w, r.length), 10);
+            ws['!cols'] = Array(maxWidth).fill({ wch: 15 });
+            
+            XLSX.writeFile(wb, filename);
+        }
+    </script>
+</body>
+</html>
