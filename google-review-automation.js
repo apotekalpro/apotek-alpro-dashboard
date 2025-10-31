@@ -123,12 +123,67 @@ async function fetchReviewData(outlet, index = 0) {
     try {
         console.log(`  🔍 Fetching reviews for: ${outlet.name}`);
         
-        const response = await fetch(CORS_PROXY + encodeURIComponent(outlet.link));
-        const html = await response.text();
+        // Try different approaches to fetch the page
+        let html = '';
+        let fetchSuccess = false;
         
-        // Debug: Show HTML snippet for first outlet
+        // Approach 1: Try direct fetch (works in Node.js server environment)
+        try {
+            const directResponse = await fetch(outlet.link, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                },
+                redirect: 'follow'
+            });
+            html = await directResponse.text();
+            if (html.length > 1000) {
+                fetchSuccess = true;
+                if (index === 0) console.log(`  ✅ Direct fetch successful`);
+            }
+        } catch (directError) {
+            if (index === 0) console.log(`  ⚠️ Direct fetch failed: ${directError.message}`);
+        }
+        
+        // Approach 2: Try with CORS proxy if direct failed
+        if (!fetchSuccess) {
+            try {
+                const proxyResponse = await fetch(CORS_PROXY + encodeURIComponent(outlet.link));
+                html = await proxyResponse.text();
+                if (html.length > 1000) {
+                    fetchSuccess = true;
+                    if (index === 0) console.log(`  ✅ CORS proxy fetch successful`);
+                }
+            } catch (proxyError) {
+                if (index === 0) console.log(`  ⚠️ CORS proxy failed: ${proxyError.message}`);
+            }
+        }
+        
+        // Debug: Show HTML info for first outlet
         if (index === 0) {
             console.log(`  📄 HTML length: ${html.length}`);
+            if (html.length < 1000) {
+                console.log(`  ⚠️ HTML too short, might be error page`);
+                console.log(`  📄 HTML preview: ${html.substring(0, 200)}`);
+            }
+        }
+        
+        // If we got very little HTML, it's probably an error
+        if (html.length < 500) {
+            console.log(`  ⚠️ ${outlet.name}: Failed to fetch page (HTML length: ${html.length})`);
+            return {
+                ...outlet,
+                reviewCount: 0,
+                rating: 0,
+                lastChecked: new Date().toISOString(),
+                error: 'Failed to fetch page content'
+            };
+        }
+        
+        // Parse review count and rating
+        const reviewData = parseGoogleMapsHTML(html);
+        
+        // Debug rating extraction for first outlet
+        if (index === 0 && reviewData.rating === 0) {
             // Look for rating patterns in HTML
             const ratingSnippet = html.match(/([1-5][\.,]\d+)[^\d]*\([\d,]+\)/);
             if (ratingSnippet) {
@@ -137,9 +192,6 @@ async function fetchReviewData(outlet, index = 0) {
                 console.log(`  ⚠️ No rating pattern found in HTML`);
             }
         }
-        
-        // Parse review count and rating
-        const reviewData = parseGoogleMapsHTML(html);
         
         console.log(`  ✅ ${outlet.name}: ${reviewData.reviewCount} reviews, ${reviewData.rating} rating`);
         
