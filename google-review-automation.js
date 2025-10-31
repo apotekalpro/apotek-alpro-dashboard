@@ -24,7 +24,7 @@ import puppeteer from 'puppeteer';
 const GOOGLE_SHEETS_ID = '1nTSZFKFZRt1owO-hKUk2lkzvlGxcyrBTC47yDTiu1YQ'; // Public sheet
 const SHEET_NAME = 'Sheet1';
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-const DELAY_BETWEEN_REQUESTS = 2000; // 2 seconds
+const DELAY_BETWEEN_REQUESTS = 3000; // 3 seconds (increased to avoid rate limits and ensure complete data loading)
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -135,19 +135,42 @@ async function fetchReviewData(outlet, browser, index = 0) {
         // Navigate to the Google Maps page
         await page.goto(outlet.link, {
             waitUntil: 'networkidle2',
-            timeout: 30000
+            timeout: 60000 // Increased to 60 seconds
         });
         
-        // Wait for key elements to be present
+        console.log(`  ⏳ Waiting for page to fully load...`);
+        
+        // Wait for key elements to be present with longer timeout
         try {
-            await page.waitForSelector('h1', { timeout: 5000 });
-            await page.waitForSelector('[role="img"]', { timeout: 5000 });
+            await page.waitForSelector('h1', { timeout: 10000 });
+            await page.waitForSelector('[role="img"]', { timeout: 10000 });
+            // Wait specifically for rating button which contains the data we need
+            await page.waitForSelector('button[aria-label*="star"]', { timeout: 10000 });
+            console.log(`  ✅ Key elements loaded`);
         } catch (e) {
             console.log(`  ⚠️ Some elements didn't load in time for ${outlet.name}`);
         }
         
-        // Additional wait for dynamic content to stabilize
-        await page.waitForTimeout(5000); // Increased to 5 seconds for full load
+        // CRITICAL: Wait longer for Google Maps to fully render all dynamic content
+        // Google Maps loads in stages, rating/review data comes after initial render
+        console.log(`  ⏳ Waiting 10 seconds for dynamic content to stabilize...`);
+        await page.waitForTimeout(10000); // Increased to 10 seconds for full load
+        
+        // Scroll the page to trigger any lazy-loaded content
+        // Google Maps often loads complete data only after user interaction
+        try {
+            await page.evaluate(() => {
+                window.scrollBy(0, 300);
+            });
+            await page.waitForTimeout(2000); // Wait for scroll-triggered content
+            await page.evaluate(() => {
+                window.scrollBy(0, -300); // Scroll back to top
+            });
+            await page.waitForTimeout(1000);
+            console.log(`  ✅ Triggered content loading with scroll`);
+        } catch (e) {
+            console.log(`  ⚠️ Scroll trigger failed`);
+        }
         
         // Get the actual URL after navigation (in case of redirects)
         const actualURL = page.url();
@@ -272,7 +295,8 @@ async function fetchReviewData(outlet, browser, index = 0) {
                             const r = parseFloat(match[1].replace(',', '.'));
                             if (r >= 1.0 && r <= 5.0) {
                                 rating = r;
-                                debugInfo.push(`✅ Found rating in body: ${rating}`);\n                                break;
+                                debugInfo.push(`✅ Found rating in body: ${rating}`);
+                                break;
                             }
                         }
                     }
@@ -293,7 +317,8 @@ async function fetchReviewData(outlet, browser, index = 0) {
                             const count = parseInt(match[1].replace(/[^0-9]/g, ''));
                             if (count > 0) {
                                 reviewCount = count;
-                                debugInfo.push(`✅ Found reviews in body: ${reviewCount}`);\n                                break;
+                                debugInfo.push(`✅ Found reviews in body: ${reviewCount}`);
+                                break;
                             }
                         }
                     }
