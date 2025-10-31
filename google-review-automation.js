@@ -43,14 +43,33 @@ async function fetchOutletsFromGoogleSheets() {
     try {
         console.log('📊 Fetching outlets from Google Sheets...');
         
+        // Try direct fetch first (GitHub Actions can access directly)
         const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEETS_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
-        const response = await fetch(CORS_PROXY + encodeURIComponent(csvUrl));
-        const csvText = await response.text();
+        console.log('📍 CSV URL:', csvUrl);
         
-        console.log('✅ CSV data fetched');
+        let response;
+        let csvText;
+        
+        try {
+            // Try direct fetch (works in server environment like GitHub Actions)
+            response = await fetch(csvUrl);
+            csvText = await response.text();
+            console.log('✅ Direct fetch successful');
+        } catch (directError) {
+            console.log('⚠️ Direct fetch failed, trying with CORS proxy...');
+            // Fallback to CORS proxy (needed for browser environment)
+            response = await fetch(CORS_PROXY + encodeURIComponent(csvUrl));
+            csvText = await response.text();
+            console.log('✅ CORS proxy fetch successful');
+        }
+        
+        console.log('✅ CSV data fetched, length:', csvText.length);
+        console.log('📄 First 200 chars:', csvText.substring(0, 200));
         
         // Parse CSV
         const lines = csvText.split('\n');
+        console.log('📋 Total lines:', lines.length);
+        
         const outlets = [];
         
         for (let i = 1; i < lines.length; i++) {
@@ -64,14 +83,24 @@ async function fetchOutletsFromGoogleSheets() {
             const status = cols[1]; // Column B (index 1)
             const link = cols[2]; // Column C (index 2)
             
+            // Debug first few rows
+            if (i <= 3) {
+                console.log(`📝 Row ${i}: name="${name}", status="${status}", link="${link}"`);
+            }
+            
             // Skip CLOSED outlets
             if (status && status.toUpperCase() === 'CLOSED') {
+                console.log(`⏭️ Skipping CLOSED outlet: ${name}`);
                 continue;
             }
             
             // Validate
-            if (!name || !link) continue;
+            if (!name || !link) {
+                if (i <= 5) console.log(`⚠️ Row ${i} missing name or link`);
+                continue;
+            }
             if (!link.includes('google.com/maps') && !link.includes('maps.app.goo.gl') && !link.includes('goo.gl')) {
+                if (i <= 5) console.log(`⚠️ Row ${i} invalid link format: ${link}`);
                 continue;
             }
             
