@@ -9903,6 +9903,13 @@ Ready for deployment! 🚀
                 const podiumHeights = ['h-32', 'h-40', 'h-28']; // 2nd tallest, 1st tallest, 3rd tallest
                 const podiumPositions = ['2nd', '1st', '3rd'];
                 
+                // Fixed podium colors by rank position (not medal tier)
+                const podiumColorsByRank = {
+                    1: { gradient: 'bg-gradient-to-br from-yellow-400 to-yellow-600', textColor: 'text-yellow-900' }, // 1st = Gold
+                    2: { gradient: 'bg-gradient-to-br from-gray-300 to-gray-500', textColor: 'text-gray-900' },       // 2nd = Silver
+                    3: { gradient: 'bg-gradient-to-br from-orange-400 to-orange-600', textColor: 'text-orange-900' }  // 3rd = Bronze
+                };
+                
                 podiumHTML = `
                     <div class="mb-8">
                         <h3 class="text-center text-xl font-bold text-gray-700 mb-6">🏆 Top 3 Champions 🏆</h3>
@@ -9914,6 +9921,7 @@ Ready for deployment! 🚀
                                 const height = podiumHeights[displayIndex];
                                 const position = podiumPositions[displayIndex];
                                 const rank = actualIndex + 1;
+                                const podiumColors = podiumColorsByRank[rank]; // Fixed colors by rank
                                 
                                 return `
                                     <div class="flex-1 max-w-xs">
@@ -9935,8 +9943,8 @@ Ready for deployment! 🚀
                                                 </span>
                                             </div>
                                         </div>
-                                        <div class="${medalInfo.podiumGradient} ${height} rounded-t-lg shadow-xl flex items-end justify-center pb-3">
-                                            <div class="${medalInfo.textColor} font-bold text-lg">${position}</div>
+                                        <div class="${podiumColors.gradient} ${height} rounded-t-lg shadow-xl flex items-end justify-center pb-3">
+                                            <div class="${podiumColors.textColor} font-bold text-lg">${position}</div>
                                         </div>
                                     </div>
                                 `;
