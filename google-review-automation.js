@@ -119,15 +119,79 @@ async function fetchOutletsFromGoogleSheets() {
 /**
  * Fetch review data for a single outlet
  */
-async function fetchReviewData(outlet) {
+async function fetchReviewData(outlet, index = 0) {
     try {
         console.log(`  🔍 Fetching reviews for: ${outlet.name}`);
         
-        const response = await fetch(CORS_PROXY + encodeURIComponent(outlet.link));
-        const html = await response.text();
+        // Try different approaches to fetch the page
+        let html = '';
+        let fetchSuccess = false;
+        
+        // Approach 1: Try direct fetch (works in Node.js server environment)
+        try {
+            const directResponse = await fetch(outlet.link, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                },
+                redirect: 'follow'
+            });
+            html = await directResponse.text();
+            if (html.length > 1000) {
+                fetchSuccess = true;
+                if (index === 0) console.log(`  ✅ Direct fetch successful`);
+            }
+        } catch (directError) {
+            if (index === 0) console.log(`  ⚠️ Direct fetch failed: ${directError.message}`);
+        }
+        
+        // Approach 2: Try with CORS proxy if direct failed
+        if (!fetchSuccess) {
+            try {
+                const proxyResponse = await fetch(CORS_PROXY + encodeURIComponent(outlet.link));
+                html = await proxyResponse.text();
+                if (html.length > 1000) {
+                    fetchSuccess = true;
+                    if (index === 0) console.log(`  ✅ CORS proxy fetch successful`);
+                }
+            } catch (proxyError) {
+                if (index === 0) console.log(`  ⚠️ CORS proxy failed: ${proxyError.message}`);
+            }
+        }
+        
+        // Debug: Show HTML info for first outlet
+        if (index === 0) {
+            console.log(`  📄 HTML length: ${html.length}`);
+            if (html.length < 1000) {
+                console.log(`  ⚠️ HTML too short, might be error page`);
+                console.log(`  📄 HTML preview: ${html.substring(0, 200)}`);
+            }
+        }
+        
+        // If we got very little HTML, it's probably an error
+        if (html.length < 500) {
+            console.log(`  ⚠️ ${outlet.name}: Failed to fetch page (HTML length: ${html.length})`);
+            return {
+                ...outlet,
+                reviewCount: 0,
+                rating: 0,
+                lastChecked: new Date().toISOString(),
+                error: 'Failed to fetch page content'
+            };
+        }
         
         // Parse review count and rating
         const reviewData = parseGoogleMapsHTML(html);
+        
+        // Debug rating extraction for first outlet
+        if (index === 0 && reviewData.rating === 0) {
+            // Look for rating patterns in HTML
+            const ratingSnippet = html.match(/([1-5][\.,]\d+)[^\d]*\([\d,]+\)/);
+            if (ratingSnippet) {
+                console.log(`  📝 Found rating pattern: ${ratingSnippet[0]}`);
+            } else {
+                console.log(`  ⚠️ No rating pattern found in HTML`);
+            }
+        }
         
         console.log(`  ✅ ${outlet.name}: ${reviewData.reviewCount} reviews, ${reviewData.rating} rating`);
         
@@ -158,13 +222,15 @@ function parseGoogleMapsHTML(html) {
     let rating = 0.0;
     
     try {
-        // Pattern 1: Review count
+        // ===== REVIEW COUNT PARSING =====
+        
+        // Pattern 1: Review count with text
         const reviewMatch = html.match(/(\d+(?:[,\.]\d+)*)\s*(?:reviews|ulasan|google reviews)/i);
         if (reviewMatch) {
             reviewCount = parseInt(reviewMatch[1].replace(/[,\.]/g, ''));
         }
         
-        // Pattern 1b: Parentheses format
+        // Pattern 2: Parentheses format (123)
         if (reviewCount === 0) {
             const reviewMatch2 = html.match(/\((\d+(?:[,\.]\d+)*)\)/);
             if (reviewMatch2) {
@@ -175,13 +241,32 @@ function parseGoogleMapsHTML(html) {
             }
         }
         
-        // Pattern 2: Rating in JSON
-        const ratingMatch = html.match(/"ratingValue"\s*:\s*"?([\d.,]+)"?/);
-        if (ratingMatch) {
-            rating = parseFloat(ratingMatch[1].replace(',', '.'));
+        // ===== RATING PARSING =====
+        
+        // Pattern 1: Rating before review count (most common)
+        // Format: "4.5 (123)" or "4.5★ (123)"
+        const ratingBeforeCount = html.match(/([1-5][\.,]\d)\s*[★⭐]?\s*\([\d,\.]+\)/);
+        if (ratingBeforeCount) {
+            rating = parseFloat(ratingBeforeCount[1].replace(',', '.'));
         }
         
-        // Pattern 3: Rating near stars
+        // Pattern 2: Rating in structured data (JSON-LD)
+        if (rating === 0) {
+            const ratingMatch = html.match(/"ratingValue"\s*:\s*"?([\d.,]+)"?/);
+            if (ratingMatch) {
+                rating = parseFloat(ratingMatch[1].replace(',', '.'));
+            }
+        }
+        
+        // Pattern 3: aggregateRating
+        if (rating === 0) {
+            const aggRating = html.match(/"aggregateRating"[^}]*"ratingValue"\s*:\s*"?([\d.,]+)"?/);
+            if (aggRating) {
+                rating = parseFloat(aggRating[1].replace(',', '.'));
+            }
+        }
+        
+        // Pattern 4: Rating near stars
         if (rating === 0) {
             const pattern3 = html.match(/([1-5][.,]\d+)\s*[★⭐]/);
             if (pattern3) {
@@ -189,12 +274,34 @@ function parseGoogleMapsHTML(html) {
             }
         }
         
-        // Pattern 4: Aria-label
+        // Pattern 5: Aria-label
         if (rating === 0) {
             const altRatingMatch = html.match(/aria-label="([\d.,]+)\s*(?:stars?|bintang)/i);
             if (altRatingMatch) {
                 rating = parseFloat(altRatingMatch[1].replace(',', '.'));
             }
+        }
+        
+        // Pattern 6: Rating in title or alt text
+        if (rating === 0) {
+            const titleRating = html.match(/(?:rating|nilai):\s*([1-5][.,]\d+)/i);
+            if (titleRating) {
+                rating = parseFloat(titleRating[1].replace(',', '.'));
+            }
+        }
+        
+        // Pattern 7: Simple decimal before reviews
+        if (rating === 0 && reviewCount > 0) {
+            // Look for a decimal number (1.0-5.0) near the review count
+            const nearbyRating = html.match(new RegExp(`([1-5][\\.\\,]\\d)\\D*${reviewCount}`));
+            if (nearbyRating) {
+                rating = parseFloat(nearbyRating[1].replace(',', '.'));
+            }
+        }
+        
+        // Validate rating range
+        if (rating > 0 && (rating < 1.0 || rating > 5.0)) {
+            rating = 0; // Invalid rating
         }
         
     } catch (error) {
@@ -263,7 +370,7 @@ async function main() {
         
         for (let i = 0; i < outlets.length; i++) {
             const outlet = outlets[i];
-            const outletWithReview = await fetchReviewData(outlet);
+            const outletWithReview = await fetchReviewData(outlet, i);
             outletsWithReviews.push(outletWithReview);
             
             // Delay between requests to avoid rate limiting
