@@ -9269,8 +9269,9 @@ Ready for deployment! 🚀
         }
         
         // Google Sheets Integration
-        const GOOGLE_SHEETS_ID = '1Li6_bE_kTM5N5BlBS6-CqqaottR-oaU9YlY1BIo15Dc';
-        const SHEET_NAME = 'MAIN OPERATION';
+        // Using public sheet with columns: A=Name, B=Status, C=Google Maps Link
+        const GOOGLE_SHEETS_ID = '1nTSZFKFZRt1owO-hKUk2lkzvlGxcyrBTC47yDTiu1YQ';
+        const SHEET_NAME = 'Sheet1'; // Default sheet name
         
         // Sync from Google Sheets
         async function syncFromGoogleSheets() {
@@ -9318,27 +9319,27 @@ Ready for deployment! 🚀
                 });
                 console.log('');
                 
-                // Show headers around columns J (9), P (15), AC (28)
+                // Show headers around columns A (0), B (1), C (2)
                 console.log('📋 Target Column Headers:');
-                console.log(`   [9] (Column J): "${headers[9] || 'NOT FOUND'}"`);
-                console.log(`   [15] (Column P): "${headers[15] || 'NOT FOUND'}"`);
-                console.log(`   [28] (Column AC): "${headers[28] || 'NOT FOUND'}"`);
+                console.log(`   [0] (Column A - Name): "${headers[0] || 'NOT FOUND'}"`);
+                console.log(`   [1] (Column B - Status): "${headers[1] || 'NOT FOUND'}"`);
+                console.log(`   [2] (Column C - Maps Link): "${headers[2] || 'NOT FOUND'}"`);
                 console.log('');
                 
-                // Find column indices by looking for Excel column letters
-                let nameColIndex = headers.findIndex(h => h === 'J');
-                let linkColIndex = headers.findIndex(h => h === 'AC');
-                let statusColIndex = headers.findIndex(h => h === 'P');
+                // Find column indices by looking for Excel column letters A, B, C
+                let nameColIndex = headers.findIndex(h => h === 'A');
+                let statusColIndex = headers.findIndex(h => h === 'B');
+                let linkColIndex = headers.findIndex(h => h === 'C');
                 
-                console.log('🔍 Looking for Excel Column Letters (J, AC, P):');
-                console.log(`   'J' found at index: ${nameColIndex}`);
-                console.log(`   'AC' found at index: ${linkColIndex}`);
-                console.log(`   'P' found at index: ${statusColIndex}`);
+                console.log('🔍 Looking for Excel Column Letters (A, B, C):');
+                console.log(`   'A' (Name) found at index: ${nameColIndex}`);
+                console.log(`   'B' (Status) found at index: ${statusColIndex}`);
+                console.log(`   'C' (Link) found at index: ${linkColIndex}`);
                 console.log('');
                 
                 // If not found by letter, try smart detection by content
                 if (nameColIndex < 0) {
-                    console.log('⚠️ Column J not found, trying smart detection for name column...');
+                    console.log('⚠️ Column A not found, trying smart detection for name column...');
                     nameColIndex = headers.findIndex(h => 
                         h.toLowerCase().includes('outlet') || 
                         h.toLowerCase().includes('name') ||
@@ -9347,8 +9348,17 @@ Ready for deployment! 🚀
                     console.log(`   Smart detection result: ${nameColIndex >= 0 ? 'Found at ' + nameColIndex : 'Not found'}`);
                 }
                 
+                if (statusColIndex < 0) {
+                    console.log('⚠️ Column B not found, trying smart detection for status column...');
+                    statusColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('status') ||
+                        h.toLowerCase().includes('state')
+                    );
+                    console.log(`   Smart detection result: ${statusColIndex >= 0 ? 'Found at ' + statusColIndex : 'Not found'}`);
+                }
+                
                 if (linkColIndex < 0) {
-                    console.log('⚠️ Column AC not found, trying smart detection for link column...');
+                    console.log('⚠️ Column C not found, trying smart detection for link column...');
                     linkColIndex = headers.findIndex(h => 
                         h.toLowerCase().includes('gmap') || 
                         h.toLowerCase().includes('maps') ||
@@ -9357,21 +9367,12 @@ Ready for deployment! 🚀
                     );
                     console.log(`   Smart detection result: ${linkColIndex >= 0 ? 'Found at ' + linkColIndex : 'Not found'}`);
                 }
-                
-                if (statusColIndex < 0) {
-                    console.log('⚠️ Column P not found, trying smart detection for status column...');
-                    statusColIndex = headers.findIndex(h => 
-                        h.toLowerCase().includes('status') ||
-                        h.toLowerCase().includes('state')
-                    );
-                    console.log(`   Smart detection result: ${statusColIndex >= 0 ? 'Found at ' + statusColIndex : 'Not found'}`);
-                }
                 console.log('');
                 
                 console.log('🎯 Final Column Indices:');
-                console.log(`   Name Column: ${nameColIndex >= 0 ? nameColIndex : 'NOT FOUND - will use index 9'}`);
-                console.log(`   Link Column: ${linkColIndex >= 0 ? linkColIndex : 'NOT FOUND - will use index 28'}`);
-                console.log(`   Status Column: ${statusColIndex >= 0 ? statusColIndex : 'NOT FOUND - will use index 15'}`);
+                console.log(`   Name Column: ${nameColIndex >= 0 ? nameColIndex : 'NOT FOUND - will use index 0'}`);
+                console.log(`   Status Column: ${statusColIndex >= 0 ? statusColIndex : 'NOT FOUND - will use index 1'}`);
+                console.log(`   Link Column: ${linkColIndex >= 0 ? linkColIndex : 'NOT FOUND - will use index 2'}`);
                 console.log('');
                 
                 let imported = 0;
@@ -9390,14 +9391,14 @@ Ready for deployment! 🚀
                     if (!line.trim()) continue;
                     
                     const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
-                    const name = nameColIndex >= 0 ? cols[nameColIndex] : cols[9];
-                    const link = linkColIndex >= 0 ? cols[linkColIndex] : cols[28];
-                    const status = statusColIndex >= 0 ? cols[statusColIndex] : cols[15];
+                    const name = nameColIndex >= 0 ? cols[nameColIndex] : cols[0];
+                    const status = statusColIndex >= 0 ? cols[statusColIndex] : cols[1];
+                    const link = linkColIndex >= 0 ? cols[linkColIndex] : cols[2];
                     
                     console.log(`   Row ${i}:`);
-                    console.log(`     Name [${nameColIndex >= 0 ? nameColIndex : 9}]: "${name || 'EMPTY'}"`);
-                    console.log(`     Link [${linkColIndex >= 0 ? linkColIndex : 28}]: "${link || 'EMPTY'}"`);
-                    console.log(`     Status [${statusColIndex >= 0 ? statusColIndex : 15}]: "${status || 'EMPTY'}"`);
+                    console.log(`     Name [${nameColIndex >= 0 ? nameColIndex : 0}]: "${name || 'EMPTY'}"`);
+                    console.log(`     Status [${statusColIndex >= 0 ? statusColIndex : 1}]: "${status || 'EMPTY'}"`);
+                    console.log(`     Link [${linkColIndex >= 0 ? linkColIndex : 2}]: "${link || 'EMPTY'}"`);
                 }
                 console.log('');
                 
@@ -9409,10 +9410,10 @@ Ready for deployment! 🚀
                     
                     const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
                     
-                    // Use detected index if found, otherwise fallback to hardcoded
-                    const name = nameColIndex >= 0 ? cols[nameColIndex] : cols[9];
-                    const link = linkColIndex >= 0 ? cols[linkColIndex] : cols[28];
-                    const status = statusColIndex >= 0 ? cols[statusColIndex] : cols[15];
+                    // Use detected index if found, otherwise fallback to A=0, B=1, C=2
+                    const name = nameColIndex >= 0 ? cols[nameColIndex] : cols[0];
+                    const status = statusColIndex >= 0 ? cols[statusColIndex] : cols[1];
+                    const link = linkColIndex >= 0 ? cols[linkColIndex] : cols[2];
                     
                     // Debug first few rows
                     if (i <= 3) {
@@ -9585,10 +9586,10 @@ Ready for deployment! 🚀
                 // Show headers
                 const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
                 
-                // Find column indices
-                let nameColIndex = headers.findIndex(h => h === 'J');
-                let linkColIndex = headers.findIndex(h => h === 'AC');
-                let statusColIndex = headers.findIndex(h => h === 'P');
+                // Find column indices - looking for A, B, C
+                let nameColIndex = headers.findIndex(h => h === 'A');
+                let statusColIndex = headers.findIndex(h => h === 'B');
+                let linkColIndex = headers.findIndex(h => h === 'C');
                 
                 // Smart detection fallback
                 if (nameColIndex < 0) {
@@ -9596,6 +9597,12 @@ Ready for deployment! 🚀
                         h.toLowerCase().includes('outlet') || 
                         h.toLowerCase().includes('name') ||
                         h.toLowerCase().includes('apotek')
+                    );
+                }
+                if (statusColIndex < 0) {
+                    statusColIndex = headers.findIndex(h => 
+                        h.toLowerCase().includes('status') ||
+                        h.toLowerCase().includes('state')
                     );
                 }
                 if (linkColIndex < 0) {
@@ -9606,17 +9613,11 @@ Ready for deployment! 🚀
                         h.toLowerCase().includes('url')
                     );
                 }
-                if (statusColIndex < 0) {
-                    statusColIndex = headers.findIndex(h => 
-                        h.toLowerCase().includes('status') ||
-                        h.toLowerCase().includes('state')
-                    );
-                }
                 
-                // Use fallback if still not found
-                if (nameColIndex < 0) nameColIndex = 9;
-                if (linkColIndex < 0) linkColIndex = 28;
-                if (statusColIndex < 0) statusColIndex = 15;
+                // Use fallback if still not found - A=0, B=1, C=2
+                if (nameColIndex < 0) nameColIndex = 0;
+                if (statusColIndex < 0) statusColIndex = 1;
+                if (linkColIndex < 0) linkColIndex = 2;
                 
                 console.log(`📋 All ${headers.length} Column Headers:`);
                 headers.forEach((h, i) => {
