@@ -418,6 +418,7 @@ async function saveToSupabase(outlets) {
     try {
         console.log('💾 Saving to Supabase...');
         
+        // Create review data
         const reviewsData = outlets.map(outlet => ({
             outlet_name: outlet.name,
             google_maps_link: outlet.link,
@@ -428,18 +429,36 @@ async function saveToSupabase(outlets) {
             updated_at: new Date().toISOString()
         }));
         
-        // Upsert to Supabase
+        // Remove duplicates based on outlet_name (keep the last occurrence)
+        const uniqueReviews = {};
+        for (const review of reviewsData) {
+            uniqueReviews[review.outlet_name] = review;
+        }
+        const deduplicatedData = Object.values(uniqueReviews);
+        
+        const duplicateCount = reviewsData.length - deduplicatedData.length;
+        if (duplicateCount > 0) {
+            console.log(`⚠️  Removed ${duplicateCount} duplicate outlet(s) from batch`);
+        }
+        
+        console.log(`📊 Upserting ${deduplicatedData.length} unique outlets...`);
+        
+        // Upsert to Supabase in a single batch (duplicates removed)
         const { data, error } = await supabase
             .from('google_reviews')
-            .upsert(reviewsData, { onConflict: 'outlet_name' });
+            .upsert(deduplicatedData, { 
+                onConflict: 'outlet_name',
+                ignoreDuplicates: false  // Update existing records
+            });
         
         if (error) throw error;
         
-        console.log(`✅ Saved ${reviewsData.length} outlets to Supabase`);
+        console.log(`✅ Successfully saved ${deduplicatedData.length} outlets to Supabase`);
         return true;
         
     } catch (error) {
         console.error('❌ Error saving to Supabase:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         throw error;
     }
 }
