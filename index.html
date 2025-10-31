@@ -1451,13 +1451,16 @@
                                                         Last Checked <i class="fas fa-sort ml-1"></i>
                                                     </th>
                                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                        Medal Tier
+                                                    </th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                         Status
                                                     </th>
                                                 </tr>
                                             </thead>
                                             <tbody id="outletsTableBody" class="bg-white divide-y divide-gray-200">
                                                 <tr>
-                                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                                                    <td colspan="7" class="px-6 py-4 text-center text-gray-500">
                                                         No outlets added yet. Add your first outlet above.
                                                     </td>
                                                 </tr>
@@ -9069,6 +9072,7 @@ Ready for deployment! 🚀
             
             tbody.innerHTML = sortedData.map(outlet => {
                 const statusBadge = getStatusBadge(outlet.status);
+                const medalInfo = getMedalTier(outlet.reviewCount);
                 const lastChecked = outlet.lastChecked 
                     ? new Date(outlet.lastChecked).toLocaleString('en-US', { 
                         month: 'short', 
@@ -9094,6 +9098,12 @@ Ready for deployment! 🚀
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-500">${lastChecked}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl" title="${medalInfo.name} Medal">${medalInfo.emoji}</span>
+                                <div class="text-sm font-semibold ${medalInfo.color}">${medalInfo.name}</div>
+                            </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             ${statusBadge}
@@ -9807,7 +9817,60 @@ Ready for deployment! 🚀
             renderOutletsTable();
         }
         
-        // Update leaderboard
+        // Get medal tier based on review count
+        function getMedalTier(reviewCount) {
+            if (reviewCount >= 1000) {
+                return {
+                    tier: 'gold',
+                    emoji: '🥇',
+                    name: 'Gold',
+                    color: 'text-yellow-500',
+                    bgColor: 'bg-yellow-50',
+                    borderColor: 'border-yellow-300',
+                    gradient: 'from-yellow-400 to-yellow-600',
+                    podiumGradient: 'bg-gradient-to-br from-yellow-400 to-yellow-600',
+                    textColor: 'text-yellow-900'
+                };
+            } else if (reviewCount >= 500) {
+                return {
+                    tier: 'silver',
+                    emoji: '🥈',
+                    name: 'Silver',
+                    color: 'text-gray-500',
+                    bgColor: 'bg-gray-50',
+                    borderColor: 'border-gray-300',
+                    gradient: 'from-gray-300 to-gray-500',
+                    podiumGradient: 'bg-gradient-to-br from-gray-300 to-gray-500',
+                    textColor: 'text-gray-900'
+                };
+            } else if (reviewCount >= 100) {
+                return {
+                    tier: 'bronze',
+                    emoji: '🥉',
+                    name: 'Bronze',
+                    color: 'text-orange-600',
+                    bgColor: 'bg-orange-50',
+                    borderColor: 'border-orange-300',
+                    gradient: 'from-orange-400 to-orange-600',
+                    podiumGradient: 'bg-gradient-to-br from-orange-400 to-orange-600',
+                    textColor: 'text-orange-900'
+                };
+            } else {
+                return {
+                    tier: 'none',
+                    emoji: '📍',
+                    name: 'No Medal',
+                    color: 'text-gray-400',
+                    bgColor: 'bg-white',
+                    borderColor: 'border-gray-200',
+                    gradient: 'from-gray-100 to-gray-200',
+                    podiumGradient: 'bg-gradient-to-br from-gray-100 to-gray-300',
+                    textColor: 'text-gray-700'
+                };
+            }
+        }
+        
+        // Update leaderboard with visual podium design
         function updateLeaderboard() {
             const container = document.getElementById('leaderboardContainer');
             
@@ -9829,28 +9892,119 @@ Ready for deployment! 🚀
                 return;
             }
             
-            container.innerHTML = rankedOutlets.map((outlet, index) => {
-                const medalColors = ['text-yellow-500', 'text-gray-400', 'text-orange-600'];
-                const medalColor = index < 3 ? medalColors[index] : 'text-gray-300';
-                const bgColors = ['bg-yellow-50', 'bg-gray-50', 'bg-orange-50'];
-                const bgColor = index < 3 ? bgColors[index] : 'bg-white';
+            // Split into top 3 (podium) and rest (4-10)
+            const topThree = rankedOutlets.slice(0, 3);
+            const restOfTop10 = rankedOutlets.slice(3, 10);
+            
+            // Build podium for top 3 (2nd, 1st, 3rd order for visual effect)
+            let podiumHTML = '';
+            if (topThree.length > 0) {
+                const podiumOrder = topThree.length >= 3 ? [1, 0, 2] : topThree.length === 2 ? [1, 0] : [0];
+                const podiumHeights = ['h-32', 'h-40', 'h-28']; // 2nd tallest, 1st tallest, 3rd tallest
+                const podiumPositions = ['2nd', '1st', '3rd'];
                 
-                return `
-                    <div class="flex items-center justify-between p-3 ${bgColor} rounded-lg hover:shadow-md transition-shadow">
-                        <div class="flex items-center gap-3 flex-1">
-                            <div class="text-2xl ${medalColor} font-bold w-8 text-center">
-                                ${index < 3 ? '🏆' : `#${index + 1}`}
-                            </div>
-                            <div class="flex-1">
-                                <div class="font-semibold text-gray-800">${outlet.name}</div>
-                                <div class="text-sm text-gray-600">
-                                    ${outlet.reviewCount} reviews • ⭐ ${outlet.rating.toFixed(1)}
-                                </div>
-                            </div>
+                // Fixed podium colors by rank position (not medal tier)
+                const podiumColorsByRank = {
+                    1: { gradient: 'bg-gradient-to-br from-yellow-400 to-yellow-600', textColor: 'text-yellow-900' }, // 1st = Gold
+                    2: { gradient: 'bg-gradient-to-br from-gray-300 to-gray-500', textColor: 'text-gray-900' },       // 2nd = Silver
+                    3: { gradient: 'bg-gradient-to-br from-orange-400 to-orange-600', textColor: 'text-orange-900' }  // 3rd = Bronze
+                };
+                
+                podiumHTML = `
+                    <div class="mb-8">
+                        <h3 class="text-center text-xl font-bold text-gray-700 mb-6">🏆 Top 3 Champions 🏆</h3>
+                        <div class="flex items-end justify-center gap-4">
+                            ${podiumOrder.map((actualIndex, displayIndex) => {
+                                if (actualIndex >= topThree.length) return '';
+                                const outlet = topThree[actualIndex];
+                                const medalInfo = getMedalTier(outlet.reviewCount);
+                                const height = podiumHeights[displayIndex];
+                                const position = podiumPositions[displayIndex];
+                                const rank = actualIndex + 1;
+                                const podiumColors = podiumColorsByRank[rank]; // Fixed colors by rank
+                                
+                                return `
+                                    <div class="flex-1 max-w-xs">
+                                        <div class="text-center mb-3 transform hover:scale-105 transition-transform">
+                                            <div class="inline-block bg-white rounded-full p-4 shadow-lg mb-2">
+                                                <div class="text-5xl">${medalInfo.emoji}</div>
+                                            </div>
+                                            <div class="font-bold ${medalInfo.color} text-sm">${medalInfo.name} Medal</div>
+                                            <div class="font-bold text-gray-800 text-xs mt-1">#${rank} Place</div>
+                                            <div class="font-semibold text-gray-900 text-sm px-2 leading-tight mt-1">
+                                                ${outlet.name}
+                                            </div>
+                                            <div class="flex items-center justify-center gap-3 mt-2 text-sm font-medium text-gray-700">
+                                                <span class="flex items-center gap-1">
+                                                    💬 <span class="font-bold">${outlet.reviewCount}</span>
+                                                </span>
+                                                <span class="flex items-center gap-1">
+                                                    ⭐ <span class="font-bold">${outlet.rating.toFixed(1)}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="${podiumColors.gradient} ${height} rounded-t-lg shadow-xl flex items-end justify-center pb-3">
+                                            <div class="${podiumColors.textColor} font-bold text-lg">${position}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
                         </div>
                     </div>
                 `;
-            }).join('');
+            }
+            
+            // Build cards for positions 4-10
+            let cardsHTML = '';
+            if (restOfTop10.length > 0) {
+                cardsHTML = `
+                    <div class="space-y-3">
+                        <h3 class="text-center text-lg font-semibold text-gray-600 mb-4">Top 4-10</h3>
+                        ${restOfTop10.map((outlet, index) => {
+                            const rank = index + 4;
+                            const progressPercentage = (outlet.reviewCount / rankedOutlets[0].reviewCount) * 100;
+                            const medalInfo = getMedalTier(outlet.reviewCount);
+                            
+                            return `
+                                <div class="bg-white border-2 ${medalInfo.borderColor} ${medalInfo.bgColor} rounded-xl p-4 hover:shadow-lg hover:border-blue-400 transition-all duration-200 transform hover:-translate-y-1">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="flex items-center gap-3 flex-1">
+                                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md">
+                                                ${rank}
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center gap-2">
+                                                    <div class="font-semibold text-gray-800 text-sm truncate">${outlet.name}</div>
+                                                    <span class="text-lg" title="${medalInfo.name} Medal">${medalInfo.emoji}</span>
+                                                </div>
+                                                <div class="flex items-center gap-3 mt-1">
+                                                    <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-600">
+                                                        <span class="text-blue-500">💬</span>
+                                                        <span class="font-bold text-gray-800">${outlet.reviewCount}</span>
+                                                        <span class="text-gray-500">reviews</span>
+                                                    </span>
+                                                    <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-600">
+                                                        <span>⭐</span>
+                                                        <span class="font-bold text-yellow-600">${outlet.rating.toFixed(1)}</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3">
+                                        <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                            <div class="bg-gradient-to-r ${medalInfo.gradient} h-2 rounded-full transition-all duration-500" 
+                                                 style="width: ${progressPercentage}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = podiumHTML + cardsHTML;
         }
         
         // ========================================
