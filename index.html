@@ -2618,6 +2618,7 @@
                       'ZXlKaGJHY2lPaUpJVXpJMU5pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SnBjM01pT2lKemRYQmhZbUZ6WlNJc0luSmxaaUk2SW5SNGJYSjJibVp4Y1hwaWIzVndZMjFoZFhCMElpd2ljbTlzWlNJNkluTmxjblpwWTJWZmNtOXNaU0lzSW1saGRDSTZNVGMyTURBeE1UYzNNaXdpWlhod0lqb3lNRGMxTlRnM056Y3lmUS5iRFVPZ0NTc0tjUC1hSlhiYVMwQzdVTUE5Y0pGRzJ3N2J6S0R1MUVMVzY0Cg=='];
         
         let _db, _mode = false;
+        let supabase; // Global Supabase client for Google Review module
         const PROD_MODE = false; // Set to false to show all console logs for debugging
         
         // Initialize secure database immediately when script loads
@@ -2641,9 +2642,15 @@
                 secureLog(`API Key length: ${key.length}`, 'info', true);
                 
                 _db = window.supabase.createClient(url, key);
+                
+                // CRITICAL FIX: Also set global supabase variable for Google Review module
+                window.supabase = _db;
+                supabase = _db;
+                
                 _mode = true;
                 secureDatabaseReady = true;
                 secureLog('✅ Database connection established', 'success', true);
+                secureLog('✅ Global supabase variable set', 'success', true);
                 return true;
             } catch (error) {
                 secureLog(`❌ Database connection failed: ${error.message}`, 'error', true);
