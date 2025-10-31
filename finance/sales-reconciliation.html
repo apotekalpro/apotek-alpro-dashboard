@@ -1298,37 +1298,51 @@
                         if (mid && lookups.mid.has(mid)) {
                             outletCode = lookups.mid.get(mid);
                             
-                            // Look for credit card payment types
+                            // Look for credit card payment types - SUM ALL TYPES for this date+outlet
                             const paymentTypes = ['OTHER CARD', 'MASTER', 'VISA', 'BCA CARD', 'JCB CARD', 'AMEX CARD'];
                             let found = false;
                             let grossAmount = null;
+                            let totalGrossAmount = 0;
+                            let totalNetAmount = 0;
                             let usedRate = null;
                             let matchedCardLast6 = '';
+                            const matchedPaymentTypes = [];
                             
+                            // Sum up all credit card types for this date+outlet
                             for (const paymentType of paymentTypes) {
                                 const key = `${formatDate(matchDate)}|${outletCode}|${paymentType}`;
                                 if (pivotMap.has(key)) {
                                     const pivot = pivotMap.get(key);
-                                    grossAmount = pivot.amount;
-                                    matchedAmount = pivot.netAmount;
-                                    usedRate = pivot.merchantRate || 0;
+                                    totalGrossAmount += pivot.amount;
+                                    totalNetAmount += pivot.netAmount;
                                     
-                                    // Get card last 6 from first transaction in pivot (after override)
-                                    matchedCardLast6 = pivot.transactions && pivot.transactions.length > 0 ? pivot.transactions[0].cardLast6 : '';
-                                    
-                                    // Tolerance: ±100 Rp
-                                    if (Math.abs(amount - matchedAmount) <= 100) {
-                                        matchStatus = 'MATCHED';
-                                    } else {
-                                        matchStatus = 'AMOUNT_MISMATCH';
+                                    // Use merchant rate from first matched type
+                                    if (usedRate === null) {
+                                        usedRate = pivot.merchantRate || 0;
                                     }
-                                    details = `MID: ${mid}, Payment: ${paymentType}, Gross: ${grossAmount.toFixed(2)}, Rate: ${usedRate}%, Net: ${matchedAmount.toFixed(2)}`;
+                                    
+                                    // Get card last 6 from first transaction
+                                    if (!matchedCardLast6 && pivot.transactions && pivot.transactions.length > 0) {
+                                        matchedCardLast6 = pivot.transactions[0].cardLast6;
+                                    }
+                                    
+                                    matchedPaymentTypes.push(paymentType);
                                     found = true;
-                                    break;
                                 }
                             }
                             
-                            if (!found) {
+                            if (found) {
+                                matchedAmount = totalNetAmount;
+                                grossAmount = totalGrossAmount;
+                                
+                                // Tolerance: ±100 Rp
+                                if (Math.abs(amount - matchedAmount) <= 100) {
+                                    matchStatus = 'MATCHED';
+                                } else {
+                                    matchStatus = 'AMOUNT_MISMATCH';
+                                }
+                                details = `MID: ${mid}, Combined CC Types: [${matchedPaymentTypes.join(', ')}], Gross: ${grossAmount.toFixed(2)}, Rate: ${usedRate}%, Net: ${matchedAmount.toFixed(2)}`;
+                            } else {
                                 details = `MID: ${mid}, No matching credit card transaction found`;
                             }
                             
@@ -1409,37 +1423,51 @@
                         if (mid && lookups.mid.has(mid)) {
                             outletCode = lookups.mid.get(mid);
                             
-                            // Look for debit payment types
+                            // Look for debit payment types - SUM ALL TYPES for this date+outlet
                             const paymentTypes = ['DEBIT BANK LAIN', 'DEBIT BANK SAMA'];
                             let found = false;
                             let grossAmount = null;
+                            let totalGrossAmount = 0;
+                            let totalNetAmount = 0;
                             let usedRate = null;
                             let matchedCardLast6 = '';
+                            const matchedPaymentTypes = [];
                             
+                            // Sum up all debit types for this date+outlet
                             for (const paymentType of paymentTypes) {
                                 const key = `${formatDate(matchDate)}|${outletCode}|${paymentType}`;
                                 if (pivotMap.has(key)) {
                                     const pivot = pivotMap.get(key);
-                                    grossAmount = pivot.amount;
-                                    matchedAmount = pivot.netAmount;
-                                    usedRate = pivot.merchantRate || 0;
+                                    totalGrossAmount += pivot.amount;
+                                    totalNetAmount += pivot.netAmount;
                                     
-                                    // Get card last 6 from first transaction in pivot (after override)
-                                    matchedCardLast6 = pivot.transactions && pivot.transactions.length > 0 ? pivot.transactions[0].cardLast6 : '';
-                                    
-                                    // Tolerance: ±100 Rp
-                                    if (Math.abs(amount - matchedAmount) <= 100) {
-                                        matchStatus = 'MATCHED';
-                                    } else {
-                                        matchStatus = 'AMOUNT_MISMATCH';
+                                    // Use merchant rate from first matched type
+                                    if (usedRate === null) {
+                                        usedRate = pivot.merchantRate || 0;
                                     }
-                                    details = `MID: ${mid}, Payment: ${paymentType}, Gross: ${grossAmount.toFixed(2)}, Rate: ${usedRate}%, Net: ${matchedAmount.toFixed(2)}`;
+                                    
+                                    // Get card last 6 from first transaction
+                                    if (!matchedCardLast6 && pivot.transactions && pivot.transactions.length > 0) {
+                                        matchedCardLast6 = pivot.transactions[0].cardLast6;
+                                    }
+                                    
+                                    matchedPaymentTypes.push(paymentType);
                                     found = true;
-                                    break;
                                 }
                             }
                             
-                            if (!found) {
+                            if (found) {
+                                matchedAmount = totalNetAmount;
+                                grossAmount = totalGrossAmount;
+                                
+                                // Tolerance: ±100 Rp
+                                if (Math.abs(amount - matchedAmount) <= 100) {
+                                    matchStatus = 'MATCHED';
+                                } else {
+                                    matchStatus = 'AMOUNT_MISMATCH';
+                                }
+                                details = `MID: ${mid}, Combined Debit Types: [${matchedPaymentTypes.join(', ')}], Gross: ${grossAmount.toFixed(2)}, Rate: ${usedRate}%, Net: ${matchedAmount.toFixed(2)}`;
+                            } else {
                                 details = `MID: ${mid}, No matching debit transaction found`;
                             }
                             
