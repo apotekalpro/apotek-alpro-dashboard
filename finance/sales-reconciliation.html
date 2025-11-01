@@ -1002,17 +1002,18 @@
                     const dayBeforeStr = formatDate(dayBeforeSetoran);
                     
                     // Part 1: Accumulate CDM balances (recehan) from range
+                    // Include CDM up to and including day before Setoran
+                    // (Day N-1 CDM contains balance from Day N-2 sales)
                     for (const [cdmDateStr, cdmData] of outletCDM.entries()) {
                         const cdmDate = cdmData.date;
                         
                         // Include CDM balance if:
                         // - After previous Setoran (or from start if no previous)
-                        // - Before current Setoran (not on Setoran day, not day before Setoran)
+                        // - Before current Setoran (up to day before Setoran, inclusive)
                         const afterPrev = !prevSetoran || cdmDate > prevSetoran.date;
-                        const beforeSetoran = cdmDate < currentSetoran.date;
-                        const notDayBefore = cdmDate.getTime() !== dayBeforeSetoran.getTime();
+                        const beforeOrOnDayBefore = cdmDate <= dayBeforeSetoran;
                         
-                        if (afterPrev && beforeSetoran && notDayBefore) {
+                        if (afterPrev && beforeOrOnDayBefore) {
                             cdmBalanceSum += cdmData.balance;
                             contributingCDMDates.push(cdmDateStr);
                             cdmBalanceDetails.push({
