@@ -1024,19 +1024,20 @@
                         }
                     }
                     
-                    // Part 2: Get full day sales from day before Setoran
-                    let fullDaySales = 0;
+                    // Part 2: Get CASH sales ONLY from day before Setoran
+                    // (Credit cards, debit, QRIS go directly to bank - only CASH needs Setoran)
+                    let fullCashSales = 0;
                     const salesDetails = [];
                     
-                    // Sum all payment types for the outlet on dayBeforeSetoran
+                    // Sum ONLY CASH payment for the outlet on dayBeforeSetoran
                     for (const [key, pivot] of pivotMap.entries()) {
                         const parts = key.split('|');
                         const dateStr = parts[0];
                         const keyOutlet = parts[1];
                         const paymentMethod = parts[2];
                         
-                        if (keyOutlet === outlet && dateStr === dayBeforeStr) {
-                            fullDaySales += pivot.amount;
+                        if (keyOutlet === outlet && dateStr === dayBeforeStr && paymentMethod === 'CASH') {
+                            fullCashSales += pivot.amount;
                             salesDetails.push({
                                 paymentMethod: paymentMethod,
                                 amount: pivot.amount
@@ -1044,14 +1045,14 @@
                         }
                     }
                     
-                    // Total expected: CDM balances + full day sales
-                    const expectedTotal = cdmBalanceSum + fullDaySales;
+                    // Total expected: CDM balances + CASH sales only
+                    const expectedTotal = cdmBalanceSum + fullCashSales;
                     
                     const key = `${currentSetoran.dateStr}|${outlet}`;
                     setoranMatches.set(key, {
                         expectedBalance: expectedTotal,
                         cdmBalanceSum: cdmBalanceSum,
-                        fullDaySales: fullDaySales,
+                        fullCashSales: fullCashSales,
                         dayBeforeSales: dayBeforeStr,
                         bcaAmount: currentSetoran.amount,
                         contributingCDMDates: contributingCDMDates.sort(),
@@ -1060,7 +1061,7 @@
                         dateRange: prevSetoran ? `CDM:${formatDate(prevSetoran.date)}-${contributingCDMDates.length > 0 ? contributingCDMDates[contributingCDMDates.length-1] : 'none'}` : `CDM:start-${contributingCDMDates.length > 0 ? contributingCDMDates[contributingCDMDates.length-1] : 'none'}`
                     });
                     
-                    console.log(`Setoran ${outlet} ${currentSetoran.dateStr}: CDM Balance ${cdmBalanceSum.toFixed(2)} from ${contributingCDMDates.length} days + Full Sales ${fullDaySales.toFixed(2)} from ${dayBeforeStr} = Total ${expectedTotal.toFixed(2)}`);
+                    console.log(`Setoran ${outlet} ${currentSetoran.dateStr}: CDM Balance ${cdmBalanceSum.toFixed(2)} from ${contributingCDMDates.length} days + CASH Sales ${fullCashSales.toFixed(2)} from ${dayBeforeStr} = Total ${expectedTotal.toFixed(2)}`);
                 }
             }
             
@@ -1561,11 +1562,11 @@
                                     matchStatus = 'AMOUNT_MISMATCH';
                                 }
                                 
-                                // Build detail string showing CDM balances + full day sales
+                                // Build detail string showing CDM balances + CASH sales only
                                 const cdmBalanceDates = match.contributingCDMDates.join(', ');
                                 const cdmDayCount = match.contributingCDMDates.length;
                                 const cdmBalanceSum = match.cdmBalanceSum;
-                                const fullDaySales = match.fullDaySales;
+                                const fullCashSales = match.fullCashSales;
                                 const dayBeforeSales = match.dayBeforeSales;
                                 
                                 // Calculate total CDM deposits for verification
@@ -1574,7 +1575,7 @@
                                     totalCDMDeposits += detail.rounded;
                                 }
                                 
-                                const breakdown = `CDM Balance (${cdmDayCount} days: ${cdmBalanceDates}): ${cdmBalanceSum.toFixed(2)} + Full Sales (${dayBeforeSales}): ${fullDaySales.toFixed(2)} = ${expectedBalance.toFixed(2)}`;
+                                const breakdown = `CDM Balance (${cdmDayCount} days: ${cdmBalanceDates || 'none'}): ${cdmBalanceSum.toFixed(2)} + CASH Sales (${dayBeforeSales}): ${fullCashSales.toFixed(2)} = ${expectedBalance.toFixed(2)}`;
                                 const verification = `Total CDM Deposits: ${totalCDMDeposits.toFixed(2)} + Setoran: ${bcaAmount.toFixed(2)} = ${(totalCDMDeposits + bcaAmount).toFixed(2)}`;
                                 
                                 if (isAggregated) {
