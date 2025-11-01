@@ -4736,14 +4736,14 @@
             console.log(`⚠️ Using fallback permissions for ${role}`);
             switch (role) {
                 case 'admin':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'adminConfig'];
                 case 'chief':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm'];
                 case 'strategy':
-                    return ['ppm', 'strategy', 'operations'];
+                    return ['ppm', 'strategy', 'operations', 'sgm'];
                 case 'operation':
                 case 'operations':
-                    return ['operations', 'warehouseApd'];
+                    return ['operations', 'warehouseApd', 'sgm'];
                 case 'ppm':
                     return ['ppm'];
                 case 'finance':
@@ -4759,6 +4759,8 @@
                     return ['ppr'];
                 case 'academy':
                     return ['academy'];
+                case 'sgm':
+                    return ['sgm'];
                 default:
                     return ['operations'];
             }
@@ -4785,6 +4787,8 @@
                 defaultTab = 'ppr';
             } else if (role === 'academy') {
                 defaultTab = 'academy';
+            } else if (role === 'sgm') {
+                defaultTab = 'sgm';
             }
             
             showTab(defaultTab);
@@ -4833,6 +4837,13 @@
                 }
                 
                 switchUserManagementTab('userList');
+            }
+            
+            // Initialize SGM tab if opened
+            if (tabId === 'sgm') {
+                console.log('🏪 SGM tab opened, initializing Grand Opening Dashboard...');
+                // Show the default subtab (Grand Opening Dashboard)
+                showSGMSubtab('grand-opening-dashboard');
             }
             
             // Add active class to selected tab
