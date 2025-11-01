@@ -5016,12 +5016,10 @@
             noDataMessage.classList.add('hidden');
 
             try {
-                // Google Sheets URL - STORE sheet
+                // Google Sheets URL - STORE sheet using public Google Visualization API
                 const sheetId = '1ucXoo9EbOHyVNyztS42nryDM405nl-208CZiLwD_cOc';
                 const sheetName = 'STORE';
-                const apiKey = 'AIzaSyBLhk2w7vFjKpFK8dEm5VD9F6CqKQqHNRc'; // Using a public API key
-                const range = `${sheetName}!B:AC`; // Columns B to AC
-                const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
+                const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 
                 const response = await fetch(url);
                 
@@ -5029,45 +5027,55 @@
                     throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
                 }
 
-                const data = await response.json();
+                const text = await response.text();
                 
-                if (!data.values || data.values.length === 0) {
+                // Parse the Google Visualization API response (it's wrapped in a callback)
+                const jsonData = JSON.parse(text.substring(47).slice(0, -2));
+                
+                if (!jsonData.table || !jsonData.table.rows || jsonData.table.rows.length === 0) {
                     throw new Error('No data found in the STORE sheet');
                 }
 
-                // Parse the data (skip header row)
-                const rows = data.values.slice(1);
+                // Parse the data (skip header row is already done by gviz)
+                const rows = jsonData.table.rows;
                 grandOpeningData.storeData = rows.map((row, index) => {
+                    const cells = row.c || [];
+                    // Helper function to get cell value
+                    const getCellValue = (index) => {
+                        if (!cells[index] || cells[index].v === null || cells[index].v === undefined) return null;
+                        return cells[index].v;
+                    };
+                    
                     return {
                         rowIndex: index + 2, // +2 because we skip header and arrays are 0-indexed
-                        outletName: row[0] || '', // Column B
-                        am: row[1] || '', // Column C
-                        lokasi: row[2] || '', // Column D
-                        goPeriod: row[3] || '', // Column E
-                        totalTarget9Days: parseFloat(row[4]) || 0, // Column F
-                        day1Target: parseFloat(row[5]) || 0, // Column G
-                        day1Achievement: parseFloat(row[6]) || 0, // Column H
-                        day1Percentage: parseFloat(row[7]) || 0, // Column I
-                        day2Target: parseFloat(row[8]) || 0, // Column J
-                        day2Achievement: parseFloat(row[9]) || 0, // Column K
-                        day2Percentage: parseFloat(row[10]) || 0, // Column L
-                        targetDay3to9: parseFloat(row[11]) || 0, // Column M
-                        day3Achievement: parseFloat(row[12]) || 0, // Column N
-                        day3Percentage: parseFloat(row[13]) || 0, // Column O
-                        day4Achievement: parseFloat(row[14]) || 0, // Column P
-                        day4Percentage: parseFloat(row[15]) || 0, // Column Q
-                        day5Achievement: parseFloat(row[16]) || 0, // Column R
-                        day5Percentage: parseFloat(row[17]) || 0, // Column S
-                        day6Achievement: parseFloat(row[18]) || 0, // Column T
-                        day6Percentage: parseFloat(row[19]) || 0, // Column U
-                        day7Achievement: parseFloat(row[20]) || 0, // Column V
-                        day7Percentage: parseFloat(row[21]) || 0, // Column W
-                        day8Achievement: parseFloat(row[22]) || 0, // Column X
-                        day8Percentage: parseFloat(row[23]) || 0, // Column Y
-                        day9Achievement: parseFloat(row[24]) || 0, // Column Z
-                        day9Percentage: parseFloat(row[25]) || 0, // Column AA
-                        totalAchievement: parseFloat(row[26]) || 0, // Column AB
-                        totalPercentage: parseFloat(row[27]) || 0 // Column AC
+                        outletName: getCellValue(1) || '', // Column B (index 1)
+                        am: getCellValue(2) || '', // Column C
+                        lokasi: getCellValue(3) || '', // Column D
+                        goPeriod: getCellValue(4) || '', // Column E
+                        totalTarget9Days: parseFloat(getCellValue(5)) || 0, // Column F
+                        day1Target: parseFloat(getCellValue(6)) || 0, // Column G
+                        day1Achievement: parseFloat(getCellValue(7)) || 0, // Column H
+                        day1Percentage: (parseFloat(getCellValue(8)) || 0) * 100, // Column I (convert from decimal to percentage)
+                        day2Target: parseFloat(getCellValue(9)) || 0, // Column J
+                        day2Achievement: parseFloat(getCellValue(10)) || 0, // Column K
+                        day2Percentage: (parseFloat(getCellValue(11)) || 0) * 100, // Column L
+                        targetDay3to9: parseFloat(getCellValue(12)) || 0, // Column M
+                        day3Achievement: parseFloat(getCellValue(13)) || 0, // Column N
+                        day3Percentage: (parseFloat(getCellValue(14)) || 0) * 100, // Column O
+                        day4Achievement: parseFloat(getCellValue(15)) || 0, // Column P
+                        day4Percentage: (parseFloat(getCellValue(16)) || 0) * 100, // Column Q
+                        day5Achievement: parseFloat(getCellValue(17)) || 0, // Column R
+                        day5Percentage: (parseFloat(getCellValue(18)) || 0) * 100, // Column S
+                        day6Achievement: parseFloat(getCellValue(19)) || 0, // Column T
+                        day6Percentage: (parseFloat(getCellValue(20)) || 0) * 100, // Column U
+                        day7Achievement: parseFloat(getCellValue(21)) || 0, // Column V
+                        day7Percentage: (parseFloat(getCellValue(22)) || 0) * 100, // Column W
+                        day8Achievement: parseFloat(getCellValue(23)) || 0, // Column X
+                        day8Percentage: (parseFloat(getCellValue(24)) || 0) * 100, // Column Y
+                        day9Achievement: parseFloat(getCellValue(25)) || 0, // Column Z
+                        day9Percentage: (parseFloat(getCellValue(26)) || 0) * 100, // Column AA
+                        totalAchievement: parseFloat(getCellValue(27)) || 0, // Column AB
+                        totalPercentage: (parseFloat(getCellValue(28)) || 0) * 100 // Column AC (convert from decimal to percentage)
                     };
                 }).filter(store => store.outletName); // Filter out empty rows
 
