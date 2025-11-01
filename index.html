@@ -2047,6 +2047,82 @@
                     </div>
                 </div>
 
+                <!-- SGM Content -->
+                <div id="sgmContent" class="tab-content hidden">
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-4">
+                            <i class="fas fa-store-alt mr-3 text-purple-600"></i>
+                            SGM Department
+                        </h2>
+                        
+                        <!-- SGM Subtabs -->
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <button onclick="showSGMSubtab('grand-opening-dashboard')" 
+                                    class="subtab-button active px-4 py-2">
+                                <i class="fas fa-rocket mr-2"></i>
+                                Grand Opening Dashboard
+                            </button>
+                        </div>
+                        
+                        <!-- Grand Opening Dashboard Subtab -->
+                        <div id="grandOpeningDashboardSubtab" class="sgm-subtab">
+                            <div class="mb-6">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-2">Grand Opening Dashboard</h3>
+                                <p class="text-gray-600">Monitor and track grand opening performance across all outlets</p>
+                            </div>
+
+                            <!-- Loading Indicator -->
+                            <div id="goLoadingIndicator" class="text-center py-8">
+                                <i class="fas fa-spinner fa-spin text-4xl text-purple-600 mb-4"></i>
+                                <p class="text-gray-600">Loading Grand Opening data...</p>
+                            </div>
+
+                            <!-- Error Message -->
+                            <div id="goErrorMessage" class="hidden bg-red-50 border border-red-300 rounded-lg p-4 mb-6">
+                                <div class="flex items-center">
+                                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                                    <span class="text-red-800" id="goErrorText"></span>
+                                </div>
+                            </div>
+
+                            <!-- Latest GO Performance Section -->
+                            <div id="latestGOSection" class="hidden mb-8">
+                                <div class="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg p-6 mb-6 text-white">
+                                    <h3 class="text-2xl font-bold mb-2 flex items-center">
+                                        <i class="fas fa-fire mr-3"></i>
+                                        Latest GO Performance
+                                    </h3>
+                                    <p class="opacity-90">Currently active grand openings</p>
+                                </div>
+                                <div id="latestGOContent" class="grid grid-cols-1 gap-4">
+                                    <!-- Latest GO cards will be inserted here -->
+                                </div>
+                            </div>
+
+                            <!-- Historical GO Performance Section -->
+                            <div id="historicalGOSection" class="hidden">
+                                <div class="bg-gradient-to-r from-gray-600 to-gray-800 rounded-lg p-6 mb-6 text-white">
+                                    <h3 class="text-2xl font-bold mb-2 flex items-center">
+                                        <i class="fas fa-history mr-3"></i>
+                                        Historical GO Performance
+                                    </h3>
+                                    <p class="opacity-90">Past grand opening records</p>
+                                </div>
+                                <div id="historicalGOContent" class="grid grid-cols-1 gap-4">
+                                    <!-- Historical GO cards will be inserted here -->
+                                </div>
+                            </div>
+
+                            <!-- No Data Message -->
+                            <div id="goNoDataMessage" class="hidden text-center py-12">
+                                <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+                                <p class="text-gray-600 text-lg">No Grand Opening data available</p>
+                                <p class="text-gray-500 text-sm mt-2">Data will appear once the Google Sheet is populated</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Admin Configuration Content -->
                 <div id="adminConfigContent" class="tab-content hidden">
                     <div class="mb-4">
@@ -3049,22 +3125,24 @@
             { id: 'warehouseApd', name: 'Warehouse APD', icon: 'fas fa-warehouse' },
             { id: 'ppr', name: 'PPR', icon: 'fas fa-sitemap' },
             { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
+            { id: 'sgm', name: 'SGM', icon: 'fas fa-store-alt' },
             { id: 'adminConfig', name: 'Admin Config', icon: 'fas fa-cogs' }
         ];
         
         // Default department access configuration
         let department_accessConfig = {
-            admin: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig'],
-            chief: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'],
-            strategy: ['ppm', 'strategy', 'operations'],
-            operations: ['operations', 'warehouseApd'],
+            admin: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'adminConfig'],
+            chief: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm'],
+            strategy: ['ppm', 'strategy', 'operations', 'sgm'],
+            operations: ['operations', 'warehouseApd', 'sgm'],
             ppm: ['ppm'],
             finance: ['finance'],
             bpt: ['bpt'],
             procurement: ['procurement'],
             warehouse: ['warehouseApd'],
             ppr: ['ppr'],
-            academy: ['academy']
+            academy: ['academy'],
+            sgm: ['sgm']
         };
         
         // User Management System Variables
@@ -4658,14 +4736,14 @@
             console.log(`⚠️ Using fallback permissions for ${role}`);
             switch (role) {
                 case 'admin':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'adminConfig'];
                 case 'chief':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm'];
                 case 'strategy':
-                    return ['ppm', 'strategy', 'operations'];
+                    return ['ppm', 'strategy', 'operations', 'sgm'];
                 case 'operation':
                 case 'operations':
-                    return ['operations', 'warehouseApd'];
+                    return ['operations', 'warehouseApd', 'sgm'];
                 case 'ppm':
                     return ['ppm'];
                 case 'finance':
@@ -4681,6 +4759,8 @@
                     return ['ppr'];
                 case 'academy':
                     return ['academy'];
+                case 'sgm':
+                    return ['sgm'];
                 default:
                     return ['operations'];
             }
@@ -4707,6 +4787,8 @@
                 defaultTab = 'ppr';
             } else if (role === 'academy') {
                 defaultTab = 'academy';
+            } else if (role === 'sgm') {
+                defaultTab = 'sgm';
             }
             
             showTab(defaultTab);
@@ -4755,6 +4837,13 @@
                 }
                 
                 switchUserManagementTab('userList');
+            }
+            
+            // Initialize SGM tab if opened
+            if (tabId === 'sgm') {
+                console.log('🏪 SGM tab opened, initializing Grand Opening Dashboard...');
+                // Show the default subtab (Grand Opening Dashboard)
+                showSGMSubtab('grand-opening-dashboard');
             }
             
             // Add active class to selected tab
@@ -4869,6 +4958,425 @@
             if (subtabId === 'google-review') {
                 loadOutlets();
             }
+        }
+
+        // SGM Subtab Functions
+        function showSGMSubtab(subtabId) {
+            // Hide all SGM subtabs
+            document.querySelectorAll('.sgm-subtab').forEach(subtab => {
+                subtab.classList.add('hidden');
+            });
+            
+            // Remove active class from all SGM subtab buttons
+            document.querySelectorAll('#sgmContent .subtab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected subtab
+            const subtabMap = {
+                'grand-opening-dashboard': 'grandOpeningDashboardSubtab'
+            };
+            
+            const targetSubtab = document.getElementById(subtabMap[subtabId]);
+            if (targetSubtab) {
+                targetSubtab.classList.remove('hidden');
+            }
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+            
+            // Load Grand Opening data when dashboard is opened
+            if (subtabId === 'grand-opening-dashboard') {
+                loadGrandOpeningData();
+            }
+        }
+
+        // Grand Opening Dashboard Variables
+        let grandOpeningData = {
+            storeData: [],
+            latestGO: [],
+            historicalGO: [],
+            lastFetchTime: null
+        };
+
+        // Load Grand Opening data from Google Sheets
+        async function loadGrandOpeningData() {
+            const loadingIndicator = document.getElementById('goLoadingIndicator');
+            const errorMessage = document.getElementById('goErrorMessage');
+            const errorText = document.getElementById('goErrorText');
+            const latestSection = document.getElementById('latestGOSection');
+            const historicalSection = document.getElementById('historicalGOSection');
+            const noDataMessage = document.getElementById('goNoDataMessage');
+
+            // Show loading
+            loadingIndicator.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            latestSection.classList.add('hidden');
+            historicalSection.classList.add('hidden');
+            noDataMessage.classList.add('hidden');
+
+            try {
+                // Google Sheets URL - STORE sheet using public Google Visualization API
+                const sheetId = '1ucXoo9EbOHyVNyztS42nryDM405nl-208CZiLwD_cOc';
+                const sheetName = 'STORE';
+                const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
+                }
+
+                const text = await response.text();
+                
+                // Parse the Google Visualization API response (it's wrapped in a callback)
+                const jsonData = JSON.parse(text.substring(47).slice(0, -2));
+                
+                if (!jsonData.table || !jsonData.table.rows || jsonData.table.rows.length === 0) {
+                    throw new Error('No data found in the STORE sheet');
+                }
+
+                // Parse the data (skip header row is already done by gviz)
+                const rows = jsonData.table.rows;
+                grandOpeningData.storeData = rows.map((row, index) => {
+                    const cells = row.c || [];
+                    // Helper function to get cell value
+                    const getCellValue = (index) => {
+                        if (!cells[index] || cells[index].v === null || cells[index].v === undefined) return null;
+                        return cells[index].v;
+                    };
+                    
+                    return {
+                        rowIndex: index + 2, // +2 because we skip header and arrays are 0-indexed
+                        outletName: getCellValue(1) || '', // Column B (index 1)
+                        am: getCellValue(2) || '', // Column C
+                        lokasi: getCellValue(3) || '', // Column D
+                        goPeriod: getCellValue(4) || '', // Column E
+                        totalTarget9Days: parseFloat(getCellValue(5)) || 0, // Column F
+                        day1Target: parseFloat(getCellValue(6)) || 0, // Column G
+                        day1Achievement: parseFloat(getCellValue(7)) || 0, // Column H
+                        day1Percentage: (parseFloat(getCellValue(8)) || 0) * 100, // Column I (convert from decimal to percentage)
+                        day2Target: parseFloat(getCellValue(9)) || 0, // Column J
+                        day2Achievement: parseFloat(getCellValue(10)) || 0, // Column K
+                        day2Percentage: (parseFloat(getCellValue(11)) || 0) * 100, // Column L
+                        targetDay3to9: parseFloat(getCellValue(12)) || 0, // Column M
+                        day3Achievement: parseFloat(getCellValue(13)) || 0, // Column N
+                        day3Percentage: (parseFloat(getCellValue(14)) || 0) * 100, // Column O
+                        day4Achievement: parseFloat(getCellValue(15)) || 0, // Column P
+                        day4Percentage: (parseFloat(getCellValue(16)) || 0) * 100, // Column Q
+                        day5Achievement: parseFloat(getCellValue(17)) || 0, // Column R
+                        day5Percentage: (parseFloat(getCellValue(18)) || 0) * 100, // Column S
+                        day6Achievement: parseFloat(getCellValue(19)) || 0, // Column T
+                        day6Percentage: (parseFloat(getCellValue(20)) || 0) * 100, // Column U
+                        day7Achievement: parseFloat(getCellValue(21)) || 0, // Column V
+                        day7Percentage: (parseFloat(getCellValue(22)) || 0) * 100, // Column W
+                        day8Achievement: parseFloat(getCellValue(23)) || 0, // Column X
+                        day8Percentage: (parseFloat(getCellValue(24)) || 0) * 100, // Column Y
+                        day9Achievement: parseFloat(getCellValue(25)) || 0, // Column Z
+                        day9Percentage: (parseFloat(getCellValue(26)) || 0) * 100, // Column AA
+                        totalAchievement: parseFloat(getCellValue(27)) || 0, // Column AB
+                        totalPercentage: (parseFloat(getCellValue(28)) || 0) * 100 // Column AC (convert from decimal to percentage)
+                    };
+                }).filter(store => store.outletName); // Filter out empty rows
+
+                // Separate latest and historical GO based on current date
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                grandOpeningData.latestGO = [];
+                grandOpeningData.historicalGO = [];
+
+                grandOpeningData.storeData.forEach(store => {
+                    if (store.goPeriod) {
+                        const periodMatch = store.goPeriod.match(/(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})\s*-\s*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/);
+                        if (periodMatch) {
+                            const endDateStr = periodMatch[2];
+                            const endDate = parseDate(endDateStr);
+                            
+                            if (endDate >= today) {
+                                grandOpeningData.latestGO.push(store);
+                            } else {
+                                grandOpeningData.historicalGO.push(store);
+                            }
+                        }
+                    }
+                });
+
+                // Display the data
+                displayGrandOpeningData();
+                
+                grandOpeningData.lastFetchTime = new Date();
+                console.log('✅ Grand Opening data loaded successfully');
+
+            } catch (error) {
+                console.error('❌ Error loading Grand Opening data:', error);
+                errorText.textContent = `Error loading data: ${error.message}`;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        // Parse date string in various formats
+        function parseDate(dateStr) {
+            // Try to parse dates like "1/11/2024", "01-11-2024", "1/11/24"
+            const parts = dateStr.split(/[\/-]/);
+            if (parts.length === 3) {
+                let day = parseInt(parts[0]);
+                let month = parseInt(parts[1]) - 1; // JS months are 0-indexed
+                let year = parseInt(parts[2]);
+                
+                // Handle 2-digit year
+                if (year < 100) {
+                    year += 2000;
+                }
+                
+                return new Date(year, month, day);
+            }
+            return new Date(dateStr);
+        }
+
+        // Display Grand Opening data
+        function displayGrandOpeningData() {
+            const latestSection = document.getElementById('latestGOSection');
+            const historicalSection = document.getElementById('historicalGOSection');
+            const noDataMessage = document.getElementById('goNoDataMessage');
+            const latestContent = document.getElementById('latestGOContent');
+            const historicalContent = document.getElementById('historicalGOContent');
+
+            // Check if there's any data
+            if (grandOpeningData.latestGO.length === 0 && grandOpeningData.historicalGO.length === 0) {
+                noDataMessage.classList.remove('hidden');
+                return;
+            }
+
+            // Display Latest GO
+            if (grandOpeningData.latestGO.length > 0) {
+                latestSection.classList.remove('hidden');
+                latestContent.innerHTML = '';
+                
+                // Group by GO period
+                const groupedByPeriod = groupByPeriod(grandOpeningData.latestGO);
+                
+                Object.keys(groupedByPeriod).forEach(period => {
+                    const stores = groupedByPeriod[period];
+                    latestContent.appendChild(createGOBatchCard(period, stores, true));
+                });
+            }
+
+            // Display Historical GO
+            if (grandOpeningData.historicalGO.length > 0) {
+                historicalSection.classList.remove('hidden');
+                historicalContent.innerHTML = '';
+                
+                // Group by GO period
+                const groupedByPeriod = groupByPeriod(grandOpeningData.historicalGO);
+                
+                Object.keys(groupedByPeriod).forEach(period => {
+                    const stores = groupedByPeriod[period];
+                    historicalContent.appendChild(createGOBatchCard(period, stores, false));
+                });
+            }
+        }
+
+        // Group stores by GO period
+        function groupByPeriod(stores) {
+            const grouped = {};
+            stores.forEach(store => {
+                const period = store.goPeriod || 'Unknown Period';
+                if (!grouped[period]) {
+                    grouped[period] = [];
+                }
+                grouped[period].push(store);
+            });
+            return grouped;
+        }
+
+        // Create GO Batch Card
+        function createGOBatchCard(period, stores, isLatest) {
+            const batchCard = document.createElement('div');
+            batchCard.className = 'bg-white rounded-lg shadow-lg overflow-hidden mb-6';
+            
+            // Calculate batch statistics
+            const totalTarget = stores.reduce((sum, s) => sum + s.totalTarget9Days, 0);
+            const totalAchievement = stores.reduce((sum, s) => sum + s.totalAchievement, 0);
+            const batchPercentage = totalTarget > 0 ? (totalAchievement / totalTarget * 100) : 0;
+            
+            const cardColor = isLatest ? 'from-purple-600 to-indigo-700' : 'from-gray-600 to-gray-700';
+            
+            batchCard.innerHTML = `
+                <div class="bg-gradient-to-r ${cardColor} text-white p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h4 class="text-xl font-bold mb-2">
+                                <i class="fas fa-calendar-alt mr-2"></i>${period}
+                            </h4>
+                            <p class="text-sm opacity-90">${stores.length} Outlet${stores.length > 1 ? 's' : ''}</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-3xl font-bold">${batchPercentage.toFixed(1)}%</div>
+                            <div class="text-sm opacity-90">Overall Achievement</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <div class="opacity-75">Total Target</div>
+                            <div class="font-bold text-lg">Rp ${formatCurrency(totalTarget)}</div>
+                        </div>
+                        <div>
+                            <div class="opacity-75">Total Achievement</div>
+                            <div class="font-bold text-lg">Rp ${formatCurrency(totalAchievement)}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${stores.map(store => createStoreCard(store)).join('')}
+                    </div>
+                </div>
+            `;
+            
+            return batchCard;
+        }
+
+        // Create individual store card
+        function createStoreCard(store) {
+            const statusColor = store.totalPercentage >= 100 ? 'text-green-600' : 
+                              store.totalPercentage >= 80 ? 'text-yellow-600' : 'text-red-600';
+            const statusIcon = store.totalPercentage >= 100 ? 'fa-check-circle' : 
+                             store.totalPercentage >= 80 ? 'fa-exclamation-triangle' : 'fa-times-circle';
+            
+            return `
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h5 class="font-bold text-gray-800">${store.outletName}</h5>
+                            <p class="text-sm text-gray-600">
+                                <i class="fas fa-user mr-1"></i>${store.am} | 
+                                <i class="fas fa-map-marker-alt mr-1"></i>${store.lokasi}
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <i class="fas ${statusIcon} ${statusColor} text-2xl"></i>
+                            <div class="font-bold ${statusColor} text-xl">${store.totalPercentage.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-600">Progress</span>
+                            <span class="font-semibold text-gray-800">Rp ${formatCurrency(store.totalAchievement)} / Rp ${formatCurrency(store.totalTarget9Days)}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all ${store.totalPercentage >= 100 ? 'bg-green-500' : 
+                                store.totalPercentage >= 80 ? 'bg-yellow-500' : 'bg-red-500'}" 
+                                style="width: ${Math.min(store.totalPercentage, 100)}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t pt-3 mt-3">
+                        <button onclick="showStoreDetails(${store.rowIndex})" 
+                                class="text-purple-600 hover:text-purple-800 text-sm font-medium w-full text-center">
+                            <i class="fas fa-chart-line mr-1"></i>View Detailed Performance
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show detailed store performance
+        function showStoreDetails(rowIndex) {
+            const store = grandOpeningData.storeData.find(s => s.rowIndex === rowIndex);
+            if (!store) return;
+
+            // Create modal for detailed view
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
+
+            const dailyData = [
+                { day: 1, target: store.day1Target, achievement: store.day1Achievement, percentage: store.day1Percentage },
+                { day: 2, target: store.day2Target, achievement: store.day2Achievement, percentage: store.day2Percentage },
+                { day: 3, target: store.targetDay3to9 / 7, achievement: store.day3Achievement, percentage: store.day3Percentage },
+                { day: 4, target: store.targetDay3to9 / 7, achievement: store.day4Achievement, percentage: store.day4Percentage },
+                { day: 5, target: store.targetDay3to9 / 7, achievement: store.day5Achievement, percentage: store.day5Percentage },
+                { day: 6, target: store.targetDay3to9 / 7, achievement: store.day6Achievement, percentage: store.day6Percentage },
+                { day: 7, target: store.targetDay3to9 / 7, achievement: store.day7Achievement, percentage: store.day7Percentage },
+                { day: 8, target: store.targetDay3to9 / 7, achievement: store.day8Achievement, percentage: store.day8Percentage },
+                { day: 9, target: store.targetDay3to9 / 7, achievement: store.day9Achievement, percentage: store.day9Percentage }
+            ];
+
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    <div class="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-2xl font-bold mb-2">${store.outletName}</h3>
+                                <p class="opacity-90">
+                                    <i class="fas fa-user mr-2"></i>${store.am} | 
+                                    <i class="fas fa-map-marker-alt mr-2"></i>${store.lokasi}
+                                </p>
+                                <p class="opacity-90 mt-2">
+                                    <i class="fas fa-calendar mr-2"></i>${store.goPeriod}
+                                </p>
+                            </div>
+                            <button onclick="this.closest('.fixed').remove()" 
+                                    class="text-white hover:text-gray-200 text-2xl">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-blue-50 rounded-lg p-4">
+                                <div class="text-blue-600 text-sm font-medium">Total Target</div>
+                                <div class="text-2xl font-bold text-blue-800">Rp ${formatCurrency(store.totalTarget9Days)}</div>
+                            </div>
+                            <div class="bg-green-50 rounded-lg p-4">
+                                <div class="text-green-600 text-sm font-medium">Total Achievement</div>
+                                <div class="text-2xl font-bold text-green-800">Rp ${formatCurrency(store.totalAchievement)}</div>
+                            </div>
+                            <div class="bg-purple-50 rounded-lg p-4">
+                                <div class="text-purple-600 text-sm font-medium">Achievement Rate</div>
+                                <div class="text-2xl font-bold text-purple-800">${store.totalPercentage.toFixed(1)}%</div>
+                            </div>
+                        </div>
+
+                        <h4 class="font-bold text-gray-800 mb-4 text-lg">Daily Performance Breakdown</h4>
+                        <div class="space-y-3">
+                            ${dailyData.map(day => `
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="font-bold text-gray-800">Day ${day.day}</span>
+                                        <span class="font-bold ${day.percentage >= 100 ? 'text-green-600' : 
+                                            day.percentage >= 80 ? 'text-yellow-600' : 'text-red-600'}">${day.percentage.toFixed(1)}%</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm text-gray-600 mb-2">
+                                        <span>Target: Rp ${formatCurrency(day.target)}</span>
+                                        <span>Achievement: Rp ${formatCurrency(day.achievement)}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="h-2 rounded-full ${day.percentage >= 100 ? 'bg-green-500' : 
+                                            day.percentage >= 80 ? 'bg-yellow-500' : 'bg-red-500'}" 
+                                            style="width: ${Math.min(day.percentage, 100)}%"></div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        }
+
+        // Format currency helper
+        function formatCurrency(amount) {
+            if (!amount && amount !== 0) return '0';
+            return new Intl.NumberFormat('id-ID').format(Math.round(amount));
         }
 
         // Operations Subtab Functions
