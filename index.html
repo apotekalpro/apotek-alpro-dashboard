@@ -2057,7 +2057,7 @@
                         
                         <!-- SGM Subtabs -->
                         <div class="flex flex-wrap gap-2 mb-6">
-                            <button onclick="showSGMSubtab('grand-opening-dashboard')" 
+                            <button onclick="showSGMSubtab('grand-opening-dashboard', event)" 
                                     class="subtab-button active px-4 py-2">
                                 <i class="fas fa-rocket mr-2"></i>
                                 Grand Opening Dashboard
@@ -2085,31 +2085,51 @@
                                 </div>
                             </div>
 
-                            <!-- Latest GO Performance Section -->
-                            <div id="latestGOSection" class="hidden mb-8">
-                                <div class="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg p-6 mb-6 text-white">
+                            <!-- Overall Summary Cards -->
+                            <div id="goOverallSummary" class="hidden mb-8">
+                                <div class="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-lg p-6 mb-6 text-white">
                                     <h3 class="text-2xl font-bold mb-2 flex items-center">
-                                        <i class="fas fa-fire mr-3"></i>
-                                        Latest GO Performance
+                                        <i class="fas fa-chart-line mr-3"></i>
+                                        Overall Grand Opening Performance
                                     </h3>
-                                    <p class="opacity-90">Currently active grand openings</p>
+                                    <p class="opacity-90">Comprehensive performance metrics across all outlets</p>
                                 </div>
-                                <div id="latestGOContent" class="grid grid-cols-1 gap-4">
-                                    <!-- Latest GO cards will be inserted here -->
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                                    <div class="bg-white rounded-lg shadow-lg p-6 border-l-4 border-blue-500">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-gray-600 text-sm font-medium">Total Outlets</span>
+                                            <i class="fas fa-store text-blue-500 text-xl"></i>
+                                        </div>
+                                        <div class="text-3xl font-bold text-gray-800" id="goTotalOutlets">0</div>
+                                    </div>
+                                    <div class="bg-white rounded-lg shadow-lg p-6 border-l-4 border-green-500">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-gray-600 text-sm font-medium">Total Target</span>
+                                            <i class="fas fa-bullseye text-green-500 text-xl"></i>
+                                        </div>
+                                        <div class="text-2xl font-bold text-gray-800" id="goTotalTarget">Rp 0</div>
+                                    </div>
+                                    <div class="bg-white rounded-lg shadow-lg p-6 border-l-4 border-purple-500">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-gray-600 text-sm font-medium">Total Achievement</span>
+                                            <i class="fas fa-trophy text-purple-500 text-xl"></i>
+                                        </div>
+                                        <div class="text-2xl font-bold text-gray-800" id="goTotalAchievement">Rp 0</div>
+                                    </div>
+                                    <div class="bg-white rounded-lg shadow-lg p-6 border-l-4 border-orange-500">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-gray-600 text-sm font-medium">Achievement Rate</span>
+                                            <i class="fas fa-percentage text-orange-500 text-xl"></i>
+                                        </div>
+                                        <div class="text-3xl font-bold text-gray-800" id="goTotalPercentage">0%</div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Historical GO Performance Section -->
-                            <div id="historicalGOSection" class="hidden">
-                                <div class="bg-gradient-to-r from-gray-600 to-gray-800 rounded-lg p-6 mb-6 text-white">
-                                    <h3 class="text-2xl font-bold mb-2 flex items-center">
-                                        <i class="fas fa-history mr-3"></i>
-                                        Historical GO Performance
-                                    </h3>
-                                    <p class="opacity-90">Past grand opening records</p>
-                                </div>
-                                <div id="historicalGOContent" class="grid grid-cols-1 gap-4">
-                                    <!-- Historical GO cards will be inserted here -->
+                            <!-- All GO Performance Section -->
+                            <div id="allGOSection" class="hidden">
+                                <div id="allGOContent" class="grid grid-cols-1 gap-4">
+                                    <!-- All GO cards will be inserted here, grouped by period -->
                                 </div>
                             </div>
 
@@ -4961,7 +4981,7 @@
         }
 
         // SGM Subtab Functions
-        function showSGMSubtab(subtabId) {
+        function showSGMSubtab(subtabId, event) {
             // Hide all SGM subtabs
             document.querySelectorAll('.sgm-subtab').forEach(subtab => {
                 subtab.classList.add('hidden');
@@ -4982,11 +5002,21 @@
                 targetSubtab.classList.remove('hidden');
             }
             
-            // Add active class to clicked button
-            event.target.classList.add('active');
+            // Add active class to clicked button (if event exists)
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // If no event (called programmatically), find and activate the button
+                const button = document.querySelector(`button[onclick*="showSGMSubtab('${subtabId}')"]`);
+                if (button) {
+                    button.classList.add('active');
+                }
+            }
             
             // Load Grand Opening data when dashboard is opened
+            console.log(`🏪 showSGMSubtab called with: ${subtabId}`);
             if (subtabId === 'grand-opening-dashboard') {
+                console.log('🔄 Loading Grand Opening data...');
                 loadGrandOpeningData();
             }
         }
@@ -5004,15 +5034,15 @@
             const loadingIndicator = document.getElementById('goLoadingIndicator');
             const errorMessage = document.getElementById('goErrorMessage');
             const errorText = document.getElementById('goErrorText');
-            const latestSection = document.getElementById('latestGOSection');
-            const historicalSection = document.getElementById('historicalGOSection');
+            const overallSummary = document.getElementById('goOverallSummary');
+            const allGOSection = document.getElementById('allGOSection');
             const noDataMessage = document.getElementById('goNoDataMessage');
 
-            // Show loading
+            // Show loading, hide everything else
             loadingIndicator.classList.remove('hidden');
             errorMessage.classList.add('hidden');
-            latestSection.classList.add('hidden');
-            historicalSection.classList.add('hidden');
+            if (overallSummary) overallSummary.classList.add('hidden');
+            if (allGOSection) allGOSection.classList.add('hidden');
             noDataMessage.classList.add('hidden');
 
             try {
@@ -5030,7 +5060,9 @@
                 const text = await response.text();
                 
                 // Parse the Google Visualization API response (it's wrapped in a callback)
+                console.log('📊 Parsing Google Sheets response...');
                 const jsonData = JSON.parse(text.substring(47).slice(0, -2));
+                console.log('✅ JSON parsed successfully');
                 
                 if (!jsonData.table || !jsonData.table.rows || jsonData.table.rows.length === 0) {
                     throw new Error('No data found in the STORE sheet');
@@ -5038,6 +5070,7 @@
 
                 // Parse the data (skip header row is already done by gviz)
                 const rows = jsonData.table.rows;
+                console.log(`📊 Found ${rows.length} rows in the sheet`);
                 grandOpeningData.storeData = rows.map((row, index) => {
                     const cells = row.c || [];
                     // Helper function to get cell value
@@ -5046,67 +5079,114 @@
                         return cells[index].v;
                     };
                     
+                    // Extract GROUP from column A (can be Date object or string)
+                    let groupValue = getCellValue(0);
+                    let groupLabel = '';
+                    if (groupValue) {
+                        if (typeof groupValue === 'string') {
+                            // If it's already a string like "Nov 25", use it directly
+                            groupLabel = groupValue;
+                            console.log(`📊 Row ${index + 2}: GROUP is string: "${groupLabel}"`);
+                        } else if (groupValue.constructor && groupValue.constructor.name === 'Date') {
+                            // If it's a Date object from Sheets, format as "MMM YY" (e.g., "Nov 24", "Oct 25")
+                            const date = new Date(groupValue);
+                            const monthShort = date.toLocaleDateString('en-US', { month: 'short' });
+                            const yearShort = String(date.getFullYear()).slice(-2); // Last 2 digits
+                            groupLabel = `${monthShort} ${yearShort}`;
+                            console.log(`📊 Row ${index + 2}: GROUP is Date: ${groupValue} → formatted as "${groupLabel}"`);
+                        } else {
+                            // Fallback: convert to string
+                            groupLabel = String(groupValue);
+                            console.log(`📊 Row ${index + 2}: GROUP is other type: "${groupLabel}"`);
+                        }
+                    }
+                    
                     return {
                         rowIndex: index + 2, // +2 because we skip header and arrays are 0-indexed
-                        outletName: getCellValue(1) || '', // Column B (index 1)
-                        am: getCellValue(2) || '', // Column C
-                        lokasi: getCellValue(3) || '', // Column D
-                        goPeriod: getCellValue(4) || '', // Column E
-                        totalTarget9Days: parseFloat(getCellValue(5)) || 0, // Column F
-                        day1Target: parseFloat(getCellValue(6)) || 0, // Column G
-                        day1Achievement: parseFloat(getCellValue(7)) || 0, // Column H
-                        day1Percentage: (parseFloat(getCellValue(8)) || 0) * 100, // Column I (convert from decimal to percentage)
-                        day2Target: parseFloat(getCellValue(9)) || 0, // Column J
-                        day2Achievement: parseFloat(getCellValue(10)) || 0, // Column K
-                        day2Percentage: (parseFloat(getCellValue(11)) || 0) * 100, // Column L
-                        targetDay3to9: parseFloat(getCellValue(12)) || 0, // Column M
-                        day3Achievement: parseFloat(getCellValue(13)) || 0, // Column N
-                        day3Percentage: (parseFloat(getCellValue(14)) || 0) * 100, // Column O
-                        day4Achievement: parseFloat(getCellValue(15)) || 0, // Column P
-                        day4Percentage: (parseFloat(getCellValue(16)) || 0) * 100, // Column Q
-                        day5Achievement: parseFloat(getCellValue(17)) || 0, // Column R
-                        day5Percentage: (parseFloat(getCellValue(18)) || 0) * 100, // Column S
-                        day6Achievement: parseFloat(getCellValue(19)) || 0, // Column T
-                        day6Percentage: (parseFloat(getCellValue(20)) || 0) * 100, // Column U
-                        day7Achievement: parseFloat(getCellValue(21)) || 0, // Column V
-                        day7Percentage: (parseFloat(getCellValue(22)) || 0) * 100, // Column W
-                        day8Achievement: parseFloat(getCellValue(23)) || 0, // Column X
-                        day8Percentage: (parseFloat(getCellValue(24)) || 0) * 100, // Column Y
-                        day9Achievement: parseFloat(getCellValue(25)) || 0, // Column Z
-                        day9Percentage: (parseFloat(getCellValue(26)) || 0) * 100, // Column AA
-                        totalAchievement: parseFloat(getCellValue(27)) || 0, // Column AB
-                        totalPercentage: (parseFloat(getCellValue(28)) || 0) * 100 // Column AC (convert from decimal to percentage)
+                        group: groupLabel, // Column A - Grouping identifier
+                        outletName: getCellValue(2) || '', // Column C (shifted from B)
+                        am: getCellValue(3) || '', // Column D (shifted from C)
+                        lokasi: getCellValue(4) || '', // Column E (shifted from D)
+                        goPeriod: getCellValue(5) || '', // Column F (shifted from E)
+                        totalTarget9Days: parseFloat(getCellValue(6)) || 0, // Column G (shifted from F)
+                        day1Target: parseFloat(getCellValue(7)) || 0, // Column H
+                        day1Achievement: parseFloat(getCellValue(8)) || 0, // Column I
+                        day1Percentage: (parseFloat(getCellValue(9)) || 0) * 100, // Column J
+                        day2Target: parseFloat(getCellValue(10)) || 0, // Column K
+                        day2Achievement: parseFloat(getCellValue(11)) || 0, // Column L
+                        day2Percentage: (parseFloat(getCellValue(12)) || 0) * 100, // Column M
+                        targetDay3to9: parseFloat(getCellValue(13)) || 0, // Column N
+                        day3Achievement: parseFloat(getCellValue(14)) || 0, // Column O
+                        day3Percentage: (parseFloat(getCellValue(15)) || 0) * 100, // Column P
+                        day4Achievement: parseFloat(getCellValue(16)) || 0, // Column Q
+                        day4Percentage: (parseFloat(getCellValue(17)) || 0) * 100, // Column R
+                        day5Achievement: parseFloat(getCellValue(18)) || 0, // Column S
+                        day5Percentage: (parseFloat(getCellValue(19)) || 0) * 100, // Column T
+                        day6Achievement: parseFloat(getCellValue(20)) || 0, // Column U
+                        day6Percentage: (parseFloat(getCellValue(21)) || 0) * 100, // Column V
+                        day7Achievement: parseFloat(getCellValue(22)) || 0, // Column W
+                        day7Percentage: (parseFloat(getCellValue(23)) || 0) * 100, // Column X
+                        day8Achievement: parseFloat(getCellValue(24)) || 0, // Column Y
+                        day8Percentage: (parseFloat(getCellValue(25)) || 0) * 100, // Column Z
+                        day9Achievement: parseFloat(getCellValue(26)) || 0, // Column AA
+                        day9Percentage: (parseFloat(getCellValue(27)) || 0) * 100, // Column AB
+                        totalAchievement: parseFloat(getCellValue(28)) || 0, // Column AC
+                        totalPercentage: (parseFloat(getCellValue(29)) || 0) * 100 // Column AD
                     };
-                }).filter(store => store.outletName); // Filter out empty rows
+                }).filter(store => {
+                    // Filter out empty rows (rows without outlet names)
+                    const hasOutletName = store.outletName && store.outletName.trim() !== '';
+                    if (!hasOutletName) {
+                        console.log('⚠️ Filtering out row without outlet name:', store);
+                    }
+                    return hasOutletName;
+                });
+
+                console.log(`✅ Parsed ${grandOpeningData.storeData.length} stores successfully`);
+                console.log('📊 Sample store:', grandOpeningData.storeData[0]);
+                console.log('📊 Sample stores with groups:', grandOpeningData.storeData.slice(0, 3).map(s => ({ outlet: s.outletName, group: s.group, period: s.goPeriod })));
 
                 // Separate latest and historical GO based on current date
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
+                console.log(`📅 Today's date: ${today.toLocaleDateString('id-ID')}`);
                 
                 grandOpeningData.latestGO = [];
                 grandOpeningData.historicalGO = [];
 
                 grandOpeningData.storeData.forEach(store => {
                     if (store.goPeriod) {
-                        const periodMatch = store.goPeriod.match(/(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})\s*-\s*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/);
+                        // Match formats like "02 - 10 November 2024" or "07 - 15 Desember 2024"
+                        // Pattern: day - day Month year
+                        const periodMatch = store.goPeriod.match(/(\d{1,2})\s*-\s*(\d{1,2})\s+(\w+)\s+(\d{4})/i);
                         if (periodMatch) {
-                            const endDateStr = periodMatch[2];
+                            const endDay = periodMatch[2];
+                            const month = periodMatch[3];
+                            const year = periodMatch[4];
+                            const endDateStr = `${endDay} ${month} ${year}`;
                             const endDate = parseDate(endDateStr);
+                            
+                            console.log(`Store: ${store.outletName}, Period: ${store.goPeriod}, End Date: ${endDate.toLocaleDateString('id-ID')}, Is Future: ${endDate >= today}`);
                             
                             if (endDate >= today) {
                                 grandOpeningData.latestGO.push(store);
                             } else {
                                 grandOpeningData.historicalGO.push(store);
                             }
+                        } else {
+                            console.warn(`Could not parse period for ${store.outletName}: ${store.goPeriod}`);
                         }
                     }
                 });
+
+                console.log(`📊 Latest GO: ${grandOpeningData.latestGO.length} stores`);
+                console.log(`📊 Historical GO: ${grandOpeningData.historicalGO.length} stores`);
 
                 // Display the data
                 displayGrandOpeningData();
                 
                 grandOpeningData.lastFetchTime = new Date();
-                console.log('✅ Grand Opening data loaded successfully');
+                console.log('✅ Grand Opening data loaded and displayed successfully');
 
             } catch (error) {
                 console.error('❌ Error loading Grand Opening data:', error);
@@ -5119,6 +5199,35 @@
 
         // Parse date string in various formats
         function parseDate(dateStr) {
+            // Month name mapping (Indonesian to English)
+            const monthMap = {
+                'januari': 0, 'january': 0,
+                'februari': 1, 'february': 1,
+                'maret': 2, 'march': 2,
+                'april': 3,
+                'mei': 4, 'may': 4,
+                'juni': 5, 'june': 5,
+                'juli': 6, 'july': 6,
+                'agustus': 7, 'august': 7,
+                'september': 8,
+                'oktober': 9, 'october': 9,
+                'november': 10,
+                'desember': 11, 'december': 11
+            };
+            
+            // Try to parse date with month name: "10 November 2024" or "10 Desember 2024"
+            const monthNameMatch = dateStr.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/i);
+            if (monthNameMatch) {
+                const day = parseInt(monthNameMatch[1]);
+                const monthName = monthNameMatch[2].toLowerCase();
+                const year = parseInt(monthNameMatch[3]);
+                const month = monthMap[monthName];
+                
+                if (month !== undefined) {
+                    return new Date(year, month, day);
+                }
+            }
+            
             // Try to parse dates like "1/11/2024", "01-11-2024", "1/11/24"
             const parts = dateStr.split(/[\/-]/);
             if (parts.length === 3) {
@@ -5138,62 +5247,138 @@
 
         // Display Grand Opening data
         function displayGrandOpeningData() {
-            const latestSection = document.getElementById('latestGOSection');
-            const historicalSection = document.getElementById('historicalGOSection');
+            console.log('🎨 Displaying Grand Opening data...');
+            const overallSummary = document.getElementById('goOverallSummary');
+            const allGOSection = document.getElementById('allGOSection');
             const noDataMessage = document.getElementById('goNoDataMessage');
-            const latestContent = document.getElementById('latestGOContent');
-            const historicalContent = document.getElementById('historicalGOContent');
+            const allGOContent = document.getElementById('allGOContent');
 
-            // Check if there's any data
-            if (grandOpeningData.latestGO.length === 0 && grandOpeningData.historicalGO.length === 0) {
+            // Use ALL stores from storeData (row 2 to last row)
+            const allStores = grandOpeningData.storeData || [];
+            console.log(`📊 Total stores in storeData: ${allStores.length}`);
+            console.log('📊 grandOpeningData object:', grandOpeningData);
+            console.log('📊 Is storeData defined?', !!grandOpeningData.storeData);
+            console.log('📊 storeData type:', typeof grandOpeningData.storeData);
+            console.log('📊 storeData is array?', Array.isArray(grandOpeningData.storeData));
+            
+            if (allStores.length === 0) {
+                console.log('⚠️ No data to display, showing no data message');
                 noDataMessage.classList.remove('hidden');
                 return;
             }
+            
+            console.log('✅ Data available, proceeding to render...');
 
-            // Display Latest GO
-            if (grandOpeningData.latestGO.length > 0) {
-                latestSection.classList.remove('hidden');
-                latestContent.innerHTML = '';
-                
-                // Group by GO period
-                const groupedByPeriod = groupByPeriod(grandOpeningData.latestGO);
-                
-                Object.keys(groupedByPeriod).forEach(period => {
-                    const stores = groupedByPeriod[period];
-                    latestContent.appendChild(createGOBatchCard(period, stores, true));
-                });
-            }
+            // Calculate overall statistics from ALL rows (G2:last for target, AC2:last for achievement)
+            const totalOutlets = allStores.length;
+            const totalTarget = allStores.reduce((sum, store) => sum + store.totalTarget9Days, 0);
+            const totalAchievement = allStores.reduce((sum, store) => sum + store.totalAchievement, 0);
+            const totalPercentage = totalTarget > 0 ? (totalAchievement / totalTarget * 100) : 0;
 
-            // Display Historical GO
-            if (grandOpeningData.historicalGO.length > 0) {
-                historicalSection.classList.remove('hidden');
-                historicalContent.innerHTML = '';
+            console.log(`📊 Overall Stats - Outlets: ${totalOutlets}, Target: ${totalTarget}, Achievement: ${totalAchievement}, Rate: ${totalPercentage.toFixed(1)}%`);
+
+            // Update summary cards (using GO-specific IDs to avoid conflicts)
+            document.getElementById('goTotalOutlets').textContent = totalOutlets;
+            document.getElementById('goTotalTarget').textContent = `Rp ${formatCurrency(totalTarget)}`;
+            document.getElementById('goTotalAchievement').textContent = `Rp ${formatCurrency(totalAchievement)}`;
+            document.getElementById('goTotalPercentage').textContent = `${totalPercentage.toFixed(1)}%`;
+
+            // Show summary section
+            overallSummary.classList.remove('hidden');
+            allGOSection.classList.remove('hidden');
+            allGOContent.innerHTML = '';
+
+            // Group all stores by GROUP column (Column A)
+            const groupedByPeriod = groupByPeriod(allStores);
+            
+            // Get all GROUP keys
+            const groupKeys = Object.keys(groupedByPeriod);
+            
+            console.log('📊 All GROUP keys found:', groupKeys);
+            console.log('📊 GROUP details:', groupKeys.map(key => ({
+                group: key,
+                samplePeriod: groupedByPeriod[key][0]?.goPeriod,
+                storeCount: groupedByPeriod[key].length
+            })));
+            
+            // Sort by the GO Period date (newest first)
+            // Extract year from GO period to determine chronological order
+            const sortedGroups = groupKeys.sort((a, b) => {
+                // Get representative store from each group
+                const storeA = groupedByPeriod[a][0];
+                const storeB = groupedByPeriod[b][0];
                 
-                // Group by GO period
-                const groupedByPeriod = groupByPeriod(grandOpeningData.historicalGO);
+                // Extract year from GO period string (e.g., "02 - 10 November 2024" -> 2024)
+                const yearA = storeA.goPeriod ? parseInt(storeA.goPeriod.match(/\d{4}/)?.[0] || '0') : 0;
+                const yearB = storeB.goPeriod ? parseInt(storeB.goPeriod.match(/\d{4}/)?.[0] || '0') : 0;
                 
-                Object.keys(groupedByPeriod).forEach(period => {
-                    const stores = groupedByPeriod[period];
-                    historicalContent.appendChild(createGOBatchCard(period, stores, false));
-                });
+                // Extract month from GO period
+                const monthMapIndo = {
+                    'januari': 1, 'februari': 2, 'maret': 3, 'april': 4, 'mei': 5, 'juni': 6,
+                    'juli': 7, 'agustus': 8, 'september': 9, 'oktober': 10, 'november': 11, 'desember': 12
+                };
+                
+                const monthStrA = storeA.goPeriod?.toLowerCase().match(/januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember/)?.[0] || '';
+                const monthStrB = storeB.goPeriod?.toLowerCase().match(/januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember/)?.[0] || '';
+                
+                const monthA = monthMapIndo[monthStrA] || 0;
+                const monthB = monthMapIndo[monthStrB] || 0;
+                
+                console.log(`📊 Comparing: ${a} (${yearA}-${monthA}: ${storeA.goPeriod}) vs ${b} (${yearB}-${monthB}: ${storeB.goPeriod})`);
+                
+                // Sort by year DESC (2025 before 2024), then by month DESC (Nov before Oct)
+                if (yearB !== yearA) {
+                    return yearB - yearA; // Newer year first
+                }
+                return monthB - monthA; // Newer month first
+            });
+            
+            console.log('📊 GROUP order after sort (newest first):', sortedGroups);
+
+
+            // Display each group batch (no active/completed status)
+            sortedGroups.forEach(groupKey => {
+                const stores = groupedByPeriod[groupKey];
+                
+                // Use the GO Period from the first store as the display label
+                const displayLabel = stores[0].goPeriod || groupKey;
+                
+                console.log(`📊 Rendering GROUP: ${groupKey} with ${stores.length} stores, Display: ${displayLabel}`);
+                
+                // Pass null for isActive to remove status badges
+                allGOContent.appendChild(createGOBatchCard(displayLabel, stores, null));
+            });
+        }
+
+        // Extract end date from period string
+        function extractEndDate(periodStr) {
+            const periodMatch = periodStr.match(/(\d{1,2})\s*-\s*(\d{1,2})\s+(\w+)\s+(\d{4})/i);
+            if (periodMatch) {
+                const endDay = periodMatch[2];
+                const month = periodMatch[3];
+                const year = periodMatch[4];
+                const endDateStr = `${endDay} ${month} ${year}`;
+                return parseDate(endDateStr);
             }
+            return new Date();
         }
 
         // Group stores by GO period
         function groupByPeriod(stores) {
             const grouped = {};
             stores.forEach(store => {
-                const period = store.goPeriod || 'Unknown Period';
-                if (!grouped[period]) {
-                    grouped[period] = [];
+                // Use GROUP column (column A) as the identifier
+                const groupKey = store.group || store.goPeriod || 'Unknown Period';
+                if (!grouped[groupKey]) {
+                    grouped[groupKey] = [];
                 }
-                grouped[period].push(store);
+                grouped[groupKey].push(store);
             });
             return grouped;
         }
 
         // Create GO Batch Card
-        function createGOBatchCard(period, stores, isLatest) {
+        function createGOBatchCard(period, stores, isActive) {
             const batchCard = document.createElement('div');
             batchCard.className = 'bg-white rounded-lg shadow-lg overflow-hidden mb-6';
             
@@ -5202,15 +5387,18 @@
             const totalAchievement = stores.reduce((sum, s) => sum + s.totalAchievement, 0);
             const batchPercentage = totalTarget > 0 ? (totalAchievement / totalTarget * 100) : 0;
             
-            const cardColor = isLatest ? 'from-purple-600 to-indigo-700' : 'from-gray-600 to-gray-700';
+            // Use purple gradient for all cards (no active/completed distinction)
+            const cardColor = 'from-purple-600 to-indigo-700';
             
             batchCard.innerHTML = `
                 <div class="bg-gradient-to-r ${cardColor} text-white p-6">
                     <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h4 class="text-xl font-bold mb-2">
-                                <i class="fas fa-calendar-alt mr-2"></i>${period}
-                            </h4>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <h4 class="text-xl font-bold">
+                                    <i class="fas fa-calendar-alt mr-2"></i>${period}
+                                </h4>
+                            </div>
                             <p class="text-sm opacity-90">${stores.length} Outlet${stores.length > 1 ? 's' : ''}</p>
                         </div>
                         <div class="text-right">

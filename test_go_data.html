@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GO Data Test</title>
+</head>
+<body>
+    <h1>Grand Opening Data Test</h1>
+    <div id="output"></div>
+    <script>
+        async function testDataFetch() {
+            const output = document.getElementById('output');
+            try {
+                const sheetId = '1ucXoo9EbOHyVNyztS42nryDM405nl-208CZiLwD_cOc';
+                const sheetName = 'STORE';
+                const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+
+                const response = await fetch(url);
+                const text = await response.text();
+                const jsonData = JSON.parse(text.substring(47).slice(0, -2));
+                
+                const rows = jsonData.table.rows;
+                
+                // Parse first 3 stores
+                const stores = rows.slice(0, 3).map((row, index) => {
+                    const cells = row.c || [];
+                    const getCellValue = (index) => {
+                        if (!cells[index] || cells[index].v === null) return null;
+                        return cells[index].v;
+                    };
+                    
+                    return {
+                        outletName: getCellValue(1) || '',
+                        am: getCellValue(2) || '',
+                        lokasi: getCellValue(3) || '',
+                        goPeriod: getCellValue(4) || '',
+                        totalTarget9Days: parseFloat(getCellValue(5)) || 0,
+                        totalAchievement: parseFloat(getCellValue(27)) || 0,
+                        totalPercentage: (parseFloat(getCellValue(28)) || 0) * 100
+                    };
+                }).filter(s => s.outletName);
+                
+                output.innerHTML = `<h2>Success! Found ${stores.length} stores</h2>`;
+                stores.forEach(store => {
+                    output.innerHTML += `
+                        <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                            <h3>${store.outletName}</h3>
+                            <p><strong>AM:</strong> ${store.am}</p>
+                            <p><strong>Location:</strong> ${store.lokasi}</p>
+                            <p><strong>Period:</strong> ${store.goPeriod}</p>
+                            <p><strong>Target:</strong> Rp ${store.totalTarget9Days.toLocaleString('id-ID')}</p>
+                            <p><strong>Achievement:</strong> Rp ${store.totalAchievement.toLocaleString('id-ID')}</p>
+                            <p><strong>Percentage:</strong> ${store.totalPercentage.toFixed(2)}%</p>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                output.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error(error);
+            }
+        }
+        
+        testDataFetch();
+    </script>
+</body>
+</html>
