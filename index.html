@@ -1865,9 +1865,12 @@
                                         <input type="email" id="editUserEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            Password 
+                                            <span class="text-gray-500 text-xs font-normal">(Leave blank to keep current password)</span>
+                                        </label>
                                         <div class="relative">
-                                            <input type="password" id="editUserPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10">
+                                            <input type="password" id="editUserPassword" placeholder="Enter new password to change" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10">
                                             <button type="button" onclick="togglePasswordVisibility('editUserPassword')" 
                                                     class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
                                                 <i class="fas fa-eye"></i>
@@ -6162,7 +6165,8 @@
             document.getElementById('editUserId').value = user.id;
             document.getElementById('editUserName').value = user.name;
             document.getElementById('editUserEmail').value = user.email;
-            document.getElementById('editUserPassword').value = user.password;
+            // Leave password field empty - admin can enter new password if they want to change it
+            document.getElementById('editUserPassword').value = '';
             document.getElementById('editUserRole').value = user.role;
             document.getElementById('editUserStatus').value = user.status;
             document.getElementById('editUserEmployeeId').value = user.employee_id || '';
@@ -6621,8 +6625,9 @@
             const employee_id = document.getElementById('editUserEmployeeId').value.trim();
             const notes = document.getElementById('editUserNotes').value.trim();
             
-            if (!name || !email || !password || !role) {
-                showConfigStatus('Please fill in all required fields', 'error');
+            // Password is now OPTIONAL when editing (only required if admin wants to change it)
+            if (!name || !email || !role) {
+                showConfigStatus('Please fill in all required fields (Name, Email, Role)', 'error');
                 return;
             }
             
@@ -6649,7 +6654,6 @@
                 ...userManagementData.users[userIndex],
                 name: name,
                 email: email.toLowerCase(),
-                password: password,
                 role: role,
                 status: status,
                 employee_id: employee_id,
@@ -6657,6 +6661,14 @@
                 department_access: department_access, // Save department access
                 updatedAt: new Date().toISOString()
             };
+            
+            // Only update password if a new one was provided
+            if (password && password.trim() !== '') {
+                updatedUser.password = password;
+                console.log('🔐 Password will be updated for user:', email);
+            } else {
+                console.log('ℹ️ No password change - keeping existing password for user:', email);
+            }
             
             userManagementData.users[userIndex] = updatedUser;
             
