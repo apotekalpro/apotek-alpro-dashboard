@@ -5479,7 +5479,7 @@
 
             // Create modal for detailed view
             const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto';
             modal.onclick = (e) => {
                 if (e.target === modal) modal.remove();
             };
@@ -5497,7 +5497,8 @@
             ];
 
             modal.innerHTML = `
-                <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="min-h-screen flex items-center justify-center p-4">
+                    <div class="bg-white rounded-lg max-w-4xl w-full my-8 shadow-2xl">
                     <div class="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-6">
                         <div class="flex justify-between items-start">
                             <div>
@@ -5554,6 +5555,7 @@
                                 </div>
                             `).join('')}
                         </div>
+                    </div>
                     </div>
                 </div>
             `;
