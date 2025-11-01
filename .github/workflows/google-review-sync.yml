@@ -2,7 +2,7 @@ name: Google Review Daily Sync
 
 on:
   schedule:
-    - cron: '0 1 * * *'  # Daily at 1:00 AM UTC (8:00 AM Jakarta)
+    - cron: '0 18 * * *'  # Daily at 6:00 PM UTC (1:00 AM Jakarta)
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
