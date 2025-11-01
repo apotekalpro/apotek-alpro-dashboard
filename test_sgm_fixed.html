@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGM Dashboard Test - Fixed</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 14px; }
+        .error { background: #fee; color: red; border-left: 4px solid red; }
+        .success { background: #efe; color: green; border-left: 4px solid green; }
+        .info { background: #e3f2fd; color: #1976d2; border-left: 4px solid #1976d2; }
+        .store-card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: #fafafa; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge-latest { background: #4caf50; color: white; }
+        .badge-historical { background: #9e9e9e; color: white; }
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 30px; }
+        button { background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #4f46e5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏪 SGM Grand Opening Dashboard Test - Fixed Version</h1>
+        <p>This tests the corrected Indonesian date parsing logic</p>
+        <button onclick="testFetch()">🔄 Test Data Fetch</button>
+        <div id="logs"></div>
+        <div id="results"></div>
+    </div>
+    
+    <script>
+        function log(message, type = 'log') {
+            const logsDiv = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log ${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(logEntry);
+            console.log(message);
+        }
+        
+        function parseDate(dateStr) {
+            const monthMap = {
+                'januari': 0, 'january': 0,
+                'februari': 1, 'february': 1,
+                'maret': 2, 'march': 2,
+                'april': 3,
+                'mei': 4, 'may': 4,
+                'juni': 5, 'june': 5,
+                'juli': 6, 'july': 6,
+                'agustus': 7, 'august': 7,
+                'september': 8,
+                'oktober': 9, 'october': 9,
+                'november': 10,
+                'desember': 11, 'december': 11
+            };
+            
+            const monthNameMatch = dateStr.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/i);
+            if (monthNameMatch) {
+                const day = parseInt(monthNameMatch[1]);
+                const monthName = monthNameMatch[2].toLowerCase();
+                const year = parseInt(monthNameMatch[3]);
+                const month = monthMap[monthName];
+                
+                if (month !== undefined) {
+                    return new Date(year, month, day);
+                }
+            }
+            
+            return new Date(dateStr);
+        }
+        
+        async function testFetch() {
+            document.getElementById('logs').innerHTML = '';
+            document.getElementById('results').innerHTML = '';
+            
+            log('🚀 Starting data fetch test with Indonesian date parsing...', 'info');
+            
+            try {
+                const sheetId = '1ucXoo9EbOHyVNyztS42nryDM405nl-208CZiLwD_cOc';
+                const sheetName = 'STORE';
+                const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const text = await response.text();
+                const jsonData = JSON.parse(text.substring(47).slice(0, -2));
+                const rows = jsonData.table.rows;
+                
+                log(`✅ Fetched ${rows.length} rows from Google Sheets`, 'success');
+                
+                const stores = rows.map((row) => {
+                    const cells = row.c || [];
+                    const getCellValue = (idx) => cells[idx]?.v || null;
+                    
+                    return {
+                        outletName: getCellValue(1) || '',
+                        am: getCellValue(2) || '',
+                        lokasi: getCellValue(3) || '',
+                        goPeriod: getCellValue(4) || '',
+                        totalTarget: parseFloat(getCellValue(5)) || 0,
+                        totalAchievement: parseFloat(getCellValue(27)) || 0,
+                        totalPercentage: (parseFloat(getCellValue(28)) || 0) * 100
+                    };
+                }).filter(s => s.outletName);
+                
+                log(`✅ Parsed ${stores.length} valid stores`, 'success');
+                
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                log(`📅 Today: ${today.toLocaleDateString('id-ID')} (${today.toISOString().split('T')[0]})`, 'info');
+                
+                let latestGO = [];
+                let historicalGO = [];
+                
+                stores.forEach(store => {
+                    if (store.goPeriod) {
+                        const periodMatch = store.goPeriod.match(/(\d{1,2})\s*-\s*(\d{1,2})\s+(\w+)\s+(\d{4})/i);
+                        if (periodMatch) {
+                            const endDay = periodMatch[2];
+                            const month = periodMatch[3];
+                            const year = periodMatch[4];
+                            const endDateStr = `${endDay} ${month} ${year}`;
+                            const endDate = parseDate(endDateStr);
+                            
+                            if (endDate >= today) {
+                                latestGO.push({ ...store, endDate, endDateStr });
+                            } else {
+                                historicalGO.push({ ...store, endDate, endDateStr });
+                            }
+                        }
+                    }
+                });
+                
+                log(`🔥 Latest GO stores: ${latestGO.length}`, latestGO.length > 0 ? 'success' : 'info');
+                log(`📚 Historical GO stores: ${historicalGO.length}`, 'info');
+                
+                const resultsDiv = document.getElementById('results');
+                
+                if (latestGO.length > 0) {
+                    resultsDiv.innerHTML += '<h2>🔥 Latest GO Performance</h2>';
+                    latestGO.slice(0, 5).forEach(store => {
+                        resultsDiv.innerHTML += `
+                            <div class="store-card">
+                                <span class="badge badge-latest">ACTIVE</span>
+                                <h3>${store.outletName}</h3>
+                                <p><strong>Period:</strong> ${store.goPeriod}</p>
+                                <p><strong>End Date:</strong> ${store.endDate.toLocaleDateString('id-ID')} (${store.endDateStr})</p>
+                                <p><strong>AM:</strong> ${store.am} | <strong>Location:</strong> ${store.lokasi}</p>
+                                <p><strong>Achievement:</strong> ${store.totalPercentage.toFixed(2)}% (Rp ${store.totalAchievement.toLocaleString('id-ID')} / Rp ${store.totalTarget.toLocaleString('id-ID')})</p>
+                            </div>
+                        `;
+                    });
+                }
+                
+                if (historicalGO.length > 0) {
+                    resultsDiv.innerHTML += '<h2>📚 Historical GO Performance</h2>';
+                    historicalGO.slice(0, 5).forEach(store => {
+                        resultsDiv.innerHTML += `
+                            <div class="store-card">
+                                <span class="badge badge-historical">COMPLETED</span>
+                                <h3>${store.outletName}</h3>
+                                <p><strong>Period:</strong> ${store.goPeriod}</p>
+                                <p><strong>End Date:</strong> ${store.endDate.toLocaleDateString('id-ID')} (${store.endDateStr})</p>
+                                <p><strong>AM:</strong> ${store.am} | <strong>Location:</strong> ${store.lokasi}</p>
+                                <p><strong>Achievement:</strong> ${store.totalPercentage.toFixed(2)}% (Rp ${store.totalAchievement.toLocaleString('id-ID')} / Rp ${store.totalTarget.toLocaleString('id-ID')})</p>
+                            </div>
+                        `;
+                    });
+                }
+                
+                log('✅ Test completed successfully!', 'success');
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+        
+        window.addEventListener('load', testFetch);
+    </script>
+</body>
+</html>

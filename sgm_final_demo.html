@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGM Dashboard - Final with GROUP Column</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="bg-white rounded-lg shadow-2xl p-8 mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                <i class="fas fa-store-alt text-purple-600 mr-3"></i>
+                SGM Dashboard - With GROUP Column Support
+            </h1>
+            <p class="text-gray-600 mb-6">Now using Column A (GROUP) for grouping, with all columns shifted right by 1</p>
+            
+            <button onclick="loadDashboard()" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold">
+                <i class="fas fa-sync-alt mr-2"></i>
+                Load Dashboard Data
+            </button>
+        </div>
+        
+        <div id="logs" class="mb-4"></div>
+        <div id="dashboardContainer"></div>
+    </div>
+    
+    <script>
+        function log(msg) {
+            const logs = document.getElementById('logs');
+            const p = document.createElement('p');
+            p.className = 'text-white bg-black bg-opacity-50 p-2 rounded mb-1 text-sm';
+            p.textContent = msg;
+            logs.appendChild(p);
+            console.log(msg);
+        }
+        
+        function formatCurrency(amount) {
+            if (!amount && amount !== 0) return '0';
+            return new Intl.NumberFormat('id-ID').format(Math.round(amount));
+        }
+        
+        function parseDate(dateStr) {
+            const monthMap = {
+                'januari': 0, 'january': 0, 'februari': 1, 'february': 1,
+                'maret': 2, 'march': 2, 'april': 3, 'mei': 4, 'may': 4,
+                'juni': 5, 'june': 5, 'juli': 6, 'july': 6,
+                'agustus': 7, 'august': 7, 'september': 8,
+                'oktober': 9, 'october': 9, 'november': 10,
+                'desember': 11, 'december': 11
+            };
+            
+            const monthNameMatch = dateStr.match(/(\d{1,2})\s+(\w+)\s+(\d{4})/i);
+            if (monthNameMatch) {
+                const day = parseInt(monthNameMatch[1]);
+                const monthName = monthNameMatch[2].toLowerCase();
+                const year = parseInt(monthNameMatch[3]);
+                const month = monthMap[monthName];
+                if (month !== undefined) return new Date(year, month, day);
+            }
+            return new Date(dateStr);
+        }
+        
+        function parseGroupDate(groupStr) {
+            if (!groupStr) return new Date(0);
+            const dateMatch = groupStr.match(/Date\((\d+),(\d+),(\d+)\)/);
+            if (dateMatch) {
+                return new Date(parseInt(dateMatch[1]), parseInt(dateMatch[2]), parseInt(dateMatch[3]));
+            }
+            return new Date(groupStr);
+        }
+        
+        async function loadDashboard() {
+            const container = document.getElementById('dashboardContainer');
+            container.innerHTML = '<div class="text-center py-12 bg-white rounded-lg"><i class="fas fa-spinner fa-spin text-4xl text-purple-600"></i></div>';
+            document.getElementById('logs').innerHTML = '';
+            
+            try {
+                const url = 'https://docs.google.com/spreadsheets/d/1ucXoo9EbOHyVNyztS42nryDM405nl-208CZiLwD_cOc/gviz/tq?tqx=out:json&sheet=STORE';
+                
+                log('Fetching data...');
+                const response = await fetch(url);
+                const text = await response.text();
+                const jsonData = JSON.parse(text.substring(47).slice(0, -2));
+                const rows = jsonData.table.rows;
+                log(`✅ Fetched ${rows.length} rows`);
+                
+                const stores = rows.map((row) => {
+                    const cells = row.c || [];
+                    const getCellValue = (idx) => cells[idx]?.v || null;
+                    
+                    let groupValue = getCellValue(0);
+                    let groupLabel = '';
+                    if (groupValue) {
+                        if (typeof groupValue === 'string') {
+                            groupLabel = groupValue;
+                        } else {
+                            groupLabel = String(groupValue);
+                        }
+                    }
+                    
+                    return {
+                        group: groupLabel,
+                        outletName: getCellValue(2) || '',
+                        am: getCellValue(3) || '',
+                        lokasi: getCellValue(4) || '',
+                        goPeriod: getCellValue(5) || '',
+                        totalTarget: parseFloat(getCellValue(6)) || 0,
+                        totalAchievement: parseFloat(getCellValue(28)) || 0,
+                        totalPercentage: (parseFloat(getCellValue(29)) || 0) * 100
+                    };
+                }).filter(s => s.outletName);
+                
+                log(`✅ Parsed ${stores.length} stores`);
+                log(`Sample: ${stores[0].outletName}, Group: ${stores[0].group}`);
+                
+                // Group by GROUP column
+                const grouped = {};
+                stores.forEach(store => {
+                    const key = store.group || store.goPeriod || 'Unknown';
+                    if (!grouped[key]) grouped[key] = [];
+                    grouped[key].push(store);
+                });
+                
+                log(`✅ Created ${Object.keys(grouped).length} groups`);
+                
+                // Sort groups by date (newest first)
+                const sortedGroups = Object.keys(grouped).sort((a, b) => {
+                    return parseGroupDate(b) - parseGroupDate(a);
+                });
+                
+                log(`Group order: ${sortedGroups.slice(0, 3).join(', ')}...`);
+                
+                // Calculate totals
+                const totalOutlets = stores.length;
+                const totalTarget = stores.reduce((sum, s) => sum + s.totalTarget, 0);
+                const totalAchievement = stores.reduce((sum, s) => sum + s.totalAchievement, 0);
+                const totalPercentage = totalTarget > 0 ? (totalAchievement / totalTarget * 100) : 0;
+                
+                log(`📊 Totals: ${totalOutlets} outlets, Rp ${formatCurrency(totalTarget)} target, ${totalPercentage.toFixed(1)}% achievement`);
+                
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                let html = `
+                    <div class="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-lg p-8 mb-6 text-white shadow-2xl">
+                        <h2 class="text-2xl font-bold mb-6"><i class="fas fa-chart-line mr-3"></i>Overall Grand Opening Performance</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="bg-white bg-opacity-20 rounded-lg p-6">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm font-medium opacity-90">Total Outlets</span>
+                                    <i class="fas fa-store text-2xl"></i>
+                                </div>
+                                <div class="text-4xl font-bold">${totalOutlets}</div>
+                            </div>
+                            <div class="bg-white bg-opacity-20 rounded-lg p-6">
+                                <span class="text-sm font-medium opacity-90">Total Target</span>
+                                <div class="text-2xl font-bold">Rp ${formatCurrency(totalTarget)}</div>
+                            </div>
+                            <div class="bg-white bg-opacity-20 rounded-lg p-6">
+                                <span class="text-sm font-medium opacity-90">Total Achievement</span>
+                                <div class="text-2xl font-bold">Rp ${formatCurrency(totalAchievement)}</div>
+                            </div>
+                            <div class="bg-white bg-opacity-20 rounded-lg p-6">
+                                <span class="text-sm font-medium opacity-90">Achievement Rate</span>
+                                <div class="text-4xl font-bold">${totalPercentage.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                sortedGroups.forEach(groupKey => {
+                    const batch = grouped[groupKey];
+                    const displayLabel = batch[0].goPeriod || groupKey;
+                    const batchTarget = batch.reduce((sum, s) => sum + s.totalTarget, 0);
+                    const batchAchievement = batch.reduce((sum, s) => sum + s.totalAchievement, 0);
+                    const batchPercentage = batchTarget > 0 ? (batchAchievement / batchTarget * 100) : 0;
+                    
+                    // Check if active
+                    let isActive = false;
+                    if (batch[0].goPeriod) {
+                        const periodMatch = batch[0].goPeriod.match(/(\d{1,2})\s*-\s*(\d{1,2})\s+(\w+)\s+(\d{4})/i);
+                        if (periodMatch) {
+                            const endDate = parseDate(`${periodMatch[2]} ${periodMatch[3]} ${periodMatch[4]}`);
+                            isActive = endDate >= today;
+                        }
+                    }
+                    
+                    const cardColor = isActive ? 'from-green-600 to-emerald-700' : 'from-gray-600 to-gray-700';
+                    const badge = isActive ? 
+                        '<span class="bg-white bg-opacity-30 px-3 py-1 rounded-full text-xs font-bold">🔥 ACTIVE</span>' : 
+                        '<span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-xs font-bold">✓ COMPLETED</span>';
+                    
+                    html += `
+                        <div class="bg-white rounded-lg shadow-xl overflow-hidden mb-6">
+                            <div class="bg-gradient-to-r ${cardColor} text-white p-6">
+                                <div class="flex justify-between items-start mb-4">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-3 mb-2">
+                                            <h3 class="text-2xl font-bold">${displayLabel}</h3>
+                                            ${badge}
+                                        </div>
+                                        <p class="text-sm opacity-90">${batch.length} Outlets | Group: ${groupKey}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-4xl font-bold">${batchPercentage.toFixed(1)}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-4 bg-gray-50">
+                                <p class="text-sm text-gray-600">Target: Rp ${formatCurrency(batchTarget)} | Achievement: Rp ${formatCurrency(batchAchievement)}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                log('✅ Dashboard rendered successfully!');
+                
+            } catch (error) {
+                container.innerHTML = `<div class="bg-red-50 border border-red-300 rounded-lg p-6 text-center"><p class="text-red-800">${error.message}</p></div>`;
+                log(`❌ Error: ${error.message}`);
+            }
+        }
+        
+        window.addEventListener('load', loadDashboard);
+    </script>
+</body>
+</html>
