@@ -1290,6 +1290,11 @@
                                 <i class="fas fa-bullseye mr-2"></i>
                                 Phoenix OKR
                             </button>
+                            <button onclick="showStrategySubtab('psh-bull-eye')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-crosshairs mr-2"></i>
+                                PSH Bull Eye
+                            </button>
                             <button onclick="showStrategySubtab('google-review')" 
                                     class="subtab-button px-4 py-2">
                                 <i class="fas fa-star mr-2"></i>
@@ -1331,6 +1336,155 @@
                             <div class="iframe-container">
                                 <iframe data-src="https://apotekalpro.github.io/Strategy-Phoenix/okr-login.html" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
                                         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- PSH Bull Eye Subtab -->
+                        <div id="pshBullEyeSubtab" class="strategy-subtab hidden">
+                            <div class="mb-4">
+                                <div class="mb-4">
+                                    <h3 class="text-xl font-semibold text-gray-800">PSH Bull Eye - Project Progress Tracker</h3>
+                                    <p class="text-gray-600">Track outlet performance from baseline through project months with real-time forecasts</p>
+                                </div>
+                                
+                                <!-- Loading State -->
+                                <div id="pshDataLoading" class="text-center py-8 hidden">
+                                    <div class="inline-flex items-center">
+                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+                                        <span class="text-gray-700">Loading PSH project data...</span>
+                                    </div>
+                                </div>
+
+                                <!-- Error State -->
+                                <div id="pshDataError" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 hidden">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                                        <span class="text-red-700" id="pshErrorMessage">Error loading PSH project data.</span>
+                                    </div>
+                                </div>
+
+                                <!-- Summary Cards -->
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" id="pshSummaryCards">
+                                    <div class="content-card p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-sm text-gray-600">Total Outlets</p>
+                                                <p class="text-2xl font-bold text-gray-800" id="pshTotalOutlets">0</p>
+                                            </div>
+                                            <i class="fas fa-store text-3xl text-blue-600 opacity-50"></i>
+                                        </div>
+                                    </div>
+                                    <div class="content-card p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-sm text-gray-600">Total Baseline Revenue</p>
+                                                <p class="text-lg font-bold text-gray-800" id="pshBaselineRevenue">Rp 0</p>
+                                            </div>
+                                            <i class="fas fa-chart-bar text-3xl text-green-600 opacity-50"></i>
+                                        </div>
+                                    </div>
+                                    <div class="content-card p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-sm text-gray-600">Current Forecast</p>
+                                                <p class="text-lg font-bold text-green-600" id="pshCurrentForecast">Rp 0</p>
+                                            </div>
+                                            <i class="fas fa-chart-line text-3xl text-purple-600 opacity-50"></i>
+                                        </div>
+                                    </div>
+                                    <div class="content-card p-4">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="text-sm text-gray-600">Overall Growth</p>
+                                                <p class="text-2xl font-bold text-blue-600" id="pshOverallGrowth">0%</p>
+                                            </div>
+                                            <i class="fas fa-trending-up text-3xl text-blue-600 opacity-50"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Filters and Search -->
+                                <div class="content-card p-4 mb-4">
+                                    <div class="flex flex-wrap gap-4 items-center">
+                                        <div class="flex-1 min-w-64">
+                                            <input type="text" id="pshSearchOutlet" 
+                                                   onkeyup="searchPSHOutlets()"
+                                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                                   placeholder="🔍 Search by outlet code or name...">
+                                        </div>
+                                        <div>
+                                            <button onclick="refreshPSHData()" 
+                                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                                <i class="fas fa-sync-alt mr-2"></i>
+                                                Refresh Data
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Progress Table -->
+                                <div class="content-card overflow-hidden">
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50">
+                                                        Outlet
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-100">
+                                                        Baseline<br><span class="text-xs font-normal">Revenue</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-100">
+                                                        Baseline<br><span class="text-xs font-normal">Trano</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-100">
+                                                        Baseline<br><span class="text-xs font-normal">PSH</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-100">
+                                                        Month 1<br><span class="text-xs font-normal">Revenue</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-100">
+                                                        Month 1<br><span class="text-xs font-normal">Trano</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-100">
+                                                        Month 1<br><span class="text-xs font-normal">PSH</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-100">
+                                                        Month 2<br><span class="text-xs font-normal">Revenue</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-100">
+                                                        Month 2<br><span class="text-xs font-normal">Trano</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-100">
+                                                        Month 2<br><span class="text-xs font-normal">PSH</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-orange-100">
+                                                        Month 3<br><span class="text-xs font-normal">Revenue</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-orange-100">
+                                                        Month 3<br><span class="text-xs font-normal">Trano</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-orange-100">
+                                                        Month 3<br><span class="text-xs font-normal">PSH</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-100">
+                                                        Current Forecast<br><span class="text-xs font-normal">This Month</span>
+                                                    </th>
+                                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-100">
+                                                        Growth vs Baseline
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="pshTableBody" class="bg-white divide-y divide-gray-200">
+                                                <tr>
+                                                    <td colspan="15" class="px-6 py-4 text-center text-gray-500">
+                                                        Loading outlet data...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -4998,6 +5152,7 @@
             const subtabMap = {
                 'dashboard': 'strategyDashboardSubtab',
                 'phoenix-okr': 'phoenixOkrSubtab',
+                'psh-bull-eye': 'pshBullEyeSubtab',
                 'google-review': 'googleReviewSubtab'
             };
             
@@ -5012,6 +5167,11 @@
             // If opening google review tab, load stored outlets
             if (subtabId === 'google-review') {
                 loadOutlets();
+            }
+            
+            // If opening PSH Bull Eye tab, load PSH data
+            if (subtabId === 'psh-bull-eye') {
+                loadPSHData();
             }
         }
 
@@ -10978,6 +11138,406 @@ Ready for deployment! 🚀
             };
             
             console.log('🔒 Security: Console log filtering enabled (production mode)');
+        }
+
+        // ============================================
+        // PSH Bull Eye Functions
+        // ============================================
+        
+        let pshProjectData = [];
+        let pshAMForecastData = [];
+        let pshFilteredData = [];
+
+        async function loadPSHData() {
+            console.log('🎯 Loading PSH Bull Eye data...');
+            
+            try {
+                document.getElementById('pshDataLoading').classList.remove('hidden');
+                document.getElementById('pshDataError').classList.add('hidden');
+                
+                // Fetch both PSH Project data and AM Performance Tracker data in parallel
+                const [pshData, amData] = await Promise.all([
+                    fetchPSHProjectData(),
+                    fetchAMForecastData()
+                ]);
+                
+                pshProjectData = pshData;
+                pshAMForecastData = amData;
+                pshFilteredData = [...pshProjectData];
+                
+                console.log('✅ PSH Data loaded:', pshProjectData.length, 'outlets');
+                console.log('✅ AM Forecast data loaded:', pshAMForecastData.length, 'outlets');
+                
+                updatePSHSummaryCards();
+                displayPSHTable();
+                
+                document.getElementById('pshDataLoading').classList.add('hidden');
+                
+            } catch (error) {
+                console.error('❌ Error loading PSH data:', error);
+                document.getElementById('pshDataLoading').classList.add('hidden');
+                document.getElementById('pshDataError').classList.remove('hidden');
+                document.getElementById('pshErrorMessage').textContent = 'Error loading data: ' + error.message;
+            }
+        }
+
+        async function fetchPSHProjectData() {
+            console.log('📊 Fetching PSH Project data from Google Sheets...');
+            
+            const sheetId = '1oU2uCC1WokxCFZAW8pKeb4osZC-ktIwB-TvlyvpRZ6s';
+            const gid = '352474780'; // PSH Project sheet GID
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+            
+            const response = await fetch(csvUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch PSH data: ${response.status}`);
+            }
+            
+            const csvData = await response.text();
+            return parsePSHCSVData(csvData);
+        }
+
+        function parsePSHCSVData(csvData) {
+            console.log('🔍 Parsing PSH CSV data...');
+            const lines = csvData.split('\n');
+            const data = [];
+            
+            // Start from row 4 (index 3) as per the sheet structure
+            // Row 1: Summary, Row 2: Headers, Row 3: Column headers, Row 4+: Data
+            for (let i = 3; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const values = parseCSVLine(line);
+                
+                if (values.length >= 10) {
+                    const outletCode = values[0]?.trim();
+                    const outletName = values[1]?.trim();
+                    
+                    // Skip if no outlet code
+                    if (!outletCode) continue;
+                    
+                    // Parse baseline data (columns H, I, J = indices 7, 8, 9)
+                    const baselineRevenue = parseFloat(values[7]?.replace(/,/g, '')) || 0;
+                    const baselineTrano = parseInt(values[8]?.replace(/,/g, '')) || 0;
+                    const baselinePSH = parseFloat(values[9]?.replace(/,/g, '')) || 0;
+                    
+                    // Parse Month 1 data (columns K, L, M = indices 10, 11, 12)
+                    const month1Revenue = parseFloat(values[10]?.replace(/,/g, '')) || 0;
+                    const month1Trano = parseInt(values[11]?.replace(/,/g, '')) || 0;
+                    const month1PSH = parseFloat(values[12]?.replace(/,/g, '')) || 0;
+                    
+                    // Parse Month 2 data (columns N, O, P = indices 13, 14, 15)
+                    const month2Revenue = parseFloat(values[13]?.replace(/,/g, '')) || 0;
+                    const month2Trano = parseInt(values[14]?.replace(/,/g, '')) || 0;
+                    const month2PSH = parseFloat(values[15]?.replace(/,/g, '')) || 0;
+                    
+                    // Parse Month 3 data (columns Q, R, S = indices 16, 17, 18)
+                    const month3Revenue = parseFloat(values[16]?.replace(/,/g, '')) || 0;
+                    const month3Trano = parseInt(values[17]?.replace(/,/g, '')) || 0;
+                    const month3PSH = parseFloat(values[18]?.replace(/,/g, '')) || 0;
+                    
+                    const record = {
+                        outletCode,
+                        outletName: outletName || outletCode,
+                        baseline: {
+                            revenue: baselineRevenue,
+                            trano: baselineTrano,
+                            psh: baselinePSH
+                        },
+                        month1: {
+                            revenue: month1Revenue,
+                            trano: month1Trano,
+                            psh: month1PSH
+                        },
+                        month2: {
+                            revenue: month2Revenue,
+                            trano: month2Trano,
+                            psh: month2PSH
+                        },
+                        month3: {
+                            revenue: month3Revenue,
+                            trano: month3Trano,
+                            psh: month3PSH
+                        },
+                        currentForecast: 0 // Will be filled from AM data
+                    };
+                    
+                    data.push(record);
+                    
+                    if (data.length <= 3) {
+                        console.log(`✅ Parsed PSH record ${data.length}:`, record);
+                    }
+                }
+            }
+            
+            console.log(`📈 Successfully parsed ${data.length} PSH records`);
+            return data;
+        }
+
+        async function fetchAMForecastData() {
+            console.log('📊 Fetching AM Performance data for current forecast...');
+            
+            const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
+            const gid = '353860854'; // AM Daily Progress sheet GID
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+            
+            const response = await fetch(csvUrl);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch AM data: ${response.status}`);
+            }
+            
+            const csvData = await response.text();
+            return parseAMForecastCSVData(csvData);
+        }
+
+        function parseAMForecastCSVData(csvData) {
+            console.log('🔍 Parsing AM Forecast CSV data...');
+            const lines = csvData.split('\n');
+            const data = [];
+            
+            // Skip header rows (start from row 3, index 2)
+            for (let i = 2; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                const values = parseCSVLine(line);
+                
+                if (values.length >= 9) {
+                    const outletCode = values[0]?.trim();
+                    const forecastSalesEndOfMonth = parseFloat(values[8]?.replace(/,/g, '')) || 0;
+                    
+                    if (!outletCode) continue;
+                    
+                    data.push({
+                        outletCode,
+                        forecast: forecastSalesEndOfMonth
+                    });
+                }
+            }
+            
+            console.log(`📈 Successfully parsed ${data.length} AM forecast records`);
+            return data;
+        }
+
+        function updatePSHSummaryCards() {
+            if (!pshProjectData || pshProjectData.length === 0) {
+                return;
+            }
+            
+            // Merge current forecast data into PSH data
+            pshProjectData.forEach(outlet => {
+                const forecastData = pshAMForecastData.find(am => am.outletCode === outlet.outletCode);
+                if (forecastData) {
+                    outlet.currentForecast = forecastData.forecast;
+                }
+            });
+            
+            const totalOutlets = pshProjectData.length;
+            const totalBaseline = pshProjectData.reduce((sum, o) => sum + o.baseline.revenue, 0);
+            const totalForecast = pshProjectData.reduce((sum, o) => sum + o.currentForecast, 0);
+            const overallGrowth = totalBaseline > 0 ? ((totalForecast - totalBaseline) / totalBaseline * 100) : 0;
+            
+            document.getElementById('pshTotalOutlets').textContent = totalOutlets;
+            document.getElementById('pshBaselineRevenue').textContent = formatCurrency(totalBaseline);
+            document.getElementById('pshCurrentForecast').textContent = formatCurrency(totalForecast);
+            
+            const growthElement = document.getElementById('pshOverallGrowth');
+            growthElement.textContent = `${overallGrowth >= 0 ? '+' : ''}${overallGrowth.toFixed(1)}%`;
+            growthElement.className = `text-2xl font-bold ${overallGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`;
+            
+            console.log('📊 Updated PSH summary cards');
+        }
+
+        function displayPSHTable() {
+            const tableBody = document.getElementById('pshTableBody');
+            
+            if (!pshFilteredData || pshFilteredData.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="15" class="px-6 py-4 text-center text-gray-500">
+                            No outlet data available
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            pshFilteredData.forEach((outlet, index) => {
+                const currentForecast = outlet.currentForecast || 0;
+                const baselineRevenue = outlet.baseline.revenue || 0;
+                const growthVsBaseline = baselineRevenue > 0 
+                    ? ((currentForecast - baselineRevenue) / baselineRevenue * 100) 
+                    : 0;
+                
+                // Determine which is the latest month with data
+                const latestMonth = outlet.month3.revenue > 0 ? 3 : 
+                                   outlet.month2.revenue > 0 ? 2 : 
+                                   outlet.month1.revenue > 0 ? 1 : 0;
+                
+                const rowClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                
+                html += `
+                    <tr class="${rowClass} hover:bg-blue-50 transition-colors">
+                        <td class="px-4 py-3 sticky left-0 ${rowClass}">
+                            <div class="font-semibold text-gray-800">${outlet.outletCode}</div>
+                            <div class="text-xs text-gray-600">${outlet.outletName}</div>
+                        </td>
+                        
+                        <!-- Baseline -->
+                        <td class="px-4 py-3 text-center bg-blue-50">
+                            <div class="font-semibold text-gray-800">${formatCurrencyShort(outlet.baseline.revenue)}</div>
+                        </td>
+                        <td class="px-4 py-3 text-center bg-blue-50">
+                            <div class="text-gray-700">${outlet.baseline.trano.toLocaleString()}</div>
+                        </td>
+                        <td class="px-4 py-3 text-center bg-blue-50">
+                            <div class="text-gray-700">${formatNumber(outlet.baseline.psh)}</div>
+                        </td>
+                        
+                        <!-- Month 1 -->
+                        <td class="px-4 py-3 text-center ${latestMonth >= 1 ? 'bg-green-50' : ''}">
+                            ${outlet.month1.revenue > 0 ? `
+                                <div class="font-semibold text-gray-800">${formatCurrencyShort(outlet.month1.revenue)}</div>
+                                <div class="text-xs ${getGrowthColorClass(outlet.month1.revenue, outlet.baseline.revenue)}">
+                                    ${formatGrowth(outlet.month1.revenue, outlet.baseline.revenue)}
+                                </div>
+                            ` : '<span class="text-gray-400">-</span>'}
+                        </td>
+                        <td class="px-4 py-3 text-center ${latestMonth >= 1 ? 'bg-green-50' : ''}">
+                            ${outlet.month1.trano > 0 ? `
+                                <div class="text-gray-700">${outlet.month1.trano.toLocaleString()}</div>
+                            ` : '<span class="text-gray-400">-</span>'}
+                        </td>
+                        <td class="px-4 py-3 text-center ${latestMonth >= 1 ? 'bg-green-50' : ''}">
+                            ${outlet.month1.psh !== 0 ? `
+                                <div class="text-gray-700">${formatNumber(outlet.month1.psh)}</div>
+                            ` : '<span class="text-gray-400">-</span>'}
+                        </td>
+                        
+                        <!-- Month 2 -->
+                        <td class="px-4 py-3 text-center ${latestMonth >= 2 ? 'bg-yellow-50' : ''}">
+                            ${outlet.month2.revenue > 0 ? `
+                                <div class="font-semibold text-gray-800">${formatCurrencyShort(outlet.month2.revenue)}</div>
+                                <div class="text-xs ${getGrowthColorClass(outlet.month2.revenue, outlet.baseline.revenue)}">
+                                    ${formatGrowth(outlet.month2.revenue, outlet.baseline.revenue)}
+                                </div>
+                            ` : '<span class="text-gray-400">-</span>'}
+                        </td>
+                        <td class="px-4 py-3 text-center ${latestMonth >= 2 ? 'bg-yellow-50' : ''}">
+                            ${outlet.month2.trano > 0 ? `
+                                <div class="text-gray-700">${outlet.month2.trano.toLocaleString()}</div>
+                            ` : '<span class="text-gray-400">-</span>'}
+                        </td>
+                        <td class="px-4 py-3 text-center ${latestMonth >= 2 ? 'bg-yellow-50' : ''}">
+                            ${outlet.month2.psh !== 0 ? `
+                                <div class="text-gray-700">${formatNumber(outlet.month2.psh)}</div>
+                            ` : '<span class="text-gray-400">-</span>'}
+                        </td>
+                        
+                        <!-- Month 3 -->
+                        <td class="px-4 py-3 text-center ${latestMonth >= 3 ? 'bg-orange-50' : ''}">
+                            ${outlet.month3.revenue > 0 ? `
+                                <div class="font-semibold text-gray-800">${formatCurrencyShort(outlet.month3.revenue)}</div>
+                                <div class="text-xs ${getGrowthColorClass(outlet.month3.revenue, outlet.baseline.revenue)}">
+                                    ${formatGrowth(outlet.month3.revenue, outlet.baseline.revenue)}
+                                </div>
+                            ` : '<span class="text-gray-400">-</span>'}
+                        </td>
+                        <td class="px-4 py-3 text-center ${latestMonth >= 3 ? 'bg-orange-50' : ''}">
+                            ${outlet.month3.trano > 0 ? `
+                                <div class="text-gray-700">${outlet.month3.trano.toLocaleString()}</div>
+                            ` : '<span class="text-gray-400">-</span>'}
+                        </td>
+                        <td class="px-4 py-3 text-center ${latestMonth >= 3 ? 'bg-orange-50' : ''}">
+                            ${outlet.month3.psh !== 0 ? `
+                                <div class="text-gray-700">${formatNumber(outlet.month3.psh)}</div>
+                            ` : '<span class="text-gray-400">-</span>'}
+                        </td>
+                        
+                        <!-- Current Forecast -->
+                        <td class="px-4 py-3 text-center bg-purple-50">
+                            ${currentForecast > 0 ? `
+                                <div class="font-bold text-purple-700">${formatCurrencyShort(currentForecast)}</div>
+                            ` : '<span class="text-gray-400">N/A</span>'}
+                        </td>
+                        <td class="px-4 py-3 text-center bg-purple-50">
+                            ${currentForecast > 0 ? `
+                                <div class="font-bold ${growthVsBaseline >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                    ${growthVsBaseline >= 0 ? '+' : ''}${growthVsBaseline.toFixed(1)}%
+                                </div>
+                            ` : '<span class="text-gray-400">-</span>'}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = html;
+            console.log('✅ PSH table displayed with', pshFilteredData.length, 'outlets');
+        }
+
+        function searchPSHOutlets() {
+            const searchTerm = document.getElementById('pshSearchOutlet').value.toLowerCase();
+            
+            if (!searchTerm) {
+                pshFilteredData = [...pshProjectData];
+            } else {
+                pshFilteredData = pshProjectData.filter(outlet => 
+                    outlet.outletCode.toLowerCase().includes(searchTerm) ||
+                    outlet.outletName.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            displayPSHTable();
+        }
+
+        function refreshPSHData() {
+            loadPSHData();
+        }
+
+        // Helper function to format growth percentage
+        function formatGrowth(current, baseline) {
+            if (baseline === 0) return '-';
+            const growth = ((current - baseline) / baseline * 100);
+            return `${growth >= 0 ? '+' : ''}${growth.toFixed(1)}%`;
+        }
+
+        // Helper function to get growth color class
+        function getGrowthColorClass(current, baseline) {
+            if (baseline === 0) return 'text-gray-500';
+            const growth = ((current - baseline) / baseline * 100);
+            return growth >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold';
+        }
+
+        // Helper function to format currency in short form
+        function formatCurrencyShort(value) {
+            if (value === 0) return 'Rp 0';
+            if (value >= 1000000) {
+                return `Rp ${(value / 1000000).toFixed(1)}M`;
+            }
+            return `Rp ${(value / 1000).toFixed(0)}K`;
+        }
+
+        // Helper function to format currency
+        function formatCurrency(value) {
+            if (value === 0) return 'Rp 0';
+            if (value >= 1000000000) {
+                return `Rp ${(value / 1000000000).toFixed(2)}B`;
+            }
+            if (value >= 1000000) {
+                return `Rp ${(value / 1000000).toFixed(1)}M`;
+            }
+            return `Rp ${(value / 1000).toFixed(0)}K`;
+        }
+
+        // Helper function to format numbers
+        function formatNumber(value) {
+            if (value === 0) return '0';
+            return value.toLocaleString();
         }
 
     </script>
