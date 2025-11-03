@@ -5032,6 +5032,15 @@
                 showSGMSubtab('grand-opening-dashboard');
             }
             
+            // Initialize Strategy tab if opened - auto-load PSH Bull Eye data
+            if (tabId === 'strategy') {
+                console.log('🎯 Strategy tab opened, auto-loading PSH Bull Eye data...');
+                // PSH Bull Eye is the default subtab, so load its data automatically
+                if (!pshProjectData || pshProjectData.length === 0) {
+                    loadPSHData();
+                }
+            }
+            
             // Add active class to selected tab
             event?.target?.classList.add('active');
             
