@@ -11395,8 +11395,8 @@ Ready for deployment! 🚀
                         <td class="px-4 py-3 text-center ${latestMonth >= 1 ? 'bg-green-50' : ''}">
                             ${outlet.month1.psh !== 0 ? `
                                 <div class="text-gray-700">${formatNumber(outlet.month1.psh)}</div>
-                                <div class="text-xs ${getGrowthColorClass(outlet.month1.psh, outlet.baseline.psh)}">
-                                    ${formatGrowth(outlet.month1.psh, outlet.baseline.psh)}
+                                <div class="text-xs ${getPSHGrowthColorClass(outlet.month1.psh, outlet.baseline.psh)}">
+                                    ${formatPSHGrowth(outlet.month1.psh, outlet.baseline.psh)}
                                 </div>
                             ` : '<span class="text-gray-400">-</span>'}
                         </td>
@@ -11421,8 +11421,8 @@ Ready for deployment! 🚀
                         <td class="px-4 py-3 text-center ${latestMonth >= 2 ? 'bg-yellow-50' : ''}">
                             ${outlet.month2.psh !== 0 ? `
                                 <div class="text-gray-700">${formatNumber(outlet.month2.psh)}</div>
-                                <div class="text-xs ${getGrowthColorClass(outlet.month2.psh, outlet.baseline.psh)}">
-                                    ${formatGrowth(outlet.month2.psh, outlet.baseline.psh)}
+                                <div class="text-xs ${getPSHGrowthColorClass(outlet.month2.psh, outlet.baseline.psh)}">
+                                    ${formatPSHGrowth(outlet.month2.psh, outlet.baseline.psh)}
                                 </div>
                             ` : '<span class="text-gray-400">-</span>'}
                         </td>
@@ -11447,8 +11447,8 @@ Ready for deployment! 🚀
                         <td class="px-4 py-3 text-center ${latestMonth >= 3 ? 'bg-orange-50' : ''}">
                             ${outlet.month3.psh !== 0 ? `
                                 <div class="text-gray-700">${formatNumber(outlet.month3.psh)}</div>
-                                <div class="text-xs ${getGrowthColorClass(outlet.month3.psh, outlet.baseline.psh)}">
-                                    ${formatGrowth(outlet.month3.psh, outlet.baseline.psh)}
+                                <div class="text-xs ${getPSHGrowthColorClass(outlet.month3.psh, outlet.baseline.psh)}">
+                                    ${formatPSHGrowth(outlet.month3.psh, outlet.baseline.psh)}
                                 </div>
                             ` : '<span class="text-gray-400">-</span>'}
                         </td>
@@ -11606,6 +11606,34 @@ Ready for deployment! 🚀
             if (baseline === 0) return 'text-gray-500';
             const growth = ((current - baseline) / baseline * 100);
             return growth >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold';
+        }
+
+        // Helper function to format PSH growth (negative values = improvement when closer to zero)
+        function formatPSHGrowth(current, baseline) {
+            if (baseline === 0) return '-';
+            
+            // For negative PSH values, improvement is when current is less negative (closer to zero)
+            // Example: baseline = -44,542, current = -40,192 => improvement
+            const absoluteImprovement = current - baseline; // If positive, it's improvement
+            const percentChange = Math.abs((absoluteImprovement / baseline) * 100);
+            
+            // If current is less negative (larger number), it's improvement
+            if (absoluteImprovement > 0) {
+                return `+${percentChange.toFixed(1)}%`;
+            } else {
+                return `-${percentChange.toFixed(1)}%`;
+            }
+        }
+
+        // Helper function to get PSH growth color class
+        function getPSHGrowthColorClass(current, baseline) {
+            if (baseline === 0) return 'text-gray-500';
+            
+            // For negative PSH values, improvement is when current is less negative (closer to zero)
+            const absoluteImprovement = current - baseline;
+            
+            // If current is less negative (larger number), it's improvement (green)
+            return absoluteImprovement > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold';
         }
 
         // Helper function to format currency in short form
