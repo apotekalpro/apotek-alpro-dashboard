@@ -8294,8 +8294,9 @@
                         const amName = values[2]?.trim();
                         const monthlyTarget = parseFloat(values[3]?.replace(/,/g, '')) || 0;
                         
-                        const dailySalesLastMonth = parseFloat(values[5]?.replace(/,/g, '')) || 0;
-                        const dailySalesUpToDate = parseFloat(values[6]?.replace(/,/g, '')) || 0;
+                        const dailyAvgLastMonth = parseFloat(values[5]?.replace(/,/g, '')) || 0;
+                        const dailyAvgUpToDate = parseFloat(values[7]?.replace(/,/g, '')) || 0;
+                        const totalUpToDate = parseFloat(values[6]?.replace(/,/g, '')) || 0;
                         const forecastSalesEndOfMonth = parseFloat(values[8]?.replace(/,/g, '')) || 0;
                         
                         const growthPercent = parseFloat(values[9]?.replace('%', '')) || 0;
@@ -8312,9 +8313,10 @@
                             growthPercent,
                             forecastPercent,
                             performanceScore: (growthPercent + forecastPercent) / 2,
-                            dailySalesLastMonth,
-                            dailySalesUpToDate,
-                            dailySalesUpToDateDisplay: dailySalesUpToDate > 0 ? dailySalesUpToDate.toLocaleString() : 'N/A',
+                            dailyAvgLastMonth,
+                            dailyAvgUpToDate,
+                            totalUpToDate,
+                            dailySalesUpToDateDisplay: totalUpToDate > 0 ? totalUpToDate.toLocaleString() : 'N/A',
                             forecastSalesEndOfMonth,
                             forecastSalesEndOfMonthDisplay: forecastSalesEndOfMonth > 0 ? forecastSalesEndOfMonth.toLocaleString() : 'N/A'
                         };
@@ -8359,16 +8361,16 @@
                         amGroups[amName] = {
                             amName: amName,
                             outlets: [],
-                            totalSalesLastMonth: 0,
-                            totalSalesUpToDate: 0,
+                            totalDailyAvgLastMonth: 0,
+                            totalDailyAvgUpToDate: 0,
                             totalForecastSales: 0,
                             totalTargets: 0
                         };
                     }
                     
                     amGroups[amName].outlets.push(record);
-                    amGroups[amName].totalSalesLastMonth += record.dailySalesLastMonth;
-                    amGroups[amName].totalSalesUpToDate += record.dailySalesUpToDate;
+                    amGroups[amName].totalDailyAvgLastMonth += record.dailyAvgLastMonth;
+                    amGroups[amName].totalDailyAvgUpToDate += record.dailyAvgUpToDate;
                     amGroups[amName].totalForecastSales += record.forecastSalesEndOfMonth;
                     amGroups[amName].totalTargets += record.monthlyTarget;
                 });
@@ -8376,8 +8378,8 @@
                 this.overviewData = Object.values(amGroups).map(group => {
                     const outletCount = group.outlets.length;
                     
-                    const actualGrowthRate = group.totalSalesLastMonth > 0 
-                        ? ((group.totalSalesUpToDate - group.totalSalesLastMonth) / group.totalSalesLastMonth) * 100
+                    const actualGrowthRate = group.totalDailyAvgLastMonth > 0 
+                        ? ((group.totalDailyAvgUpToDate - group.totalDailyAvgLastMonth) / group.totalDailyAvgLastMonth) * 100
                         : 0;
                     
                     const forecastAchievement = group.totalTargets > 0 
@@ -8393,8 +8395,8 @@
                         avgGrowth: actualGrowthRate,
                         avgForecast: forecastAchievement,
                         overallPerformance: overallPerformance,
-                        totalSalesLastMonth: group.totalSalesLastMonth,
-                        totalSalesUpToDate: group.totalSalesUpToDate,
+                        totalDailyAvgLastMonth: group.totalDailyAvgLastMonth,
+                        totalDailyAvgUpToDate: group.totalDailyAvgUpToDate,
                         totalForecastSales: group.totalForecastSales,
                         totalTargets: group.totalTargets
                     };
@@ -8461,8 +8463,8 @@
                 
                 // Sum up all outlets' data
                 this.performanceData.forEach(outlet => {
-                    grandTotalCurrentMonth += outlet.dailySalesUpToDate || 0;
-                    grandTotalPastMonth += outlet.dailySalesLastMonth || 0;
+                    grandTotalCurrentMonth += outlet.dailyAvgUpToDate || 0;
+                    grandTotalPastMonth += outlet.dailyAvgLastMonth || 0;
                     grandTotalForecast += outlet.forecastSalesEndOfMonth || 0;
                     grandTotalTargets += outlet.monthlyTarget || 0;
                 });
