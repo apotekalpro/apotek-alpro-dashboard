@@ -555,7 +555,7 @@
                                                 </th>
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="amTracker.sortOverview('performance')">
                                                     <div class="flex items-center">
-                                                        Overall Performance
+                                                        Goal Bulanan %
                                                         <i class="fas fa-sort ml-1 text-gray-400"></i>
                                                     </div>
                                                 </th>
@@ -8210,12 +8210,59 @@
             performanceData: [],
             filteredData: [],
             overviewData: [],
+            amGoalBulanan: {}, // Store AM Goal Bulanan lookup
             currentPage: 1,
             itemsPerPage: 10,
             currentViewMode: 'table',
             currentOverviewPage: 1,
             overviewItemsPerPage: 15,
             currentOverviewSort: 'performance',
+            
+            // Fetch AM Goal Bulanan data
+            async fetchAMGoalBulanan() {
+                console.log('🎯 AM Tracker: Fetching AM Goal Bulanan...');
+                
+                try {
+                    const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
+                    const timestamp = new Date().getTime();
+                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=AM+Goal+Bulanan&timestamp=${timestamp}`;
+                    
+                    const response = await fetch(csvUrl, {
+                        method: 'GET',
+                        cache: 'no-store',
+                        redirect: 'follow'
+                    });
+                    
+                    if (!response.ok) {
+                        console.error('❌ AM Tracker: Failed to fetch AM Goal Bulanan');
+                        return;
+                    }
+                    
+                    const csvData = await response.text();
+                    const lines = csvData.split('\n');
+                    
+                    // Parse AM Goal Bulanan (Column A: AM Name, Column B: Goal)
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const values = this.parseCSVLine(line);
+                        if (values.length >= 2) {
+                            const amName = values[0]?.trim().toUpperCase();
+                            const goalBulanan = parseFloat(values[1]?.replace(/,/g, '')) || 0;
+                            
+                            if (amName && goalBulanan > 0) {
+                                this.amGoalBulanan[amName] = goalBulanan;
+                                console.log(`📊 Loaded goal for ${amName}: ${goalBulanan.toLocaleString()}`);
+                            }
+                        }
+                    }
+                    
+                    console.log('✅ AM Goal Bulanan loaded:', Object.keys(this.amGoalBulanan).length, 'AMs');
+                } catch (error) {
+                    console.error('❌ Error fetching AM Goal Bulanan:', error);
+                }
+            },
             
             // Main data fetching function
             async fetchData() {
@@ -8224,6 +8271,9 @@
                 try {
                     document.getElementById('amTrackerLoading').classList.remove('hidden');
                     document.getElementById('amTrackerError').classList.add('hidden');
+                    
+                    // First fetch AM Goal Bulanan
+                    await this.fetchAMGoalBulanan();
                     
                     const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
                     const gid = '353860854';
@@ -8382,11 +8432,19 @@
                         ? ((group.totalDailyAvgUpToDate - group.totalDailyAvgLastMonth) / group.totalDailyAvgLastMonth) * 100
                         : 0;
                     
+                    // Get AM Goal Bulanan for this AM
+                    const amNameUpper = group.amName.toUpperCase();
+                    const amGoalBulanan = this.amGoalBulanan[amNameUpper] || 0;
+                    
+                    // Calculate Goal Achievement % using AM Goal Bulanan
+                    const goalAchievement = amGoalBulanan > 0 
+                        ? (group.totalForecastSales / amGoalBulanan) * 100
+                        : 0;
+                    
+                    // Keep old forecastAchievement for reference (using outlet targets)
                     const forecastAchievement = group.totalTargets > 0 
                         ? (group.totalForecastSales / group.totalTargets) * 100
                         : 0;
-                    
-                    const overallPerformance = (actualGrowthRate + forecastAchievement) / 2;
                     
                     return {
                         amName: group.amName,
@@ -8394,7 +8452,9 @@
                         outlets: group.outlets,
                         avgGrowth: actualGrowthRate,
                         avgForecast: forecastAchievement,
-                        overallPerformance: overallPerformance,
+                        goalAchievement: goalAchievement,
+                        goalBulanan: amGoalBulanan,
+                        overallPerformance: goalAchievement, // Use goalAchievement as the new performance metric
                         totalDailyAvgLastMonth: group.totalDailyAvgLastMonth,
                         totalDailyAvgUpToDate: group.totalDailyAvgUpToDate,
                         totalForecastSales: group.totalForecastSales,
@@ -8413,7 +8473,7 @@
                 if (!this.overviewData || this.overviewData.length === 0) return;
                 
                 const growthChampions = [...this.overviewData].sort((a, b) => b.avgGrowth - a.avgGrowth);
-                const achievementChampions = [...this.overviewData].sort((a, b) => b.avgForecast - a.avgForecast);
+                const achievementChampions = [...this.overviewData].sort((a, b) => b.goalAchievement - a.goalAchievement);
                 
                 // Update Growth Champions
                 for (let i = 0; i < 3; i++) {
@@ -8438,7 +8498,7 @@
                     
                     if (achievementChampions[i]) {
                         nameElement.textContent = achievementChampions[i].amName;
-                        rateElement.textContent = `${achievementChampions[i].avgForecast.toFixed(1)}%`;
+                        rateElement.textContent = `${achievementChampions[i].goalAchievement.toFixed(1)}%`;
                         rateElement.className = 'font-bold text-purple-600';
                     } else {
                         nameElement.textContent = 'N/A';
@@ -8542,14 +8602,15 @@
                             </div>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm">
-                            <div class="flex items-center">
-                                <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
-                                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.overallPerformance))}%"></div>
+                            <div class="flex flex-col">
+                                <div class="flex items-center mb-1">
+                                    <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.goalAchievement))}%"></div>
+                                    </div>
+                                    <span class="font-medium text-gray-900">${am.goalAchievement.toFixed(1)}%</span>
+                                    ${this.getPerformanceBadge(am.goalAchievement)}
                                 </div>
-                                <div class="flex flex-col">
-                                    <span class="font-medium text-gray-900">${am.overallPerformance.toFixed(1)}%</span>
-                                    ${this.getPerformanceBadge(am.overallPerformance)}
-                                </div>
+                                <span class="text-xs text-gray-500">Goal: Rp ${(am.goalBulanan / 1000000).toFixed(1)}M</span>
                             </div>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
@@ -8870,7 +8931,7 @@
                 const am = this.overviewData.find(a => a.amName === amName);
                 if (!am) return;
                 
-                alert(`AM Details: ${amName}\n\nOutlets Managed: ${am.outletCount}\nAverage Growth: ${am.avgGrowth.toFixed(1)}%\nAverage Forecast: ${am.avgForecast.toFixed(1)}%\nOverall Performance: ${am.overallPerformance.toFixed(1)}%\n\nOutlets:\n${am.outlets.map(o => `• ${o.outlet} (${o.outletName}): Growth ${o.growthPercent.toFixed(1)}%, Forecast ${o.forecastPercent.toFixed(1)}%`).join('\n')}`);
+                alert(`AM Details: ${amName}\n\nOutlets Managed: ${am.outletCount}\nAverage Growth: ${am.avgGrowth.toFixed(1)}%\nGoal Bulanan: Rp ${am.goalBulanan.toLocaleString()}\nGoal Achievement: ${am.goalAchievement.toFixed(1)}%\nTotal Forecast: Rp ${am.totalForecastSales.toLocaleString()}\n\nOutlets:\n${am.outlets.map(o => `• ${o.outlet} (${o.outletName}): Growth ${o.growthPercent.toFixed(1)}%, Forecast ${o.forecastPercent.toFixed(1)}%`).join('\n')}`);
             },
             
             // Filter by specific AM
