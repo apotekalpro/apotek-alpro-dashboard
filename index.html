@@ -637,6 +637,8 @@
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outlet Name</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AM Name</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Target</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Up to Date Revenue</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Best Forecasted Revenue</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Growth %</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Forecast %</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
@@ -8225,16 +8227,31 @@
                     
                     const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
                     const gid = '353860854';
-                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+                    // Add cache-busting timestamp to force fresh data
+                    const timestamp = new Date().getTime();
+                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&timestamp=${timestamp}`;
                     
-                    const response = await fetch(csvUrl);
+                    console.log('🔗 AM Tracker: Fetching from:', csvUrl);
+                    
+                    const response = await fetch(csvUrl, {
+                        method: 'GET',
+                        cache: 'no-store',
+                        redirect: 'follow'
+                    });
+                    
+                    console.log('📡 AM Tracker: Response status:', response.status, response.statusText);
                     
                     if (!response.ok) {
+                        console.error('❌ AM Tracker: Failed to fetch:', response.status, response.statusText);
                         throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
                     }
                     
                     const csvData = await response.text();
+                    console.log('📄 AM Tracker: CSV data fetched, length:', csvData.length);
+                    console.log('📄 AM Tracker: First 500 chars:', csvData.substring(0, 500));
+                    
                     const parsedData = this.parseCSVData(csvData);
+                    console.log('📊 AM Tracker: Parsed', parsedData.length, 'outlet records');
                     
                     this.performanceData = parsedData;
                     this.filteredData = [...this.performanceData];
@@ -8278,7 +8295,7 @@
                         const monthlyTarget = parseFloat(values[3]?.replace(/,/g, '')) || 0;
                         
                         const dailySalesLastMonth = parseFloat(values[5]?.replace(/,/g, '')) || 0;
-                        const dailySalesUpToDate = parseFloat(values[7]?.replace(/,/g, '')) || 0;
+                        const dailySalesUpToDate = parseFloat(values[6]?.replace(/,/g, '')) || 0;
                         const forecastSalesEndOfMonth = parseFloat(values[8]?.replace(/,/g, '')) || 0;
                         
                         const growthPercent = parseFloat(values[9]?.replace('%', '')) || 0;
@@ -8297,7 +8314,9 @@
                             performanceScore: (growthPercent + forecastPercent) / 2,
                             dailySalesLastMonth,
                             dailySalesUpToDate,
-                            forecastSalesEndOfMonth
+                            dailySalesUpToDateDisplay: dailySalesUpToDate > 0 ? dailySalesUpToDate.toLocaleString() : 'N/A',
+                            forecastSalesEndOfMonth,
+                            forecastSalesEndOfMonthDisplay: forecastSalesEndOfMonth > 0 ? forecastSalesEndOfMonth.toLocaleString() : 'N/A'
                         };
                         
                         data.push(record);
@@ -8590,6 +8609,8 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${am.outletName}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">${am.amName}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${am.monthlyTargetDisplay}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${am.dailySalesUpToDateDisplay}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${am.forecastSalesEndOfMonthDisplay}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex items-center">
                                 <span class="${am.growthPercent >= 0 ? 'text-green-600' : 'text-red-600'} font-medium">
@@ -8653,6 +8674,16 @@
                             <div class="flex justify-between items-center">
                                 <span class="text-sm text-gray-600">Monthly Target:</span>
                                 <span class="text-sm font-medium">${am.monthlyTargetDisplay}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Up to Date Revenue:</span>
+                                <span class="text-sm font-medium text-blue-600">${am.dailySalesUpToDateDisplay}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Best Forecasted Revenue:</span>
+                                <span class="text-sm font-medium text-purple-600">${am.forecastSalesEndOfMonthDisplay}</span>
                             </div>
                             
                             <div class="flex justify-between items-center">
