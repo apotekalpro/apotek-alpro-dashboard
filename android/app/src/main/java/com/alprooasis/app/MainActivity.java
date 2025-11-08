@@ -1,4 +1,4 @@
-package com.apotekalpro.dashboard;
+package com.alprooasis.app;
 
 import com.getcapacitor.BridgeActivity;
 

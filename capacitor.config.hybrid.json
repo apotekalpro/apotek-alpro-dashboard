@@ -1,6 +1,6 @@
 {
-  "appId": "com.apotekalpro.dashboard",
-  "appName": "Apotek Alpro",
+  "appId": "com.alprooasis.app",
+  "appName": "ALPRO OASIS",
   "webDir": "www",
   "bundledWebRuntime": false,
   "server": {
