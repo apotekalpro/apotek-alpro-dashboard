@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPM Incentive Calculator - Live Debugger</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+            margin-bottom: 20px;
+        }
+        .upload-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            text-align: center;
+        }
+        input[type="file"] {
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #e2e8f0;
+        }
+        th {
+            background: #2563eb;
+            color: white;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background: #f7fafc;
+        }
+        .correct {
+            color: #10b981;
+            font-weight: bold;
+        }
+        .wrong {
+            color: #ef4444;
+            font-weight: bold;
+        }
+        .debug-log {
+            background: #1e293b;
+            color: #10b981;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-line {
+            margin: 4px 0;
+        }
+        .log-error {
+            color: #ef4444;
+        }
+        .log-success {
+            color: #10b981;
+        }
+        .log-info {
+            color: #60a5fa;
+        }
+        .log-warning {
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 PPM Incentive Calculator - Live Debugger</h1>
+        <p>This tool will help diagnose exactly what's happening with your Active List file.</p>
+        
+        <div class="upload-section">
+            <h3>Upload Active Alproean List</h3>
+            <input type="file" id="activeFile" accept=".xlsx,.xls">
+        </div>
+
+        <div class="debug-log" id="debugLog">
+            <div class="log-line log-info">Waiting for file upload...</div>
+        </div>
+
+        <div class="results" id="results" style="display: none;">
+            <h2>Analysis Results</h2>
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Excel Row</th>
+                        <th>Array Index</th>
+                        <th>Name (Col C)</th>
+                        <th>Employee ID (Col D)</th>
+                        <th>Role (Col G)</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const debugLog = document.getElementById('debugLog');
+        const results = document.getElementById('results');
+        const tableBody = document.getElementById('tableBody');
+
+        function log(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = `log-line log-${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            debugLog.appendChild(line);
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+
+        function toSafeString(value) {
+            if (value === null || value === undefined) return '';
+            return String(value).trim();
+        }
+
+        document.getElementById('activeFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            debugLog.innerHTML = '';
+            log(`📂 Loading file: ${file.name}`, 'info');
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    log('📊 Parsing Excel file...', 'info');
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    log(`✅ Parsed ${jsonData.length} rows from Excel`, 'success');
+                    
+                    // Show first 15 raw rows
+                    log('\n🔍 RAW EXCEL DATA (First 15 rows):', 'info');
+                    for (let i = 0; i < Math.min(15, jsonData.length); i++) {
+                        const row = jsonData[i];
+                        const colC = toSafeString(row[2]);
+                        const colD = toSafeString(row[3]);
+                        const colG = toSafeString(row[6]);
+                        log(`  Row ${i} (Excel row ${i+1}): C="${colC.substring(0,20)}" | D="${colD.substring(0,15)}" | G="${colG.substring(0,30)}"`, 'info');
+                    }
+                    
+                    // Auto-detect header (using the SAME logic as the fix)
+                    log('\n🔍 AUTO-DETECTING HEADER ROW...', 'warning');
+                    let headerRowIndex = 0;
+                    let dataStartRow = 1;
+                    let headerDetectionLog = [];
+                    
+                    for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+                        const row = jsonData[i];
+                        const colC = toSafeString(row[2]);
+                        const colD = toSafeString(row[3]);
+                        const colG = toSafeString(row[6]);
+                        
+                        const colC_lower = colC.toLowerCase();
+                        const colD_lower = colD.toLowerCase();
+                        const colG_lower = colG.toLowerCase();
+                        
+                        const isHeaderRowC = colC_lower === 'nama' || colC_lower === 'name';
+                        const isHeaderRowD = colD_lower.includes('employee id') && colD_lower.length < 30;
+                        const isHeaderRowG = colG_lower.includes('job position') || colG_lower === 'role' || colG_lower === 'position';
+                        
+                        const headerScore = (isHeaderRowC ? 1 : 0) + (isHeaderRowD ? 1 : 0) + (isHeaderRowG ? 1 : 0);
+                        
+                        const logEntry = `Row ${i}: Score=${headerScore} [C:${isHeaderRowC?'✓':'✗'} D:${isHeaderRowD?'✓':'✗'} G:${isHeaderRowG?'✓':'✗'}]`;
+                        headerDetectionLog.push(logEntry);
+                        
+                        if (headerScore >= 2) {
+                            headerRowIndex = i;
+                            dataStartRow = i + 1;
+                            log(`✅ HEADER DETECTED at row ${i} (Excel row ${i+1})`, 'success');
+                            log(`   Column C: "${colC}"`, 'success');
+                            log(`   Column D: "${colD}"`, 'success');
+                            log(`   Column G: "${colG}"`, 'success');
+                            log(`   Header Score: ${headerScore}/3`, 'success');
+                            break;
+                        }
+                    }
+                    
+                    // Show all header detection attempts
+                    log('\n📊 Header Detection Scores:', 'info');
+                    headerDetectionLog.forEach(entry => log(`  ${entry}`, 'info'));
+                    
+                    // Extract data rows
+                    log(`\n📋 Extracting data starting from row ${dataStartRow} (Excel row ${dataStartRow+1})...`, 'info');
+                    const rows = jsonData.slice(dataStartRow);
+                    log(`✅ Found ${rows.length} data rows`, 'success');
+                    
+                    // Parse employee data
+                    log('\n👥 PARSING EMPLOYEE DATA:', 'info');
+                    const employees = [];
+                    let parseCount = 0;
+                    
+                    rows.forEach((row, idx) => {
+                        if (row.length > 40 && row[2]) {
+                            const employeeName = toSafeString(row[2]);
+                            const employeeId = toSafeString(row[3]);
+                            const role = toSafeString(row[6]);
+                            const outlet = toSafeString(row[40]);
+                            
+                            employees.push({
+                                excelRow: dataStartRow + idx + 1,  // +1 for Excel numbering
+                                arrayIndex: idx,
+                                employeeName,
+                                employeeId,
+                                role,
+                                outlet
+                            });
+                            
+                            parseCount++;
+                            if (parseCount <= 10) {
+                                log(`  [${parseCount}] ${employeeName} → ${role}`, 'success');
+                            }
+                        }
+                    });
+                    
+                    log(`\n✅ Successfully parsed ${employees.length} employees`, 'success');
+                    
+                    // Check specific employees from screenshot
+                    log('\n🎯 CHECKING SPECIFIC EMPLOYEES:', 'warning');
+                    const targetNames = ['KHOO ZI YU', 'ESTER DESINDO NABABAN', 'RONTA SIREGAR', 
+                                         'LAELA FITIRAH', 'EPI PURNAMASARI', 'Mardian Rahayu'];
+                    
+                    targetNames.forEach(name => {
+                        const found = employees.find(e => e.employeeName.toUpperCase() === name.toUpperCase());
+                        if (found) {
+                            log(`  ✓ ${name}: Role = "${found.role}" (Excel row ${found.excelRow})`, 'success');
+                        } else {
+                            log(`  ✗ ${name}: NOT FOUND`, 'error');
+                        }
+                    });
+                    
+                    // Display table
+                    results.style.display = 'block';
+                    tableBody.innerHTML = '';
+                    
+                    // Show rows 25-45 (where the issue was)
+                    log('\n📊 Displaying rows 25-45 in table...', 'info');
+                    employees.slice(24, 45).forEach(emp => {
+                        const row = document.createElement('tr');
+                        
+                        // Determine if this is one of the problem rows
+                        let status = '✓';
+                        let statusClass = 'correct';
+                        if (emp.excelRow === 31) {
+                            status = '⚠️ Was false header';
+                            statusClass = 'wrong';
+                        }
+                        
+                        row.innerHTML = `
+                            <td>${emp.excelRow}</td>
+                            <td>${emp.arrayIndex}</td>
+                            <td>${emp.employeeName}</td>
+                            <td>${emp.employeeId}</td>
+                            <td>${emp.role}</td>
+                            <td class="${statusClass}">${status}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                    
+                    log('\n✅ ANALYSIS COMPLETE!', 'success');
+                    log('📝 If roles are still wrong, the issue is in a different part of the code (matching logic, display logic, etc.)', 'warning');
+                    
+                } catch (error) {
+                    log(`❌ ERROR: ${error.message}`, 'error');
+                    console.error('Full error:', error);
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+</html>
