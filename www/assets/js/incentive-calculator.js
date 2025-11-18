@@ -278,32 +278,88 @@ const IncentiveCalculator = {
     
     // Parse Sales & GP Data
     // USER SPECIFICATION: Header at ROW 6, Column C (Store Name), G (Net Sales), L (GP), M (GP%)
-    // Excel columns: C=3rd, G=7th, L=12th, M=13th
-    // 0-indexed arrays: C=2, G=6, L=11, M=12
+    // Excel columns: B=2nd (Store), C=3rd (Store Name), G=7th, L=12th, M=13th
+    // 0-indexed arrays: B=1, C=2, G=6, L=11, M=12
+    // PREPROCESSING: Merge duplicate outlets (same Store + Store Name) by aggregating numerical values
     parseSalesGp: function(headers, rows) {
-        const data = [];
+        // Step 1: Group rows by (Store + Store Name) combination
+        const outletGroups = {};
+        
         rows.forEach((row, idx) => {
             if (row.length > 12 && row[2]) {  // Need at least column M (index 12)
-                const outlet = this.toSafeString(row[2]);         // Column C: Store Name (index 2)
+                const store = this.toSafeString(row[1]);          // Column B: Store (index 1)
+                const storeName = this.toSafeString(row[2]);      // Column C: Store Name (index 2)
                 const netSales = parseFloat(row[6]) || 0;         // Column G: Net Sales (index 6)
                 const gp = parseFloat(row[11]) || 0;              // Column L: GP (index 11)
-                const gpMargin = parseFloat(row[12]) || 0;        // Column M: GP% (index 12)
                 
-                data.push({
-                    outlet: outlet,
-                    totalSales: netSales,
-                    gp: gp,
-                    gpMargin: gpMargin,
-                    achievement: 0  // Will be calculated later when matched with targets
-                });
+                // Create unique key: Store + Store Name
+                const key = `${store}|${storeName}`;
                 
-                // Log first few for verification
-                if (idx < 3) {
-                    console.log(`Sales&GP Row ${idx + 1}:`, { outlet, netSales, gp, gpMargin });
+                if (!outletGroups[key]) {
+                    outletGroups[key] = {
+                        store: store,
+                        storeName: storeName,
+                        totalNetSales: 0,
+                        totalGP: 0,
+                        rowCount: 0,
+                        firstRowIdx: idx
+                    };
                 }
+                
+                // Aggregate numerical values
+                outletGroups[key].totalNetSales += netSales;
+                outletGroups[key].totalGP += gp;
+                outletGroups[key].rowCount += 1;
             }
         });
-        console.log('✅ Parsed Sales & GP:', data.length, 'rows');
+        
+        // Step 2: Convert grouped data to final format with recalculated GP%
+        const data = [];
+        Object.values(outletGroups).forEach(group => {
+            // Recalculate GP% = (Total GP / Total Net Sales) × 100
+            const gpMargin = group.totalNetSales > 0 
+                ? (group.totalGP / group.totalNetSales) * 100 
+                : 0;
+            
+            data.push({
+                outlet: group.storeName,  // Use Store Name as outlet identifier
+                totalSales: group.totalNetSales,
+                gp: group.totalGP,
+                gpMargin: gpMargin,
+                achievement: 0,  // Will be calculated later when matched with targets
+                _mergedFrom: group.rowCount  // Track how many rows were merged
+            });
+            
+            // Log merged entries
+            if (group.rowCount > 1) {
+                console.log(`🔀 Merged ${group.rowCount} rows for outlet:`, {
+                    store: group.store,
+                    storeName: group.storeName,
+                    totalNetSales: group.totalNetSales,
+                    totalGP: group.totalGP,
+                    gpMargin: gpMargin.toFixed(2) + '%'
+                });
+            }
+            
+            // Log first few for verification
+            if (group.firstRowIdx < 3) {
+                console.log(`Sales&GP Row ${group.firstRowIdx + 1}:`, {
+                    outlet: group.storeName,
+                    netSales: group.totalNetSales,
+                    gp: group.totalGP,
+                    gpMargin: gpMargin.toFixed(2) + '%'
+                });
+            }
+        });
+        
+        const totalRows = Object.values(outletGroups).reduce((sum, g) => sum + g.rowCount, 0);
+        const mergedCount = totalRows - data.length;
+        
+        console.log('✅ Parsed Sales & GP:', data.length, 'unique outlets');
+        if (mergedCount > 0) {
+            console.log(`🔀 Merged ${mergedCount} duplicate rows into ${data.length} unique outlets`);
+        }
+        
         return data;
     },
     
