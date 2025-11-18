@@ -117,18 +117,32 @@ const IncentiveCalculator = {
             });
             
             // AUTO-DETECT: Find the header row by looking for "Name" or "Nama" in column C
+            // CRITICAL: Must be very specific to avoid matching employee data rows
             for (let i = 0; i < Math.min(10, jsonData.length); i++) {
                 const row = jsonData[i];
-                const colC = this.toSafeString(row[2]).toLowerCase();
-                const colD = this.toSafeString(row[3]).toLowerCase();
+                const colC = this.toSafeString(row[2]).trim();
+                const colD = this.toSafeString(row[3]).trim();
+                const colG = this.toSafeString(row[6]).trim();
                 
-                // Check if this row contains headers (common patterns)
-                if (colC.includes('name') || colC.includes('nama') || 
-                    colD.includes('employee') || colD.includes('id') ||
-                    colC === 'name' || colD === 'employee id') {
+                // Check if this row contains EXACT header patterns (case-insensitive)
+                // Must match the ENTIRE cell value, not just contain the word
+                const colC_lower = colC.toLowerCase();
+                const colD_lower = colD.toLowerCase();
+                const colG_lower = colG.toLowerCase();
+                
+                // Check for exact header matches or very close variations
+                const isHeaderRowC = colC_lower === 'nama' || colC_lower === 'name';
+                const isHeaderRowD = colD_lower.includes('employee id') && colD_lower.length < 30;  // Must be short
+                const isHeaderRowG = colG_lower.includes('job position') || colG_lower === 'role' || colG_lower === 'position';
+                
+                // Header row must have at least 2 of the 3 header indicators
+                const headerScore = (isHeaderRowC ? 1 : 0) + (isHeaderRowD ? 1 : 0) + (isHeaderRowG ? 1 : 0);
+                
+                if (headerScore >= 2) {
                     headerRowIndex = i;
                     dataStartRow = i + 1;
                     console.log(`✅ AUTO-DETECTED Header at row ${i + 1} (0-indexed: ${i})`);
+                    console.log(`   Column C: "${colC}" | Column D: "${colD}" | Column G: "${colG}"`);
                     break;
                 }
             }
