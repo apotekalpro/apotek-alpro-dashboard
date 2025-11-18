@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Mismatches - Incentive Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+        }
+        .upload-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 400px;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+        }
+        th {
+            background: #2563eb;
+            color: white;
+            font-weight: 600;
+        }
+        tr.matched {
+            background: #d1fae5;
+        }
+        tr.unmatched {
+            background: #fee2e2;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .summary-card {
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .matched-card {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .unmatched-card {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Mismatch Checker - Incentive Calculator</h1>
+        <p>Upload Active and Full Alproean lists to check for mismatches</p>
+        
+        <div class="upload-section">
+            <h3>Step 1: Upload Active Alproean List</h3>
+            <input type="file" id="activeFile" accept=".xlsx,.xls">
+            
+            <h3>Step 2: Upload Full Alproean List</h3>
+            <input type="file" id="fullFile" accept=".xlsx,.xls">
+            
+            <button id="checkBtn" disabled onclick="checkMatches()">Check for Mismatches</button>
+            <button id="exportUnmatchedBtn" disabled onclick="exportUnmatched()">Export Unmatched</button>
+        </div>
+
+        <div class="results" id="results" style="display: none;">
+            <h2>Results</h2>
+            <div class="summary">
+                <div class="summary-card matched-card">
+                    <h3 id="matchedCount">0</h3>
+                    <p>Matched Employees</p>
+                </div>
+                <div class="summary-card unmatched-card">
+                    <h3 id="unmatchedCount">0</h3>
+                    <p>Unmatched Employees</p>
+                </div>
+            </div>
+            
+            <h3>Unmatched Employees</h3>
+            <table id="unmatchedTable">
+                <thead>
+                    <tr>
+                        <th>Name (Active List)</th>
+                        <th>Employee ID (Active)</th>
+                        <th>Role</th>
+                        <th>Outlet</th>
+                        <th>Reason</th>
+                    </tr>
+                </thead>
+                <tbody id="unmatchedBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let activeData = null;
+        let fullData = null;
+        let unmatchedResults = [];
+
+        function toSafeString(value) {
+            if (value === null || value === undefined) return '';
+            return String(value).trim();
+        }
+
+        function safeStringCompare(str1, str2) {
+            const s1 = (str1 || '').toString().toLowerCase().trim();
+            const s2 = (str2 || '').toString().toLowerCase().trim();
+            return s1 === s2;
+        }
+
+        document.getElementById('activeFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                
+                // Find header row
+                let headerRow = 0;
+                for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+                    const row = jsonData[i];
+                    const colA = toSafeString(row[0]).toLowerCase();
+                    const colB = toSafeString(row[1]).toLowerCase();
+                    if (colA === 'nama' || colA === 'name' || colB.includes('employee id')) {
+                        headerRow = i;
+                        break;
+                    }
+                }
+                
+                const rows = jsonData.slice(headerRow + 1);
+                activeData = rows.map(row => ({
+                    employeeName: toSafeString(row[0]),
+                    employeeId: toSafeString(row[1]),
+                    role: toSafeString(row[2]),
+                    outlet: toSafeString(row[3])
+                })).filter(emp => emp.employeeName);
+                
+                console.log('Active data loaded:', activeData.length);
+                updateCheckButton();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        document.getElementById('fullFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                
+                // Find header row
+                let headerRow = 0;
+                for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+                    const row = jsonData[i];
+                    const colA = toSafeString(row[0]).toLowerCase();
+                    if (colA === 'nama' || colA === 'name') {
+                        headerRow = i;
+                        break;
+                    }
+                }
+                
+                const rows = jsonData.slice(headerRow + 1);
+                fullData = rows.map(row => ({
+                    employeeName: toSafeString(row[0]),
+                    employeeId: toSafeString(row[1]),
+                    resignDate: toSafeString(row[11])
+                })).filter(emp => emp.employeeName);
+                
+                console.log('Full data loaded:', fullData.length);
+                updateCheckButton();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function updateCheckButton() {
+            const btn = document.getElementById('checkBtn');
+            btn.disabled = !(activeData && fullData);
+        }
+
+        function checkMatches() {
+            console.log('Checking matches...');
+            unmatchedResults = [];
+            let matchedCount = 0;
+            
+            activeData.forEach(activeEmp => {
+                // Try to match by ID first, then by name
+                let fullMatch = fullData.find(full => 
+                    safeStringCompare(full.employeeId, activeEmp.employeeId)
+                );
+                
+                if (!fullMatch) {
+                    fullMatch = fullData.find(full => 
+                        safeStringCompare(full.employeeName, activeEmp.employeeName)
+                    );
+                }
+                
+                if (fullMatch) {
+                    matchedCount++;
+                } else {
+                    unmatchedResults.push({
+                        ...activeEmp,
+                        reason: 'Not found in Full Alproean List'
+                    });
+                }
+            });
+            
+            // Display results
+            document.getElementById('matchedCount').textContent = matchedCount;
+            document.getElementById('unmatchedCount').textContent = unmatchedResults.length;
+            document.getElementById('results').style.display = 'block';
+            
+            const tbody = document.getElementById('unmatchedBody');
+            tbody.innerHTML = '';
+            
+            if (unmatchedResults.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">✅ All employees matched!</td></tr>';
+                document.getElementById('exportUnmatchedBtn').disabled = true;
+            } else {
+                unmatchedResults.forEach(emp => {
+                    const row = document.createElement('tr');
+                    row.className = 'unmatched';
+                    row.innerHTML = `
+                        <td>${emp.employeeName}</td>
+                        <td>${emp.employeeId}</td>
+                        <td>${emp.role}</td>
+                        <td>${emp.outlet}</td>
+                        <td>${emp.reason}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                document.getElementById('exportUnmatchedBtn').disabled = false;
+            }
+        }
+
+        function exportUnmatched() {
+            if (unmatchedResults.length === 0) {
+                alert('No unmatched employees to export!');
+                return;
+            }
+            
+            const exportData = [
+                ['Employee Name', 'Employee ID', 'Role', 'Outlet', 'Status', 'Note']
+            ];
+            
+            unmatchedResults.forEach(emp => {
+                exportData.push([
+                    emp.employeeName,
+                    emp.employeeId,
+                    emp.role,
+                    emp.outlet,
+                    'Unmatched',
+                    emp.reason
+                ]);
+            });
+            
+            const ws = XLSX.utils.aoa_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Unmatched');
+            XLSX.writeFile(wb, 'Unmatched_Employees.xlsx');
+        }
+    </script>
+</body>
+</html>
