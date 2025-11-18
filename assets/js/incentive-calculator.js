@@ -98,6 +98,41 @@ const IncentiveCalculator = {
     processFileData: function(jsonData, fileType) {
         // Handle different header row positions
         let headers, rows;
+        let headerRowIndex = 0;
+        let dataStartRow = 1;
+        
+        // DIAGNOSTIC: Log first 10 rows of raw data to identify structure
+        if (fileType === 'activeAlproean' || fileType === 'fullAlproean') {
+            console.log(`🔍 ${fileType} - First 10 rows of raw Excel data:`);
+            jsonData.slice(0, 10).forEach((row, idx) => {
+                console.log(`  Excel Row ${idx + 1}:`, {
+                    colA: row[0],
+                    colB: row[1],
+                    colC: row[2],
+                    colD: row[3],
+                    colE: row[4],
+                    colF: row[5],
+                    colG: row[6]
+                });
+            });
+            
+            // AUTO-DETECT: Find the header row by looking for "Name" or "Nama" in column C
+            for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+                const row = jsonData[i];
+                const colC = this.toSafeString(row[2]).toLowerCase();
+                const colD = this.toSafeString(row[3]).toLowerCase();
+                
+                // Check if this row contains headers (common patterns)
+                if (colC.includes('name') || colC.includes('nama') || 
+                    colD.includes('employee') || colD.includes('id') ||
+                    colC === 'name' || colD === 'employee id') {
+                    headerRowIndex = i;
+                    dataStartRow = i + 1;
+                    console.log(`✅ AUTO-DETECTED Header at row ${i + 1} (0-indexed: ${i})`);
+                    break;
+                }
+            }
+        }
         
         // Sales & GP and Personal Sales have headers at row 6 (index 5)
         if (fileType === 'salesGp' || fileType === 'personalSales') {
@@ -105,10 +140,10 @@ const IncentiveCalculator = {
             rows = jsonData.slice(6);      // Data starts at row 7
             console.log(`${fileType}: Header at row 6, data from row 7, total data rows:`, rows.length);
         } else {
-            // Other files have headers at row 1
-            headers = jsonData[0] || [];
-            rows = jsonData.slice(1);
-            console.log(`${fileType}: Header at row 1, data from row 2, total data rows:`, rows.length);
+            // Other files use auto-detected or default row 1
+            headers = jsonData[headerRowIndex] || [];
+            rows = jsonData.slice(dataStartRow);
+            console.log(`${fileType}: Header at row ${headerRowIndex + 1}, data from row ${dataStartRow + 1}, total data rows:`, rows.length);
         }
         
         switch (fileType) {
@@ -142,6 +177,27 @@ const IncentiveCalculator = {
     // 0-indexed arrays: C=2, D=3, G=6, AO=40
     parseActiveAlproean: function(headers, rows) {
         const data = [];
+        
+        // DIAGNOSTIC: Log header row to verify structure
+        console.log('🔍 Active Alproean Headers:', {
+            headerRow: headers,
+            columnC: headers[2],
+            columnD: headers[3],
+            columnG: headers[6],
+            columnAO: headers[40]
+        });
+        
+        // DIAGNOSTIC: Log first 5 raw data rows to identify any offset
+        console.log('🔍 First 5 raw data rows:');
+        rows.slice(0, 5).forEach((row, idx) => {
+            console.log(`  Row ${idx}:`, {
+                colC: row[2],
+                colD: row[3],
+                colG: row[6],
+                colAO: row[40]
+            });
+        });
+        
         rows.forEach((row, idx) => {
             if (row.length > 40 && row[2]) {  // Need at least column AO (index 40)
                 const employeeName = this.toSafeString(row[2]);   // Column C (index 2)
@@ -158,8 +214,13 @@ const IncentiveCalculator = {
                 });
                 
                 // Log first few for verification
-                if (idx < 3) {
-                    console.log(`Active Row ${idx + 1}:`, { employeeName, employeeId, role, outlet });
+                if (idx < 5) {
+                    console.log(`✅ Parsed Active Row ${idx + 1}:`, { 
+                        name: employeeName, 
+                        id: employeeId, 
+                        role: role, 
+                        outlet: outlet 
+                    });
                 }
             }
         });
