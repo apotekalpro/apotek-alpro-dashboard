@@ -612,59 +612,113 @@ const IncentiveCalculator = {
             }
             
             if (fullMatch) {
-                // First match personal sales by employee name to get the outlet code
-                const personalSales = this.data.personalSalesData.find(ps => 
+                // MULTI-OUTLET SUPPORT: Find ALL personal sales entries for this employee
+                // An employee can work in multiple outlets (e.g., YUYU SRI RAHAYU in BTTSBB1 and BTTSDL1)
+                const allPersonalSales = this.data.personalSalesData.filter(ps => 
                     this.safeStringCompare(ps.employeeName, activeEmployee.employeeName)
                 );
                 
-                // Use outlet code from Personal Sales (most reliable - extracted from "0001 - JKJSPR1")
-                // Fallback to Active List outlet if Personal Sales not found
-                const outletCode = personalSales ? personalSales.outlet : activeEmployee.outlet;
-                
-                // Match outlet mapping by outlet code (flexible matching)
-                const outletMapping = this.data.outletMappingData.find(mapping => 
-                    this.outletMatch(mapping.outlet, outletCode)
-                );
-                
-                // Match sales data by outlet code (flexible matching)
-                const salesData = this.data.salesGpData.find(sales => 
-                    this.outletMatch(sales.outlet, outletCode)
-                );
-                
-                // Calculate achievement percentages if we have targets
-                if (salesData && outletMapping && outletMapping.target > 0) {
-                    salesData.achievement = (salesData.totalSales / outletMapping.target) * 100;
+                // If employee has personal sales in multiple outlets, create separate entries for each
+                if (allPersonalSales.length > 0) {
+                    allPersonalSales.forEach((personalSales, psIndex) => {
+                        const outletCode = personalSales.outlet;
+                        
+                        // Match outlet mapping by outlet code (flexible matching)
+                        const outletMapping = this.data.outletMappingData.find(mapping => 
+                            this.outletMatch(mapping.outlet, outletCode)
+                        );
+                        
+                        // Match sales data by outlet code (flexible matching)
+                        const salesData = this.data.salesGpData.find(sales => 
+                            this.outletMatch(sales.outlet, outletCode)
+                        );
+                        
+                        // Calculate achievement percentages if we have targets
+                        if (salesData && outletMapping && outletMapping.target > 0) {
+                            salesData.achievement = (salesData.totalSales / outletMapping.target) * 100;
+                        }
+                        
+                        if (personalSales && outletMapping && outletMapping.target > 0) {
+                            personalSales.achievement = (personalSales.personalSales / outletMapping.target) * 100;
+                        }
+                        
+                        matched.push({
+                            employee: {
+                                ...activeEmployee,
+                                outlet: outletCode,  // Override outlet with actual outlet from Personal Sales
+                                _multiOutlet: allPersonalSales.length > 1,  // Flag for multi-outlet employees
+                                _outletIndex: psIndex + 1,  // Track which outlet (1st, 2nd, etc.)
+                                _totalOutlets: allPersonalSales.length
+                            },
+                            fullData: fullMatch,
+                            outletMapping: outletMapping,
+                            salesData: salesData,
+                            personalSales: personalSales,
+                            amReward: 0,
+                            bmReward: 0,
+                            alproeanReward: 0,
+                            totalReward: 0
+                        });
+                        
+                        // Log multi-outlet employees
+                        if (allPersonalSales.length > 1 && psIndex === 0) {
+                            console.log(`🏢 Multi-outlet employee detected:`, {
+                                name: activeEmployee.employeeName,
+                                outlets: allPersonalSales.length,
+                                outletCodes: allPersonalSales.map(ps => ps.outlet)
+                            });
+                        }
+                    });
+                } else {
+                    // No personal sales found - use Active List outlet as fallback
+                    const outletCode = activeEmployee.outlet;
+                    
+                    // Match outlet mapping by outlet code (flexible matching)
+                    const outletMapping = this.data.outletMappingData.find(mapping => 
+                        this.outletMatch(mapping.outlet, outletCode)
+                    );
+                    
+                    // Match sales data by outlet code (flexible matching)
+                    const salesData = this.data.salesGpData.find(sales => 
+                        this.outletMatch(sales.outlet, outletCode)
+                    );
+                    
+                    // Calculate achievement percentages if we have targets
+                    if (salesData && outletMapping && outletMapping.target > 0) {
+                        salesData.achievement = (salesData.totalSales / outletMapping.target) * 100;
+                    }
+                    
+                    matched.push({
+                        employee: activeEmployee,
+                        fullData: fullMatch,
+                        outletMapping: outletMapping,
+                        salesData: salesData,
+                        personalSales: null,
+                        amReward: 0,
+                        bmReward: 0,
+                        alproeanReward: 0,
+                        totalReward: 0
+                    });
                 }
-                
-                if (personalSales && outletMapping && outletMapping.target > 0) {
-                    personalSales.achievement = (personalSales.personalSales / outletMapping.target) * 100;
-                }
-                
-                matched.push({
-                    employee: activeEmployee,
-                    fullData: fullMatch,
-                    outletMapping: outletMapping,
-                    salesData: salesData,
-                    personalSales: personalSales,
-                    amReward: 0,
-                    bmReward: 0,
-                    alproeanReward: 0,
-                    totalReward: 0
-                });
                 
                 // Log first few matches
                 if (index < 3) {
-                    console.log(`✅ Match ${index + 1}:`, {
-                        name: activeEmployee.employeeName,
-                        role: activeEmployee.role,
-                        activeOutlet: activeEmployee.outlet,
-                        usedOutlet: outletCode,
-                        hasSalesData: !!salesData,
-                        hasPersonalSales: !!personalSales,
-                        hasOutletMapping: !!outletMapping,
-                        hasTarget: !!(outletMapping && outletMapping.target),
-                        achievement: salesData ? salesData.achievement.toFixed(2) + '%' : 'N/A'
-                    });
+                    const firstMatch = matched.find(m => m.employee.employeeName === activeEmployee.employeeName);
+                    if (firstMatch) {
+                        console.log(`✅ Match ${index + 1}:`, {
+                            name: activeEmployee.employeeName,
+                            role: activeEmployee.role,
+                            activeOutlet: activeEmployee.outlet,
+                            usedOutlet: firstMatch.employee.outlet,
+                            multiOutlet: firstMatch.employee._multiOutlet || false,
+                            totalOutlets: firstMatch.employee._totalOutlets || 1,
+                            hasSalesData: !!firstMatch.salesData,
+                            hasPersonalSales: !!firstMatch.personalSales,
+                            hasOutletMapping: !!firstMatch.outletMapping,
+                            hasTarget: !!(firstMatch.outletMapping && firstMatch.outletMapping.target),
+                            achievement: firstMatch.salesData ? firstMatch.salesData.achievement.toFixed(2) + '%' : 'N/A'
+                        });
+                    }
                 }
             } else {
                 unmatched.push({
@@ -969,10 +1023,46 @@ const IncentiveCalculator = {
         // Show results section
         resultsSection.classList.remove('hidden');
         
+        // AGGREGATE MULTI-OUTLET EMPLOYEES
+        // Group results by employee name and sum up their rewards from all outlets
+        const aggregatedResults = {};
+        
+        this.data.results.forEach(emp => {
+            const key = emp.employee.employeeName;
+            
+            if (!aggregatedResults[key]) {
+                aggregatedResults[key] = {
+                    employee: {
+                        employeeName: emp.employee.employeeName,
+                        employeeId: emp.employee.employeeId,
+                        role: emp.employee.role,
+                        outlet: emp.employee.outlet  // Will show first outlet
+                    },
+                    outlets: [],  // Track all outlets
+                    amReward: 0,
+                    bmReward: 0,
+                    alproeanReward: 0,
+                    totalReward: 0
+                };
+            }
+            
+            // Add outlet to list
+            aggregatedResults[key].outlets.push(emp.employee.outlet);
+            
+            // Sum up rewards from all outlets
+            aggregatedResults[key].amReward += emp.amReward;
+            aggregatedResults[key].bmReward += emp.bmReward;
+            aggregatedResults[key].alproeanReward += emp.alproeanReward;
+            aggregatedResults[key].totalReward += emp.totalReward;
+        });
+        
+        // Convert to array
+        const displayResults = Object.values(aggregatedResults);
+        
         // Calculate totals
         let totalAM = 0, totalBM = 0, totalAlproean = 0;
         
-        this.data.results.forEach(emp => {
+        displayResults.forEach(emp => {
             totalAM += emp.amReward;
             totalBM += emp.bmReward;
             totalAlproean += emp.alproeanReward;
@@ -991,14 +1081,19 @@ const IncentiveCalculator = {
         resultsBody.innerHTML = '';
         
         // Add rows
-        this.data.results.forEach((emp, index) => {
+        displayResults.forEach((emp, index) => {
             const row = document.createElement('tr');
             row.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+            
+            // Show multiple outlets if employee works in more than one
+            const outletDisplay = emp.outlets.length > 1 
+                ? `${emp.outlets.join(', ')} [${emp.outlets.length} outlets]`
+                : emp.employee.outlet || 'undefined';
             
             row.innerHTML = `
                 <td class="px-4 py-3 text-sm text-gray-900">${emp.employee.employeeName}</td>
                 <td class="px-4 py-3 text-sm text-gray-600">${emp.employee.role || 'undefined'}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">${emp.employee.outlet || 'undefined'}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${outletDisplay}</td>
                 <td class="px-4 py-3 text-sm text-right font-medium text-blue-600">${this.formatCurrency(emp.amReward)}</td>
                 <td class="px-4 py-3 text-sm text-right font-medium text-green-600">${this.formatCurrency(emp.bmReward)}</td>
                 <td class="px-4 py-3 text-sm text-right font-medium text-purple-600">${this.formatCurrency(emp.alproeanReward)}</td>
@@ -1053,20 +1148,76 @@ const IncentiveCalculator = {
             'Total Reward (Rp)'
         ]);
         
-        // Add data rows
+        // AGGREGATE MULTI-OUTLET EMPLOYEES FOR EXPORT
+        // Group by employee name and sum up rewards from all outlets
+        const aggregatedResults = {};
+        
         this.data.results.forEach(emp => {
-            // Use the contribution ratio that was calculated in calculateAlproeanRewards()
-            // This uses the ACTUAL outlet total from Sales & GP report (not sum of matched employees)
-            const contributionRatio = emp.contributionRatio || 0;
+            const key = emp.employee.employeeName;
+            
+            if (!aggregatedResults[key]) {
+                aggregatedResults[key] = {
+                    employeeName: emp.employee.employeeName,
+                    employeeId: emp.employee.employeeId,
+                    role: emp.employee.role,
+                    outlets: [],
+                    personalSales: 0,
+                    contributionRatio: 0,
+                    gpMargin: 0,
+                    amReward: 0,
+                    bmReward: 0,
+                    alproeanReward: 0,
+                    totalReward: 0,
+                    outletCount: 0
+                };
+            }
+            
+            // Add outlet
+            aggregatedResults[key].outlets.push(emp.employee.outlet);
+            
+            // Sum personal sales
+            if (emp.personalSales) {
+                aggregatedResults[key].personalSales += emp.personalSales.personalSales;
+            }
+            
+            // Average contribution ratio (weighted by personal sales)
+            if (emp.contributionRatio) {
+                aggregatedResults[key].contributionRatio += emp.contributionRatio;
+            }
+            
+            // Average GP margin (weighted by sales data)
+            if (emp.salesData) {
+                aggregatedResults[key].gpMargin += emp.salesData.gpMargin;
+            }
+            
+            // Sum rewards
+            aggregatedResults[key].amReward += emp.amReward;
+            aggregatedResults[key].bmReward += emp.bmReward;
+            aggregatedResults[key].alproeanReward += emp.alproeanReward;
+            aggregatedResults[key].totalReward += emp.totalReward;
+            
+            aggregatedResults[key].outletCount += 1;
+        });
+        
+        // Add data rows
+        Object.values(aggregatedResults).forEach(emp => {
+            // Average the ratio and margin by outlet count
+            const avgContributionRatio = emp.outletCount > 0 ? emp.contributionRatio / emp.outletCount : 0;
+            const avgGpMargin = emp.outletCount > 0 ? emp.gpMargin / emp.outletCount : 0;
+            
+            // Show all outlets if employee works in multiple
+            const outletDisplay = emp.outlets.length > 1 
+                ? emp.outlets.join(', ') + ` [${emp.outlets.length} outlets]`
+                : emp.outlets[0] || '';
             
             exportData.push([
-                emp.employee.employeeName,
-                emp.employee.employeeId,
-                emp.employee.role,
-                emp.employee.outlet,
-                emp.personalSales ? emp.personalSales.personalSales : 0,
-                contributionRatio.toFixed(2),
-                emp.salesData ? emp.salesData.gpMargin.toFixed(2) : 0,
+                emp.employeeName,
+                emp.employeeId,
+                emp.role,
+                outletDisplay,
+                emp.personalSales,
+                avgContributionRatio.toFixed(2),
+                avgGpMargin.toFixed(2),
                 emp.amReward,
                 emp.bmReward,
                 emp.alproeanReward,
