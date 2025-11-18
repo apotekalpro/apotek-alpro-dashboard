@@ -109,40 +109,36 @@ const IncentiveCalculator = {
                     colA: row[0],
                     colB: row[1],
                     colC: row[2],
-                    colD: row[3],
-                    colE: row[4],
-                    colF: row[5],
-                    colG: row[6]
+                    colD: row[3]
                 });
             });
             
-            // AUTO-DETECT: Find the header row by looking for "Name" or "Nama" in column C
+            // AUTO-DETECT: Find the header row by looking for "Name" or "Nama" in column A
             // CRITICAL: Must be very specific to avoid matching employee data rows
             for (let i = 0; i < Math.min(10, jsonData.length); i++) {
                 const row = jsonData[i];
+                const colA = this.toSafeString(row[0]).trim();
+                const colB = this.toSafeString(row[1]).trim();
                 const colC = this.toSafeString(row[2]).trim();
-                const colD = this.toSafeString(row[3]).trim();
-                const colE = this.toSafeString(row[4]).trim();  // Column E has the correct role data
                 
                 // Check if this row contains EXACT header patterns (case-insensitive)
-                // Must match the ENTIRE cell value, not just contain the word
+                const colA_lower = colA.toLowerCase();
+                const colB_lower = colB.toLowerCase();
                 const colC_lower = colC.toLowerCase();
-                const colD_lower = colD.toLowerCase();
-                const colE_lower = colE.toLowerCase();
                 
-                // Check for exact header matches or very close variations
-                const isHeaderRowC = colC_lower === 'nama' || colC_lower === 'name';
-                const isHeaderRowD = colD_lower.includes('employee id') && colD_lower.length < 30;  // Must be short
-                const isHeaderRowE = colE_lower.includes('job position') || colE_lower === 'role' || colE_lower === 'position';
+                // Check for exact header matches
+                const isHeaderRowA = colA_lower === 'nama' || colA_lower === 'name';
+                const isHeaderRowB = colB_lower.includes('employee id') && colB_lower.length < 30;
+                const isHeaderRowC = colC_lower.includes('job position') || colC_lower === 'role' || colC_lower === 'position';
                 
                 // Header row must have at least 2 of the 3 header indicators
-                const headerScore = (isHeaderRowC ? 1 : 0) + (isHeaderRowD ? 1 : 0) + (isHeaderRowE ? 1 : 0);
+                const headerScore = (isHeaderRowA ? 1 : 0) + (isHeaderRowB ? 1 : 0) + (isHeaderRowC ? 1 : 0);
                 
                 if (headerScore >= 2) {
                     headerRowIndex = i;
                     dataStartRow = i + 1;
                     console.log(`✅ AUTO-DETECTED Header at row ${i + 1} (0-indexed: ${i})`);
-                    console.log(`   Column C: "${colC}" | Column D: "${colD}" | Column E: "${colE}"`);
+                    console.log(`   Column A: "${colA}" | Column B: "${colB}" | Column C: "${colC}"`);
                     break;
                 }
             }
@@ -186,41 +182,40 @@ const IncentiveCalculator = {
     },
     
     // Parse Active Alproean List
-    // USER SPECIFICATION: Column C (Name), D (Employee ID), E (Job Position), AO (Branch Talenta)
-    // Excel columns: C=3rd, D=4th, E=5th, AO=41st
-    // 0-indexed arrays: C=2, D=3, E=4, AO=40
-    // NOTE: Column G (index 6) has old/duplicate data, Column E (index 4) has current roles
+    // NEW SIMPLIFIED STRUCTURE (2025-11-18):
+    // Column A (index 0): Name
+    // Column B (index 1): Employee ID
+    // Column C (index 2): Job Position / Role
+    // Column D (index 3): Branch / Outlet
     parseActiveAlproean: function(headers, rows) {
         const data = [];
         
         // DIAGNOSTIC: Log header row to verify structure
         console.log('🔍 Active Alproean Headers:', {
             headerRow: headers,
+            columnA: headers[0],
+            columnB: headers[1],
             columnC: headers[2],
-            columnD: headers[3],
-            columnE: headers[4],
-            columnG: headers[6],
-            columnAO: headers[40]
+            columnD: headers[3]
         });
         
         // DIAGNOSTIC: Log first 5 raw data rows to identify any offset
         console.log('🔍 First 5 raw data rows:');
         rows.slice(0, 5).forEach((row, idx) => {
             console.log(`  Row ${idx}:`, {
+                colA: row[0],
+                colB: row[1],
                 colC: row[2],
-                colD: row[3],
-                colE: row[4],
-                colG: row[6],
-                colAO: row[40]
+                colD: row[3]
             });
         });
         
         rows.forEach((row, idx) => {
-            if (row.length > 40 && row[2]) {  // Need at least column AO (index 40)
-                const employeeName = this.toSafeString(row[2]);   // Column C (index 2)
-                const employeeId = this.toSafeString(row[3]);     // Column D (index 3)
-                const role = this.toSafeString(row[4]);           // Column E (index 4) - CURRENT ROLE
-                const outlet = this.toSafeString(row[40]);        // Column AO (index 40)
+            if (row.length > 3 && row[0]) {  // Need at least 4 columns (A, B, C, D)
+                const employeeName = this.toSafeString(row[0]);   // Column A (index 0)
+                const employeeId = this.toSafeString(row[1]);     // Column B (index 1)
+                const role = this.toSafeString(row[2]);           // Column C (index 2)
+                const outlet = this.toSafeString(row[3]);         // Column D (index 3)
                 
                 data.push({
                     employeeName: employeeName,
