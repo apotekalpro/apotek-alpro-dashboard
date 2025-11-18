@@ -73,6 +73,13 @@ const IncentiveCalculator = {
     
     // Parse Excel file
     parseExcelFile: function(file, fileType) {
+        // Check if XLSX library is loaded
+        if (typeof XLSX === 'undefined') {
+            this.showStatus('Error: XLSX library not loaded. Please refresh the page.', 'error');
+            console.error('XLSX library is not defined. Make sure the script is loaded before this code runs.');
+            return;
+        }
+        
         const reader = new FileReader();
         
         reader.onload = (e) => {
