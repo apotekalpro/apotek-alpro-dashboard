@@ -122,27 +122,27 @@ const IncentiveCalculator = {
                 const row = jsonData[i];
                 const colC = this.toSafeString(row[2]).trim();
                 const colD = this.toSafeString(row[3]).trim();
-                const colG = this.toSafeString(row[6]).trim();
+                const colE = this.toSafeString(row[4]).trim();  // Column E has the correct role data
                 
                 // Check if this row contains EXACT header patterns (case-insensitive)
                 // Must match the ENTIRE cell value, not just contain the word
                 const colC_lower = colC.toLowerCase();
                 const colD_lower = colD.toLowerCase();
-                const colG_lower = colG.toLowerCase();
+                const colE_lower = colE.toLowerCase();
                 
                 // Check for exact header matches or very close variations
                 const isHeaderRowC = colC_lower === 'nama' || colC_lower === 'name';
                 const isHeaderRowD = colD_lower.includes('employee id') && colD_lower.length < 30;  // Must be short
-                const isHeaderRowG = colG_lower.includes('job position') || colG_lower === 'role' || colG_lower === 'position';
+                const isHeaderRowE = colE_lower.includes('job position') || colE_lower === 'role' || colE_lower === 'position';
                 
                 // Header row must have at least 2 of the 3 header indicators
-                const headerScore = (isHeaderRowC ? 1 : 0) + (isHeaderRowD ? 1 : 0) + (isHeaderRowG ? 1 : 0);
+                const headerScore = (isHeaderRowC ? 1 : 0) + (isHeaderRowD ? 1 : 0) + (isHeaderRowE ? 1 : 0);
                 
                 if (headerScore >= 2) {
                     headerRowIndex = i;
                     dataStartRow = i + 1;
                     console.log(`✅ AUTO-DETECTED Header at row ${i + 1} (0-indexed: ${i})`);
-                    console.log(`   Column C: "${colC}" | Column D: "${colD}" | Column G: "${colG}"`);
+                    console.log(`   Column C: "${colC}" | Column D: "${colD}" | Column E: "${colE}"`);
                     break;
                 }
             }
@@ -186,9 +186,10 @@ const IncentiveCalculator = {
     },
     
     // Parse Active Alproean List
-    // USER SPECIFICATION: Column C (Name), D (Employee ID), G (Job Position), AO (Branch Talenta)
-    // Excel columns: C=3rd, D=4th, G=7th, AO=41st
-    // 0-indexed arrays: C=2, D=3, G=6, AO=40
+    // USER SPECIFICATION: Column C (Name), D (Employee ID), E (Job Position), AO (Branch Talenta)
+    // Excel columns: C=3rd, D=4th, E=5th, AO=41st
+    // 0-indexed arrays: C=2, D=3, E=4, AO=40
+    // NOTE: Column G (index 6) has old/duplicate data, Column E (index 4) has current roles
     parseActiveAlproean: function(headers, rows) {
         const data = [];
         
@@ -197,6 +198,7 @@ const IncentiveCalculator = {
             headerRow: headers,
             columnC: headers[2],
             columnD: headers[3],
+            columnE: headers[4],
             columnG: headers[6],
             columnAO: headers[40]
         });
@@ -207,6 +209,7 @@ const IncentiveCalculator = {
             console.log(`  Row ${idx}:`, {
                 colC: row[2],
                 colD: row[3],
+                colE: row[4],
                 colG: row[6],
                 colAO: row[40]
             });
@@ -216,7 +219,7 @@ const IncentiveCalculator = {
             if (row.length > 40 && row[2]) {  // Need at least column AO (index 40)
                 const employeeName = this.toSafeString(row[2]);   // Column C (index 2)
                 const employeeId = this.toSafeString(row[3]);     // Column D (index 3)
-                const role = this.toSafeString(row[6]);           // Column G (index 6)
+                const role = this.toSafeString(row[4]);           // Column E (index 4) - CURRENT ROLE
                 const outlet = this.toSafeString(row[40]);        // Column AO (index 40)
                 
                 data.push({
