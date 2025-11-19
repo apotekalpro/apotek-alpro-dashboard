@@ -750,6 +750,27 @@ const IncentiveCalculator = {
                 
                 if (!inActiveList) {
                     // This person is in Personal Sales but NOT in Active List
+                    // Check if they exist in Full Alproean List (might be resigned)
+                    const inFullList = this.data.fullAlproeanList.find(full => 
+                        this.safeStringCompare(full.employeeName, ps.employeeName)
+                    );
+                    
+                    // Determine the reason based on Full List status
+                    let reason = 'Found in Personal Sales but NOT in Active Alproean List';
+                    let employeeId = 'Unknown';
+                    let status = 'Unknown';
+                    
+                    if (inFullList) {
+                        employeeId = inFullList.employeeId || 'Unknown';
+                        if (inFullList.status === 'resigned' || inFullList.resignDate) {
+                            reason = `Employee resigned (Resign Date: ${inFullList.resignDate || 'Unknown'})`;
+                            status = 'Resigned';
+                        } else {
+                            reason = 'Found in Full Alproean List but NOT in Active List (Inactive employee)';
+                            status = 'Inactive';
+                        }
+                    }
+                    
                     // Check if we already added them to unmatched (avoid duplicates)
                     const alreadyUnmatched = unmatched.find(u => 
                         this.safeStringCompare(u.employeeName, ps.employeeName)
@@ -758,17 +779,21 @@ const IncentiveCalculator = {
                     if (!alreadyUnmatched) {
                         unmatched.push({
                             employeeName: ps.employeeName,
-                            employeeId: 'Unknown',
+                            employeeId: employeeId,
                             role: 'Unknown',
                             outlet: ps.outlet,
                             personalSales: ps.personalSales,
-                            reason: 'Found in Personal Sales but NOT in Active Alproean List'
+                            status: status,
+                            resignDate: inFullList ? inFullList.resignDate : null,
+                            reason: reason
                         });
                         
                         console.log('⚠️ Unmatched employee found in Personal Sales:', {
                             name: ps.employeeName,
                             outlet: ps.outlet,
-                            sales: ps.personalSales
+                            sales: ps.personalSales,
+                            status: status,
+                            reason: reason
                         });
                     }
                 }
@@ -1294,8 +1319,10 @@ const IncentiveCalculator = {
             'Employee ID',
             'Role',
             'Outlet',
+            'Personal Sales (Rp)',
             'Status',
-            'Note'
+            'Resign Date',
+            'Reason / Note'
         ]);
         
         // Add data rows
@@ -1305,7 +1332,9 @@ const IncentiveCalculator = {
                 emp.employeeId || '',
                 emp.role || '',
                 emp.outlet || '',
-                'Unmatched',
+                emp.personalSales || 0,
+                emp.status || 'Unmatched',
+                emp.resignDate || '',
                 emp.reason || 'Not found in Full Alproean List'
             ]);
         });
