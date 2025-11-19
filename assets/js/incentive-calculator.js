@@ -731,6 +731,50 @@ const IncentiveCalculator = {
             }
         });
         
+        // REVERSE CHECK: Find people in Personal Sales who are NOT in Active Alproean List
+        // These are employees who made sales but are not in the active employee list
+        console.log('🔍 Reverse check: Finding employees in Personal Sales but not in Active List...');
+        
+        const matchedEmployeeNames = new Set();
+        matched.forEach(m => matchedEmployeeNames.add(m.employee.employeeName.toLowerCase().trim()));
+        
+        this.data.personalSalesData.forEach(ps => {
+            const psName = this.toSafeString(ps.employeeName).toLowerCase().trim();
+            
+            // Check if this person from Personal Sales is already matched
+            if (!matchedEmployeeNames.has(psName)) {
+                // Not matched - check if they exist in Active Alproean List
+                const inActiveList = this.data.activeAlproeanList.find(active => 
+                    this.safeStringCompare(active.employeeName, ps.employeeName)
+                );
+                
+                if (!inActiveList) {
+                    // This person is in Personal Sales but NOT in Active List
+                    // Check if we already added them to unmatched (avoid duplicates)
+                    const alreadyUnmatched = unmatched.find(u => 
+                        this.safeStringCompare(u.employeeName, ps.employeeName)
+                    );
+                    
+                    if (!alreadyUnmatched) {
+                        unmatched.push({
+                            employeeName: ps.employeeName,
+                            employeeId: 'Unknown',
+                            role: 'Unknown',
+                            outlet: ps.outlet,
+                            personalSales: ps.personalSales,
+                            reason: 'Found in Personal Sales but NOT in Active Alproean List'
+                        });
+                        
+                        console.log('⚠️ Unmatched employee found in Personal Sales:', {
+                            name: ps.employeeName,
+                            outlet: ps.outlet,
+                            sales: ps.personalSales
+                        });
+                    }
+                }
+            }
+        });
+        
         console.log(`✅ Matching complete: ${matched.length} matched, ${unmatched.length} unmatched`);
         this.data.unmatchedResults = unmatched;
         return matched;
