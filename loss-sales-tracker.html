@@ -209,6 +209,18 @@
                     </button>
                 </div>
             </div>
+            
+            <!-- Export Buttons -->
+            <div class="mt-4 flex gap-3">
+                <button onclick="exportToCSV()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                    <i class="fas fa-file-csv mr-2"></i>
+                    Export to CSV
+                </button>
+                <button onclick="exportToExcel()" class="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors flex items-center">
+                    <i class="fas fa-file-excel mr-2"></i>
+                    Export to Excel
+                </button>
+            </div>
         </div>
 
         <!-- Monthly Top 10 Tables -->
@@ -265,6 +277,22 @@
         let allData = [];
         let processedData = [];
         
+        // Month order for proper sorting
+        const MONTH_ORDER = {
+            'January': 1, 'February': 2, 'March': 3, 'April': 4,
+            'May': 5, 'June': 6, 'July': 7, 'August': 8,
+            'September': 9, 'October': 10, 'November': 11, 'December': 12
+        };
+        
+        // Sort months chronologically
+        function sortMonths(months) {
+            return months.sort((a, b) => {
+                const orderA = MONTH_ORDER[a] || 999;
+                const orderB = MONTH_ORDER[b] || 999;
+                return orderA - orderB;
+            });
+        }
+        
         // Loading overlay functions
         function updateLoadingText(text) {
             const loadingText = document.getElementById('loadingText');
@@ -278,6 +306,115 @@
             if (overlay) {
                 overlay.style.display = 'none';
             }
+        }
+        
+        // Export to CSV function
+        function exportToCSV() {
+            console.log('📥 Exporting data to CSV...');
+            
+            // Get current filter values
+            const monthFilter = document.getElementById('monthFilter').value;
+            const outletFilter = document.getElementById('outletFilter').value;
+            
+            // Apply filters if any
+            let dataToExport = processedData;
+            if (monthFilter) {
+                dataToExport = dataToExport.filter(item => item.month === monthFilter);
+            }
+            if (outletFilter) {
+                dataToExport = dataToExport.filter(item => item.outlets.includes(outletFilter));
+            }
+            
+            // CSV Header
+            let csv = 'Rank,Product Name,Normalized Name,Loss Count,Month,Outlets,Outlet Count\n';
+            
+            // CSV Data
+            dataToExport.forEach((item, index) => {
+                const rank = index + 1;
+                const productName = `"${item.originalNames.join(', ').replace(/"/g, '""')}"`;
+                const normalizedName = `"${item.normalizedName.replace(/"/g, '""')}"`;
+                const count = item.count;
+                const month = item.month;
+                const outlets = `"${item.outlets.join(', ').replace(/"/g, '""')}"`;
+                const outletCount = item.outlets.length;
+                
+                csv += `${rank},${productName},${normalizedName},${count},${month},${outlets},${outletCount}\n`;
+            });
+            
+            // Create download link
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const filterSuffix = monthFilter ? `_${monthFilter}` : '';
+            const filename = `loss-sales-tracker${filterSuffix}_${timestamp}.csv`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log(`✅ Exported ${dataToExport.length} items to ${filename}`);
+        }
+        
+        // Export to Excel (XLSX format)
+        function exportToExcel() {
+            console.log('📥 Exporting data to Excel...');
+            
+            // Get current filter values
+            const monthFilter = document.getElementById('monthFilter').value;
+            const outletFilter = document.getElementById('outletFilter').value;
+            
+            // Apply filters if any
+            let dataToExport = processedData;
+            if (monthFilter) {
+                dataToExport = dataToExport.filter(item => item.month === monthFilter);
+            }
+            if (outletFilter) {
+                dataToExport = dataToExport.filter(item => item.outlets.includes(outletFilter));
+            }
+            
+            // Create HTML table for Excel
+            let html = '<table border="1"><thead><tr>';
+            html += '<th>Rank</th><th>Product Name</th><th>Normalized Name</th><th>Loss Count</th><th>Month</th><th>Outlets</th><th>Outlet Count</th>';
+            html += '</tr></thead><tbody>';
+            
+            dataToExport.forEach((item, index) => {
+                html += '<tr>';
+                html += `<td>${index + 1}</td>`;
+                html += `<td>${item.originalNames.join(', ')}</td>`;
+                html += `<td>${item.normalizedName}</td>`;
+                html += `<td>${item.count}</td>`;
+                html += `<td>${item.month}</td>`;
+                html += `<td>${item.outlets.join(', ')}</td>`;
+                html += `<td>${item.outlets.length}</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            
+            // Create download link
+            const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const filterSuffix = monthFilter ? `_${monthFilter}` : '';
+            const filename = `loss-sales-tracker${filterSuffix}_${timestamp}.xls`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log(`✅ Exported ${dataToExport.length} items to ${filename}`);
         }
 
         // Item Name Preprocessing Algorithm
@@ -539,7 +676,7 @@
 
         // Populate filter dropdowns
         function populateFilters() {
-            const months = [...new Set(allData.map(item => item.month))].filter(m => m !== 'N/A').sort();
+            const months = sortMonths([...new Set(allData.map(item => item.month))].filter(m => m !== 'N/A'));
             const outlets = [...new Set(allData.map(item => item.outlet))].filter(o => o !== 'N/A').sort();
             
             const monthFilter = document.getElementById('monthFilter');
@@ -588,7 +725,7 @@
 
         // Render monthly top 10 tables
         function renderMonthlyTables() {
-            const months = [...new Set(processedData.map(item => item.month))].sort();
+            const months = sortMonths([...new Set(processedData.map(item => item.month))]);
             const container = document.getElementById('monthlyTablesContainer');
             container.innerHTML = '';
             
