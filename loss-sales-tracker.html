@@ -92,9 +92,38 @@
             background: #fef3c7;
             color: #92400e;
         }
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        #loadingOverlay .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f4f6;
+            border-top: 6px solid #3b82f6;
+        }
+        #loadingOverlay p {
+            color: white;
+            margin-top: 20px;
+            font-size: 18px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p id="loadingText">Loading data from Google Sheets...</p>
+    </div>
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <div class="mb-8">
@@ -250,6 +279,21 @@
         let processedData = [];
         let topProductsChart = null;
         let monthlyTrendChart = null;
+        
+        // Loading overlay functions
+        function updateLoadingText(text) {
+            const loadingText = document.getElementById('loadingText');
+            if (loadingText) {
+                loadingText.textContent = text;
+            }
+        }
+        
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
 
         // Item Name Preprocessing Algorithm
         function normalizeItemName(itemName) {
@@ -314,43 +358,41 @@
             return matrix[str2.length][str1.length];
         }
 
-        // Group similar items together
+        // Optimized grouping - group by exact normalized name (much faster)
+        // The normalization already handles most similarity cases
         function groupSimilarItems(items) {
-            const groups = [];
-            const processed = new Set();
-            const SIMILARITY_THRESHOLD = 0.8;
+            console.log(`🔄 Grouping ${items.length} items by normalized name...`);
+            
+            // Group by normalized name + month (O(n) complexity instead of O(n²))
+            const groupMap = new Map();
             
             items.forEach(item => {
-                if (processed.has(item.original)) return;
+                const key = `${item.normalized}_${item.month}`;
                 
-                const group = {
-                    normalizedName: item.normalized,
-                    originalNames: [item.original],
-                    count: 1,
-                    month: item.month,
-                    outlet: item.outlet
-                };
+                if (!groupMap.has(key)) {
+                    groupMap.set(key, {
+                        normalizedName: item.normalized,
+                        originalNames: [],
+                        count: 0,
+                        month: item.month,
+                        outlets: new Set()
+                    });
+                }
                 
-                processed.add(item.original);
-                
-                // Find similar items
-                items.forEach(otherItem => {
-                    if (processed.has(otherItem.original)) return;
-                    if (item.month !== otherItem.month) return;
-                    
-                    const similarity = calculateSimilarity(item.normalized, otherItem.normalized);
-                    
-                    if (similarity >= SIMILARITY_THRESHOLD) {
-                        group.originalNames.push(otherItem.original);
-                        group.count++;
-                        processed.add(otherItem.original);
-                    }
-                });
-                
-                groups.push(group);
+                const group = groupMap.get(key);
+                group.originalNames.push(item.original);
+                group.count++;
+                group.outlets.add(item.outlet);
             });
             
-            return groups;
+            console.log(`✅ Created ${groupMap.size} groups`);
+            
+            // Convert to array
+            return Array.from(groupMap.values()).map(group => ({
+                ...group,
+                outlets: Array.from(group.outlets),
+                outlet: Array.from(group.outlets)[0] // For compatibility
+            }));
         }
 
         // Fetch data from Google Sheets by GID
@@ -383,8 +425,10 @@
         async function processData() {
             try {
                 console.log('🔄 Starting data processing...');
+                updateLoadingText('Connecting to Google Sheets...');
                 
                 // Fetch main sheet by GID
+                updateLoadingText('Fetching loss sales data...');
                 const sheet1Data = await fetchSheetDataByGid(SHEET1_GID, 'Main Sheet');
                 console.log(`📊 Main sheet data rows: ${sheet1Data.length}`);
                 
@@ -401,6 +445,7 @@
                 const combinedData = [];
                 
                 // Process Sheet1 (Column K = item name, B = outlet code, I = month)
+                updateLoadingText(`Processing ${sheet1Data.length} rows...`);
                 console.log('🔍 Processing Sheet1 data...');
                 sheet1Data.forEach((row, index) => {
                     if (index === 0) {
@@ -448,45 +493,48 @@
                 allData = combinedData;
                 console.log(`📊 Total combined data: ${allData.length} items`);
                 
-                // Group similar items
+                // Group similar items (now much faster - O(n) instead of O(n²))
+                updateLoadingText(`Grouping ${allData.length} items by product name...`);
+                console.log('🔄 Starting grouping process...');
                 const grouped = groupSimilarItems(combinedData);
+                console.log(`✅ Grouping complete: ${grouped.length} unique products`);
                 
-                // Aggregate by normalized name and month
-                const aggregated = {};
-                grouped.forEach(group => {
-                    const key = `${group.normalizedName}_${group.month}`;
-                    if (!aggregated[key]) {
-                        aggregated[key] = {
-                            normalizedName: group.normalizedName,
-                            originalNames: new Set(group.originalNames),
-                            count: 0,
-                            month: group.month,
-                            outlets: new Set()
-                        };
-                    }
-                    group.originalNames.forEach(name => aggregated[key].originalNames.add(name));
-                    aggregated[key].count += group.count;
-                    aggregated[key].outlets.add(group.outlet);
-                });
-                
-                processedData = Object.values(aggregated).map(item => ({
-                    ...item,
-                    originalNames: Array.from(item.originalNames),
-                    outlets: Array.from(item.outlets)
+                // The grouping already did the aggregation, just format it
+                processedData = grouped.map(group => ({
+                    normalizedName: group.normalizedName,
+                    originalNames: group.originalNames,
+                    count: group.count,
+                    month: group.month,
+                    outlets: group.outlets
                 }));
                 
                 // Sort by count descending
+                updateLoadingText('Sorting and preparing data...');
+                console.log('🔄 Sorting data...');
                 processedData.sort((a, b) => b.count - a.count);
+                console.log('✅ Sorting complete');
                 
+                // Update UI
+                updateLoadingText('Rendering dashboard...');
+                console.log('🔄 Updating UI...');
                 updateUI();
                 populateFilters();
                 renderCharts();
                 renderMonthlyTables();
                 renderTable();
+                console.log('✅ All done! Page ready.');
+                
+                // Hide loading overlay
+                hideLoadingOverlay();
+                
                 
             } catch (error) {
-                console.error('Error processing data:', error);
-                alert('Error loading data. Please check the console for details.');
+                console.error('❌ Error processing data:', error);
+                updateLoadingText('Error loading data. Check console for details.');
+                setTimeout(() => {
+                    hideLoadingOverlay();
+                    alert('Error loading data. Please check the console for details and try refreshing the page.');
+                }, 1000);
             }
         }
 
