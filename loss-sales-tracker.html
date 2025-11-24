@@ -6,7 +6,6 @@
     <title>Loss Sales Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .table-container {
             overflow-x: auto;
@@ -212,18 +211,6 @@
             </div>
         </div>
 
-        <!-- Charts -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div class="chart-container">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Top 10 Loss Sales Products (Current Month)</h3>
-                <canvas id="topProductsChart"></canvas>
-            </div>
-            <div class="chart-container">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Loss Sales Trend by Month</h3>
-                <canvas id="monthlyTrendChart"></canvas>
-            </div>
-        </div>
-
         <!-- Monthly Top 10 Tables -->
         <div class="chart-container">
             <h3 class="text-xl font-bold text-gray-800 mb-4">
@@ -277,8 +264,6 @@
         
         let allData = [];
         let processedData = [];
-        let topProductsChart = null;
-        let monthlyTrendChart = null;
         
         // Loading overlay functions
         function updateLoadingText(text) {
@@ -595,87 +580,10 @@
         }
 
         // Render charts
+        // Charts removed as requested
         function renderCharts(data = processedData) {
-            // Get current month data for top 10
-            const months = [...new Set(data.map(item => item.month))].sort();
-            const currentMonth = months[months.length - 1];
-            const currentMonthData = data.filter(item => item.month === currentMonth).slice(0, 10);
-            
-            // Top Products Chart
-            const topProductsCtx = document.getElementById('topProductsChart').getContext('2d');
-            if (topProductsChart) topProductsChart.destroy();
-            
-            topProductsChart = new Chart(topProductsCtx, {
-                type: 'bar',
-                data: {
-                    labels: currentMonthData.map(item => item.normalizedName),
-                    datasets: [{
-                        label: 'Loss Sales Count',
-                        data: currentMonthData.map(item => item.count),
-                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-            
-            // Monthly Trend Chart
-            const monthlyData = {};
-            data.forEach(item => {
-                if (!monthlyData[item.month]) {
-                    monthlyData[item.month] = 0;
-                }
-                monthlyData[item.month] += item.count;
-            });
-            
-            const sortedMonths = Object.keys(monthlyData).sort();
-            
-            const monthlyTrendCtx = document.getElementById('monthlyTrendChart').getContext('2d');
-            if (monthlyTrendChart) monthlyTrendChart.destroy();
-            
-            monthlyTrendChart = new Chart(monthlyTrendCtx, {
-                type: 'line',
-                data: {
-                    labels: sortedMonths,
-                    datasets: [{
-                        label: 'Total Loss Sales',
-                        data: sortedMonths.map(month => monthlyData[month]),
-                        borderColor: 'rgba(139, 92, 246, 1)',
-                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
+            // Charts have been removed from the UI
+            console.log('📊 Charts rendering skipped (removed from UI)');
         }
 
         // Render monthly top 10 tables
