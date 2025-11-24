@@ -177,6 +177,37 @@
             color: #2563eb;
             border-bottom-color: #2563eb;
         }
+        
+        /* Procurement Sub-tabs Styles */
+        .procurement-subtab {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .procurement-subtab:hover {
+            border-color: #9ca3af !important;
+            color: #374151 !important;
+        }
+        
+        .procurement-subtab.active {
+            border-color: #3b82f6 !important;
+            color: #3b82f6 !important;
+        }
+        
+        .procurement-subcontent {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -1892,22 +1923,58 @@
 
                 <!-- Procurement Content -->
                 <div id="procurementContent" class="tab-content hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                                <i class="fas fa-shopping-cart mr-3 text-blue-600"></i>
-                                Procurement Dashboard
-                            </h2>
-                            <p class="text-gray-600">Procurement analysis and management system</p>
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-2">
+                            <i class="fas fa-shopping-cart mr-3 text-blue-600"></i>
+                            Procurement Dashboard
+                        </h2>
+                        <p class="text-gray-600 mb-4">Procurement analysis and management system</p>
+                        
+                        <!-- Procurement Sub-tabs -->
+                        <div class="border-b border-gray-200 mb-4">
+                            <nav class="flex space-x-8" aria-label="Procurement Tabs">
+                                <button onclick="showProcurementSubTab('mainDashboard')" 
+                                        id="mainDashboardTab"
+                                        class="procurement-subtab active whitespace-nowrap py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+                                    <i class="fas fa-chart-pie mr-2"></i>
+                                    Main Dashboard
+                                </button>
+                                <button onclick="showProcurementSubTab('lossSalesTracker')" 
+                                        id="lossSalesTrackerTab"
+                                        class="procurement-subtab whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    <i class="fas fa-chart-line mr-2"></i>
+                                    Loss Sales Tracker
+                                </button>
+                            </nav>
                         </div>
-                        <button onclick="openInNewTab('https://procurementanalys.github.io/dashboardproc/')" 
-                                class="btn-primary text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-external-link-alt mr-2"></i>
-                            Open in New Tab
-                        </button>
                     </div>
-                    <div class="iframe-container">
-                        <iframe data-src="https://procurementanalys.github.io/dashboardproc/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+
+                    <!-- Main Dashboard Sub-content -->
+                    <div id="mainDashboardContent" class="procurement-subcontent">
+                        <div class="flex justify-end mb-4">
+                            <button onclick="openInNewTab('https://procurementanalys.github.io/dashboardproc/')" 
+                                    class="btn-primary text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-external-link-alt mr-2"></i>
+                                Open in New Tab
+                            </button>
+                        </div>
+                        <div class="iframe-container">
+                            <iframe data-src="https://procurementanalys.github.io/dashboardproc/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Loss Sales Tracker Sub-content -->
+                    <div id="lossSalesTrackerContent" class="procurement-subcontent hidden">
+                        <div class="flex justify-end mb-4">
+                            <button onclick="openInNewTab('loss-sales-tracker.html')" 
+                                    class="btn-primary text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-external-link-alt mr-2"></i>
+                                Open in New Tab
+                            </button>
+                        </div>
+                        <div class="iframe-container">
+                            <iframe data-src="loss-sales-tracker.html" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                        </div>
                     </div>
                 </div>
 
@@ -5122,6 +5189,41 @@
             
             // Add active class to clicked button
             event.target.classList.add('active');
+        }
+
+        // Procurement Subtab Functions
+        function showProcurementSubTab(subtabId) {
+            // Hide all procurement sub-contents
+            document.querySelectorAll('.procurement-subcontent').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all procurement sub-tabs
+            document.querySelectorAll('.procurement-subtab').forEach(tab => {
+                tab.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                tab.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Show selected sub-content
+            const contentId = subtabId + 'Content';
+            const content = document.getElementById(contentId);
+            if (content) {
+                content.classList.remove('hidden');
+                
+                // Load iframe if it exists and hasn't been loaded yet
+                const iframe = content.querySelector('iframe.lazy-iframe');
+                if (iframe && !iframe.src && iframe.dataset.src) {
+                    iframe.src = iframe.dataset.src;
+                }
+            }
+            
+            // Add active class to clicked tab
+            const tabId = subtabId + 'Tab';
+            const tab = document.getElementById(tabId);
+            if (tab) {
+                tab.classList.add('active', 'border-blue-500', 'text-blue-600');
+                tab.classList.remove('border-transparent', 'text-gray-500');
+            }
         }
 
         // Strategy Subtab Functions

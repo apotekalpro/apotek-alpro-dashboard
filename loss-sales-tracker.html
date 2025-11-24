@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loss Sales Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background: white;
+        }
+        thead {
+            position: sticky;
+            top: 0;
+            background: #1e40af;
+            color: white;
+            z-index: 10;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        tbody tr:hover {
+            background-color: #f3f4f6;
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+        }
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-primary {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 flex items-center mb-2">
+                <i class="fas fa-chart-line mr-4 text-blue-600"></i>
+                Loss Sales Tracker
+            </h1>
+            <p class="text-gray-600">Track and analyze loss sales data across outlets and products</p>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80">Total Loss Sales</p>
+                        <h3 id="totalLossSales" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="fas fa-exclamation-triangle text-4xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80">Unique Products</p>
+                        <h3 id="uniqueProducts" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="fas fa-box text-4xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80">Outlets Affected</p>
+                        <h3 id="outletsAffected" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="fas fa-store text-4xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80">Current Month</p>
+                        <h3 id="currentMonth" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="fas fa-calendar text-4xl opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-filter mr-2 text-blue-600"></i>
+                Filters
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                    <select id="monthFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Months</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Outlet</label>
+                    <select id="outletFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Outlets</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="applyFilters()" class="w-full bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="chart-container">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Top 10 Loss Sales Products (Current Month)</h3>
+                <canvas id="topProductsChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Loss Sales Trend by Month</h3>
+                <canvas id="monthlyTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Monthly Top 10 Tables -->
+        <div class="chart-container">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-trophy mr-2 text-yellow-500"></i>
+                Top 10 Products by Month
+            </h3>
+            <div id="monthlyTablesContainer" class="space-y-6">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Data Table -->
+        <div class="chart-container">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-table mr-2 text-blue-600"></i>
+                All Loss Sales Data
+            </h3>
+            <div class="table-container">
+                <table id="lossSalesTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Product Name</th>
+                            <th>Normalized Name</th>
+                            <th>Loss Count</th>
+                            <th>Month</th>
+                            <th>Outlets</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="6" class="text-center py-8">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google Sheets Configuration
+        const SHEET_ID = '1Mr42a0pG4fQGsxTj77FmaTapE4_utQJ8mXO4DRYU2i0';
+        const SHEET1_NAME = 'Sheet1'; // Main loss sales data
+        const PRICE_SHEET_NAME = 'Price'; // Price sheet data
+        
+        let allData = [];
+        let processedData = [];
+        let topProductsChart = null;
+        let monthlyTrendChart = null;
+
+        // Item Name Preprocessing Algorithm
+        function normalizeItemName(itemName) {
+            if (!itemName || itemName.trim() === '') return '';
+            
+            let normalized = itemName.toUpperCase().trim();
+            
+            // Remove common prefixes
+            normalized = normalized.replace(/^\(AJH\)\s*/i, '');
+            normalized = normalized.replace(/^\(FCS\)\s*/i, '');
+            
+            // Remove volume/size information (e.g., 60ML, 150ML, 250ML, 28S, 10X10S, etc.)
+            normalized = normalized.replace(/\s*\d+(\.\d+)?\s*(ML|MG|G|KG|L|S|TAB|KAPSUL|KAPLET|SACHET|STRIP)\s*(\d+X\d+S|\d+S|\d+X\d+)?/gi, '');
+            
+            // Remove packaging information
+            normalized = normalized.replace(/\s*\d+X\d+\s*/gi, '');
+            normalized = normalized.replace(/\s*\d+S\s*/gi, '');
+            
+            // Remove special characters and extra spaces
+            normalized = normalized.replace(/[^\w\s]/g, ' ');
+            normalized = normalized.replace(/\s+/g, ' ').trim();
+            
+            return normalized;
+        }
+
+        // Calculate similarity between two strings (Levenshtein distance based)
+        function calculateSimilarity(str1, str2) {
+            const longer = str1.length > str2.length ? str1 : str2;
+            const shorter = str1.length > str2.length ? str2 : str1;
+            
+            if (longer.length === 0) return 1.0;
+            
+            const editDistance = levenshteinDistance(longer, shorter);
+            return (longer.length - editDistance) / longer.length;
+        }
+
+        function levenshteinDistance(str1, str2) {
+            const matrix = [];
+            
+            for (let i = 0; i <= str2.length; i++) {
+                matrix[i] = [i];
+            }
+            
+            for (let j = 0; j <= str1.length; j++) {
+                matrix[0][j] = j;
+            }
+            
+            for (let i = 1; i <= str2.length; i++) {
+                for (let j = 1; j <= str1.length; j++) {
+                    if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+            
+            return matrix[str2.length][str1.length];
+        }
+
+        // Group similar items together
+        function groupSimilarItems(items) {
+            const groups = [];
+            const processed = new Set();
+            const SIMILARITY_THRESHOLD = 0.8;
+            
+            items.forEach(item => {
+                if (processed.has(item.original)) return;
+                
+                const group = {
+                    normalizedName: item.normalized,
+                    originalNames: [item.original],
+                    count: 1,
+                    month: item.month,
+                    outlet: item.outlet
+                };
+                
+                processed.add(item.original);
+                
+                // Find similar items
+                items.forEach(otherItem => {
+                    if (processed.has(otherItem.original)) return;
+                    if (item.month !== otherItem.month) return;
+                    
+                    const similarity = calculateSimilarity(item.normalized, otherItem.normalized);
+                    
+                    if (similarity >= SIMILARITY_THRESHOLD) {
+                        group.originalNames.push(otherItem.original);
+                        group.count++;
+                        processed.add(otherItem.original);
+                    }
+                });
+                
+                groups.push(group);
+            });
+            
+            return groups;
+        }
+
+        // Fetch data from Google Sheets
+        async function fetchSheetData(sheetName) {
+            try {
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+                const response = await fetch(url);
+                const text = await response.text();
+                const json = JSON.parse(text.substr(47).slice(0, -2));
+                
+                return json.table.rows.map(row => {
+                    return row.c.map(cell => cell ? cell.v : '');
+                });
+            } catch (error) {
+                console.error('Error fetching sheet data:', error);
+                return [];
+            }
+        }
+
+        // Process data
+        async function processData() {
+            try {
+                // Fetch both sheets
+                const [sheet1Data, priceSheetData] = await Promise.all([
+                    fetchSheetData(SHEET1_NAME),
+                    fetchSheetData(PRICE_SHEET_NAME)
+                ]);
+
+                // Combine data from both sheets
+                const combinedData = [];
+                
+                // Process Sheet1 (Column K = item name, B = outlet code, I = month)
+                sheet1Data.forEach((row, index) => {
+                    if (index === 0) return; // Skip header
+                    const itemName = row[10]; // Column K (0-indexed = 10)
+                    const outletCode = row[1]; // Column B
+                    const month = row[8]; // Column I
+                    
+                    if (itemName && itemName.trim() !== '') {
+                        combinedData.push({
+                            original: itemName,
+                            normalized: normalizeItemName(itemName),
+                            outlet: outletCode || 'N/A',
+                            month: month || 'N/A'
+                        });
+                    }
+                });
+
+                // Process Price Sheet (assuming similar structure)
+                priceSheetData.forEach((row, index) => {
+                    if (index === 0) return; // Skip header
+                    const itemName = row[10]; // Column K
+                    const outletCode = row[1]; // Column B
+                    const month = row[8]; // Column I
+                    
+                    if (itemName && itemName.trim() !== '') {
+                        combinedData.push({
+                            original: itemName,
+                            normalized: normalizeItemName(itemName),
+                            outlet: outletCode || 'N/A',
+                            month: month || 'N/A'
+                        });
+                    }
+                });
+
+                allData = combinedData;
+                
+                // Group similar items
+                const grouped = groupSimilarItems(combinedData);
+                
+                // Aggregate by normalized name and month
+                const aggregated = {};
+                grouped.forEach(group => {
+                    const key = `${group.normalizedName}_${group.month}`;
+                    if (!aggregated[key]) {
+                        aggregated[key] = {
+                            normalizedName: group.normalizedName,
+                            originalNames: new Set(group.originalNames),
+                            count: 0,
+                            month: group.month,
+                            outlets: new Set()
+                        };
+                    }
+                    group.originalNames.forEach(name => aggregated[key].originalNames.add(name));
+                    aggregated[key].count += group.count;
+                    aggregated[key].outlets.add(group.outlet);
+                });
+                
+                processedData = Object.values(aggregated).map(item => ({
+                    ...item,
+                    originalNames: Array.from(item.originalNames),
+                    outlets: Array.from(item.outlets)
+                }));
+                
+                // Sort by count descending
+                processedData.sort((a, b) => b.count - a.count);
+                
+                updateUI();
+                populateFilters();
+                renderCharts();
+                renderMonthlyTables();
+                renderTable();
+                
+            } catch (error) {
+                console.error('Error processing data:', error);
+                alert('Error loading data. Please check the console for details.');
+            }
+        }
+
+        // Update statistics cards
+        function updateUI() {
+            document.getElementById('totalLossSales').textContent = allData.length.toLocaleString();
+            
+            const uniqueProducts = new Set(processedData.map(item => item.normalizedName));
+            document.getElementById('uniqueProducts').textContent = uniqueProducts.size.toLocaleString();
+            
+            const uniqueOutlets = new Set(allData.map(item => item.outlet));
+            document.getElementById('outletsAffected').textContent = uniqueOutlets.size.toLocaleString();
+            
+            const months = [...new Set(allData.map(item => item.month))].filter(m => m !== 'N/A');
+            document.getElementById('currentMonth').textContent = months[months.length - 1] || 'N/A';
+        }
+
+        // Populate filter dropdowns
+        function populateFilters() {
+            const months = [...new Set(allData.map(item => item.month))].filter(m => m !== 'N/A').sort();
+            const outlets = [...new Set(allData.map(item => item.outlet))].filter(o => o !== 'N/A').sort();
+            
+            const monthFilter = document.getElementById('monthFilter');
+            const outletFilter = document.getElementById('outletFilter');
+            
+            months.forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = month;
+                monthFilter.appendChild(option);
+            });
+            
+            outlets.forEach(outlet => {
+                const option = document.createElement('option');
+                option.value = outlet;
+                option.textContent = outlet;
+                outletFilter.appendChild(option);
+            });
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const monthFilter = document.getElementById('monthFilter').value;
+            const outletFilter = document.getElementById('outletFilter').value;
+            
+            let filtered = processedData;
+            
+            if (monthFilter) {
+                filtered = filtered.filter(item => item.month === monthFilter);
+            }
+            
+            if (outletFilter) {
+                filtered = filtered.filter(item => item.outlets.includes(outletFilter));
+            }
+            
+            renderTable(filtered);
+            renderCharts(filtered);
+        }
+
+        // Render charts
+        function renderCharts(data = processedData) {
+            // Get current month data for top 10
+            const months = [...new Set(data.map(item => item.month))].sort();
+            const currentMonth = months[months.length - 1];
+            const currentMonthData = data.filter(item => item.month === currentMonth).slice(0, 10);
+            
+            // Top Products Chart
+            const topProductsCtx = document.getElementById('topProductsChart').getContext('2d');
+            if (topProductsChart) topProductsChart.destroy();
+            
+            topProductsChart = new Chart(topProductsCtx, {
+                type: 'bar',
+                data: {
+                    labels: currentMonthData.map(item => item.normalizedName),
+                    datasets: [{
+                        label: 'Loss Sales Count',
+                        data: currentMonthData.map(item => item.count),
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Monthly Trend Chart
+            const monthlyData = {};
+            data.forEach(item => {
+                if (!monthlyData[item.month]) {
+                    monthlyData[item.month] = 0;
+                }
+                monthlyData[item.month] += item.count;
+            });
+            
+            const sortedMonths = Object.keys(monthlyData).sort();
+            
+            const monthlyTrendCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+            if (monthlyTrendChart) monthlyTrendChart.destroy();
+            
+            monthlyTrendChart = new Chart(monthlyTrendCtx, {
+                type: 'line',
+                data: {
+                    labels: sortedMonths,
+                    datasets: [{
+                        label: 'Total Loss Sales',
+                        data: sortedMonths.map(month => monthlyData[month]),
+                        borderColor: 'rgba(139, 92, 246, 1)',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render monthly top 10 tables
+        function renderMonthlyTables() {
+            const months = [...new Set(processedData.map(item => item.month))].sort();
+            const container = document.getElementById('monthlyTablesContainer');
+            container.innerHTML = '';
+            
+            months.forEach(month => {
+                const monthData = processedData.filter(item => item.month === month).slice(0, 10);
+                
+                const monthSection = document.createElement('div');
+                monthSection.className = 'border-t pt-4';
+                
+                const monthTitle = document.createElement('h4');
+                monthTitle.className = 'text-lg font-bold text-gray-800 mb-3';
+                monthTitle.innerHTML = `<span class="badge badge-primary">${month}</span> - Top 10 Products`;
+                monthSection.appendChild(monthTitle);
+                
+                const table = document.createElement('table');
+                table.className = 'w-full';
+                table.innerHTML = `
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Rank</th>
+                            <th class="px-4 py-2 text-left">Product Name</th>
+                            <th class="px-4 py-2 text-left">Loss Count</th>
+                            <th class="px-4 py-2 text-left">Outlets</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${monthData.map((item, index) => `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="px-4 py-2">
+                                    ${index < 3 ? `<span class="badge badge-warning">#${index + 1}</span>` : `#${index + 1}`}
+                                </td>
+                                <td class="px-4 py-2 font-medium">${item.normalizedName}</td>
+                                <td class="px-4 py-2">
+                                    <span class="badge badge-success">${item.count}</span>
+                                </td>
+                                <td class="px-4 py-2 text-sm text-gray-600">${item.outlets.length} outlets</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+                
+                monthSection.appendChild(table);
+                container.appendChild(monthSection);
+            });
+        }
+
+        // Render main table
+        function renderTable(data = processedData) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No data available</td></tr>';
+                return;
+            }
+            
+            data.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        ${index < 10 ? `<span class="badge badge-warning">#${index + 1}</span>` : `#${index + 1}`}
+                    </td>
+                    <td class="font-medium">
+                        ${item.originalNames.slice(0, 3).join(', ')}
+                        ${item.originalNames.length > 3 ? `<span class="text-gray-500 text-sm">+${item.originalNames.length - 3} more</span>` : ''}
+                    </td>
+                    <td><span class="badge badge-primary">${item.normalizedName}</span></td>
+                    <td><span class="badge badge-success">${item.count}</span></td>
+                    <td>${item.month}</td>
+                    <td class="text-sm text-gray-600">${item.outlets.slice(0, 3).join(', ')} ${item.outlets.length > 3 ? `+${item.outlets.length - 3}` : ''}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            processData();
+        });
+    </script>
+</body>
+</html>
