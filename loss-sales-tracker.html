@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loss Sales Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background: white;
+        }
+        thead {
+            position: sticky;
+            top: 0;
+            background: #1e40af;
+            color: white;
+            z-index: 10;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        tbody tr:hover {
+            background-color: #f3f4f6;
+        }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+        }
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-primary {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        #loadingOverlay .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid #f3f4f6;
+            border-top: 6px solid #3b82f6;
+        }
+        #loadingOverlay p {
+            color: white;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        .month-count-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .month-count-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+        }
+        .month-count-card .month-name {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 600;
+        }
+        .month-count-card .count {
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <p id="loadingText">Loading data from Google Sheets...</p>
+    </div>
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-4xl font-bold text-gray-800 flex items-center mb-2">
+                        <i class="fas fa-chart-line mr-4 text-blue-600"></i>
+                        Loss Sales Tracker
+                    </h1>
+                    <p class="text-gray-600">Track and analyze loss sales data across outlets and products</p>
+                </div>
+                <div class="text-sm">
+                    <button onclick="location.reload()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80">Total Loss Sales</p>
+                        <h3 id="totalLossSales" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="fas fa-exclamation-triangle text-4xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80">Unique Products</p>
+                        <h3 id="uniqueProducts" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="fas fa-box text-4xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80">Outlets Affected</p>
+                        <h3 id="outletsAffected" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="fas fa-store text-4xl opacity-50"></i>
+                </div>
+            </div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-80">Current Month</p>
+                        <h3 id="currentMonth" class="text-3xl font-bold mt-2">-</h3>
+                    </div>
+                    <i class="fas fa-calendar text-4xl opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-filter mr-2 text-blue-600"></i>
+                Filters
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                    <select id="monthFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Months</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Outlet</label>
+                    <select id="outletFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Outlets</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="applyFilters()" class="w-full bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-search mr-2"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Export Buttons -->
+            <div class="mt-4 flex gap-3">
+                <button onclick="exportToCSV()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                    <i class="fas fa-file-csv mr-2"></i>
+                    Export to CSV
+                </button>
+                <button onclick="exportToExcel()" class="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700 transition-colors flex items-center">
+                    <i class="fas fa-file-excel mr-2"></i>
+                    Export to Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Monthly Loss Sales Count Card -->
+        <div class="chart-container">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-calendar-alt mr-2 text-purple-600"></i>
+                Loss Sales Count by Month
+            </h3>
+            <div id="monthlyCountsContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Top 10 Tables -->
+        <div class="chart-container">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-trophy mr-2 text-yellow-500"></i>
+                Top 10 Products by Month
+            </h3>
+            <div id="monthlyTablesContainer" class="space-y-6">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Data Table -->
+        <div class="chart-container">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-table mr-2 text-blue-600"></i>
+                All Loss Sales Data
+            </h3>
+            <div class="table-container">
+                <table id="lossSalesTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Product Name</th>
+                            <th>Normalized Name</th>
+                            <th>Loss Count</th>
+                            <th>Month</th>
+                            <th>Outlets</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="6" class="text-center py-8">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google Sheets Configuration
+        const SHEET_ID = '1Mr42a0pG4fQGsxTj77FmaTapE4_utQJ8mXO4DRYU2i0';
+        const SHEET1_GID = '1075651210'; // Main loss sales data GID
+        const PRICE_SHEET_GID = '0'; // Price sheet GID (usually 0 for first sheet, adjust if needed)
+        
+        let allData = [];
+        let processedData = [];
+        
+        // Month order for proper sorting
+        const MONTH_ORDER = {
+            'January': 1, 'February': 2, 'March': 3, 'April': 4,
+            'May': 5, 'June': 6, 'July': 7, 'August': 8,
+            'September': 9, 'October': 10, 'November': 11, 'December': 12
+        };
+        
+        // Sort months chronologically (latest to oldest)
+        function sortMonths(months) {
+            return months.sort((a, b) => {
+                const orderA = MONTH_ORDER[a] || 999;
+                const orderB = MONTH_ORDER[b] || 999;
+                return orderB - orderA; // Reversed for latest first
+            });
+        }
+        
+        // Loading overlay functions
+        function updateLoadingText(text) {
+            const loadingText = document.getElementById('loadingText');
+            if (loadingText) {
+                loadingText.textContent = text;
+            }
+        }
+        
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+        
+        // Export to CSV function
+        function exportToCSV() {
+            console.log('📥 Exporting data to CSV...');
+            
+            // Get current filter values
+            const monthFilter = document.getElementById('monthFilter').value;
+            const outletFilter = document.getElementById('outletFilter').value;
+            
+            // Apply filters if any
+            let dataToExport = processedData;
+            if (monthFilter) {
+                dataToExport = dataToExport.filter(item => item.month === monthFilter);
+            }
+            if (outletFilter) {
+                dataToExport = dataToExport.filter(item => item.outlets.includes(outletFilter));
+            }
+            
+            // CSV Header
+            let csv = 'Rank,Product Name,Normalized Name,Loss Count,Month,Outlets,Outlet Count\n';
+            
+            // CSV Data
+            dataToExport.forEach((item, index) => {
+                const rank = index + 1;
+                const productName = `"${item.originalNames.join(', ').replace(/"/g, '""')}"`;
+                const normalizedName = `"${item.normalizedName.replace(/"/g, '""')}"`;
+                const count = item.count;
+                const month = item.month;
+                const outlets = `"${item.outlets.join(', ').replace(/"/g, '""')}"`;
+                const outletCount = item.outlets.length;
+                
+                csv += `${rank},${productName},${normalizedName},${count},${month},${outlets},${outletCount}\n`;
+            });
+            
+            // Create download link
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const filterSuffix = monthFilter ? `_${monthFilter}` : '';
+            const filename = `loss-sales-tracker${filterSuffix}_${timestamp}.csv`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log(`✅ Exported ${dataToExport.length} items to ${filename}`);
+        }
+        
+        // Export to Excel (XLSX format)
+        function exportToExcel() {
+            console.log('📥 Exporting data to Excel...');
+            
+            // Get current filter values
+            const monthFilter = document.getElementById('monthFilter').value;
+            const outletFilter = document.getElementById('outletFilter').value;
+            
+            // Apply filters if any
+            let dataToExport = processedData;
+            if (monthFilter) {
+                dataToExport = dataToExport.filter(item => item.month === monthFilter);
+            }
+            if (outletFilter) {
+                dataToExport = dataToExport.filter(item => item.outlets.includes(outletFilter));
+            }
+            
+            // Create HTML table for Excel
+            let html = '<table border="1"><thead><tr>';
+            html += '<th>Rank</th><th>Product Name</th><th>Normalized Name</th><th>Loss Count</th><th>Month</th><th>Outlets</th><th>Outlet Count</th>';
+            html += '</tr></thead><tbody>';
+            
+            dataToExport.forEach((item, index) => {
+                html += '<tr>';
+                html += `<td>${index + 1}</td>`;
+                html += `<td>${item.originalNames.join(', ')}</td>`;
+                html += `<td>${item.normalizedName}</td>`;
+                html += `<td>${item.count}</td>`;
+                html += `<td>${item.month}</td>`;
+                html += `<td>${item.outlets.join(', ')}</td>`;
+                html += `<td>${item.outlets.length}</td>`;
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            
+            // Create download link
+            const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            // Generate filename with timestamp
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const filterSuffix = monthFilter ? `_${monthFilter}` : '';
+            const filename = `loss-sales-tracker${filterSuffix}_${timestamp}.xls`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log(`✅ Exported ${dataToExport.length} items to ${filename}`);
+        }
+
+        // Item Name Preprocessing Algorithm
+        function normalizeItemName(itemName) {
+            if (!itemName || itemName.trim() === '') return '';
+            
+            let normalized = itemName.toUpperCase().trim();
+            
+            // Remove common prefixes
+            normalized = normalized.replace(/^\(AJH\)\s*/i, '');
+            normalized = normalized.replace(/^\(FCS\)\s*/i, '');
+            
+            // Remove volume/size information (e.g., 60ML, 150ML, 250ML, 28S, 10X10S, etc.)
+            normalized = normalized.replace(/\s*\d+(\.\d+)?\s*(ML|MG|G|KG|L|S|TAB|KAPSUL|KAPLET|SACHET|STRIP)\s*(\d+X\d+S|\d+S|\d+X\d+)?/gi, '');
+            
+            // Remove packaging information
+            normalized = normalized.replace(/\s*\d+X\d+\s*/gi, '');
+            normalized = normalized.replace(/\s*\d+S\s*/gi, '');
+            
+            // Remove special characters and extra spaces
+            normalized = normalized.replace(/[^\w\s]/g, ' ');
+            normalized = normalized.replace(/\s+/g, ' ').trim();
+            
+            return normalized;
+        }
+
+        // Calculate similarity between two strings (Levenshtein distance based)
+        function calculateSimilarity(str1, str2) {
+            const longer = str1.length > str2.length ? str1 : str2;
+            const shorter = str1.length > str2.length ? str2 : str1;
+            
+            if (longer.length === 0) return 1.0;
+            
+            const editDistance = levenshteinDistance(longer, shorter);
+            return (longer.length - editDistance) / longer.length;
+        }
+
+        function levenshteinDistance(str1, str2) {
+            const matrix = [];
+            
+            for (let i = 0; i <= str2.length; i++) {
+                matrix[i] = [i];
+            }
+            
+            for (let j = 0; j <= str1.length; j++) {
+                matrix[0][j] = j;
+            }
+            
+            for (let i = 1; i <= str2.length; i++) {
+                for (let j = 1; j <= str1.length; j++) {
+                    if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+            
+            return matrix[str2.length][str1.length];
+        }
+
+        // Optimized grouping - group by exact normalized name (much faster)
+        // The normalization already handles most similarity cases
+        function groupSimilarItems(items) {
+            console.log(`🔄 Grouping ${items.length} items by normalized name...`);
+            
+            // Group by normalized name + month (O(n) complexity instead of O(n²))
+            const groupMap = new Map();
+            
+            items.forEach(item => {
+                const key = `${item.normalized}_${item.month}`;
+                
+                if (!groupMap.has(key)) {
+                    groupMap.set(key, {
+                        normalizedName: item.normalized,
+                        originalNames: [],
+                        count: 0,
+                        month: item.month,
+                        outlets: new Set()
+                    });
+                }
+                
+                const group = groupMap.get(key);
+                group.originalNames.push(item.original);
+                group.count++;
+                group.outlets.add(item.outlet);
+            });
+            
+            console.log(`✅ Created ${groupMap.size} groups`);
+            
+            // Convert to array
+            return Array.from(groupMap.values()).map(group => ({
+                ...group,
+                outlets: Array.from(group.outlets),
+                outlet: Array.from(group.outlets)[0] // For compatibility
+            }));
+        }
+
+        // Fetch data from Google Sheets by GID
+        async function fetchSheetDataByGid(gid, sheetLabel = 'Sheet') {
+            try {
+                console.log(`📥 Fetching data from ${sheetLabel} (GID: ${gid})`);
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    console.error(`❌ Failed to fetch ${sheetLabel} (GID: ${gid}): ${response.status}`);
+                    return [];
+                }
+                
+                const text = await response.text();
+                const json = JSON.parse(text.substr(47).slice(0, -2));
+                
+                console.log(`✅ Fetched ${json.table.rows.length} rows from ${sheetLabel}`);
+                
+                return json.table.rows.map(row => {
+                    return row.c.map(cell => cell ? cell.v : '');
+                });
+            } catch (error) {
+                console.error(`❌ Error fetching ${sheetLabel} (GID: ${gid}):`, error);
+                return [];
+            }
+        }
+
+        // Process data
+        async function processData() {
+            try {
+                console.log('🔄 Starting data processing...');
+                updateLoadingText('Connecting to Google Sheets...');
+                
+                // Fetch main sheet by GID
+                updateLoadingText('Fetching loss sales data...');
+                const sheet1Data = await fetchSheetDataByGid(SHEET1_GID, 'Main Sheet');
+                console.log(`📊 Main sheet data rows: ${sheet1Data.length}`);
+                
+                // Try to fetch Price sheet by GID (optional)
+                let priceSheetData = [];
+                try {
+                    priceSheetData = await fetchSheetDataByGid(PRICE_SHEET_GID, 'Price Sheet');
+                    console.log(`📊 Price sheet data rows: ${priceSheetData.length}`);
+                } catch (error) {
+                    console.warn('⚠️ Price sheet not found or not accessible, continuing with main sheet only');
+                }
+
+                // Combine data from both sheets
+                const combinedData = [];
+                
+                // Process Sheet1 (Column K = item name, B = outlet code, I = month)
+                updateLoadingText(`Processing ${sheet1Data.length} rows...`);
+                console.log('🔍 Processing Sheet1 data...');
+                sheet1Data.forEach((row, index) => {
+                    if (index === 0) {
+                        console.log('📋 Header row:', row);
+                        return; // Skip header
+                    }
+                    const itemName = row[10]; // Column K (0-indexed = 10)
+                    const outletCode = row[1]; // Column B
+                    const month = row[8]; // Column I
+                    
+                    if (itemName && itemName.trim() !== '') {
+                        combinedData.push({
+                            original: itemName,
+                            normalized: normalizeItemName(itemName),
+                            outlet: outletCode || 'N/A',
+                            month: month || 'N/A'
+                        });
+                    }
+                });
+                
+                console.log(`✅ Processed ${combinedData.length} items from Sheet1`);
+
+                // Process Price Sheet (assuming similar structure)
+                if (priceSheetData.length > 0) {
+                    console.log('🔍 Processing Price sheet data...');
+                    const beforeCount = combinedData.length;
+                    priceSheetData.forEach((row, index) => {
+                        if (index === 0) return; // Skip header
+                        const itemName = row[10]; // Column K
+                        const outletCode = row[1]; // Column B
+                        const month = row[8]; // Column I
+                        
+                        if (itemName && itemName.trim() !== '') {
+                            combinedData.push({
+                                original: itemName,
+                                normalized: normalizeItemName(itemName),
+                                outlet: outletCode || 'N/A',
+                                month: month || 'N/A'
+                            });
+                        }
+                    });
+                    console.log(`✅ Added ${combinedData.length - beforeCount} items from Price sheet`);
+                }
+
+                allData = combinedData;
+                console.log(`📊 Total combined data: ${allData.length} items`);
+                
+                // Group similar items (now much faster - O(n) instead of O(n²))
+                updateLoadingText(`Grouping ${allData.length} items by product name...`);
+                console.log('🔄 Starting grouping process...');
+                const grouped = groupSimilarItems(combinedData);
+                console.log(`✅ Grouping complete: ${grouped.length} unique products`);
+                
+                // The grouping already did the aggregation, just format it
+                processedData = grouped.map(group => ({
+                    normalizedName: group.normalizedName,
+                    originalNames: group.originalNames,
+                    count: group.count,
+                    month: group.month,
+                    outlets: group.outlets
+                }));
+                
+                // Sort by count descending
+                updateLoadingText('Sorting and preparing data...');
+                console.log('🔄 Sorting data...');
+                processedData.sort((a, b) => b.count - a.count);
+                console.log('✅ Sorting complete');
+                
+                // Update UI
+                updateLoadingText('Rendering dashboard...');
+                console.log('🔄 Updating UI...');
+                updateUI();
+                populateFilters();
+                renderCharts();
+                renderMonthlyCounts();
+                renderMonthlyTables();
+                renderTable();
+                console.log('✅ All done! Page ready.');
+                
+                // Hide loading overlay
+                hideLoadingOverlay();
+                
+                
+            } catch (error) {
+                console.error('❌ Error processing data:', error);
+                updateLoadingText('Error loading data. Check console for details.');
+                setTimeout(() => {
+                    hideLoadingOverlay();
+                    alert('Error loading data. Please check the console for details and try refreshing the page.');
+                }, 1000);
+            }
+        }
+
+        // Update statistics cards
+        function updateUI() {
+            document.getElementById('totalLossSales').textContent = allData.length.toLocaleString();
+            
+            const uniqueProducts = new Set(processedData.map(item => item.normalizedName));
+            document.getElementById('uniqueProducts').textContent = uniqueProducts.size.toLocaleString();
+            
+            const uniqueOutlets = new Set(allData.map(item => item.outlet));
+            document.getElementById('outletsAffected').textContent = uniqueOutlets.size.toLocaleString();
+            
+            const months = [...new Set(allData.map(item => item.month))].filter(m => m !== 'N/A');
+            document.getElementById('currentMonth').textContent = months[months.length - 1] || 'N/A';
+        }
+
+        // Populate filter dropdowns
+        function populateFilters() {
+            const months = sortMonths([...new Set(allData.map(item => item.month))].filter(m => m !== 'N/A'));
+            const outlets = [...new Set(allData.map(item => item.outlet))].filter(o => o !== 'N/A').sort();
+            
+            const monthFilter = document.getElementById('monthFilter');
+            const outletFilter = document.getElementById('outletFilter');
+            
+            months.forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = month;
+                monthFilter.appendChild(option);
+            });
+            
+            outlets.forEach(outlet => {
+                const option = document.createElement('option');
+                option.value = outlet;
+                option.textContent = outlet;
+                outletFilter.appendChild(option);
+            });
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const monthFilter = document.getElementById('monthFilter').value;
+            const outletFilter = document.getElementById('outletFilter').value;
+            
+            let filtered = processedData;
+            
+            if (monthFilter) {
+                filtered = filtered.filter(item => item.month === monthFilter);
+            }
+            
+            if (outletFilter) {
+                filtered = filtered.filter(item => item.outlets.includes(outletFilter));
+            }
+            
+            renderTable(filtered);
+            renderCharts(filtered);
+        }
+
+        // Render charts
+        // Charts removed as requested
+        function renderCharts(data = processedData) {
+            // Charts have been removed from the UI
+            console.log('📊 Charts rendering skipped (removed from UI)');
+        }
+
+        // Render monthly loss sales counts
+        function renderMonthlyCounts() {
+            const months = sortMonths([...new Set(processedData.map(item => item.month))]);
+            const container = document.getElementById('monthlyCountsContainer');
+            container.innerHTML = '';
+            
+            // Calculate counts per month
+            const monthlyCounts = {};
+            processedData.forEach(item => {
+                if (!monthlyCounts[item.month]) {
+                    monthlyCounts[item.month] = 0;
+                }
+                monthlyCounts[item.month] += item.count;
+            });
+            
+            // Create cards for each month
+            months.forEach((month, index) => {
+                const count = monthlyCounts[month] || 0;
+                
+                // Different gradient colors for variety
+                const gradients = [
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+                    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                    'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                    'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                    'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)',
+                    'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)',
+                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+                ];
+                
+                const gradient = gradients[index % gradients.length];
+                
+                const card = document.createElement('div');
+                card.className = 'month-count-card';
+                card.style.background = gradient;
+                card.innerHTML = `
+                    <div class="month-name">${month}</div>
+                    <div class="count">${count.toLocaleString()}</div>
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">loss sales</div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        // Render monthly top 10 tables
+        function renderMonthlyTables() {
+            const months = sortMonths([...new Set(processedData.map(item => item.month))]);
+            const container = document.getElementById('monthlyTablesContainer');
+            container.innerHTML = '';
+            
+            months.forEach(month => {
+                const monthData = processedData.filter(item => item.month === month).slice(0, 10);
+                
+                const monthSection = document.createElement('div');
+                monthSection.className = 'border-t pt-4';
+                
+                const monthTitle = document.createElement('h4');
+                monthTitle.className = 'text-lg font-bold text-gray-800 mb-3';
+                monthTitle.innerHTML = `<span class="badge badge-primary">${month}</span> - Top 10 Products`;
+                monthSection.appendChild(monthTitle);
+                
+                const table = document.createElement('table');
+                table.className = 'w-full';
+                table.innerHTML = `
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Rank</th>
+                            <th class="px-4 py-2 text-left">Product Name</th>
+                            <th class="px-4 py-2 text-left">Loss Count</th>
+                            <th class="px-4 py-2 text-left">Outlets</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${monthData.map((item, index) => `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="px-4 py-2">
+                                    ${index < 3 ? `<span class="badge badge-warning">#${index + 1}</span>` : `#${index + 1}`}
+                                </td>
+                                <td class="px-4 py-2 font-medium">${item.normalizedName}</td>
+                                <td class="px-4 py-2">
+                                    <span class="badge badge-success">${item.count}</span>
+                                </td>
+                                <td class="px-4 py-2 text-sm text-gray-600">${item.outlets.length} outlets</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+                
+                monthSection.appendChild(table);
+                container.appendChild(monthSection);
+            });
+        }
+
+        // Render main table
+        function renderTable(data = processedData) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No data available</td></tr>';
+                return;
+            }
+            
+            data.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        ${index < 10 ? `<span class="badge badge-warning">#${index + 1}</span>` : `#${index + 1}`}
+                    </td>
+                    <td class="font-medium">
+                        ${item.originalNames.slice(0, 3).join(', ')}
+                        ${item.originalNames.length > 3 ? `<span class="text-gray-500 text-sm">+${item.originalNames.length - 3} more</span>` : ''}
+                    </td>
+                    <td><span class="badge badge-primary">${item.normalizedName}</span></td>
+                    <td><span class="badge badge-success">${item.count}</span></td>
+                    <td>${item.month}</td>
+                    <td class="text-sm text-gray-600">${item.outlets.slice(0, 3).join(', ')} ${item.outlets.length > 3 ? `+${item.outlets.length - 3}` : ''}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            processData();
+        });
+    </script>
+</body>
+</html>
