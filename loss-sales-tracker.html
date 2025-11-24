@@ -115,6 +115,28 @@
             margin-top: 20px;
             font-size: 18px;
         }
+        .month-count-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .month-count-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+        }
+        .month-count-card .month-name {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 600;
+        }
+        .month-count-card .count {
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -223,6 +245,19 @@
             </div>
         </div>
 
+        <!-- Monthly Loss Sales Count Card -->
+        <div class="chart-container">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-calendar-alt mr-2 text-purple-600"></i>
+                Loss Sales Count by Month
+            </h3>
+            <div id="monthlyCountsContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+
         <!-- Monthly Top 10 Tables -->
         <div class="chart-container">
             <h3 class="text-xl font-bold text-gray-800 mb-4">
@@ -284,12 +319,12 @@
             'September': 9, 'October': 10, 'November': 11, 'December': 12
         };
         
-        // Sort months chronologically
+        // Sort months chronologically (latest to oldest)
         function sortMonths(months) {
             return months.sort((a, b) => {
                 const orderA = MONTH_ORDER[a] || 999;
                 const orderB = MONTH_ORDER[b] || 999;
-                return orderA - orderB;
+                return orderB - orderA; // Reversed for latest first
             });
         }
         
@@ -642,6 +677,7 @@
                 updateUI();
                 populateFilters();
                 renderCharts();
+                renderMonthlyCounts();
                 renderMonthlyTables();
                 renderTable();
                 console.log('✅ All done! Page ready.');
@@ -723,6 +759,56 @@
             console.log('📊 Charts rendering skipped (removed from UI)');
         }
 
+        // Render monthly loss sales counts
+        function renderMonthlyCounts() {
+            const months = sortMonths([...new Set(processedData.map(item => item.month))]);
+            const container = document.getElementById('monthlyCountsContainer');
+            container.innerHTML = '';
+            
+            // Calculate counts per month
+            const monthlyCounts = {};
+            processedData.forEach(item => {
+                if (!monthlyCounts[item.month]) {
+                    monthlyCounts[item.month] = 0;
+                }
+                monthlyCounts[item.month] += item.count;
+            });
+            
+            // Create cards for each month
+            months.forEach((month, index) => {
+                const count = monthlyCounts[month] || 0;
+                
+                // Different gradient colors for variety
+                const gradients = [
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                    'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+                    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                    'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                    'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                    'linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%)',
+                    'linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)',
+                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+                ];
+                
+                const gradient = gradients[index % gradients.length];
+                
+                const card = document.createElement('div');
+                card.className = 'month-count-card';
+                card.style.background = gradient;
+                card.innerHTML = `
+                    <div class="month-name">${month}</div>
+                    <div class="count">${count.toLocaleString()}</div>
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">loss sales</div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
         // Render monthly top 10 tables
         function renderMonthlyTables() {
             const months = sortMonths([...new Set(processedData.map(item => item.month))]);
