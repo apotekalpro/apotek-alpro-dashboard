@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Outlet Dashboard - Executive Summary Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        
+        .content-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .metric-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .debug-section {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        .debug-log {
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .debug-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .debug-entry:last-child {
+            border-bottom: none;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .info {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="content-card p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                        <i class="fas fa-store-alt text-blue-600 mr-3"></i>
+                        Outlet Dashboard - Executive Summary Test
+                    </h1>
+                    <p class="text-gray-600">Testing real-time data fetching from Google Sheets</p>
+                </div>
+                <button onclick="outletExecSummary.fetchData()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    Refresh Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Executive Summary Section -->
+        <div class="content-card p-6 mb-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-2xl font-semibold text-gray-800">Executive Summary</h2>
+                    <p class="text-gray-600">Estimation of Current Month</p>
+                </div>
+                <div class="text-sm text-gray-500">
+                    <i class="fas fa-clock mr-1"></i>
+                    Last updated: <span id="lastUpdateTime">-</span>
+                </div>
+            </div>
+            
+            <!-- Loading State -->
+            <div id="outletExecSummaryLoading" class="text-center py-12">
+                <div class="inline-flex items-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mr-4"></div>
+                    <span class="text-gray-700 text-lg">Loading executive summary data...</span>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="outletExecSummaryError" class="bg-red-50 border-2 border-red-200 rounded-lg p-6 mb-4 hidden">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-2xl mr-3"></i>
+                    <div>
+                        <h3 class="text-red-800 font-semibold text-lg">Error Loading Data</h3>
+                        <p class="text-red-700 mt-1">Unable to fetch executive summary data. Please check your connection and try again.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div id="outletExecSummaryCards" class="grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
+                <!-- Revenue UTD (POS) Card -->
+                <div class="metric-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-8 border-2 border-blue-200 shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-semibold text-blue-800 uppercase tracking-wide">Revenue UTD (POS)</h3>
+                        <i class="fas fa-cash-register text-blue-600 text-3xl"></i>
+                    </div>
+                    <div class="text-4xl font-bold text-blue-900 mb-2" id="revenueUTDValue">-</div>
+                    <p class="text-sm text-blue-700">Up to date from POS system</p>
+                    <div class="mt-4 pt-4 border-t border-blue-300">
+                        <p class="text-xs text-blue-600">Source: AM Daily Progress (Col G)</p>
+                    </div>
+                </div>
+
+                <!-- Forecasted EOM (POS) Card -->
+                <div class="metric-card bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-8 border-2 border-green-200 shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-semibold text-green-800 uppercase tracking-wide">Forecasted EOM (POS)</h3>
+                        <i class="fas fa-chart-line text-green-600 text-3xl"></i>
+                    </div>
+                    <div class="text-4xl font-bold text-green-900 mb-2" id="forecastedEOMPOSValue">-</div>
+                    <p class="text-sm text-green-700">End of month projection (POS)</p>
+                    <div class="mt-4 pt-4 border-t border-green-300">
+                        <p class="text-xs text-green-600">Source: AM Daily Progress (Col I)</p>
+                    </div>
+                </div>
+
+                <!-- Forecasted EOM (ECOM) Card -->
+                <div class="metric-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-8 border-2 border-purple-200 shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-semibold text-purple-800 uppercase tracking-wide">Forecasted EOM (ECOM)</h3>
+                        <i class="fas fa-shopping-cart text-purple-600 text-3xl"></i>
+                    </div>
+                    <div class="text-4xl font-bold text-purple-900 mb-2" id="forecastedEOMECOMValue">-</div>
+                    <p class="text-sm text-purple-700">End of month projection (E-Commerce)</p>
+                    <div class="mt-4 pt-4 border-t border-purple-300">
+                        <p class="text-xs text-purple-600">Source: Exec Dashboard (Cell B7 - ECOM Current)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Section -->
+        <div class="content-card p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">
+                    <i class="fas fa-bug mr-2 text-gray-600"></i>
+                    Debug Console
+                </h2>
+                <button onclick="clearDebugLog()" class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors duration-200">
+                    <i class="fas fa-trash mr-1"></i>
+                    Clear Log
+                </button>
+            </div>
+            
+            <div class="debug-section">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="bg-white p-4 rounded-lg">
+                        <p class="text-gray-600 text-xs mb-1">Revenue UTD (Raw)</p>
+                        <p class="text-gray-900 font-mono font-semibold" id="debugRevenueRaw">-</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg">
+                        <p class="text-gray-600 text-xs mb-1">Forecasted EOM POS (Raw)</p>
+                        <p class="text-gray-900 font-mono font-semibold" id="debugForecastPOSRaw">-</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg">
+                        <p class="text-gray-600 text-xs mb-1">Forecasted EOM ECOM (Raw)</p>
+                        <p class="text-gray-900 font-mono font-semibold" id="debugForecastECOMRaw">-</p>
+                    </div>
+                </div>
+
+                <div class="debug-log" id="debugLog">
+                    <div class="debug-entry info">
+                        <span class="text-gray-500">[INFO]</span> Debug console initialized. Click "Refresh Data" to start fetching.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Debug logging function
+        function addDebugLog(type, message) {
+            const debugLog = document.getElementById('debugLog');
+            const entry = document.createElement('div');
+            entry.className = `debug-entry ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            entry.innerHTML = `<span class="text-gray-500">[${timestamp}]</span> <span class="${type}">[${type.toUpperCase()}]</span> ${message}`;
+            
+            debugLog.appendChild(entry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+
+        function clearDebugLog() {
+            const debugLog = document.getElementById('debugLog');
+            debugLog.innerHTML = '<div class="debug-entry info"><span class="text-gray-500">[INFO]</span> Debug log cleared.</div>';
+        }
+
+        // Outlet Dashboard Executive Summary Namespace
+        const outletExecSummary = {
+            // Data storage
+            data: {
+                revenueUTD: 0,
+                forecastedEOMPOS: 0,
+                forecastedEOMECOM: '0.00M' // B8 contains pre-formatted text value
+            },
+
+            // Format number as millions with 2 decimal places (divide by 1 billion)
+            formatAsMillion(value) {
+                if (!value || isNaN(value)) return '0.00M';
+                const millions = value / 1000000000; // Divide by 1 billion
+                return millions.toFixed(2) + 'M';
+            },
+
+
+
+            // Parse CSV line handling quotes properly
+            parseCSVLine(line) {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            },
+
+            // Fetch data from AM Daily Progress sheet (columns G and I)
+            async fetchAMDailyProgress() {
+                addDebugLog('info', '📊 Fetching AM Daily Progress data...');
+                
+                try {
+                    const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
+                    const timestamp = new Date().getTime();
+                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=AM+Daily+Progress&timestamp=${timestamp}`;
+                    
+                    addDebugLog('info', `Fetching from: ${csvUrl.substring(0, 80)}...`);
+                    
+                    const response = await fetch(csvUrl, {
+                        method: 'GET',
+                        cache: 'no-store',
+                        redirect: 'follow'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch AM Daily Progress data');
+                    }
+                    
+                    const csvData = await response.text();
+                    const lines = csvData.split('\n');
+                    
+                    addDebugLog('info', `Received ${lines.length} rows from AM Daily Progress`);
+                    
+                    let sumColumnG = 0;
+                    let sumColumnI = 0;
+                    let rowCount = 0;
+                    
+                    // Parse data starting from row 2 (skip header)
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const values = this.parseCSVLine(line);
+                        
+                        // Column G (index 6) - Revenue UTD
+                        const columnGValue = parseFloat(values[6]?.replace(/[^0-9.-]/g, '')) || 0;
+                        sumColumnG += columnGValue;
+                        
+                        // Column I (index 8) - Forecasted EOM POS
+                        const columnIValue = parseFloat(values[8]?.replace(/[^0-9.-]/g, '')) || 0;
+                        sumColumnI += columnIValue;
+                        
+                        if (columnGValue !== 0 || columnIValue !== 0) {
+                            rowCount++;
+                        }
+                    }
+                    
+                    this.data.revenueUTD = sumColumnG;
+                    this.data.forecastedEOMPOS = sumColumnI;
+                    
+                    addDebugLog('success', `✅ Processed ${rowCount} data rows`);
+                    addDebugLog('success', `Revenue UTD (Col G): ${sumColumnG.toLocaleString()}`);
+                    addDebugLog('success', `Forecasted EOM POS (Col I): ${sumColumnI.toLocaleString()}`);
+                    
+                    // Update debug display
+                    document.getElementById('debugRevenueRaw').textContent = sumColumnG.toLocaleString();
+                    document.getElementById('debugForecastPOSRaw').textContent = sumColumnI.toLocaleString();
+                    
+                    return true;
+                } catch (error) {
+                    addDebugLog('error', `❌ Error: ${error.message}`);
+                    throw error;
+                }
+            },
+
+            // Fetch data from Exec Dashboard sheet (B8)
+            async fetchExecDashboard() {
+                addDebugLog('info', '📊 Fetching Exec Dashboard data...');
+                
+                try {
+                    const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
+                    const timestamp = new Date().getTime();
+                    // Use JSON API with specific range to get calculated/formatted value
+                    const jsonUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=Exec+Dashboard&range=B8&timestamp=${timestamp}`;
+                    
+                    addDebugLog('info', `Fetching B8 from: ${jsonUrl.substring(0, 80)}...`);
+                    
+                    const response = await fetch(jsonUrl, {
+                        method: 'GET',
+                        cache: 'no-store',
+                        redirect: 'follow'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch Exec Dashboard data');
+                    }
+                    
+                    const jsonpData = await response.text();
+                    addDebugLog('info', 'Parsing JSONP response...');
+                    
+                    // Extract JSON from JSONP wrapper
+                    const jsonMatch = jsonpData.match(/google\.visualization\.Query\.setResponse\((.+)\);/);
+                    if (jsonMatch && jsonMatch[1]) {
+                        const data = JSON.parse(jsonMatch[1]);
+                        const b8Value = data.table.rows[0]?.c[0]?.v || '0.00M';
+                        
+                        this.data.forecastedEOMECOM = b8Value;
+                        
+                        addDebugLog('success', `✅ Cell B8 value (pre-formatted): ${b8Value}`);
+                        
+                        // Update debug display
+                        document.getElementById('debugForecastECOMRaw').textContent = b8Value;
+                    } else {
+                        addDebugLog('error', '❌ Failed to parse JSONP response');
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    addDebugLog('error', `❌ Error: ${error.message}`);
+                    throw error;
+                }
+            },
+
+            // Update UI with fetched data
+            updateUI() {
+                addDebugLog('info', '🎨 Updating UI...');
+                
+                // Update card values
+                document.getElementById('revenueUTDValue').textContent = this.formatAsMillion(this.data.revenueUTD);
+                document.getElementById('forecastedEOMPOSValue').textContent = this.formatAsMillion(this.data.forecastedEOMPOS);
+                document.getElementById('forecastedEOMECOMValue').textContent = this.data.forecastedEOMECOM; // B8 already formatted
+                
+                // Update last update time
+                const now = new Date();
+                document.getElementById('lastUpdateTime').textContent = now.toLocaleTimeString();
+                
+                // Hide loading, show cards
+                document.getElementById('outletExecSummaryLoading').classList.add('hidden');
+                document.getElementById('outletExecSummaryCards').classList.remove('hidden');
+                document.getElementById('outletExecSummaryError').classList.add('hidden');
+                
+                addDebugLog('success', '✅ UI updated successfully');
+                addDebugLog('info', `Revenue UTD (POS): ${this.formatAsMillion(this.data.revenueUTD)}`);
+                addDebugLog('info', `Forecasted EOM (POS): ${this.formatAsMillion(this.data.forecastedEOMPOS)}`);
+                addDebugLog('info', `Forecasted EOM (ECOM): ${this.data.forecastedEOMECOM} (pre-formatted from B8)`);
+            },
+
+            // Show error state
+            showError() {
+                document.getElementById('outletExecSummaryLoading').classList.add('hidden');
+                document.getElementById('outletExecSummaryCards').classList.add('hidden');
+                document.getElementById('outletExecSummaryError').classList.remove('hidden');
+                addDebugLog('error', '❌ Error state displayed to user');
+            },
+
+            // Main fetch function
+            async fetchData() {
+                addDebugLog('info', '🚀 Starting data fetch...');
+                
+                try {
+                    // Show loading state
+                    document.getElementById('outletExecSummaryLoading').classList.remove('hidden');
+                    document.getElementById('outletExecSummaryCards').classList.add('hidden');
+                    document.getElementById('outletExecSummaryError').classList.add('hidden');
+                    
+                    // Fetch both data sources in parallel
+                    addDebugLog('info', 'Fetching from both sheets in parallel...');
+                    await Promise.all([
+                        this.fetchAMDailyProgress(),
+                        this.fetchExecDashboard()
+                    ]);
+                    
+                    // Update UI with fetched data
+                    this.updateUI();
+                    
+                    addDebugLog('success', '✅ All operations completed successfully!');
+                } catch (error) {
+                    addDebugLog('error', `❌ Fatal error in fetchData: ${error.message}`);
+                    this.showError();
+                }
+            }
+        };
+
+        // Auto-load data on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            addDebugLog('info', '🌐 Page loaded, initiating auto-fetch...');
+            setTimeout(() => {
+                outletExecSummary.fetchData();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
