@@ -171,7 +171,7 @@
                     <div class="text-4xl font-bold text-purple-900 mb-2" id="forecastedEOMECOMValue">-</div>
                     <p class="text-sm text-purple-700">End of month projection (E-Commerce)</p>
                     <div class="mt-4 pt-4 border-t border-purple-300">
-                        <p class="text-xs text-purple-600">Source: Exec Dashboard (Cell B8)</p>
+                        <p class="text-xs text-purple-600">Source: Exec Dashboard (Cell B7 - ECOM Current)</p>
                     </div>
                 </div>
             </div>
@@ -373,18 +373,18 @@
                     
                     addDebugLog('info', `Received ${lines.length} rows from Exec Dashboard`);
                     
-                    // Get B8 (row 8, column B which is index 1)
-                    if (lines.length >= 8) {
-                        const row8 = lines[7]; // 0-indexed, so row 8 is index 7
-                        const values = this.parseCSVLine(row8);
-                        const b8Value = parseFloat(values[1]?.replace(/[^0-9.-]/g, '')) || 0;
+                    // Get B7 (row 7, column B which is index 1) - ECOM (Current)
+                    if (lines.length >= 7) {
+                        const row7 = lines[6]; // 0-indexed, so row 7 is index 6
+                        const values = this.parseCSVLine(row7);
+                        const b7Value = parseFloat(values[1]?.replace(/[^0-9.-]/g, '')) || 0;
                         
-                        this.data.forecastedEOMECOM = b8Value;
+                        this.data.forecastedEOMECOM = b7Value;
                         
-                        addDebugLog('success', `✅ Cell B8 value: ${b8Value.toLocaleString()}`);
+                        addDebugLog('success', `✅ Cell B7 value (ECOM Current): ${b7Value.toLocaleString()}`);
                         
                         // Update debug display
-                        document.getElementById('debugForecastECOMRaw').textContent = b8Value.toLocaleString();
+                        document.getElementById('debugForecastECOMRaw').textContent = b7Value.toLocaleString();
                     } else {
                         addDebugLog('error', '❌ Sheet has fewer than 8 rows');
                     }

@@ -8483,16 +8483,16 @@
                     const csvData = await response.text();
                     const lines = csvData.split('\n');
                     
-                    // Get B8 (row 8, column B which is index 1)
-                    if (lines.length >= 8) {
-                        const row8 = lines[7]; // 0-indexed, so row 8 is index 7
-                        const values = this.parseCSVLine(row8);
-                        const b8Value = parseFloat(values[1]?.replace(/[^0-9.-]/g, '')) || 0;
+                    // Get B7 (row 7, column B which is index 1) - ECOM (Current)
+                    if (lines.length >= 7) {
+                        const row7 = lines[6]; // 0-indexed, so row 7 is index 6
+                        const values = this.parseCSVLine(row7);
+                        const b7Value = parseFloat(values[1]?.replace(/[^0-9.-]/g, '')) || 0;
                         
-                        this.data.forecastedEOMECOM = b8Value;
+                        this.data.forecastedEOMECOM = b7Value;
                         
-                        console.log('✅ Exec Dashboard data fetched:', {
-                            forecastedEOMECOM: b8Value
+                        console.log('✅ Exec Dashboard data fetched (B7):', {
+                            forecastedEOMECOM: b7Value
                         });
                     }
                     
