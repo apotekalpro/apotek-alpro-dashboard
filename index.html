@@ -8366,13 +8366,20 @@
             data: {
                 revenueUTD: 0,
                 forecastedEOMPOS: 0,
-                forecastedEOMECOM: '' // Store as text, already formatted in sheet
+                forecastedEOMECOM: 0
             },
 
-            // Format number as millions with 2 decimal places
+            // Format number as millions with 2 decimal places (divide by 1 billion)
             formatAsMillion(value) {
                 if (!value || isNaN(value)) return '0.00M';
                 const millions = value / 1000000000; // Divide by 1 billion
+                return millions.toFixed(2) + 'M';
+            },
+
+            // Format ECOM number as millions with 2 decimal places (divide by 1 million)
+            formatAsMillionECOM(value) {
+                if (!value || isNaN(value)) return '0.00M';
+                const millions = value / 1000000; // Divide by 1 million
                 return millions.toFixed(2) + 'M';
             },
 
@@ -8480,7 +8487,7 @@
                     if (lines.length >= 8) {
                         const row8 = lines[7]; // 0-indexed, so row 8 is index 7
                         const values = this.parseCSVLine(row8);
-                        const b8Value = values[1]?.replace(/^"|"$/g, '').trim() || '0.00M'; // Get raw text, remove quotes
+                        const b8Value = parseFloat(values[1]?.replace(/[^0-9.-]/g, '')) || 0;
                         
                         this.data.forecastedEOMECOM = b8Value;
                         
@@ -8503,7 +8510,7 @@
                 // Update card values
                 document.getElementById('revenueUTDValue').textContent = this.formatAsMillion(this.data.revenueUTD);
                 document.getElementById('forecastedEOMPOSValue').textContent = this.formatAsMillion(this.data.forecastedEOMPOS);
-                document.getElementById('forecastedEOMECOMValue').textContent = this.data.forecastedEOMECOM; // Display raw text from B8
+                document.getElementById('forecastedEOMECOMValue').textContent = this.formatAsMillionECOM(this.data.forecastedEOMECOM); // Divide by 1M
                 
                 // Hide loading, show cards
                 document.getElementById('outletExecSummaryLoading').classList.add('hidden');
