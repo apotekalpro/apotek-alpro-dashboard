@@ -240,7 +240,7 @@
             data: {
                 revenueUTD: 0,
                 forecastedEOMPOS: 0,
-                forecastedEOMECOM: 0
+                forecastedEOMECOM: '0.00M' // B8 contains pre-formatted text value
             },
 
             // Format number as millions with 2 decimal places (divide by 1 billion)
@@ -250,12 +250,7 @@
                 return millions.toFixed(2) + 'M';
             },
 
-            // Format ECOM number as millions with 2 decimal places (divide by 1 million)
-            formatAsMillionECOM(value) {
-                if (!value || isNaN(value)) return '0.00M';
-                const millions = value / 1000000; // Divide by 1 million
-                return millions.toFixed(2) + 'M';
-            },
+
 
             // Parse CSV line handling quotes properly
             parseCSVLine(line) {
@@ -354,11 +349,12 @@
                 try {
                     const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
                     const timestamp = new Date().getTime();
-                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Exec+Dashboard&timestamp=${timestamp}`;
+                    // Use JSON API with specific range to get calculated/formatted value
+                    const jsonUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=Exec+Dashboard&range=B8&timestamp=${timestamp}`;
                     
-                    addDebugLog('info', `Fetching from: ${csvUrl.substring(0, 80)}...`);
+                    addDebugLog('info', `Fetching B8 from: ${jsonUrl.substring(0, 80)}...`);
                     
-                    const response = await fetch(csvUrl, {
+                    const response = await fetch(jsonUrl, {
                         method: 'GET',
                         cache: 'no-store',
                         redirect: 'follow'
@@ -368,25 +364,23 @@
                         throw new Error('Failed to fetch Exec Dashboard data');
                     }
                     
-                    const csvData = await response.text();
-                    const lines = csvData.split('\n');
+                    const jsonpData = await response.text();
+                    addDebugLog('info', 'Parsing JSONP response...');
                     
-                    addDebugLog('info', `Received ${lines.length} rows from Exec Dashboard`);
-                    
-                    // Get B7 (row 7, column B which is index 1) - ECOM (Current)
-                    if (lines.length >= 7) {
-                        const row7 = lines[6]; // 0-indexed, so row 7 is index 6
-                        const values = this.parseCSVLine(row7);
-                        const b7Value = parseFloat(values[1]?.replace(/[^0-9.-]/g, '')) || 0;
+                    // Extract JSON from JSONP wrapper
+                    const jsonMatch = jsonpData.match(/google\.visualization\.Query\.setResponse\((.+)\);/);
+                    if (jsonMatch && jsonMatch[1]) {
+                        const data = JSON.parse(jsonMatch[1]);
+                        const b8Value = data.table.rows[0]?.c[0]?.v || '0.00M';
                         
-                        this.data.forecastedEOMECOM = b7Value;
+                        this.data.forecastedEOMECOM = b8Value;
                         
-                        addDebugLog('success', `✅ Cell B7 value (ECOM Current): ${b7Value.toLocaleString()}`);
+                        addDebugLog('success', `✅ Cell B8 value (pre-formatted): ${b8Value}`);
                         
                         // Update debug display
-                        document.getElementById('debugForecastECOMRaw').textContent = b7Value.toLocaleString();
+                        document.getElementById('debugForecastECOMRaw').textContent = b8Value;
                     } else {
-                        addDebugLog('error', '❌ Sheet has fewer than 8 rows');
+                        addDebugLog('error', '❌ Failed to parse JSONP response');
                     }
                     
                     return true;
@@ -403,7 +397,7 @@
                 // Update card values
                 document.getElementById('revenueUTDValue').textContent = this.formatAsMillion(this.data.revenueUTD);
                 document.getElementById('forecastedEOMPOSValue').textContent = this.formatAsMillion(this.data.forecastedEOMPOS);
-                document.getElementById('forecastedEOMECOMValue').textContent = this.formatAsMillionECOM(this.data.forecastedEOMECOM); // Divide by 1M
+                document.getElementById('forecastedEOMECOMValue').textContent = this.data.forecastedEOMECOM; // B8 already formatted
                 
                 // Update last update time
                 const now = new Date();
@@ -417,7 +411,7 @@
                 addDebugLog('success', '✅ UI updated successfully');
                 addDebugLog('info', `Revenue UTD (POS): ${this.formatAsMillion(this.data.revenueUTD)}`);
                 addDebugLog('info', `Forecasted EOM (POS): ${this.formatAsMillion(this.data.forecastedEOMPOS)}`);
-                addDebugLog('info', `Forecasted EOM (ECOM): ${this.formatAsMillionECOM(this.data.forecastedEOMECOM)} (divided by 1M)`);
+                addDebugLog('info', `Forecasted EOM (ECOM): ${this.data.forecastedEOMECOM} (pre-formatted from B8)`);
             },
 
             // Show error state

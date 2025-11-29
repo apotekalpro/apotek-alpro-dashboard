@@ -8366,7 +8366,7 @@
             data: {
                 revenueUTD: 0,
                 forecastedEOMPOS: 0,
-                forecastedEOMECOM: 0
+                forecastedEOMECOM: '0.00M' // B8 contains pre-formatted text value
             },
 
             // Format number as millions with 2 decimal places (divide by 1 billion)
@@ -8376,12 +8376,7 @@
                 return millions.toFixed(2) + 'M';
             },
 
-            // Format ECOM number as millions with 2 decimal places (divide by 1 million)
-            formatAsMillionECOM(value) {
-                if (!value || isNaN(value)) return '0.00M';
-                const millions = value / 1000000; // Divide by 1 million
-                return millions.toFixed(2) + 'M';
-            },
+
 
             // Parse CSV line handling quotes properly
             parseCSVLine(line) {
@@ -8468,9 +8463,10 @@
                 try {
                     const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
                     const timestamp = new Date().getTime();
-                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Exec+Dashboard&timestamp=${timestamp}`;
+                    // Use JSON API with specific range to get calculated/formatted value
+                    const jsonUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=Exec+Dashboard&range=B8&timestamp=${timestamp}`;
                     
-                    const response = await fetch(csvUrl, {
+                    const response = await fetch(jsonUrl, {
                         method: 'GET',
                         cache: 'no-store',
                         redirect: 'follow'
@@ -8480,19 +8476,17 @@
                         throw new Error('Failed to fetch Exec Dashboard data');
                     }
                     
-                    const csvData = await response.text();
-                    const lines = csvData.split('\n');
-                    
-                    // Get B7 (row 7, column B which is index 1) - ECOM (Current)
-                    if (lines.length >= 7) {
-                        const row7 = lines[6]; // 0-indexed, so row 7 is index 6
-                        const values = this.parseCSVLine(row7);
-                        const b7Value = parseFloat(values[1]?.replace(/[^0-9.-]/g, '')) || 0;
+                    const jsonpData = await response.text();
+                    // Extract JSON from JSONP wrapper
+                    const jsonMatch = jsonpData.match(/google\.visualization\.Query\.setResponse\((.+)\);/);
+                    if (jsonMatch && jsonMatch[1]) {
+                        const data = JSON.parse(jsonMatch[1]);
+                        const b8Value = data.table.rows[0]?.c[0]?.v || '0.00M';
                         
-                        this.data.forecastedEOMECOM = b7Value;
+                        this.data.forecastedEOMECOM = b8Value;
                         
-                        console.log('✅ Exec Dashboard data fetched (B7):', {
-                            forecastedEOMECOM: b7Value
+                        console.log('✅ Exec Dashboard data fetched (B8):', {
+                            forecastedEOMECOM: b8Value
                         });
                     }
                     
@@ -8510,7 +8504,7 @@
                 // Update card values
                 document.getElementById('revenueUTDValue').textContent = this.formatAsMillion(this.data.revenueUTD);
                 document.getElementById('forecastedEOMPOSValue').textContent = this.formatAsMillion(this.data.forecastedEOMPOS);
-                document.getElementById('forecastedEOMECOMValue').textContent = this.formatAsMillionECOM(this.data.forecastedEOMECOM); // Divide by 1M
+                document.getElementById('forecastedEOMECOMValue').textContent = this.data.forecastedEOMECOM; // B8 already formatted
                 
                 // Hide loading, show cards
                 document.getElementById('outletExecSummaryLoading').classList.add('hidden');
