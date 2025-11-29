@@ -8366,7 +8366,7 @@
             data: {
                 revenueUTD: 0,
                 forecastedEOMPOS: 0,
-                forecastedEOMECOM: 0
+                forecastedEOMECOM: '' // Store as text, already formatted in sheet
             },
 
             // Format number as millions with 2 decimal places
@@ -8480,7 +8480,7 @@
                     if (lines.length >= 8) {
                         const row8 = lines[7]; // 0-indexed, so row 8 is index 7
                         const values = this.parseCSVLine(row8);
-                        const b8Value = parseFloat(values[1]?.replace(/[^0-9.-]/g, '')) || 0;
+                        const b8Value = values[1]?.replace(/^"|"$/g, '').trim() || '0.00M'; // Get raw text, remove quotes
                         
                         this.data.forecastedEOMECOM = b8Value;
                         
@@ -8503,7 +8503,7 @@
                 // Update card values
                 document.getElementById('revenueUTDValue').textContent = this.formatAsMillion(this.data.revenueUTD);
                 document.getElementById('forecastedEOMPOSValue').textContent = this.formatAsMillion(this.data.forecastedEOMPOS);
-                document.getElementById('forecastedEOMECOMValue').textContent = this.formatAsMillion(this.data.forecastedEOMECOM);
+                document.getElementById('forecastedEOMECOMValue').textContent = this.data.forecastedEOMECOM; // Display raw text from B8
                 
                 // Hide loading, show cards
                 document.getElementById('outletExecSummaryLoading').classList.add('hidden');
