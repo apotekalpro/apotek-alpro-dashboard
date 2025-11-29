@@ -371,16 +371,26 @@
                     const jsonMatch = jsonpData.match(/google\.visualization\.Query\.setResponse\((.+)\);/);
                     if (jsonMatch && jsonMatch[1]) {
                         const data = JSON.parse(jsonMatch[1]);
-                        const b8Value = data.table.rows[0]?.c[0]?.v || '0.00M';
+                        
+                        // Check if data exists and has proper structure
+                        let b8Value = '0.00M';
+                        if (data && data.table && data.table.rows && data.table.rows.length > 0) {
+                            const cell = data.table.rows[0]?.c?.[0];
+                            if (cell && cell.v !== null && cell.v !== undefined) {
+                                b8Value = String(cell.v);
+                            }
+                        }
                         
                         this.data.forecastedEOMECOM = b8Value;
                         
                         addDebugLog('success', `✅ Cell B8 value (pre-formatted): ${b8Value}`);
+                        addDebugLog('info', `Full response structure: ${JSON.stringify(data).substring(0, 200)}...`);
                         
                         // Update debug display
                         document.getElementById('debugForecastECOMRaw').textContent = b8Value;
                     } else {
                         addDebugLog('error', '❌ Failed to parse JSONP response');
+                        this.data.forecastedEOMECOM = '0.00M';
                     }
                     
                     return true;
