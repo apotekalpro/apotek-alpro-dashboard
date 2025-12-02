@@ -48,6 +48,7 @@ def split_excel():
     """
     Split an Excel file with multiple sheets into individual files
     Returns metadata about the split files for download
+    Now supports optional email mapping file (Column A=Company, B=Email)
     """
     try:
         if 'file' not in request.files:
@@ -60,6 +61,36 @@ def split_excel():
         
         if not file.filename.endswith(('.xlsx', '.xls')):
             return jsonify({'error': 'File must be an Excel file (.xlsx or .xls)'}), 400
+        
+        # Read Email mapping (optional)
+        email_mapping = {}
+        if 'email_mapping' in request.files and request.files['email_mapping'].filename != '':
+            email_file = request.files['email_mapping']
+            temp_email = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
+            email_file.save(temp_email.name)
+            temp_email.close()
+            
+            try:
+                wb_email = openpyxl.load_workbook(temp_email.name)
+                sheet_email = wb_email.active
+                
+                for row in sheet_email.iter_rows(min_row=2, values_only=True):  # Skip header
+                    if row[0] and row[1]:  # Column A = Company, Column B = Email
+                        company_name = str(row[0]).strip()
+                        email_addr = str(row[1]).strip()
+                        
+                        # Store both exact match and cleaned version
+                        email_mapping[company_name] = email_addr
+                        
+                        # Also create mapping without extra spaces/formatting
+                        cleaned_company = ' '.join(company_name.split())
+                        email_mapping[cleaned_company] = email_addr
+                
+                wb_email.close()
+            except Exception as e:
+                return jsonify({"error": f"Error reading Email mapping: {str(e)}"}), 400
+            finally:
+                os.unlink(temp_email.name)
         
         # Read the uploaded Excel file
         file_content = file.read()
@@ -87,12 +118,28 @@ def split_excel():
             else:
                 pv_number = str(pv_number).strip()
             
-            # Extract email from D12
-            email = sheet['D12'].value
-            if email is None:
+            # Get email from mapping file (prioritize) or fallback to D12
+            email = None
+            
+            # Strategy 1: Exact match with company name
+            email = email_mapping.get(company_name, None)
+            
+            # Strategy 2: Try with cleaned company name
+            if not email:
+                cleaned_company = ' '.join(company_name.split())
+                email = email_mapping.get(cleaned_company, None)
+            
+            # Strategy 3: Fallback to D12 (legacy support)
+            if not email:
+                d12_value = sheet['D12'].value
+                if d12_value is not None:
+                    email = str(d12_value).strip()
+                else:
+                    email = ""
+            
+            # Ensure email is string
+            if not email:
                 email = ""
-            else:
-                email = str(email).strip()
             
             # Create safe filename
             # Replace invalid filename characters (including /)
