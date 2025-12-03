@@ -1945,6 +1945,12 @@
                                     <i class="fas fa-chart-line mr-2"></i>
                                     Loss Sales Tracker
                                 </button>
+                                <button onclick="showProcurementSubTab('performanceDashboard')" 
+                                        id="performanceDashboardTab"
+                                        class="procurement-subtab whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    <i class="fas fa-chart-bar mr-2"></i>
+                                    Procurement Performance Dashboard
+                                </button>
                             </nav>
                         </div>
                     </div>
@@ -1967,6 +1973,13 @@
                     <div id="lossSalesTrackerContent" class="procurement-subcontent hidden">
                         <div class="iframe-container">
                             <iframe data-src="loss-sales-tracker.html" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Procurement Performance Dashboard Sub-content -->
+                    <div id="performanceDashboardContent" class="procurement-subcontent hidden">
+                        <div class="iframe-container">
+                            <iframe data-src="https://procurementanalys.github.io/sales-budget/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
                         </div>
                     </div>
                 </div>
