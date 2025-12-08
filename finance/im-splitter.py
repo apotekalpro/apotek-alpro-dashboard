@@ -99,26 +99,34 @@ def copy_cell_with_style(source_cell, target_cell):
 def delete_columns_and_split(file_path, wa_mapping, email_mapping=None):
     """
     Main processing function:
-    1. Read original file
-    2. Extract date from G3 (before deletion)
-    3. Delete columns B, C, E, F, H, I, M, P, S, T, U
-    4. Group by supplier (original column D, becomes column B)
+    1. Read original file (NEW: Header at row 5, data starts row 6)
+    2. Extract date from G3 (Printed Date) BEFORE deletion
+    3. Delete columns B, C, E, F, H, I, O, P, U, V, W (NEW: M is now "Invoice Receive Date" - KEEP IT)
+    4. Group by supplier (original column D, remains column D after some deletions, then becomes column B)
     5. Create separate files per supplier
     6. Generate WhatsApp links
     7. Generate Email mappings
+    
+    NEW Layout (Dec 2024):
+    - Header row: Row 5
+    - Data starts: Row 6
+    - New column M: Invoice Receive Date (KEEP)
+    - Columns shift: Old M→N, N→O, O→P, P→Q, etc.
     """
     if email_mapping is None:
         email_mapping = {}
     
-    # Columns to delete (by original position, 1-indexed)
-    # B=2, C=3, E=5, F=6, H=8, I=9, M=13, P=16, S=19, T=20, U=21
-    columns_to_delete = [21, 20, 19, 16, 13, 9, 8, 6, 5, 3, 2]  # Reverse order for deletion
+    # NEW Columns to delete (by original position, 1-indexed)
+    # B=2 (Store), C=3 (Match No.), E=5 (Supplier Contract), F=6 (Credit Term), 
+    # H=8 (Create Date), I=9 (Confirm Date), O=15 (Order Number), P=16 (Receiving Number),
+    # U=21 (Tolerance Amount), V=22 (Total Prepaid Tax), W=23+ (any additional)
+    columns_to_delete = [22, 21, 16, 15, 9, 8, 6, 5, 3, 2]  # Reverse order for deletion
     
     # Load workbook
     wb = openpyxl.load_workbook(file_path)
     sheet = wb.active
     
-    # Extract date from G3 BEFORE deletion
+    # Extract date from G3 BEFORE deletion (Printed Date: '2025-12-04 19:30:39')
     date_str = extract_date_from_cell(sheet['G3'].value)
     
     # Get all rows as list
@@ -164,13 +172,13 @@ def delete_columns_and_split(file_path, wa_mapping, email_mapping=None):
         # Copy header rows
         for src_row_idx, src_row in enumerate(header_rows, 1):
             for src_col_idx, src_cell in enumerate(src_row, 1):
-                # Skip columns that will be deleted
-                if src_col_idx in [2, 3, 5, 6, 8, 9, 13, 16, 19, 20, 21]:
+                # Skip columns that will be deleted (NEW: B=2, C=3, E=5, F=6, H=8, I=9, O=15, P=16, U=21, V=22)
+                if src_col_idx in [2, 3, 5, 6, 8, 9, 15, 16, 21, 22]:
                     continue
                 
                 # Calculate target column index (after deletions)
                 target_col_idx = src_col_idx
-                for del_col in [2, 3, 5, 6, 8, 9, 13, 16, 19, 20, 21]:
+                for del_col in [2, 3, 5, 6, 8, 9, 15, 16, 21, 22]:
                     if src_col_idx > del_col:
                         target_col_idx -= 1
                 
@@ -181,13 +189,13 @@ def delete_columns_and_split(file_path, wa_mapping, email_mapping=None):
         target_row_idx = len(header_rows) + 1
         for src_row in rows:
             for src_col_idx, src_cell in enumerate(src_row, 1):
-                # Skip columns that will be deleted
-                if src_col_idx in [2, 3, 5, 6, 8, 9, 13, 16, 19, 20, 21]:
+                # Skip columns that will be deleted (NEW: B=2, C=3, E=5, F=6, H=8, I=9, O=15, P=16, U=21, V=22)
+                if src_col_idx in [2, 3, 5, 6, 8, 9, 15, 16, 21, 22]:
                     continue
                 
                 # Calculate target column index
                 target_col_idx = src_col_idx
-                for del_col in [2, 3, 5, 6, 8, 9, 13, 16, 19, 20, 21]:
+                for del_col in [2, 3, 5, 6, 8, 9, 15, 16, 21, 22]:
                     if src_col_idx > del_col:
                         target_col_idx -= 1
                 
