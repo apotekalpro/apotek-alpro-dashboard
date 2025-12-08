@@ -273,9 +273,29 @@
     <script>
         // API Configuration
         // API Configuration - automatically detects the backend URL
-        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:5001'
-            : 'https://5001-iuy38bzhv3g2h09erp5i1-cbeee0f9.sandbox.novita.ai';
+        const API_BASE = (() => {
+            const hostname = window.location.hostname;
+            
+            // Localhost development
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                return 'http://localhost:5001';
+            }
+            
+            // Sandbox environment
+            if (hostname.includes('sandbox.novita.ai')) {
+                const sandboxId = hostname.split('-').slice(1).join('-');
+                return `https://5001-${sandboxId}`;
+            }
+            
+            // GitHub Pages production - point to active sandbox backend (TEMPORARY)
+            // TODO: Replace with your production backend URL when available
+            if (hostname.includes('github.io')) {
+                return 'https://5001-iuy38bzhv3g2h09erp5i1-5634da27.sandbox.novita.ai';
+            }
+            
+            // Default fallback
+            return 'https://5001-iuy38bzhv3g2h09erp5i1-cbeee0f9.sandbox.novita.ai';
+        })();
 
         let uploadedFile = null;
         let emailMappingFile = null;
