@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Debug Test - Apotek Alpro</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            max-width: 500px;
+            margin: 50px auto;
+            padding: 40px;
+        }
+        .debug-panel {
+            background: #1a202c;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .debug-line {
+            margin: 5px 0;
+        }
+        .debug-success { color: #00ff00; }
+        .debug-error { color: #ff0000; }
+        .debug-warning { color: #ffaa00; }
+        .debug-info { color: #00aaff; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1 class="text-3xl font-bold text-center mb-6">Login Debug Test</h1>
+        
+        <form id="loginForm">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                <input type="email" id="email" class="w-full px-4 py-3 rounded-lg border-2" 
+                       placeholder="your.email@example.com" required>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                <input type="password" id="password" class="w-full px-4 py-3 rounded-lg border-2" 
+                       placeholder="Your password" required>
+            </div>
+            
+            <button type="submit" id="loginButton" 
+                    class="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700">
+                Login & Debug
+            </button>
+        </form>
+        
+        <div id="errorMessage" class="hidden mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+            <span id="errorText"></span>
+        </div>
+        
+        <div id="successMessage" class="hidden mt-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+            <span id="successText"></span>
+        </div>
+        
+        <div class="debug-panel" id="debugPanel">
+            <div class="debug-line debug-info">Debug console initialized...</div>
+        </div>
+    </div>
+
+    <script>
+        // Debug logger
+        function debugLog(message, type = 'info') {
+            const panel = document.getElementById('debugPanel');
+            const line = document.createElement('div');
+            line.className = 'debug-line debug-' + type;
+            line.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            panel.appendChild(line);
+            panel.scrollTop = panel.scrollHeight;
+            console.log(message);
+        }
+
+        // Supabase configuration
+        const SUPABASE_URL = 'https://sudchiscctcihsznewan.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1ZGNoaXNjY3RjaWhzem5ld2FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4OTM2NzUsImV4cCI6MjA3NzQ2OTY3NX0.qwT4DbDY0CvyjG5ubsrVZHvmHF67A1t2y4NXUZSczTQ';
+
+        let supabase = null;
+
+        // Initialize Supabase
+        debugLog('Checking for Supabase library...', 'info');
+        if (window.supabase) {
+            debugLog('✅ Supabase library found!', 'success');
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                debugLog('✅ Supabase client created successfully!', 'success');
+                debugLog('Database URL: ' + SUPABASE_URL, 'info');
+            } catch (error) {
+                debugLog('❌ Failed to create Supabase client: ' + error.message, 'error');
+            }
+        } else {
+            debugLog('❌ Supabase library not loaded!', 'error');
+        }
+
+        // Password hashing function (matching the one in index.html)
+        function hashPassword(password) {
+            return btoa(password + 'salt_apotek_alpro_2024');
+        }
+
+        // Legacy hash function
+        function legacyHash(password) {
+            return btoa(password + 'salt_apotek_alpro_2024');
+        }
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const successMessage = document.getElementById('successMessage');
+            const successText = document.getElementById('successText');
+            const loginButton = document.getElementById('loginButton');
+            
+            // Hide messages
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+            
+            debugLog('=== LOGIN ATTEMPT ===', 'info');
+            debugLog('Email: ' + email, 'info');
+            debugLog('Password length: ' + password.length, 'info');
+            
+            if (!supabase) {
+                debugLog('❌ Supabase client not initialized!', 'error');
+                errorText.textContent = 'Database connection not available';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            
+            loginButton.disabled = true;
+            loginButton.textContent = 'Authenticating...';
+            
+            try {
+                debugLog('🔍 Querying database for user: ' + email, 'info');
+                
+                // Query user from database
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', email.toLowerCase())
+                    .eq('status', 'active')
+                    .single();
+                
+                if (userError) {
+                    debugLog('❌ Database query error: ' + userError.message, 'error');
+                    debugLog('Error code: ' + userError.code, 'error');
+                    debugLog('Error details: ' + JSON.stringify(userError), 'error');
+                    errorText.textContent = 'User not found or inactive';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                
+                if (!userData) {
+                    debugLog('❌ User not found in database', 'error');
+                    errorText.textContent = 'Invalid email or password';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                
+                debugLog('✅ User found in database!', 'success');
+                debugLog('User ID: ' + userData.id, 'info');
+                debugLog('User name: ' + userData.name, 'info');
+                debugLog('User role: ' + userData.role, 'info');
+                debugLog('Stored password hash: ' + userData.password_hash, 'info');
+                
+                // Check password
+                const storedHash = userData.password_hash;
+                const legacyPasswordHash = legacyHash(password);
+                const simpleHash = hashPassword(password);
+                const base64Hash = btoa(password);
+                
+                debugLog('Testing password formats:', 'info');
+                debugLog('- Legacy hash: ' + legacyPasswordHash, 'info');
+                debugLog('- Simple hash: ' + simpleHash, 'info');
+                debugLog('- Base64 hash: ' + base64Hash, 'info');
+                debugLog('- Plain password: ' + password, 'info');
+                
+                const passwordMatch = storedHash === legacyPasswordHash || 
+                                    storedHash === password ||
+                                    storedHash === base64Hash ||
+                                    storedHash === simpleHash;
+                
+                debugLog('Password match result: ' + passwordMatch, passwordMatch ? 'success' : 'error');
+                
+                if (!passwordMatch) {
+                    debugLog('❌ Password does not match!', 'error');
+                    errorText.textContent = 'Invalid email or password';
+                    errorMessage.classList.remove('hidden');
+                    return;
+                }
+                
+                debugLog('✅ Password matched! Authentication successful!', 'success');
+                
+                // Update login statistics
+                debugLog('📊 Updating login statistics...', 'info');
+                const { data: updateData, error: updateError } = await supabase
+                    .from('users')
+                    .update({
+                        last_login: new Date().toISOString(),
+                        login_count: (userData.login_count || 0) + 1
+                    })
+                    .eq('id', userData.id);
+                
+                if (updateError) {
+                    debugLog('⚠️ Failed to update login stats: ' + updateError.message, 'warning');
+                } else {
+                    debugLog('✅ Login statistics updated!', 'success');
+                }
+                
+                // Log activity
+                debugLog('📝 Logging login activity...', 'info');
+                const { error: logError } = await supabase
+                    .from('login_logs')
+                    .insert([{
+                        user_email: email,
+                        activity: 'Login',
+                        ip_address: 'localhost',
+                        user_agent: navigator.userAgent,
+                        metadata: { 
+                            test: true, 
+                            timestamp: new Date().toISOString(),
+                            debugMode: true
+                        }
+                    }]);
+                
+                if (logError) {
+                    debugLog('⚠️ Failed to log activity: ' + logError.message, 'warning');
+                } else {
+                    debugLog('✅ Login activity logged!', 'success');
+                }
+                
+                debugLog('=== LOGIN SUCCESSFUL ===', 'success');
+                successText.textContent = '✅ Login successful! User: ' + userData.name + ' (' + userData.role + ')';
+                successMessage.classList.remove('hidden');
+                
+            } catch (error) {
+                debugLog('❌ Unexpected error: ' + error.message, 'error');
+                debugLog('Stack trace: ' + error.stack, 'error');
+                errorText.textContent = 'An unexpected error occurred';
+                errorMessage.classList.remove('hidden');
+            } finally {
+                loginButton.disabled = false;
+                loginButton.textContent = 'Login & Debug';
+            }
+        });
+
+        debugLog('=== Debug page ready ===', 'success');
+        debugLog('Enter your credentials and click "Login & Debug" to test', 'info');
+    </script>
+</body>
+</html>

@@ -9788,7 +9788,7 @@ Ready for deployment! 🚀
         let hidePending = false; // Filter to hide outlets without reviews
         
         // ===== GOOGLE REVIEW SUPABASE CLIENT (SEPARATE FROM AUTH) =====
-        let supabase; // Separate Supabase client for Google Reviews ONLY
+        let googleReviewSupabase; // Separate Supabase client for Google Reviews ONLY
         
         // Initialize Google Review Supabase client (separate from authentication)
         function initGoogleReviewSupabase() {
@@ -9803,7 +9803,7 @@ Ready for deployment! 🚀
                 }
                 
                 // Create SEPARATE client for Google Reviews (does NOT affect authentication)
-                supabase = window.supabase.createClient(GOOGLE_REVIEW_SUPABASE_URL, GOOGLE_REVIEW_SUPABASE_ANON_KEY);
+                googleReviewSupabase = window.supabase.createClient(GOOGLE_REVIEW_SUPABASE_URL, GOOGLE_REVIEW_SUPABASE_ANON_KEY);
                 console.log('✅ Google Review Supabase client initialized (separate from auth)');
                 console.log('📊 Google Review Supabase URL:', GOOGLE_REVIEW_SUPABASE_URL);
                 return true;
@@ -9829,7 +9829,7 @@ Ready for deployment! 🚀
         // Load outlets from Supabase or localStorage
         async function loadOutlets() {
             // Try loading from Supabase first
-            if (supabase) {
+            if (googleReviewSupabase) {
                 try {
                     await loadReviewsFromSupabase();
                     if (outletsData.length > 0) {
@@ -10975,18 +10975,18 @@ Ready for deployment! 🚀
         
         async function loadReviewsFromSupabase() {
             console.log('🔍 loadReviewsFromSupabase() called');
-            console.log('🔍 Supabase initialized:', !!supabase);
+            console.log('🔍 Google Review Supabase initialized:', !!googleReviewSupabase);
             
-            if (!supabase) {
-                console.warn('⚠️ Supabase not initialized, using localStorage');
+            if (!googleReviewSupabase) {
+                console.warn('⚠️ Google Review Supabase not initialized, using localStorage');
                 return;
             }
             
             try {
                 console.log('📥 Loading reviews from Supabase...');
-                console.log('📊 Supabase URL:', supabase.supabaseUrl);
+                console.log('📊 Supabase URL:', googleReviewSupabase.supabaseUrl);
                 
-                const { data, error } = await supabase
+                const { data, error } = await googleReviewSupabase
                     .from('google_reviews')
                     .select('*')
                     .order('review_count', { ascending: false });
@@ -11876,11 +11876,11 @@ Ready for deployment! 🚀
 
     </script>
     
-    <!-- Incentive Calculator Module -->
-    <script src="assets/js/incentive-calculator.js"></script>
+    <!-- Incentive Calculator Module - Commented out temporarily -->
+    <!-- <script src="assets/js/incentive-calculator.js"></script> -->
     
-    <!-- Product Incentive Calculator Module -->
-    <script src="assets/js/product-incentive-calculator.js"></script>
+    <!-- Product Incentive Calculator Module - Commented out temporarily -->
+    <!-- <script src="assets/js/product-incentive-calculator.js"></script> -->
     
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95a376871c4135f2","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
