@@ -1142,6 +1142,32 @@
             return { weeklyBCA, weeklySummary };
         }
         
+        // Helper function for Setoran Tunai calculation (must be before matchWeeklyData)
+        function calculateWeeklySetoranMatch(weekKey, outletCode, bcaData, acmmData, pivotMap) {
+            let cdmBalance = 0, cashSales = 0;
+            
+            const cdmKey = `${weekKey}|${outletCode}|CDM`;
+            if (bcaData.weeklyBCA.has(cdmKey)) {
+                const cdmData = bcaData.weeklyBCA.get(cdmKey);
+                for (const txn of cdmData.transactions) {
+                    const pivotKey = `${formatDate(txn.acmmDate)}|${outletCode}|CASH`;
+                    if (pivotMap.has(pivotKey)) {
+                        const pivot = pivotMap.get(pivotKey);
+                        const grossAmount = pivot.amount;
+                        const roundedAmount = roundDownTo50k(grossAmount);
+                        cdmBalance += (grossAmount - roundedAmount);
+                    }
+                }
+            }
+            
+            const acmmKey = `${weekKey}|${outletCode}|CASH`;
+            if (acmmData.weeklyACMM.has(acmmKey)) {
+                cashSales = acmmData.weeklyACMM.get(acmmKey).totalAmount;
+            }
+            
+            return { cdmBalance, cashSales, expectedTotal: cdmBalance + cashSales };
+        }
+        
         function matchWeeklyData(acmmData, bcaData, pivotMap, lookups) {
             const summaryResults = [];
             const detailResults = [];
@@ -1246,31 +1272,6 @@
             
             console.log(`Created ${summaryResults.length} summary, ${detailResults.length} detail results`);
             return { summaryResults, detailResults };
-        }
-        
-        function calculateWeeklySetoranMatch(weekKey, outletCode, bcaData, acmmData, pivotMap) {
-            let cdmBalance = 0, cashSales = 0;
-            
-            const cdmKey = `${weekKey}|${outletCode}|CDM`;
-            if (bcaData.weeklyBCA.has(cdmKey)) {
-                const cdmData = bcaData.weeklyBCA.get(cdmKey);
-                for (const txn of cdmData.transactions) {
-                    const pivotKey = `${formatDate(txn.acmmDate)}|${outletCode}|CASH`;
-                    if (pivotMap.has(pivotKey)) {
-                        const pivot = pivotMap.get(pivotKey);
-                        const grossAmount = pivot.amount;
-                        const roundedAmount = roundDownTo50k(grossAmount);
-                        cdmBalance += (grossAmount - roundedAmount);
-                    }
-                }
-            }
-            
-            const acmmKey = `${weekKey}|${outletCode}|CASH`;
-            if (acmmData.weeklyACMM.has(acmmKey)) {
-                cashSales = acmmData.weeklyACMM.get(acmmKey).totalAmount;
-            }
-            
-            return { cdmBalance, cashSales, expectedTotal: cdmBalance + cashSales };
         }
         
         // Main reconciliation function - WEEKLY VERSION
