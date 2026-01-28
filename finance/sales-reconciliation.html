@@ -564,14 +564,43 @@
         function parseBCAAmountFromDescription(description) {
             if (!description) return 0;
             
-            // Pattern 1: QR: amount (for QRIS)
+            // NEW Pattern: BCA statement with asterisk-delimited format
+            // Example: "*QRIS*:8735997,*SALES*:12759015,*CASH*:2169118,*DEBIT LAIN*:8898400"
+            // We need to extract SALES amount or sum all payment types
+            
+            // Try to find *SALES* amount (this is usually the total)
+            const salesMatch = description.match(/\*SALES\*\s*:\s*([\d,]+\.?\d*)/i);
+            if (salesMatch) {
+                const cleanAmount = salesMatch[1].replace(/,/g, '');
+                return parseFloat(cleanAmount) || 0;
+            }
+            
+            // If no SALES field, sum all payment types
+            // Pattern: *TYPE*:amount
+            const paymentPattern = /\*[^*]+\*\s*:\s*([\d,]+\.?\d*)/g;
+            let totalAmount = 0;
+            let match;
+            
+            while ((match = paymentPattern.exec(description)) !== null) {
+                const cleanAmount = match[1].replace(/,/g, '');
+                const amount = parseFloat(cleanAmount);
+                if (!isNaN(amount)) {
+                    totalAmount += amount;
+                }
+            }
+            
+            if (totalAmount > 0) {
+                return totalAmount;
+            }
+            
+            // Legacy Pattern 1: QR: amount (for QRIS)
             const qrMatch = description.match(/QR\s*:\s*([\d,]+\.?\d*)/i);
             if (qrMatch) {
                 const cleanAmount = qrMatch[1].replace(/,/g, '');
                 return parseFloat(cleanAmount) || 0;
             }
             
-            // Pattern 2: TGH: amount (for Credit Card and others)
+            // Legacy Pattern 2: TGH: amount (for Credit Card and others)
             const tghMatch = description.match(/TGH\s*:\s*([\d,]+\.?\d*)/i);
             if (tghMatch) {
                 const cleanAmount = tghMatch[1].replace(/,/g, '');
