@@ -424,7 +424,8 @@
     <script>
         // Global variables
         let uploadedFiles = {};
-        let reconciliationResults = [];
+        let weeklySummaryResults = [];
+        let weeklyDetailResults = [];
         let currentTab = 'all';
 
         // File upload handler
@@ -1019,10 +1020,6 @@
         // ============================================================================
         // WEEKLY AGGREGATION AND MATCHING FUNCTIONS
         // ============================================================================
-        
-        // Global variables for weekly results
-        let weeklySummaryResults = [];
-        let weeklyDetailResults = [];
         
         function aggregateACMMByWeek(pivotMap) {
             const weeklyACMM = new Map();
