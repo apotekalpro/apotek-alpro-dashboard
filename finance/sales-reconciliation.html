@@ -1140,6 +1140,11 @@
                 const weekInfo = getWeekRange(acmmDate);
                 const weekKey = weekInfo.weekKey;
                 
+                // DEBUG: Log week calculation for first few rows
+                if (i <= 5) {
+                    console.log(`Row ${i}: BCA Date ${formatDate(tglTransaksi)} → ACMM Date ${formatDate(acmmDate)} → Week ${weekInfo.weekLabel}`);
+                }
+                
                 const detailKey = `${weekKey}|${outletCode}|${transactionType}`;
                 if (!weeklyBCA.has(detailKey)) {
                     weeklyBCA.set(detailKey, {
