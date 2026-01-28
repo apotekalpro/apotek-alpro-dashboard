@@ -254,10 +254,10 @@
                     </div>
                 </div>
 
-                <!-- File 5: Merchant Rate Matching Checker -->
+                <!-- File 5: Master BCA Cabang x Alpro Matching -->
                 <div class="upload-container">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        5. Merchant Rate Matching Checker
+                        5. Master BCA Cabang x Alpro
                     </label>
                     <div class="upload-zone" id="upload-zone-5" onclick="document.getElementById('file-5').click()">
                         <input type="file" id="file-5" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(5, this.files[0])">
@@ -268,28 +268,13 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- File 6: Master BCA Cabang x Alpro Matching -->
-                <div class="upload-container">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        6. Master BCA Cabang x Alpro
-                    </label>
-                    <div class="upload-zone" id="upload-zone-6" onclick="document.getElementById('file-6').click()">
-                        <input type="file" id="file-6" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(6, this.files[0])">
-                        <div class="p-4 text-center">
-                            <i class="fas fa-file-excel text-4xl text-gray-400 mb-2"></i>
-                            <p class="text-sm text-gray-600" id="file-name-6">Click to upload Excel file</p>
-                            <p class="text-xs text-gray-400 mt-1" id="file-status-6"></p>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Progress Bar -->
             <div class="mt-6">
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-sm font-semibold text-gray-700">Upload Progress</span>
-                    <span class="text-sm text-gray-600" id="upload-progress-text">0/6 files uploaded</span>
+                    <span class="text-sm text-gray-600" id="upload-progress-text">0/5 files uploaded</span>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
@@ -485,9 +470,9 @@
         // Update progress bar
         function updateProgress() {
             const uploadedCount = Object.keys(uploadedFiles).length;
-            const progressPercent = (uploadedCount / 6) * 100;
+            const progressPercent = (uploadedCount / 5) * 100;
             document.getElementById('progress-fill').style.width = `${progressPercent}%`;
-            document.getElementById('upload-progress-text').textContent = `${uploadedCount}/6 files uploaded`;
+            document.getElementById('upload-progress-text').textContent = `${uploadedCount}/5 files uploaded`;
 
             // Enable process button if BCA statement is uploaded
             if (uploadedFiles[2]) {
@@ -575,7 +560,62 @@
             return amount;
         }
 
-        // Round down to nearest 50,000
+        // NEW: Parse BCA amount from Column B description (before deduction)
+        function parseBCAAmountFromDescription(description) {
+            if (!description) return 0;
+            
+            // Pattern 1: QR: amount (for QRIS)
+            const qrMatch = description.match(/QR\s*:\s*([\d,]+\.?\d*)/i);
+            if (qrMatch) {
+                const cleanAmount = qrMatch[1].replace(/,/g, '');
+                return parseFloat(cleanAmount) || 0;
+            }
+            
+            // Pattern 2: TGH: amount (for Credit Card and others)
+            const tghMatch = description.match(/TGH\s*:\s*([\d,]+\.?\d*)/i);
+            if (tghMatch) {
+                const cleanAmount = tghMatch[1].replace(/,/g, '');
+                return parseFloat(cleanAmount) || 0;
+            }
+            
+            // Fallback: return 0 if no pattern matched
+            return 0;
+        }
+
+        // NEW: Get week range (Friday to Thursday) for a given date
+        function getWeekRange(date) {
+            const d = new Date(date);
+            const dayOfWeek = d.getDay(); // 0=Sunday, 1=Monday, ..., 5=Friday, 6=Saturday
+            
+            // Calculate days to subtract to get to previous/current Friday
+            let daysToFriday;
+            if (dayOfWeek >= 5) {
+                // Friday(5) or Saturday(6) - go to current week's Friday
+                daysToFriday = dayOfWeek - 5;
+            } else {
+                // Sunday(0) to Thursday(4) - go to previous week's Friday
+                daysToFriday = dayOfWeek + 2;
+            }
+            
+            const weekStart = new Date(d);
+            weekStart.setDate(d.getDate() - daysToFriday);
+            weekStart.setHours(0, 0, 0, 0);
+            
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6); // Thursday
+            weekEnd.setHours(23, 59, 59, 999);
+            
+            const weekLabel = `${formatDate(weekStart)} to ${formatDate(weekEnd)}`;
+            
+            return {
+                weekStart: weekStart,
+                weekEnd: weekEnd,
+                weekLabel: weekLabel,
+                weekKey: formatDate(weekStart) // Use Friday date as week identifier
+            };
+        }
+
+        // Round down to nearest 50,000 (DEPRECATED - keeping for backward compatibility but not used in weekly matching)
         function roundDownTo50k(amount) {
             return Math.floor(amount / 50000) * 50000;
         }
@@ -645,11 +685,7 @@
             const lookups = {
                 kartuDebit: new Map(),
                 mid: new Map(),
-                cabang: new Map(),
-                merchantRate: {
-                    byCard: new Map(),
-                    byPaymentType: new Map()
-                }
+                cabang: new Map()
             };
 
             console.log('=== Building Master Lookups ===');
@@ -697,8 +733,8 @@
             }
 
             // Master BCA Cabang (File 6)
-            if (uploadedFiles[6]) {
-                const data = uploadedFiles[6].data;
+            if (uploadedFiles[5]) {
+                const data = uploadedFiles[5].data;
                 console.log(`Processing Cabang file: ${data.length - 1} rows`);
                 console.log('Sample header row:', data[0]);
                 
@@ -746,41 +782,6 @@
                 console.log('Sample Cabang codes in lookup:', sampleCabang);
             }
 
-            // Merchant Rate Checker (File 5)
-            if (uploadedFiles[5]) {
-                const data = uploadedFiles[5].data;
-                console.log(`Processing Merchant Rate file: ${data.length - 1} rows`);
-                
-                for (let i = 1; i < data.length; i++) {
-                    const row = data[i];
-                    const cardLast6 = row[0]?.toString() || ''; // Column A - last 6 digits of card
-                    const paymentType = row[1]?.toString() || ''; // Column B - payment type description
-                    const rate = parseFloat(row[2]) || 0; // Column C - merchant rate
-                    
-                    // For card number matching (Column A) - STORE BOTH RATE AND PAYMENT TYPE OVERRIDE
-                    if (cardLast6 && cardLast6 !== '000000') {
-                        // Store card-specific rate AND the correct payment type for override
-                        lookups.merchantRate.byCard.set(cardLast6, {
-                            rate: rate,
-                            paymentType: paymentType // Store correct payment type for override
-                        });
-                    }
-                    
-                    // For payment type matching (Column B) - PRIORITY!
-                    if (paymentType) {
-                        const paymentUpper = paymentType.toUpperCase();
-                        // Store with exact payment type as key
-                        // If multiple rates for same type, last one wins (but shouldn't happen in clean data)
-                        if (!lookups.merchantRate.byPaymentType.has(paymentUpper) || cardLast6 === '000000') {
-                            // Priority: 000000 entries (general rules) or first occurrence
-                            lookups.merchantRate.byPaymentType.set(paymentUpper, rate);
-                        }
-                    }
-                }
-                console.log(`Loaded ${lookups.merchantRate.byCard.size} card-specific rates with payment type overrides`);
-                console.log(`Loaded ${lookups.merchantRate.byPaymentType.size} payment type rates`);
-            }
-
             console.log('=== Lookup Building Complete ===');
             return lookups;
         }
@@ -806,66 +807,18 @@
                 const outletCode = parseOutletCode(storeName);
                 if (!outletCode) continue;
 
-                // STEP 1: CARD NUMBER OVERRIDE FIRST (HIGHEST PRIORITY)
-                // If card matches CC Merchant Checker Column A, override payment type with Column B
+                // STEP 1: CARD NUMBER OVERRIDE (for payment type categorization only, no rates)
+                // If card matches CC Merchant Checker Column A, override payment type
                 const cardLast6 = extractLastDigits(cardNum, 6);
-                let merchantRate = 0;
-                let matchSource = '';
                 let wasOverridden = false;
                 
-                if (cardLast6 && cardLast6 !== '000000' && lookups.merchantRate.byCard.has(cardLast6)) {
-                    const cardMatch = lookups.merchantRate.byCard.get(cardLast6);
-                    const originalPaymentMethod = paymentMethod;
-                    
-                    // OVERRIDE: Replace payment type with the correct one from CC Merchant Checker
-                    paymentMethod = cardMatch.paymentType;
-                    merchantRate = cardMatch.rate;
-                    matchSource = `card ${cardLast6} (override)`;
-                    wasOverridden = true;
-                    
-                    if (originalPaymentMethod !== paymentMethod) {
-                        console.log(`✓ Override Row ${i}: Card ${cardLast6} - "${originalPaymentMethod}" → "${paymentMethod}" (rate: ${merchantRate}%)`);
-                    }
-                }
+                // Note: Merchant Rate file removed - card override logic simplified
+                // Just use the payment method from transaction summary
                 
-                // STEP 2: If not overridden, determine merchant rate based on payment type
-                if (!wasOverridden) {
-                    // For QRIS, use QRIS rate
-                    if (paymentMethod && paymentMethod.toUpperCase() === 'QRIS') {
-                        if (lookups.merchantRate.byPaymentType.has('QRIS')) {
-                            merchantRate = lookups.merchantRate.byPaymentType.get('QRIS');
-                            matchSource = 'QRIS type';
-                        }
-                    }
-                    // For other payment types, match by payment type description
-                    else if (paymentMethod) {
-                        const paymentUpper = paymentMethod.toUpperCase();
-                        // Try exact match first
-                        if (lookups.merchantRate.byPaymentType.has(paymentUpper)) {
-                            merchantRate = lookups.merchantRate.byPaymentType.get(paymentUpper);
-                            matchSource = `type ${paymentUpper}`;
-                        } else {
-                            // Try partial match (for generic types)
-                            for (let [key, rate] of lookups.merchantRate.byPaymentType) {
-                                if (paymentUpper.includes(key) || key.includes(paymentUpper)) {
-                                    merchantRate = rate;
-                                    matchSource = `partial ${key}`;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Calculate net amount after commission
-                let netAmount = amount;
-                if (merchantRate > 0) {
-                    netAmount = amount - (amount * merchantRate / 100);
-                } else if (commission > 0) {
-                    netAmount = amount - commission;
-                }
-
-                // Create pivot key
+                // No merchant rate calculation needed for weekly matching
+                // We only use gross amounts
+                
+                // Create pivot key by date, outlet, and payment method
                 const dateStr = formatDate(date);
                 const key = `${dateStr}|${outletCode}|${paymentMethod}`;
 
@@ -875,8 +828,6 @@
                         outletCode: outletCode,
                         paymentMethod: paymentMethod,
                         amount: 0,
-                        netAmount: 0,
-                        merchantRate: 0,
                         count: 0,
                         transactions: []
                     });
@@ -884,16 +835,11 @@
 
                 const pivot = pivotMap.get(key);
                 pivot.amount += amount;
-                pivot.netAmount += netAmount;
-                pivot.merchantRate = merchantRate; // Store the rate used
                 pivot.count++;
                 pivot.transactions.push({
                     cardNum: cardNum,
                     cardLast6: cardLast6,
-                    amount: amount,
-                    netAmount: netAmount,
-                    merchantRate: merchantRate,
-                    commission: commission
+                    amount: amount
                 });
             }
 
@@ -913,7 +859,7 @@
                 const tglTransaksi = parseDate(row[0]);
                 const description = row[1]?.toString() || '';
                 const cabang = row[2]?.toString() || '';
-                const amount = parseBCAAmount(row[3]);
+                const amount = parseBCAAmountFromDescription(description); // Parse from Column B
                 
                 if (!tglTransaksi || !description) continue;
                 
@@ -1120,7 +1066,7 @@
                     const tglTransaksi = parseDate(row[0]); // Column A
                     const description = row[1]?.toString() || ''; // Column B
                     const cabang = row[2]?.toString() || ''; // Column C
-                    const amount = parseBCAAmount(row[3]); // Column D - with CR handling
+                    const amount = parseBCAAmountFromDescription(description); // Parse from Column B description
 
                     if (!tglTransaksi || !description) continue;
                     
@@ -1206,7 +1152,7 @@
                     const tglTransaksi = parseDate(row[0]); // Column A
                     const description = row[1]?.toString() || ''; // Column B
                     const cabang = row[2]?.toString() || ''; // Column C
-                    const amount = parseBCAAmount(row[3]); // Column D - with CR handling
+                    const amount = parseBCAAmountFromDescription(description); // Parse from Column B description
 
                     if (!tglTransaksi || !description) continue;
                     
@@ -1811,7 +1757,7 @@
             currentTab = 'all';
 
             // Reset UI
-            for (let i = 1; i <= 6; i++) {
+            for (let i = 1; i <= 5; i++) {
                 const zone = document.getElementById(`upload-zone-${i}`);
                 const fileName = document.getElementById(`file-name-${i}`);
                 const fileStatus = document.getElementById(`file-status-${i}`);
@@ -1824,7 +1770,7 @@
             }
 
             document.getElementById('progress-fill').style.width = '0%';
-            document.getElementById('upload-progress-text').textContent = '0/6 files uploaded';
+            document.getElementById('upload-progress-text').textContent = '0/5 files uploaded';
             document.getElementById('process-btn').disabled = true;
             document.getElementById('results-section').classList.add('hidden');
         }
