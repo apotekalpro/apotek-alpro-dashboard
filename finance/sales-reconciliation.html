@@ -422,6 +422,8 @@
     </div>
 
     <script>
+        console.log('🚀 Sales Reconciliation Script Loading... Version: Weekly-2024');
+        
         // Global variables
         let uploadedFiles = {};
         let weeklySummaryResults = [];
@@ -467,6 +469,7 @@
             };
             reader.readAsArrayBuffer(file);
         }
+        console.log('✅ handleFileUpload function defined');
 
         // Update progress bar
         function updateProgress() {
