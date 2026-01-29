@@ -1221,15 +1221,9 @@
                 
                 const transactionType = determineTransactionType(description);
                 
-                // IMPORTANT: CDM and SETORAN_TUNAI amounts are in Column D, not description!
-                let amount;
-                if (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') {
-                    // For CDM and SETORAN: Use Column D (Jumlah)
-                    amount = parseBCAAmount(columnD);
-                } else {
-                    // For QRIS, CREDITCARD, DEBITCARD: Parse from description (Column B)
-                    amount = parseBCAAmountFromDescription(description, transactionType);
-                }
+                // IMPORTANT: ALL BCA amounts are in Column D (Jumlah)!
+                // Column D contains the actual transaction amount for ALL transaction types
+                const amount = parseBCAAmount(columnD);
                 let outletCode = null;
                 
                 if (transactionType === 'CDM') {
