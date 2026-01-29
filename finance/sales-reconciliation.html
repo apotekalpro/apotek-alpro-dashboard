@@ -507,9 +507,9 @@
                         const currentYear = currentDate.getFullYear();
                         const currentMonth = currentDate.getMonth();
                         
-                        // TEMPORARY FIX: Hard-code 2020 for historical data
+                        // TEMPORARY FIX: Hard-code 2025 for current data
                         // TODO: Add year input field in UI
-                        year = 2020;
+                        year = 2025;
                         
                         // If transaction month is after current month, it's likely from previous year
                         // e.g., in January 2026, a transaction dated 10/10 (October) is from 2025
@@ -661,25 +661,25 @@
         // NEW: Get week range (Friday to Thursday) for a given date
         function getWeekRange(date) {
             const d = new Date(date);
-            const dayOfWeek = d.getDay(); // 0=Sunday, 1=Monday, ..., 4=Thursday, 5=Friday, 6=Saturday
+            const dayOfWeek = d.getDay(); // 0=Sunday, 1=Monday, ..., 5=Friday, 6=Saturday
             
-            // Calculate days to subtract to get to previous/current Thursday
-            // Week runs: Thursday to Wednesday
-            let daysToThursday;
-            if (dayOfWeek >= 4) {
-                // Thursday(4), Friday(5), or Saturday(6) - go to current week's Thursday
-                daysToThursday = dayOfWeek - 4;
+            // Calculate days to subtract to get to previous/current Friday
+            // Week runs: Friday to Thursday
+            let daysToFriday;
+            if (dayOfWeek >= 5) {
+                // Friday(5) or Saturday(6) - go to current week's Friday
+                daysToFriday = dayOfWeek - 5;
             } else {
-                // Sunday(0) to Wednesday(3) - go to previous week's Thursday
-                daysToThursday = dayOfWeek + 3;
+                // Sunday(0) to Thursday(4) - go to previous week's Friday
+                daysToFriday = dayOfWeek + 2;
             }
             
             const weekStart = new Date(d);
-            weekStart.setDate(d.getDate() - daysToThursday);
+            weekStart.setDate(d.getDate() - daysToFriday);
             weekStart.setHours(0, 0, 0, 0);
             
             const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6); // Next Wednesday
+            weekEnd.setDate(weekStart.getDate() + 6); // Next Thursday
             weekEnd.setHours(23, 59, 59, 999);
             
             const weekLabel = `${formatDate(weekStart)} to ${formatDate(weekEnd)}`;
@@ -688,7 +688,7 @@
                 weekStart: weekStart,
                 weekEnd: weekEnd,
                 weekLabel: weekLabel,
-                weekKey: formatDate(weekStart) // Use Thursday date as week identifier
+                weekKey: formatDate(weekStart) // Use Friday date as week identifier
             };
         }
 
@@ -1238,8 +1238,11 @@
                 } else if (transactionType === 'SETORAN_TUNAI') {
                     const cabangStr = cabang.toString().trim();
                     if (lookups.cabang.has(cabangStr)) outletCode = lookups.cabang.get(cabangStr);
-                } else if (transactionType === 'CREDITCARD' || transactionType === 'DEBITCARD') {
+                } else if (transactionType === 'CREDITCARD') {
                     const mid = parseCreditCardMID(description);
+                    if (mid && lookups.mid.has(mid)) outletCode = lookups.mid.get(mid);
+                } else if (transactionType === 'DEBITCARD') {
+                    const mid = parseDebitCard(description);
                     if (mid && lookups.mid.has(mid)) outletCode = lookups.mid.get(mid);
                 } else if (transactionType === 'QRIS') {
                     const mid = parseQRIS(description);
