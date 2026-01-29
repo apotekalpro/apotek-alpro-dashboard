@@ -582,8 +582,29 @@
         }
 
         // NEW: Parse BCA amount from Column B description (before deduction)
-        function parseBCAAmountFromDescription(description) {
+        function parseBCAAmountFromDescription(description, transactionType = null) {
             if (!description) return 0;
+            
+            // For CDM: Extract from "SETORAN VIA CDM BCA ... Rp xxx.xxx,xx"
+            if (transactionType === 'CDM') {
+                // Pattern: "Rp 1.234.567,89" or "Rp 1234567.89"
+                const rpMatch = description.match(/Rp\s*([\d.,]+)/i);
+                if (rpMatch) {
+                    // Clean: remove dots (thousand separators), replace comma with decimal point
+                    let cleanAmount = rpMatch[1].replace(/\./g, '').replace(/,/g, '.');
+                    return parseFloat(cleanAmount) || 0;
+                }
+            }
+            
+            // For SETORAN_TUNAI: Extract from "SETORAN TUNAI ... xxx.xxx,xx"
+            if (transactionType === 'SETORAN_TUNAI') {
+                // Pattern: numbers with dots/commas at end of description
+                const amountMatch = description.match(/([\d.,]+)\s*$/i);
+                if (amountMatch) {
+                    let cleanAmount = amountMatch[1].replace(/\./g, '').replace(/,/g, '.');
+                    return parseFloat(cleanAmount) || 0;
+                }
+            }
             
             // NEW Pattern: BCA statement with asterisk-delimited format
             // Example: "*QRIS*:8735997,*SALES*:12759015,*CASH*:2169118,*DEBIT LAIN*:8898400"
@@ -614,17 +635,18 @@
                 return totalAmount;
             }
             
-            // Legacy Pattern 1: QR: amount (for QRIS)
-            const qrMatch = description.match(/QR\s*:\s*([\d,]+\.?\d*)/i);
-            if (qrMatch) {
-                const cleanAmount = qrMatch[1].replace(/,/g, '');
-                return parseFloat(cleanAmount) || 0;
-            }
-            
-            // Legacy Pattern 2: TGH: amount (for Credit Card and others)
+            // Pattern for KR OTOMATIS with TGH: (Debit Card)
+            // Example: "KR OTOMATIS MID : 885004119892 ALPRO KALIBATA CIT  TGH:     743450.00"
             const tghMatch = description.match(/TGH\s*:\s*([\d,]+\.?\d*)/i);
             if (tghMatch) {
                 const cleanAmount = tghMatch[1].replace(/,/g, '');
+                return parseFloat(cleanAmount) || 0;
+            }
+            
+            // Pattern for QR: amount (for QRIS)
+            const qrMatch = description.match(/QR\s*:\s*([\d,]+\.?\d*)/i);
+            if (qrMatch) {
+                const cleanAmount = qrMatch[1].replace(/,/g, '');
                 return parseFloat(cleanAmount) || 0;
             }
             
@@ -724,7 +746,9 @@
             if (description.includes('SETORAN VIA CDM')) return 'CDM';
             if (description.includes('KARTU KREDIT')) return 'CREDITCARD';
             if (description.includes('QR :')) return 'QRIS';
-            if (description.includes('KR OTOMATIS') && !description.includes('QR :')) return 'DEBIT';
+            // KR OTOMATIS with TGH: is debit card transaction
+            if (description.includes('KR OTOMATIS') && description.includes('TGH:')) return 'DEBITCARD';
+            if (description.includes('KR OTOMATIS') && !description.includes('QR :')) return 'DEBITCARD';
             if (description.includes('SETORAN TUNAI')) return 'SETORAN_TUNAI';
             
             return 'OTHER';
@@ -842,13 +866,17 @@
 
             const pivotMap = new Map();
             const data = uploadedFiles[1].data;
+            
+            console.log('=== Pivoting Transaction Summary ===');
+            console.log('Sample header:', data[0]);
 
             for (let i = 1; i < data.length; i++) {
                 const row = data[i];
                 const date = parseDate(row[0]); // Column A
                 const storeName = row[2]; // Column C
-                let paymentMethod = row[5]; // Column F - will be overridden by card number match
+                let paymentMethod = row[5]; // Column F
                 const cardNum = row[6]; // Column G
+                const debitCredit = row[11]?.toString().trim().toUpperCase(); // Column L (index 11) - "DEBIT" or "CREDIT"
                 const amount = parseFloat(row[13]) || 0; // Column N (index 13)
                 const commission = parseFloat(row[10]) || 0; // Column K (index 10)
 
@@ -856,6 +884,24 @@
 
                 const outletCode = parseOutletCode(storeName);
                 if (!outletCode) continue;
+                
+                // IMPORTANT: Only process "CREDIT" rows to avoid double-counting
+                // Debit rows show individual payment types, Credit rows show totals (SALES)
+                // For weekly total matching, we only use Credit (SALES)
+                // For per-type breakdown, we can use Debit rows separately
+                
+                // If paymentMethod is "SALES", it's the total - only count if Credit
+                if (paymentMethod === 'SALES') {
+                    // SALES rows should only be counted if they're marked as Credit
+                    if (debitCredit !== 'CREDIT') {
+                        continue; // Skip SALES rows that aren't Credit
+                    }
+                } else {
+                    // For specific payment methods (QRIS, VISA, etc.), only use Debit rows
+                    if (debitCredit !== 'DEBIT') {
+                        continue; // Skip non-Debit rows for payment types
+                    }
+                }
 
                 // STEP 1: CARD NUMBER OVERRIDE (for payment type categorization only, no rates)
                 // If card matches CC Merchant Checker Column A, override payment type
@@ -889,9 +935,12 @@
                 pivot.transactions.push({
                     cardNum: cardNum,
                     cardLast6: cardLast6,
-                    amount: amount
+                    amount: amount,
+                    debitCredit: debitCredit
                 });
             }
+            
+            console.log(`Created ${pivotMap.size} pivot entries (Debit payment types + Credit SALES)`);
 
             return pivotMap;
         }
@@ -1156,12 +1205,12 @@
                 const tglTransaksi = parseDate(row[0], referenceYear);
                 const description = row[1]?.toString() || '';
                 const cabang = row[2]?.toString() || '';
-                const amount = parseBCAAmountFromDescription(description);
                 
                 if (!tglTransaksi || !description) continue;
                 if (description.includes('BI-FAST') || description.includes('TRSF E-BANKING') || description.includes('BYR')) continue;
                 
                 const transactionType = determineTransactionType(description);
+                const amount = parseBCAAmountFromDescription(description, transactionType);
                 let outletCode = null;
                 
                 if (transactionType === 'CDM') {
