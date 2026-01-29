@@ -728,10 +728,19 @@
 
         // Parse BCA description for Debit Card MID
         function parseDebitCard(description) {
-            const krMatch = description.match(/KR OTOMATIS.*?MID\s*:\s*(\d+)/i);
-            if (krMatch && !description.includes('QR :')) {
-                return extractLastDigits(krMatch[1], 7);
+            // Pattern 1: KR OTOMATIS with MID: label
+            const midMatch = description.match(/KR OTOMATIS.*?MID\s*:\s*(\d+)/i);
+            if (midMatch && !description.includes('QR :')) {
+                return extractLastDigits(midMatch[1], 7);
             }
+            
+            // Pattern 2: KR OTOMATIS with FLAZZ (no MID: label)
+            // Example: "KR OTOMATIS 02/10/2025 04:00 FLAZZ 885004119892  ALPRO..."
+            const flazzMatch = description.match(/FLAZZ\s+(\d+)/i);
+            if (flazzMatch && !description.includes('QR :')) {
+                return extractLastDigits(flazzMatch[1], 7);
+            }
+            
             return null;
         }
 
@@ -792,10 +801,10 @@
                 
                 for (let i = 1; i < data.length; i++) {
                     const row = data[i];
-                    // Extract last 7 digits from Column E MID (index 4)
-                    const midFull = row[4]?.toString() || '';
+                    // Extract last 7 digits from Column D MID (index 3)
+                    const midFull = row[3]?.toString() || '';
                     const mid = extractLastDigits(midFull, 7);
-                    const outletCode = row[3]; // Column D - Outlet Code (index 3)
+                    const outletCode = row[4]; // Column E - Outlet Code (index 4)
                     
                     if (mid && outletCode) {
                         lookups.mid.set(mid, outletCode);
