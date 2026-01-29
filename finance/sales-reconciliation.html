@@ -481,7 +481,7 @@
         }
 
         // Parse date from various formats
-        function parseDate(dateValue) {
+        function parseDate(dateValue, referenceYear = null) {
             if (!dateValue) return null;
             
             // If it's already a Date object
@@ -494,7 +494,28 @@
                 if (parts.length === 2) {
                     const day = parseInt(parts[0]);
                     const month = parseInt(parts[1]) - 1;
-                    const year = new Date().getFullYear();
+                    
+                    // Smart year inference:
+                    // 1. Use referenceYear if provided
+                    // 2. Otherwise, if transaction month > current month, assume previous year
+                    // 3. Otherwise use current year
+                    let year;
+                    if (referenceYear) {
+                        year = referenceYear;
+                    } else {
+                        const currentDate = new Date();
+                        const currentYear = currentDate.getFullYear();
+                        const currentMonth = currentDate.getMonth();
+                        
+                        // If transaction month is after current month, it's likely from previous year
+                        // e.g., in January 2026, a transaction dated 10/10 (October) is from 2025
+                        if (month > currentMonth) {
+                            year = currentYear - 1;
+                        } else {
+                            year = currentYear;
+                        }
+                    }
+                    
                     return new Date(year, month, day);
                 }
                 
@@ -1122,16 +1143,17 @@
             return { weeklyACMM, weeklySummary };
         }
         
-        function aggregateBCAByWeek(bcaData, lookups) {
+        function aggregateBCAByWeek(bcaData, lookups, referenceYear = null) {
             const weeklyBCA = new Map();
             const weeklySummary = new Map();
             
             console.log('=== Aggregating BCA by Week ===');
             console.log('🔍 DEBUG: BCA has', bcaData.length - 1, 'rows (excluding header)');
+            console.log('🔍 DEBUG: Using reference year:', referenceYear || 'auto-detect');
             
             for (let i = 1; i < bcaData.length; i++) {
                 const row = bcaData[i];
-                const tglTransaksi = parseDate(row[0]);
+                const tglTransaksi = parseDate(row[0], referenceYear);
                 const description = row[1]?.toString() || '';
                 const cabang = row[2]?.toString() || '';
                 const amount = parseBCAAmountFromDescription(description);
@@ -1381,10 +1403,20 @@
                 
                 const acmmWeekly = aggregateACMMByWeek(pivotMap);
                 
+                // Detect year from ACMM data for BCA parsing
+                let referenceYear = null;
+                for (const [key, data] of acmmWeekly.weeklySummary.entries()) {
+                    if (data.weekStart) {
+                        referenceYear = data.weekStart.getFullYear();
+                        console.log(`🔍 Detected reference year from ACMM: ${referenceYear}`);
+                        break;
+                    }
+                }
+                
                 document.getElementById('processing-text').textContent = 'Aggregating BCA data by week...';
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
-                const bcaWeekly = aggregateBCAByWeek(bcaData, lookups);
+                const bcaWeekly = aggregateBCAByWeek(bcaData, lookups, referenceYear);
                 
                 document.getElementById('processing-text').textContent = 'Performing weekly matching...';
                 await new Promise(resolve => setTimeout(resolve, 100));
