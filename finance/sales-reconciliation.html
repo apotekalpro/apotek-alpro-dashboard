@@ -801,10 +801,10 @@
                 
                 for (let i = 1; i < data.length; i++) {
                     const row = data[i];
-                    // Extract last 7 digits from Column E MID (index 4)
-                    const midFull = row[4]?.toString() || '';
+                    // Extract last 7 digits from Column D MID (index 3)
+                    const midFull = row[3]?.toString() || '';
                     const mid = extractLastDigits(midFull, 7);
-                    const outletCode = row[3]; // Column D - Outlet Code (index 3)
+                    const outletCode = row[4]; // Column E - Outlet Code (index 4)
                     
                     if (mid && outletCode) {
                         lookups.mid.set(mid, outletCode);
