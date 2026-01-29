@@ -1058,7 +1058,9 @@
             const weeklySummary = new Map();
             
             console.log('=== Aggregating ACMM by Week ===');
+            console.log('🔍 DEBUG: Pivot map has', pivotMap.size, 'entries');
             
+            let sampleCount = 0;
             for (const [key, pivot] of pivotMap.entries()) {
                 const [dateStr, outletCode, paymentMethod] = key.split('|');
                 const date = parseDate(dateStr);
@@ -1066,6 +1068,16 @@
                 
                 const weekInfo = getWeekRange(date);
                 const weekKey = weekInfo.weekKey;
+                
+                // DEBUG: Log first 5 ACMM entries
+                if (sampleCount < 5) {
+                    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    console.log(`🔍 ACMM Entry ${sampleCount + 1}:`);
+                    console.log(`  📅 Date: ${dateStr} (${days[date.getDay()]}) => Week: ${weekInfo.weekLabel}`);
+                    console.log(`  🏪 Outlet: ${outletCode} | Method: ${paymentMethod} | Amount: ${pivot.amount.toFixed(2)}`);
+                    console.log('');
+                    sampleCount++;
+                }
                 
                 const detailKey = `${weekKey}|${outletCode}|${paymentMethod}`;
                 if (!weeklyACMM.has(detailKey)) {
@@ -1098,6 +1110,15 @@
             console.log(`Aggregated ${weeklyACMM.size} ACMM weekly details`);
             console.log(`Aggregated ${weeklySummary.size} ACMM weekly summaries`);
             
+            // DEBUG: Show sample ACMM weeks
+            console.log('🔍 ACMM Summary Keys (first 5):');
+            let count = 0;
+            for (const [key, data] of weeklySummary.entries()) {
+                if (count++ >= 5) break;
+                console.log(`  ${key} => Week: ${data.weekLabel}, Amount: ${data.totalAmount.toFixed(2)}`);
+            }
+            console.log('');
+            
             return { weeklyACMM, weeklySummary };
         }
         
@@ -1106,6 +1127,7 @@
             const weeklySummary = new Map();
             
             console.log('=== Aggregating BCA by Week ===');
+            console.log('🔍 DEBUG: BCA has', bcaData.length - 1, 'rows (excluding header)');
             
             for (let i = 1; i < bcaData.length; i++) {
                 const row = bcaData[i];
@@ -1140,9 +1162,16 @@
                 const weekInfo = getWeekRange(acmmDate);
                 const weekKey = weekInfo.weekKey;
                 
-                // DEBUG: Log week calculation for first few rows
-                if (i <= 5) {
-                    console.log(`Row ${i}: BCA Date ${formatDate(tglTransaksi)} → ACMM Date ${formatDate(acmmDate)} → Week ${weekInfo.weekLabel}`);
+                // DEBUG: Enhanced logging for first 10 rows
+                if (i <= 10) {
+                    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    console.log(`🔍 Row ${i}:`);
+                    console.log(`  📅 BCA Date: ${formatDate(tglTransaksi)} (${days[tglTransaksi.getDay()]}) - Raw: ${tglTransaksi.toISOString()}`);
+                    console.log(`  📅 ACMM Date: ${formatDate(acmmDate)} (${days[acmmDate.getDay()]}) - Raw: ${acmmDate.toISOString()}`);
+                    console.log(`  📊 Week: ${weekInfo.weekLabel} (Key: ${weekKey})`);
+                    console.log(`  🏪 Outlet: ${outletCode} | Type: ${transactionType} | Amount: ${amount.toFixed(2)}`);
+                    console.log(`  📝 Desc: ${description.substring(0, 80)}...`);
+                    console.log('');
                 }
                 
                 const detailKey = `${weekKey}|${outletCode}|${transactionType}`;
@@ -1175,6 +1204,15 @@
             
             console.log(`Aggregated ${weeklyBCA.size} BCA weekly details`);
             console.log(`Aggregated ${weeklySummary.size} BCA weekly summaries`);
+            
+            // DEBUG: Show sample BCA weeks
+            console.log('🔍 BCA Summary Keys (first 5):');
+            let count = 0;
+            for (const [key, data] of weeklySummary.entries()) {
+                if (count++ >= 5) break;
+                console.log(`  ${key} => Week: ${data.weekLabel}, Amount: ${data.totalAmount.toFixed(2)}`);
+            }
+            console.log('');
             
             return { weeklyBCA, weeklySummary };
         }
