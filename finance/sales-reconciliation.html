@@ -1237,8 +1237,11 @@
                 } else if (transactionType === 'SETORAN_TUNAI') {
                     const cabangStr = cabang.toString().trim();
                     if (lookups.cabang.has(cabangStr)) outletCode = lookups.cabang.get(cabangStr);
-                } else if (transactionType === 'CREDITCARD' || transactionType === 'DEBITCARD') {
+                } else if (transactionType === 'CREDITCARD') {
                     const mid = parseCreditCardMID(description);
+                    if (mid && lookups.mid.has(mid)) outletCode = lookups.mid.get(mid);
+                } else if (transactionType === 'DEBITCARD') {
+                    const mid = parseDebitCard(description);  // Use parseDebitCard for KR OTOMATIS
                     if (mid && lookups.mid.has(mid)) outletCode = lookups.mid.get(mid);
                 } else if (transactionType === 'QRIS') {
                     const mid = parseQRIS(description);
@@ -1257,7 +1260,7 @@
                             const cabangStr = cabang.toString().trim();
                             console.log(`   Cabang: "${cabangStr}", In lookup: ${lookups.cabang.has(cabangStr)}`);
                         } else if (transactionType === 'DEBITCARD') {
-                            const mid = parseCreditCardMID(description);
+                            const mid = parseDebitCard(description);  // Fixed: use parseDebitCard
                             console.log(`   MID: ${mid}, In lookup: ${lookups.mid.has(mid)}`);
                         }
                     }
