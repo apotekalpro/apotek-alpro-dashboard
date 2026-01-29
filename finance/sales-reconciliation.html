@@ -901,51 +901,52 @@
                 const outletCode = parseOutletCode(storeName);
                 if (!outletCode) continue;
                 
-                // IMPORTANT: Column L filtering logic
-                // Column L = "DEBIT" means money coming IN (payments received)
-                // Column L = "CREDIT" means money going OUT (commissions, fees)
-                // 
-                // For reconciliation, we ONLY want DEBIT rows (actual sales)
-                // SALES in ACMM is NOT a total - it's just credit card sales
-                // The actual total is the SUM of all DEBIT payment types
+                // NEW LOGIC: Exclude "SALES" payment method
+                // For remaining rows:
+                //   - DEBIT (Column L) = Add to total sales
+                //   - CREDIT (Column L) = Subtract from total sales (refunds)
                 
-                // Only process DEBIT rows (actual payments received)
-                if (debitCredit !== 'DEBIT') {
-                    continue; // Skip CREDIT rows (commissions/fees)
+                // Skip SALES rows entirely
+                if (paymentMethod === 'SALES') {
+                    continue;
                 }
-
-                // STEP 1: CARD NUMBER OVERRIDE (for payment type categorization only, no rates)
-                // If card matches CC Merchant Checker Column A, override payment type
-                const cardLast6 = extractLastDigits(cardNum, 6);
-                let wasOverridden = false;
                 
-                // Note: Merchant Rate file removed - card override logic simplified
-                // Just use the payment method from transaction summary
-                
-                // No merchant rate calculation needed for weekly matching
-                // We only use gross amounts
+                // Process DEBIT and CREDIT rows (everything except SALES)
+                // DEBIT = payments received (add to total)
+                // CREDIT = refunds/returns (subtract from total)
                 
                 // Create pivot key by date, outlet, and payment method
                 const dateStr = formatDate(date);
                 const key = `${dateStr}|${outletCode}|${paymentMethod}`;
-
+                
                 if (!pivotMap.has(key)) {
                     pivotMap.set(key, {
                         date: date,
                         outletCode: outletCode,
                         paymentMethod: paymentMethod,
                         amount: 0,
+                        debitAmount: 0,   // Track debits separately
+                        creditAmount: 0,  // Track credits separately
                         count: 0,
                         transactions: []
                     });
                 }
-
+                
                 const pivot = pivotMap.get(key);
-                pivot.amount += amount;
+                
+                // Add to appropriate counter based on DEBIT/CREDIT
+                if (debitCredit === 'DEBIT') {
+                    pivot.debitAmount += amount;
+                } else if (debitCredit === 'CREDIT') {
+                    pivot.creditAmount += amount;
+                }
+                
+                // Net amount = DEBIT - CREDIT
+                pivot.amount = pivot.debitAmount - pivot.creditAmount;
                 pivot.count++;
                 pivot.transactions.push({
                     cardNum: cardNum,
-                    cardLast6: cardLast6,
+                    cardLast6: extractLastDigits(cardNum, 6),
                     amount: amount,
                     debitCredit: debitCredit
                 });
@@ -1361,7 +1362,8 @@
                 
                 let status = 'UNMATCHED';
                 if (acmmTotal > 0 && bcaTotal > 0) {
-                    status = Math.abs(difference) <= 100 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                    // Tolerance: ±500 for matching
+                    status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
                 } else if (acmmTotal === 0) {
                     status = 'NO_ACMM_DATA';
                 } else if (bcaTotal === 0) {
@@ -1426,7 +1428,8 @@
                 
                 let status = 'UNMATCHED';
                 if (acmmTotal > 0 && bcaTotal > 0) {
-                    status = Math.abs(difference) <= 100 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                    // Tolerance: ±500 for matching
+                    status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
                 } else if (acmmTotal === 0) {
                     status = 'NO_ACMM_DATA';
                 } else if (bcaTotal === 0) {
