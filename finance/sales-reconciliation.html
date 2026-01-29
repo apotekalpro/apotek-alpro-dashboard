@@ -1249,15 +1249,10 @@
                     const kartuDebit = parseCDM(description);
                     if (kartuDebit && lookups.kartuDebit.has(kartuDebit)) outletCode = lookups.kartuDebit.get(kartuDebit);
                 } else if (transactionType === 'SETORAN_TUNAI') {
-                    // First try to extract outlet code from description (e.g., "069-JKJSKR1")
-                    const outletFromDesc = parseSetoranTunai(description);
-                    if (outletFromDesc) {
-                        outletCode = outletFromDesc;
-                    } else {
-                        // Fallback: use cabang lookup
-                        const cabangStr = cabang.toString().trim();
-                        if (lookups.cabang.has(cabangStr)) outletCode = lookups.cabang.get(cabangStr);
-                    }
+                    // Use ONLY cabang lookup (Column C in BCA → Master Cabang file)
+                    // Master Cabang: Column A (cabang) → Column B (outlet)
+                    const cabangStr = cabang.toString().trim();
+                    if (lookups.cabang.has(cabangStr)) outletCode = lookups.cabang.get(cabangStr);
                 } else if (transactionType === 'CREDITCARD') {
                     const mid = parseCreditCardMID(description);
                     if (mid && lookups.mid.has(mid)) outletCode = lookups.mid.get(mid);
