@@ -507,13 +507,17 @@
                         const currentYear = currentDate.getFullYear();
                         const currentMonth = currentDate.getMonth();
                         
+                        // TEMPORARY FIX: Hard-code 2020 for historical data
+                        // TODO: Add year input field in UI
+                        year = 2020;
+                        
                         // If transaction month is after current month, it's likely from previous year
                         // e.g., in January 2026, a transaction dated 10/10 (October) is from 2025
-                        if (month > currentMonth) {
-                            year = currentYear - 1;
-                        } else {
-                            year = currentYear;
-                        }
+                        // if (month > currentMonth) {
+                        //     year = currentYear - 1;
+                        // } else {
+                        //     year = currentYear;
+                        // }
                     }
                     
                     return new Date(year, month, day);
@@ -885,22 +889,17 @@
                 const outletCode = parseOutletCode(storeName);
                 if (!outletCode) continue;
                 
-                // IMPORTANT: Only process "CREDIT" rows to avoid double-counting
-                // Debit rows show individual payment types, Credit rows show totals (SALES)
-                // For weekly total matching, we only use Credit (SALES)
-                // For per-type breakdown, we can use Debit rows separately
+                // IMPORTANT: Column L filtering logic
+                // Column L = "DEBIT" means money coming IN (payments received)
+                // Column L = "CREDIT" means money going OUT (commissions, fees)
+                // 
+                // For reconciliation, we ONLY want DEBIT rows (actual sales)
+                // SALES in ACMM is NOT a total - it's just credit card sales
+                // The actual total is the SUM of all DEBIT payment types
                 
-                // If paymentMethod is "SALES", it's the total - only count if Credit
-                if (paymentMethod === 'SALES') {
-                    // SALES rows should only be counted if they're marked as Credit
-                    if (debitCredit !== 'CREDIT') {
-                        continue; // Skip SALES rows that aren't Credit
-                    }
-                } else {
-                    // For specific payment methods (QRIS, VISA, etc.), only use Debit rows
-                    if (debitCredit !== 'DEBIT') {
-                        continue; // Skip non-Debit rows for payment types
-                    }
+                // Only process DEBIT rows (actual payments received)
+                if (debitCredit !== 'DEBIT') {
+                    continue; // Skip CREDIT rows (commissions/fees)
                 }
 
                 // STEP 1: CARD NUMBER OVERRIDE (for payment type categorization only, no rates)
@@ -958,7 +957,6 @@
                 const tglTransaksi = parseDate(row[0]);
                 const description = row[1]?.toString() || '';
                 const cabang = row[2]?.toString() || '';
-                const amount = parseBCAAmountFromDescription(description); // Parse from Column B
                 
                 if (!tglTransaksi || !description) continue;
                 
@@ -970,6 +968,7 @@
                 }
                 
                 const transactionType = determineTransactionType(description);
+                const amount = parseBCAAmountFromDescription(description, transactionType); // Parse with type
                 if (transactionType === 'SETORAN_TUNAI') {
                     const cabangStr = cabang.toString().trim();
                     if (lookups.cabang.has(cabangStr)) {
@@ -1227,7 +1226,24 @@
                     if (mid && lookups.mid.has(mid)) outletCode = lookups.mid.get(mid);
                 }
                 
-                if (!outletCode) continue;
+                if (!outletCode) {
+                    // DEBUG: Log skipped transactions for first 20 rows
+                    if (i <= 20 && (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI' || transactionType === 'DEBITCARD')) {
+                        console.log(`⚠️ SKIPPED Row ${i}: Type=${transactionType}, Amount=${amount.toFixed(2)}, No outlet found`);
+                        console.log(`   Desc: ${description.substring(0, 100)}`);
+                        if (transactionType === 'CDM') {
+                            const kartuDebit = parseCDM(description);
+                            console.log(`   CDM Card: ${kartuDebit}, In lookup: ${lookups.kartuDebit.has(kartuDebit)}`);
+                        } else if (transactionType === 'SETORAN_TUNAI') {
+                            const cabangStr = cabang.toString().trim();
+                            console.log(`   Cabang: "${cabangStr}", In lookup: ${lookups.cabang.has(cabangStr)}`);
+                        } else if (transactionType === 'DEBITCARD') {
+                            const mid = parseCreditCardMID(description);
+                            console.log(`   MID: ${mid}, In lookup: ${lookups.mid.has(mid)}`);
+                        }
+                    }
+                    continue;
+                }
                 
                 const acmmDate = subtractOneDay(tglTransaksi);
                 const weekInfo = getWeekRange(acmmDate);
