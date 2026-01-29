@@ -746,9 +746,11 @@
 
         // Parse BCA description for Setoran Tunai outlet
         function parseSetoranTunai(description) {
-            const setoranMatch = description.match(/SETORAN TUNAI.*?([A-Z0-9]{6,})/i);
-            if (setoranMatch) {
-                return setoranMatch[1];
+            // Pattern: Extract outlet code from description like "069-JKJSKR1 141 02025"
+            // Look for pattern: any word containing letters and numbers (6+ chars)
+            const outletMatch = description.match(/([A-Z]{2,}[A-Z0-9]{4,})/i);
+            if (outletMatch) {
+                return outletMatch[1];
             }
             return null;
         }
@@ -1230,17 +1232,32 @@
                 
                 const transactionType = determineTransactionType(description);
                 
-                // IMPORTANT: ALL BCA amounts are in Column D (Jumlah)!
-                // Column D contains the actual transaction amount for ALL transaction types
-                const amount = parseBCAAmount(columnD);
+                // Amount parsing based on transaction type:
+                // - CDM and SETORAN_TUNAI: Use Column D (Jumlah)
+                // - QRIS, CREDITCARD, DEBITCARD: Parse from description (Column B)
+                let amount;
+                if (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') {
+                    // CDM and SETORAN: Amount is in Column D
+                    amount = parseBCAAmount(columnD);
+                } else {
+                    // QRIS, CREDITCARD, DEBITCARD: Parse from description
+                    amount = parseBCAAmountFromDescription(description, transactionType);
+                }
                 let outletCode = null;
                 
                 if (transactionType === 'CDM') {
                     const kartuDebit = parseCDM(description);
                     if (kartuDebit && lookups.kartuDebit.has(kartuDebit)) outletCode = lookups.kartuDebit.get(kartuDebit);
                 } else if (transactionType === 'SETORAN_TUNAI') {
-                    const cabangStr = cabang.toString().trim();
-                    if (lookups.cabang.has(cabangStr)) outletCode = lookups.cabang.get(cabangStr);
+                    // First try to extract outlet code from description (e.g., "069-JKJSKR1")
+                    const outletFromDesc = parseSetoranTunai(description);
+                    if (outletFromDesc) {
+                        outletCode = outletFromDesc;
+                    } else {
+                        // Fallback: use cabang lookup
+                        const cabangStr = cabang.toString().trim();
+                        if (lookups.cabang.has(cabangStr)) outletCode = lookups.cabang.get(cabangStr);
+                    }
                 } else if (transactionType === 'CREDITCARD') {
                     const mid = parseCreditCardMID(description);
                     if (mid && lookups.mid.has(mid)) outletCode = lookups.mid.get(mid);
