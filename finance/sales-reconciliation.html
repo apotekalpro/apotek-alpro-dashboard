@@ -957,6 +957,7 @@
                 const tglTransaksi = parseDate(row[0]);
                 const description = row[1]?.toString() || '';
                 const cabang = row[2]?.toString() || '';
+                const columnD = row[3]; // Column D - Jumlah
                 
                 if (!tglTransaksi || !description) continue;
                 
@@ -968,7 +969,14 @@
                 }
                 
                 const transactionType = determineTransactionType(description);
-                const amount = parseBCAAmountFromDescription(description, transactionType); // Parse with type
+                
+                // For SETORAN_TUNAI: use Column D (Jumlah)
+                let amount;
+                if (transactionType === 'SETORAN_TUNAI') {
+                    amount = parseBCAAmount(columnD);
+                } else {
+                    amount = parseBCAAmountFromDescription(description, transactionType);
+                }
                 if (transactionType === 'SETORAN_TUNAI') {
                     const cabangStr = cabang.toString().trim();
                     if (lookups.cabang.has(cabangStr)) {
@@ -1142,7 +1150,8 @@
                 if (sampleCount < 5) {
                     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                     console.log(`🔍 ACMM Entry ${sampleCount + 1}:`);
-                    console.log(`  📅 Date: ${dateStr} (${days[date.getDay()]}) => Week: ${weekInfo.weekLabel}`);
+                    console.log(`  📅 Date: ${dateStr} (${days[date.getDay()]}) - Year: ${date.getFullYear()} => Week: ${weekInfo.weekLabel}`);
+                    console.log(`  📅 Raw ISO: ${date.toISOString()}`);
                     console.log(`  🏪 Outlet: ${outletCode} | Method: ${paymentMethod} | Amount: ${pivot.amount.toFixed(2)}`);
                     console.log('');
                     sampleCount++;
@@ -1204,12 +1213,22 @@
                 const tglTransaksi = parseDate(row[0], referenceYear);
                 const description = row[1]?.toString() || '';
                 const cabang = row[2]?.toString() || '';
+                const columnD = row[3]; // Column D - Jumlah (Amount)
                 
                 if (!tglTransaksi || !description) continue;
                 if (description.includes('BI-FAST') || description.includes('TRSF E-BANKING') || description.includes('BYR')) continue;
                 
                 const transactionType = determineTransactionType(description);
-                const amount = parseBCAAmountFromDescription(description, transactionType);
+                
+                // IMPORTANT: CDM and SETORAN_TUNAI amounts are in Column D, not description!
+                let amount;
+                if (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') {
+                    // For CDM and SETORAN: Use Column D (Jumlah)
+                    amount = parseBCAAmount(columnD);
+                } else {
+                    // For QRIS, CREDITCARD, DEBITCARD: Parse from description (Column B)
+                    amount = parseBCAAmountFromDescription(description, transactionType);
+                }
                 let outletCode = null;
                 
                 if (transactionType === 'CDM') {
