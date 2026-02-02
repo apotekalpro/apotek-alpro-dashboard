@@ -507,9 +507,9 @@
                         const currentYear = currentDate.getFullYear();
                         const currentMonth = currentDate.getMonth();
                         
-                        // TEMPORARY FIX: Hard-code 2025 for current data
+                        // TEMPORARY FIX: Hard-code 2026 for current data
                         // TODO: Add year input field in UI
-                        year = 2025;
+                        year = 2026;
                         
                         // If transaction month is after current month, it's likely from previous year
                         // e.g., in January 2026, a transaction dated 10/10 (October) is from 2025
@@ -658,37 +658,22 @@
             return 0;
         }
 
-        // NEW: Get week range (Friday to Thursday) for a given date
+        // NEW: Get date range - NO week calculation, just use the date itself
+        // User controls the date range by uploading specific date ranges
+        // ACMM: 2-8 Jan; BCA: 3-9 Jan (H+1 adjustment handled elsewhere)
         function getWeekRange(date) {
             const d = new Date(date);
-            const dayOfWeek = d.getDay(); // 0=Sunday, 1=Monday, ..., 5=Friday, 6=Saturday
+            d.setHours(0, 0, 0, 0);
             
-            // Calculate days to subtract to get to previous/current Friday
-            // Week runs: Friday to Thursday
-            let daysToFriday;
-            if (dayOfWeek >= 5) {
-                // Friday(5) or Saturday(6) - go to current week's Friday
-                daysToFriday = dayOfWeek - 5;
-            } else {
-                // Sunday(0) to Thursday(4) - go to previous week's Friday
-                daysToFriday = dayOfWeek + 2;
-            }
-            
-            const weekStart = new Date(d);
-            weekStart.setDate(d.getDate() - daysToFriday);
-            weekStart.setHours(0, 0, 0, 0);
-            
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 6); // Next Thursday
-            weekEnd.setHours(23, 59, 59, 999);
-            
-            const weekLabel = `${formatDate(weekStart)} to ${formatDate(weekEnd)}`;
+            // Use the date itself as the "week key"
+            // This allows flexible date ranges controlled by uploaded files
+            const dateStr = formatDate(d);
             
             return {
-                weekStart: weekStart,
-                weekEnd: weekEnd,
-                weekLabel: weekLabel,
-                weekKey: formatDate(weekStart) // Use Friday date as week identifier
+                weekStart: d,
+                weekEnd: d,
+                weekLabel: dateStr,  // Just show the date
+                weekKey: dateStr     // Use date as identifier
             };
         }
 
