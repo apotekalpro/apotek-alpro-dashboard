@@ -1209,7 +1209,7 @@
             const weeklyBCA = new Map();
             const weeklySummary = new Map();
             
-            console.log('=== Aggregating BCA by Week ===');
+            console.log('=== Aggregating BCA Totals (All Dates) ===');
             console.log('🔍 DEBUG: BCA has', bcaData.length - 1, 'rows (excluding header)');
             console.log('🔍 DEBUG: Using reference year:', referenceYear || 'auto-detect');
             
@@ -1230,10 +1230,8 @@
                 // - QRIS, CREDITCARD, DEBITCARD: Parse from description (Column B)
                 let amount;
                 if (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') {
-                    // CDM and SETORAN: Amount is in Column D
                     amount = parseBCAAmount(columnD);
                 } else {
-                    // QRIS, CREDITCARD, DEBITCARD: Parse from description
                     amount = parseBCAAmountFromDescription(description, transactionType);
                 }
                 let outletCode = null;
@@ -1242,8 +1240,6 @@
                     const kartuDebit = parseCDM(description);
                     if (kartuDebit && lookups.kartuDebit.has(kartuDebit)) outletCode = lookups.kartuDebit.get(kartuDebit);
                 } else if (transactionType === 'SETORAN_TUNAI') {
-                    // Use ONLY cabang lookup (Column C in BCA → Master Cabang file)
-                    // Master Cabang: Column A (cabang) → Column B (outlet)
                     const cabangStr = cabang.toString().trim();
                     if (lookups.cabang.has(cabangStr)) outletCode = lookups.cabang.get(cabangStr);
                 } else if (transactionType === 'CREDITCARD') {
@@ -1258,59 +1254,54 @@
                 }
                 
                 if (!outletCode) {
-                    // DEBUG: Log skipped transactions for first 20 rows
                     if (i <= 20 && (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI' || transactionType === 'DEBITCARD')) {
                         console.log(`⚠️ SKIPPED Row ${i}: Type=${transactionType}, Amount=${amount.toFixed(2)}, No outlet found`);
                         console.log(`   Desc: ${description.substring(0, 100)}`);
-                        if (transactionType === 'CDM') {
-                            const kartuDebit = parseCDM(description);
-                            console.log(`   CDM Card: ${kartuDebit}, In lookup: ${lookups.kartuDebit.has(kartuDebit)}`);
-                        } else if (transactionType === 'SETORAN_TUNAI') {
-                            const cabangStr = cabang.toString().trim();
-                            console.log(`   Cabang: "${cabangStr}", In lookup: ${lookups.cabang.has(cabangStr)}`);
-                        } else if (transactionType === 'DEBITCARD') {
-                            const mid = parseCreditCardMID(description);
-                            console.log(`   MID: ${mid}, In lookup: ${lookups.mid.has(mid)}`);
-                        }
                     }
                     continue;
                 }
                 
-                const acmmDate = subtractOneDay(tglTransaksi);
-                const weekInfo = getWeekRange(acmmDate);
-                const weekKey = weekInfo.weekKey;
-                
-                // DEBUG: Enhanced logging for first 10 rows
+                // DEBUG: Log first 10 rows
                 if (i <= 10) {
                     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                    console.log(`🔍 Row ${i}:`);
-                    console.log(`  📅 BCA Date: ${formatDate(tglTransaksi)} (${days[tglTransaksi.getDay()]}) - Raw: ${tglTransaksi.toISOString()}`);
-                    console.log(`  📅 ACMM Date: ${formatDate(acmmDate)} (${days[acmmDate.getDay()]}) - Raw: ${acmmDate.toISOString()}`);
-                    console.log(`  📊 Week: ${weekInfo.weekLabel} (Key: ${weekKey})`);
+                    const acmmDate = subtractOneDay(tglTransaksi);
+                    console.log(`🔍 BCA Row ${i}:`);
+                    console.log(`  📅 BCA Date: ${formatDate(tglTransaksi)} (${days[tglTransaksi.getDay()]})`);
+                    console.log(`  📅 ACMM Date (H+1): ${formatDate(acmmDate)} (${days[acmmDate.getDay()]})`);
                     console.log(`  🏪 Outlet: ${outletCode} | Type: ${transactionType} | Amount: ${amount.toFixed(2)}`);
-                    console.log(`  📝 Desc: ${description.substring(0, 80)}...`);
                     console.log('');
                 }
                 
-                const detailKey = `${weekKey}|${outletCode}|${transactionType}`;
+                // Group by outlet and transaction type only (no date)
+                const detailKey = `${outletCode}|${transactionType}`;
                 if (!weeklyBCA.has(detailKey)) {
                     weeklyBCA.set(detailKey, {
-                        weekKey, weekLabel: weekInfo.weekLabel,
-                        weekStart: weekInfo.weekStart, weekEnd: weekInfo.weekEnd,
-                        outletCode, transactionType, totalAmount: 0, transactions: []
+                        outletCode,
+                        transactionType,
+                        totalAmount: 0,
+                        transactionCount: 0,
+                        weekKey: 'ALL',
+                        weekLabel: 'All Dates',
+                        weekStart: null,
+                        weekEnd: null
                     });
                 }
                 
-                const weekData = weeklyBCA.get(detailKey);
-                weekData.totalAmount += amount;
-                weekData.transactions.push({ bcaDate: tglTransaksi, acmmDate, description, cabang, amount });
+                const bcaData = weeklyBCA.get(detailKey);
+                bcaData.totalAmount += amount;
+                bcaData.transactionCount++;
                 
-                const summaryKey = `${weekKey}|${outletCode}`;
+                // Summary by outlet only
+                const summaryKey = outletCode;
                 if (!weeklySummary.has(summaryKey)) {
                     weeklySummary.set(summaryKey, {
-                        weekKey, weekLabel: weekInfo.weekLabel,
-                        weekStart: weekInfo.weekStart, weekEnd: weekInfo.weekEnd,
-                        outletCode, totalAmount: 0, byType: {}
+                        outletCode,
+                        totalAmount: 0,
+                        byType: {},
+                        weekKey: 'ALL',
+                        weekLabel: 'All Dates',
+                        weekStart: null,
+                        weekEnd: null
                     });
                 }
                 
@@ -1319,6 +1310,9 @@
                 if (!summary.byType[transactionType]) summary.byType[transactionType] = 0;
                 summary.byType[transactionType] += amount;
             }
+            
+            console.log(`Aggregated ${weeklyBCA.size} BCA totals by payment type`);
+            console.log(`Aggregated ${weeklySummary.size} BCA totals by outlet`);
             
             console.log(`Aggregated ${weeklyBCA.size} BCA weekly details`);
             console.log(`Aggregated ${weeklySummary.size} BCA weekly summaries`);
@@ -1339,16 +1333,115 @@
             const summaryResults = [];
             const detailResults = [];
             
-            console.log('=== Performing Weekly Matching ===');
+            console.log('=== Performing Total Matching (All Dates) ===');
             
-            const allSummaryKeys = new Set([...Array.from(acmmData.weeklySummary.keys()), ...Array.from(bcaData.weeklySummary.keys())]);
+            // Summary matching by outlet
+            const allOutlets = new Set([...Array.from(acmmData.weeklySummary.keys()), ...Array.from(bcaData.weeklySummary.keys())]);
             
-            for (const key of allSummaryKeys) {
-                const [weekKey, outletCode] = key.split('|');
-                const acmmSummary = acmmData.weeklySummary.get(key);
-                const bcaSummary = bcaData.weeklySummary.get(key);
+            for (const outletCode of allOutlets) {
+                const acmmSummary = acmmData.weeklySummary.get(outletCode);
+                const bcaSummary = bcaData.weeklySummary.get(outletCode);
                 
                 const acmmTotal = acmmSummary ? acmmSummary.totalAmount : 0;
+                const bcaTotal = bcaSummary ? bcaSummary.totalAmount : 0;
+                const difference = bcaTotal - acmmTotal;
+                
+                let status = 'UNMATCHED';
+                if (acmmTotal > 0 && bcaTotal > 0) {
+                    status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                } else if (acmmTotal === 0) {
+                    status = 'NO_ACMM_DATA';
+                } else if (bcaTotal === 0) {
+                    status = 'NO_BCA_DATA';
+                }
+                
+                summaryResults.push({
+                    weekKey: 'ALL',
+                    weekLabel: 'All Dates',
+                    weekStart: '',
+                    weekEnd: '',
+                    outletCode,
+                    bcaTotal,
+                    acmmTotal,
+                    difference,
+                    status,
+                    acmmBreakdown: acmmSummary ? JSON.stringify(acmmSummary.byType) : '{}',
+                    bcaBreakdown: bcaSummary ? JSON.stringify(bcaSummary.byType) : '{}'
+                });
+            }
+            
+            // Detail matching by outlet and payment type
+            const typeMapping = {
+                'CREDITCARD': ['VISA', 'MASTER', 'BCA CARD', 'JCB CARD', 'AMEX CARD', 'OTHER CARD'],
+                'DEBITCARD': ['DEBIT BANK SAMA', 'DEBIT BANK LAIN'],
+                'QRIS': ['QRIS'],
+                'CDM': ['CASH'],
+                'SETORAN_TUNAI': ['CASH']
+            };
+            
+            const allDetailKeys = new Set();
+            for (const key of bcaData.weeklyBCA.keys()) allDetailKeys.add(key);
+            for (const [key, data] of acmmData.weeklyACMM.entries()) {
+                const [outletCode, paymentMethod] = key.split('|');
+                let transactionType = 'UNKNOWN';
+                for (const [type, methods] of Object.entries(typeMapping)) {
+                    if (methods.includes(paymentMethod)) {
+                        transactionType = type;
+                        break;
+                    }
+                }
+                allDetailKeys.add(`${outletCode}|${transactionType}`);
+            }
+            
+            for (const key of allDetailKeys) {
+                const [outletCode, transactionType] = key.split('|');
+                const bcaDetail = bcaData.weeklyBCA.get(key);
+                
+                let acmmTotal = 0;
+                const acmmMethods = [];
+                
+                if (typeMapping[transactionType]) {
+                    for (const paymentMethod of typeMapping[transactionType]) {
+                        const acmmKey = `${outletCode}|${paymentMethod}`;
+                        if (acmmData.weeklyACMM.has(acmmKey)) {
+                            const acmmDetail = acmmData.weeklyACMM.get(acmmKey);
+                            acmmTotal += acmmDetail.totalAmount;
+                            acmmMethods.push(`${paymentMethod}: ${acmmDetail.totalAmount.toFixed(2)}`);
+                        }
+                    }
+                }
+                
+                const bcaTotal = bcaDetail ? bcaDetail.totalAmount : 0;
+                const difference = bcaTotal - acmmTotal;
+                
+                let status = 'UNMATCHED';
+                if (acmmTotal > 0 && bcaTotal > 0) {
+                    status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                } else if (acmmTotal === 0) {
+                    status = 'NO_ACMM_DATA';
+                } else if (bcaTotal === 0) {
+                    status = 'NO_BCA_DATA';
+                }
+                
+                detailResults.push({
+                    weekKey: 'ALL',
+                    weekLabel: 'All Dates',
+                    weekStart: '',
+                    weekEnd: '',
+                    outletCode,
+                    transactionType,
+                    bcaTotal,
+                    acmmTotal,
+                    difference,
+                    status,
+                    acmmMethods: acmmMethods.join('; ')
+                });
+            }
+            
+            console.log(`Created ${summaryResults.length} summary, ${detailResults.length} detail results`);
+            
+            return { summary: summaryResults, details: detailResults };
+        }
                 const bcaTotal = bcaSummary ? bcaSummary.totalAmount : 0;
                 const difference = bcaTotal - acmmTotal;
                 
