@@ -878,6 +878,7 @@
                 let paymentMethod = row[5]; // Column F
                 const cardNum = row[6]; // Column G
                 const debitCredit = row[11]?.toString().trim().toUpperCase(); // Column L (index 11) - "DEBIT" or "CREDIT"
+                const coaAccount = row[12]?.toString().trim(); // Column M (index 12) - COA Account
                 const amount = parseFloat(row[13]) || 0; // Column N (index 13)
                 const commission = parseFloat(row[10]) || 0; // Column K (index 10)
 
@@ -886,27 +887,34 @@
                 const outletCode = parseOutletCode(storeName);
                 if (!outletCode) continue;
                 
-                // NEW LOGIC: Exclude "SALES" payment method
-                // For remaining rows:
-                //   - DEBIT (Column L) = Add to total sales
-                //   - CREDIT (Column L) = Subtract from total sales (refunds)
+                // PRE-FILTER: Only process specific COA accounts (Column M)
+                // Only include:
+                //   - "11201010 - PIUTANG KARTU KREDIT - BCA"
+                //   - "11201100 - PIUTANG PENJUALAN CASH"
+                const validAccounts = [
+                    '11201010 - PIUTANG KARTU KREDIT - BCA',
+                    '11201100 - PIUTANG PENJUALAN CASH'
+                ];
                 
-                // Skip SALES rows entirely
+                if (!validAccounts.includes(coaAccount)) {
+                    continue; // Skip rows with other COA accounts
+                }
+                
+                // Exclude "SALES" payment method
                 if (paymentMethod === 'SALES') {
                     continue;
                 }
                 
-                // Process DEBIT and CREDIT rows (everything except SALES)
+                // Process DEBIT and CREDIT rows
                 // DEBIT = payments received (add to total)
                 // CREDIT = refunds/returns (subtract from total)
                 
-                // Create pivot key by date, outlet, and payment method
-                const dateStr = formatDate(date);
-                const key = `${dateStr}|${outletCode}|${paymentMethod}`;
+                // Create pivot key by OUTLET and PAYMENT METHOD only (no date)
+                // This groups all dates together for total matching
+                const key = `${outletCode}|${paymentMethod}`;
                 
                 if (!pivotMap.has(key)) {
                     pivotMap.set(key, {
-                        date: date,
                         outletCode: outletCode,
                         paymentMethod: paymentMethod,
                         amount: 0,
@@ -1132,48 +1140,47 @@
             const weeklyACMM = new Map();
             const weeklySummary = new Map();
             
-            console.log('=== Aggregating ACMM by Week ===');
+            console.log('=== Aggregating ACMM Totals (All Dates) ===');
             console.log('🔍 DEBUG: Pivot map has', pivotMap.size, 'entries');
             
             let sampleCount = 0;
             for (const [key, pivot] of pivotMap.entries()) {
-                const [dateStr, outletCode, paymentMethod] = key.split('|');
-                const date = parseDate(dateStr);
-                if (!date) continue;
-                
-                const weekInfo = getWeekRange(date);
-                const weekKey = weekInfo.weekKey;
+                const [outletCode, paymentMethod] = key.split('|');
                 
                 // DEBUG: Log first 5 ACMM entries
                 if (sampleCount < 5) {
-                    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                     console.log(`🔍 ACMM Entry ${sampleCount + 1}:`);
-                    console.log(`  📅 Date: ${dateStr} (${days[date.getDay()]}) - Year: ${date.getFullYear()} => Week: ${weekInfo.weekLabel}`);
-                    console.log(`  📅 Raw ISO: ${date.toISOString()}`);
-                    console.log(`  🏪 Outlet: ${outletCode} | Method: ${paymentMethod} | Amount: ${pivot.amount.toFixed(2)}`);
+                    console.log(`  🏪 Outlet: ${outletCode} | Method: ${paymentMethod}`);
+                    console.log(`  💰 Total Amount: ${pivot.amount.toFixed(2)} (${pivot.count} transactions)`);
+                    console.log(`  📊 Debit: ${pivot.debitAmount.toFixed(2)} | Credit: ${pivot.creditAmount.toFixed(2)}`);
                     console.log('');
                     sampleCount++;
                 }
                 
-                const detailKey = `${weekKey}|${outletCode}|${paymentMethod}`;
-                if (!weeklyACMM.has(detailKey)) {
-                    weeklyACMM.set(detailKey, {
-                        weekKey, weekLabel: weekInfo.weekLabel,
-                        weekStart: weekInfo.weekStart, weekEnd: weekInfo.weekEnd,
-                        outletCode, paymentMethod, totalAmount: 0, transactionCount: 0
-                    });
-                }
+                // Store by outlet and payment method
+                const detailKey = `${outletCode}|${paymentMethod}`;
+                weeklyACMM.set(detailKey, {
+                    outletCode, 
+                    paymentMethod, 
+                    totalAmount: pivot.amount,
+                    transactionCount: pivot.count,
+                    weekKey: 'ALL',
+                    weekLabel: 'All Dates',
+                    weekStart: null,
+                    weekEnd: null
+                });
                 
-                const weekData = weeklyACMM.get(detailKey);
-                weekData.totalAmount += pivot.amount;
-                weekData.transactionCount += pivot.count;
-                
-                const summaryKey = `${weekKey}|${outletCode}`;
+                // Summary by outlet only
+                const summaryKey = outletCode;
                 if (!weeklySummary.has(summaryKey)) {
                     weeklySummary.set(summaryKey, {
-                        weekKey, weekLabel: weekInfo.weekLabel,
-                        weekStart: weekInfo.weekStart, weekEnd: weekInfo.weekEnd,
-                        outletCode, totalAmount: 0, byType: {}
+                        outletCode,
+                        totalAmount: 0,
+                        byType: {},
+                        weekKey: 'ALL',
+                        weekLabel: 'All Dates',
+                        weekStart: null,
+                        weekEnd: null
                     });
                 }
                 
@@ -1183,8 +1190,8 @@
                 summary.byType[paymentMethod] += pivot.amount;
             }
             
-            console.log(`Aggregated ${weeklyACMM.size} ACMM weekly details`);
-            console.log(`Aggregated ${weeklySummary.size} ACMM weekly summaries`);
+            console.log(`Aggregated ${weeklyACMM.size} ACMM totals by payment type`);
+            console.log(`Aggregated ${weeklySummary.size} ACMM totals by outlet`);
             
             // DEBUG: Show sample ACMM weeks
             console.log('🔍 ACMM Summary Keys (first 5):');
