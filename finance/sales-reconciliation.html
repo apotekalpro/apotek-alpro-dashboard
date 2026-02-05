@@ -1288,9 +1288,9 @@
                     });
                 }
                 
-                const bcaData = weeklyBCA.get(detailKey);
-                bcaData.totalAmount += amount;
-                bcaData.transactionCount++;
+                const bcaDetail = weeklyBCA.get(detailKey);
+                bcaDetail.totalAmount += amount;
+                bcaDetail.transactionCount++;
                 
                 // Summary by outlet only
                 const summaryKey = outletCode;
