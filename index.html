@@ -9364,12 +9364,14 @@
                     }
                     
                     const salesCsvData = await salesResponse.text();
-                    console.log('📄 BM Tracker: Sales data fetched');
+                    console.log('📄 BM Tracker: Sales data fetched, length:', salesCsvData.length);
+                    console.log('📄 BM Tracker: First 200 chars:', salesCsvData.substring(0, 200));
                     
-                    // Fetch mapping sheet (Jan 2026 to June 2026)
-                    const mappingSheetId = '1tVfNg_I0AGSESb1lxhwVGv59ps6BSB5192SQLeYastE';
-                    const mappingSheetName = '(Jan 2026 to June 2026)';
-                    const mappingUrl = `https://docs.google.com/spreadsheets/d/${mappingSheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(mappingSheetName)}&timestamp=${timestamp}`;
+                    // Fetch mapping sheet (Goal Jan 2026 to June 2026)
+                    // Using the same spreadsheet but different sheet with GID: 1371976447
+                    const mappingSheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
+                    const mappingGid = '1371976447'; // Goal Jan 2026 to June 2026 sheet
+                    const mappingUrl = `https://docs.google.com/spreadsheets/d/${mappingSheetId}/export?format=csv&gid=${mappingGid}&timestamp=${timestamp}`;
                     
                     console.log('🔗 BM Tracker: Fetching mapping data from:', mappingUrl);
                     const mappingResponse = await fetch(mappingUrl, {
@@ -9383,7 +9385,8 @@
                     }
                     
                     const mappingCsvData = await mappingResponse.text();
-                    console.log('📄 BM Tracker: Mapping data fetched');
+                    console.log('📄 BM Tracker: Mapping data fetched, length:', mappingCsvData.length);
+                    console.log('📄 BM Tracker: First 200 chars:', mappingCsvData.substring(0, 200));
                     
                     // Parse the data
                     this.parseAndCombineData(salesCsvData, mappingCsvData);
@@ -9430,11 +9433,12 @@
                 
                 console.log(`📈 Loaded ${Object.keys(salesMap).length} stores from sales data`);
                 
-                // Parse mapping data
+                // Parse mapping data (Goal Jan 2026 to June 2026)
+                // Header starts at row 2, so data starts at row 3 (index 2)
                 const mappingLines = mappingCsv.split('\n');
                 this.performanceData = [];
                 
-                for (let i = 1; i < mappingLines.length; i++) {
+                for (let i = 2; i < mappingLines.length; i++) {
                     const line = mappingLines[i].trim();
                     if (!line) continue;
                     
