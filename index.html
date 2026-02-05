@@ -907,6 +907,9 @@
                                                 <th onclick="bmTracker.sortTable('clanName')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
                                                     Clan <i class="fas fa-sort ml-1"></i>
                                                 </th>
+                                                <th onclick="bmTracker.sortTable('clanBM')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    Clan BM <i class="fas fa-sort ml-1"></i>
+                                                </th>
                                                 <th onclick="bmTracker.sortTable('bmType')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
                                                     BM Type <i class="fas fa-sort ml-1"></i>
                                                 </th>
@@ -9808,7 +9811,7 @@
                 if (this.filteredData.length === 0) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="10" class="px-6 py-4 text-center text-gray-500">
+                            <td colspan="11" class="px-6 py-4 text-center text-gray-500">
                                 No outlets found matching the current filters.
                             </td>
                         </tr>
@@ -9828,6 +9831,9 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">${record.amName}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">${record.clanName}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">${record.clanBM || '-'}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <span class="px-2 py-1 text-xs font-semibold rounded-full ${record.bmType === 'SBM' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">${record.bmType}</span>
