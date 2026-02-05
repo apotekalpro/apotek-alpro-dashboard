@@ -9438,11 +9438,30 @@
                 const mappingLines = mappingCsv.split('\n');
                 this.performanceData = [];
                 
+                // Log first few rows for debugging
+                console.log('📝 First 5 mapping rows:');
+                for (let i = 0; i < Math.min(5, mappingLines.length); i++) {
+                    console.log(`Row ${i}:`, mappingLines[i].substring(0, 150));
+                }
+                
                 for (let i = 2; i < mappingLines.length; i++) {
                     const line = mappingLines[i].trim();
                     if (!line) continue;
                     
                     const values = this.parseCSVLine(line);
+                    
+                    // Debug first record
+                    if (i === 2) {
+                        console.log('🔍 First data row parsed values:', values.length, 'columns');
+                        console.log('  - values[3] (D):', values[3]);
+                        console.log('  - values[4] (E):', values[4]);
+                        console.log('  - values[8] (I):', values[8]);
+                        console.log('  - values[9] (J):', values[9]);
+                        console.log('  - values[12] (M):', values[12]);
+                        console.log('  - values[14] (O):', values[14]);
+                        console.log('  - values[18] (S):', values[18]);
+                    }
+                    
                     if (values.length >= 19) {
                         const outletCode = values[3]?.trim(); // Column D: Outlet code
                         const outletName = values[4]?.trim(); // Column E: Outlet full name
@@ -9452,7 +9471,12 @@
                         const targetJuni = parseFloat(values[14]?.replace(/,/g, '')) || 0; // Column O: Target Juni
                         const goalBulanan = parseFloat(values[18]?.replace(/,/g, '')) || 0; // Column S: Goal Bulanan
                         
-                        if (!outletCode || !clanName || !bmType) continue;
+                        if (!outletCode || !clanName || !bmType) {
+                            if (i < 5) {
+                                console.log(`⚠️ Row ${i} skipped - missing required field:`, { outletCode, clanName, bmType });
+                            }
+                            continue;
+                        }
                         
                         // Get sales data
                         const salesData = salesMap[outletCode] || { revenue: 0, transQty: 0 };
