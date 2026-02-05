@@ -9550,6 +9550,7 @@
                                 name: record.bmName,
                                 bmType: record.bmType,
                                 clanName: record.clanName,
+                                clanBM: record.clanBM, // Add Clan BM (column E)
                                 totalForecast: 0,
                                 totalGoal: 0,
                                 outlets: []
@@ -9595,7 +9596,7 @@
                             <div class="text-xl mr-3">${rankIcon}</div>
                             <div>
                                 <div class="font-semibold text-gray-800">${sbm.name}</div>
-                                <div class="text-xs text-blue-600">${sbm.clanName}</div>
+                                <div class="text-xs text-blue-600">${sbm.clanBM || sbm.clanName}</div>
                                 <div class="text-xs text-gray-600">${sbm.outlets.length} outlets</div>
                             </div>
                         </div>
@@ -9625,7 +9626,7 @@
                             <div class="text-xl mr-3">${rankIcon}</div>
                             <div>
                                 <div class="font-semibold text-gray-800">${ebm.name}</div>
-                                <div class="text-xs text-green-600">${ebm.clanName}</div>
+                                <div class="text-xs text-green-600">${ebm.clanBM || ebm.clanName}</div>
                                 <div class="text-xs text-gray-600">${ebm.outlets.length} outlets</div>
                             </div>
                         </div>
