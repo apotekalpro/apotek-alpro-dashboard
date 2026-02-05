@@ -9338,7 +9338,7 @@
                 return values;
             },
             
-            // Fetch data from both Google Sheets
+            // Fetch data from SBM EBM DASHBOARD sheet
             async fetchData() {
                 console.log('🚀 BM Tracker: Starting data fetch...');
                 
@@ -9346,50 +9346,29 @@
                     document.getElementById('bmTrackerLoading').classList.remove('hidden');
                     document.getElementById('bmTrackerError').classList.add('hidden');
                     
-                    // Fetch Automated Accumulated Sales sheet
-                    const salesSheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
-                    const salesGid = '1082950562'; // Automated Accumulated Sales sheet gid
+                    // Fetch SBM EBM DASHBOARD sheet
+                    const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
+                    const sheetName = 'SBM EBM DASHBOARD'; // Sheet name
                     const timestamp = new Date().getTime();
-                    const salesUrl = `https://docs.google.com/spreadsheets/d/${salesSheetId}/export?format=csv&gid=${salesGid}&timestamp=${timestamp}`;
+                    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&timestamp=${timestamp}`;
                     
-                    console.log('🔗 BM Tracker: Fetching sales data from:', salesUrl);
-                    const salesResponse = await fetch(salesUrl, {
+                    console.log('🔗 BM Tracker: Fetching data from:', url);
+                    const response = await fetch(url, {
                         method: 'GET',
                         cache: 'no-store',
                         redirect: 'follow'
                     });
                     
-                    if (!salesResponse.ok) {
-                        throw new Error(`Failed to fetch sales data: ${salesResponse.status}`);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch data: ${response.status}`);
                     }
                     
-                    const salesCsvData = await salesResponse.text();
-                    console.log('📄 BM Tracker: Sales data fetched, length:', salesCsvData.length);
-                    console.log('📄 BM Tracker: First 200 chars:', salesCsvData.substring(0, 200));
-                    
-                    // Fetch mapping sheet (Goal Jan 2026 to June 2026)
-                    // Using the same spreadsheet but different sheet with GID: 1371976447
-                    const mappingSheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
-                    const mappingGid = '1371976447'; // Goal Jan 2026 to June 2026 sheet
-                    const mappingUrl = `https://docs.google.com/spreadsheets/d/${mappingSheetId}/export?format=csv&gid=${mappingGid}&timestamp=${timestamp}`;
-                    
-                    console.log('🔗 BM Tracker: Fetching mapping data from:', mappingUrl);
-                    const mappingResponse = await fetch(mappingUrl, {
-                        method: 'GET',
-                        cache: 'no-store',
-                        redirect: 'follow'
-                    });
-                    
-                    if (!mappingResponse.ok) {
-                        throw new Error(`Failed to fetch mapping data: ${mappingResponse.status}`);
-                    }
-                    
-                    const mappingCsvData = await mappingResponse.text();
-                    console.log('📄 BM Tracker: Mapping data fetched, length:', mappingCsvData.length);
-                    console.log('📄 BM Tracker: First 200 chars:', mappingCsvData.substring(0, 200));
+                    const csvData = await response.text();
+                    console.log('📄 BM Tracker: Data fetched, length:', csvData.length);
+                    console.log('📄 BM Tracker: First 300 chars:', csvData.substring(0, 300));
                     
                     // Parse the data
-                    this.parseAndCombineData(salesCsvData, mappingCsvData);
+                    this.parseData(csvData);
                     
                     // Generate reports
                     this.generateLeaderboards();
@@ -9408,43 +9387,21 @@
             },
             
             // Parse and combine data from both sheets
-            parseAndCombineData(salesCsv, mappingCsv) {
-                console.log('📊 BM Tracker: Parsing and combining data...');
+            parseData(csv) {
+                console.log('📊 BM Tracker: Parsing data...');
                 
-                // Parse sales data (Short Name, Revenue, Trans Qty, Buying Power)
-                // Row 1: Headers, Row 2: Column names, Row 3+: Data
-                const salesLines = salesCsv.split('\n');
-                const salesMap = {};
-                
-                // Start from row 3 (index 2) to skip header rows
-                for (let i = 2; i < salesLines.length; i++) {
-                    const line = salesLines[i].trim();
-                    if (!line) continue;
-                    
-                    const values = this.parseCSVLine(line);
-                    if (values.length >= 6) {
-                        const shortName = values[0]?.trim(); // Column A: Short Name (outlet code)
-                        const revenue = parseFloat(values[2]?.replace(/,/g, '')) || 0; // Column C: Revenue
-                        const transQty = parseFloat(values[3]?.replace(/,/g, '')) || 0; // Column D: Trans Qty
-                        const buyingPower = parseFloat(values[5]?.replace(/,/g, '')) || 0; // Column F: Buying Power
-                        
-                        if (shortName) {
-                            salesMap[shortName] = { revenue, transQty, buyingPower };
-                        }
-                    }
-                }
-                
-                console.log(`📈 Loaded ${Object.keys(salesMap).length} stores from sales data`);
-                
-                // Parse mapping data (Goal Jan 2026 to June 2026)
-                // Row 1: Date, Row 2: Column headers, Row 3+: Data
-                const mappingLines = mappingCsv.split('\n');
+                // Parse SBM EBM DASHBOARD sheet
+                // Row 1: Title/header row (skip)
+                // Row 2: Column names (skip)
+                // Row 3+: Data
+                const lines = csv.split('\n');
                 this.performanceData = [];
                 
-                console.log('🔍 First 3 mapping rows:', mappingLines.slice(0, 3));
+                console.log('🔍 First 3 rows:', lines.slice(0, 3));
                 
-                for (let i = 2; i < mappingLines.length; i++) {
-                    const line = mappingLines[i].trim();
+                // Start from row 3 (index 2)
+                for (let i = 2; i < lines.length; i++) {
+                    const line = lines[i].trim();
                     if (!line) continue;
                     
                     const values = this.parseCSVLine(line);
@@ -9452,48 +9409,53 @@
                     // Log first data row for debugging
                     if (i === 2) {
                         console.log(`🔍 First data row [${values.length}]:`, {
-                            'D-ShortName(3)': values[3],
-                            'E-StoreName(4)': values[4],
-                            'I-AM(8)': values[8],
-                            'J-Clan(9)': values[9],
-                            'M-BMType(12)': values[12],
-                            'N-Target(13)': values[13],
-                            'Q-Goal(16)': values[16]
+                            'A-OutletCode(0)': values[0],
+                            'B-OutletName(1)': values[1],
+                            'C-AM(2)': values[2],
+                            'D-Clan(3)': values[3],
+                            'E-ClanBM(4)': values[4],
+                            'F-GroupBM(5)': values[5],
+                            'G-BMName(6)': values[6],
+                            'H-Target(7)': values[7],
+                            'I-Goal(8)': values[8],
+                            'J-Revenue(9)': values[9],
+                            'K-TransQty(10)': values[10],
+                            'L-BuyingPower(11)': values[11],
+                            'M-Forecast(12)': values[12]
                         });
                     }
                     
-                    if (values.length >= 17) {
-                        const outletCode = values[3]?.trim(); // Column D: Short Name (outlet code)
-                        const outletName = values[4]?.trim(); // Column E: Store Name (full name)
-                        const amName = values[8]?.trim(); // Column I: New AM
-                        const clanName = values[9]?.trim(); // Column J: Clan AM
-                        const bmType = values[12]?.trim(); // Column M: BM Type (contains "SENIOR BRANCH MANAGER" or "BRANCH MANAGER ELITE")
-                        const targetJuni = parseFloat(values[13]?.replace(/,/g, '')) || 0; // Column N: Final Target
-                        const goalBulanan = parseFloat(values[16]?.replace(/,/g, '')) || 0; // Column Q: Goal Bulanan
+                    if (values.length >= 13) {
+                        const outletCode = values[0]?.trim(); // Column A: Outlet code
+                        const outletName = values[1]?.trim(); // Column B: Full name outlet
+                        const amName = values[2]?.trim(); // Column C: AM name
+                        const clanName = values[3]?.trim(); // Column D: Clan name
+                        const clanBM = values[4]?.trim(); // Column E: Clan BM
+                        const groupBM = values[5]?.trim(); // Column F: Group BM
+                        const bmName = values[6]?.trim(); // Column G: Name of EBM/SBM
+                        const targetJuni = parseFloat(values[7]?.replace(/,/g, '')) || 0; // Column H: Target
+                        const goalBulanan = parseFloat(values[8]?.replace(/,/g, '')) || 0; // Column I: Goal
+                        const revenue = parseFloat(values[9]?.replace(/,/g, '')) || 0; // Column J: Up to date revenue
+                        const transQty = parseFloat(values[10]?.replace(/,/g, '')) || 0; // Column K: Transaction
+                        const buyingPower = parseFloat(values[11]?.replace(/,/g, '')) || 0; // Column L: Buying power
+                        const forecastSales = parseFloat(values[12]?.replace(/,/g, '')) || 0; // Column M: Forecasted month end revenue
                         
-                        // Determine BM Type (SBM or EBM)
-                        let bmTypeShort = '';
-                        if (bmType) {
-                            if (bmType.includes('SENIOR BRANCH MANAGER') || bmType.toUpperCase().includes('SBM')) {
-                                bmTypeShort = 'SBM';
-                            } else if (bmType.includes('BRANCH MANAGER ELITE') || bmType.includes('ELITE') || bmType.toUpperCase().includes('EBM')) {
-                                bmTypeShort = 'EBM';
+                        // Determine BM Type (SBM or EBM) from Group BM column
+                        let bmType = '';
+                        if (groupBM) {
+                            const groupUpper = groupBM.toUpperCase();
+                            if (groupUpper.includes('SBM') || groupUpper.includes('SENIOR')) {
+                                bmType = 'SBM';
+                            } else if (groupUpper.includes('EBM') || groupUpper.includes('ELITE')) {
+                                bmType = 'EBM';
                             }
                         }
                         
                         // Skip rows without required fields
-                        if (!outletCode || !clanName || !bmTypeShort) {
-                            if (i < 5) console.log(`⚠️ Row ${i} skipped:`, { outletCode, clanName, bmTypeShort });
+                        if (!outletCode || !clanName || !bmType) {
+                            if (i < 5) console.log(`⚠️ Row ${i} skipped:`, { outletCode, clanName, bmType, groupBM });
                             continue;
                         }
-                        
-                        // Get sales data
-                        const salesData = salesMap[outletCode] || { revenue: 0, transQty: 0, buyingPower: 0 };
-                        
-                        // Calculate forecast (simple projection)
-                        const daysInMonth = 30;
-                        const currentDay = new Date().getDate();
-                        const forecastSales = salesData.revenue > 0 ? (salesData.revenue / currentDay) * daysInMonth : 0;
                         
                         // Calculate percentages
                         const vsGoalBulanan = goalBulanan > 0 ? (forecastSales / goalBulanan) * 100 : 0;
@@ -9504,18 +9466,21 @@
                             outletName: outletName || outletCode,
                             amName: amName || 'N/A',
                             clanName,
-                            bmType: bmTypeShort,
-                            revenue: salesData.revenue,
-                            transQty: salesData.transQty,
-                            buyingPower: salesData.buyingPower,
+                            clanBM,
+                            groupBM,
+                            bmName,
+                            bmType,
+                            revenue,
+                            transQty,
+                            buyingPower,
                             forecastSales,
                             goalBulanan,
                             targetJuni,
                             vsGoalBulanan,
                             vsTargetJuni,
-                            revenueDisplay: salesData.revenue.toLocaleString(),
-                            transQtyDisplay: salesData.transQty.toLocaleString(),
-                            buyingPowerDisplay: salesData.buyingPower.toLocaleString(),
+                            revenueDisplay: revenue.toLocaleString(),
+                            transQtyDisplay: transQty.toLocaleString(),
+                            buyingPowerDisplay: buyingPower.toLocaleString(),
                             forecastDisplay: forecastSales.toLocaleString('en-US', { maximumFractionDigits: 0 }),
                             goalBulananDisplay: goalBulanan.toLocaleString(),
                             targetJuniDisplay: targetJuni.toLocaleString()
