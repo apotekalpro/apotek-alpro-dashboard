@@ -9411,22 +9411,25 @@
             parseAndCombineData(salesCsv, mappingCsv) {
                 console.log('📊 BM Tracker: Parsing and combining data...');
                 
-                // Parse sales data (Store, Revenue, Trans Qty)
+                // Parse sales data (Short Name, Revenue, Trans Qty, Buying Power)
+                // Row 1: Headers, Row 2: Column names, Row 3+: Data
                 const salesLines = salesCsv.split('\n');
                 const salesMap = {};
                 
-                for (let i = 1; i < salesLines.length; i++) {
+                // Start from row 3 (index 2) to skip header rows
+                for (let i = 2; i < salesLines.length; i++) {
                     const line = salesLines[i].trim();
                     if (!line) continue;
                     
                     const values = this.parseCSVLine(line);
-                    if (values.length >= 4) {
-                        const store = values[1]?.trim(); // Column B: Store
+                    if (values.length >= 6) {
+                        const shortName = values[0]?.trim(); // Column A: Short Name (outlet code)
                         const revenue = parseFloat(values[2]?.replace(/,/g, '')) || 0; // Column C: Revenue
                         const transQty = parseFloat(values[3]?.replace(/,/g, '')) || 0; // Column D: Trans Qty
+                        const buyingPower = parseFloat(values[5]?.replace(/,/g, '')) || 0; // Column F: Buying Power
                         
-                        if (store) {
-                            salesMap[store] = { revenue, transQty };
+                        if (shortName) {
+                            salesMap[shortName] = { revenue, transQty, buyingPower };
                         }
                     }
                 }
@@ -9434,28 +9437,58 @@
                 console.log(`📈 Loaded ${Object.keys(salesMap).length} stores from sales data`);
                 
                 // Parse mapping data (Goal Jan 2026 to June 2026)
-                // Header starts at row 2, so data starts at row 3 (index 2)
+                // Row 1: Date, Row 2: Column headers, Row 3+: Data
                 const mappingLines = mappingCsv.split('\n');
                 this.performanceData = [];
+                
+                console.log('🔍 First 3 mapping rows:', mappingLines.slice(0, 3));
                 
                 for (let i = 2; i < mappingLines.length; i++) {
                     const line = mappingLines[i].trim();
                     if (!line) continue;
                     
                     const values = this.parseCSVLine(line);
-                    if (values.length >= 19) {
-                        const outletCode = values[3]?.trim(); // Column D: Outlet code
-                        const outletName = values[4]?.trim(); // Column E: Outlet full name
-                        const amName = values[8]?.trim(); // Column I: AM name
-                        const clanName = values[9]?.trim(); // Column J: Clan name
-                        const bmType = values[12]?.trim(); // Column M: BM type (SBM/EBM)
-                        const targetJuni = parseFloat(values[14]?.replace(/,/g, '')) || 0; // Column O: Target Juni
-                        const goalBulanan = parseFloat(values[18]?.replace(/,/g, '')) || 0; // Column S: Goal Bulanan
+                    
+                    // Log first data row for debugging
+                    if (i === 2) {
+                        console.log(`🔍 First data row [${values.length}]:`, {
+                            'D-ShortName(3)': values[3],
+                            'E-StoreName(4)': values[4],
+                            'I-AM(8)': values[8],
+                            'J-Clan(9)': values[9],
+                            'M-BMType(12)': values[12],
+                            'N-Target(13)': values[13],
+                            'R-Goal(17)': values[17]
+                        });
+                    }
+                    
+                    if (values.length >= 18) {
+                        const outletCode = values[3]?.trim(); // Column D: Short Name (outlet code)
+                        const outletName = values[4]?.trim(); // Column E: Store Name (full name)
+                        const amName = values[8]?.trim(); // Column I: New AM
+                        const clanName = values[9]?.trim(); // Column J: Clan AM
+                        const bmType = values[12]?.trim(); // Column M: BM Type (contains "SENIOR BRANCH MANAGER" or "BRANCH MANAGER ELITE")
+                        const targetJuni = parseFloat(values[13]?.replace(/,/g, '')) || 0; // Column N: Final Target
+                        const goalBulanan = parseFloat(values[17]?.replace(/,/g, '')) || 0; // Column R: Goal Bulanan
                         
-                        if (!outletCode || !clanName || !bmType) continue;
+                        // Determine BM Type (SBM or EBM)
+                        let bmTypeShort = '';
+                        if (bmType) {
+                            if (bmType.includes('SENIOR BRANCH MANAGER') || bmType.toUpperCase().includes('SBM')) {
+                                bmTypeShort = 'SBM';
+                            } else if (bmType.includes('BRANCH MANAGER ELITE') || bmType.includes('ELITE') || bmType.toUpperCase().includes('EBM')) {
+                                bmTypeShort = 'EBM';
+                            }
+                        }
+                        
+                        // Skip rows without required fields
+                        if (!outletCode || !clanName || !bmTypeShort) {
+                            if (i < 5) console.log(`⚠️ Row ${i} skipped:`, { outletCode, clanName, bmTypeShort });
+                            continue;
+                        }
                         
                         // Get sales data
-                        const salesData = salesMap[outletCode] || { revenue: 0, transQty: 0 };
+                        const salesData = salesMap[outletCode] || { revenue: 0, transQty: 0, buyingPower: 0 };
                         
                         // Calculate forecast (simple projection)
                         const daysInMonth = 30;
@@ -9471,15 +9504,18 @@
                             outletName: outletName || outletCode,
                             amName: amName || 'N/A',
                             clanName,
-                            bmType,
+                            bmType: bmTypeShort,
                             revenue: salesData.revenue,
                             transQty: salesData.transQty,
+                            buyingPower: salesData.buyingPower,
                             forecastSales,
                             goalBulanan,
                             targetJuni,
                             vsGoalBulanan,
                             vsTargetJuni,
                             revenueDisplay: salesData.revenue.toLocaleString(),
+                            transQtyDisplay: salesData.transQty.toLocaleString(),
+                            buyingPowerDisplay: salesData.buyingPower.toLocaleString(),
                             forecastDisplay: forecastSales.toLocaleString('en-US', { maximumFractionDigits: 0 }),
                             goalBulananDisplay: goalBulanan.toLocaleString(),
                             targetJuniDisplay: targetJuni.toLocaleString()
