@@ -894,6 +894,9 @@
                                                 <th onclick="bmTracker.sortTable('transQty')" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
                                                     Trans Qty <i class="fas fa-sort ml-1"></i>
                                                 </th>
+                                                <th onclick="bmTracker.sortTable('buyingPower')" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    Buying Power <i class="fas fa-sort ml-1"></i>
+                                                </th>
                                                 <th onclick="bmTracker.sortTable('forecastSales')" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
                                                     Forecast <i class="fas fa-sort ml-1"></i>
                                                 </th>
@@ -9411,22 +9414,27 @@
             parseAndCombineData(salesCsv, mappingCsv) {
                 console.log('📊 BM Tracker: Parsing and combining data...');
                 
-                // Parse sales data (Store, Revenue, Trans Qty)
+                // Parse sales data (Automated Accumulated Sales sheet)
+                // Row 1: Headers (Short Name, Grand Total, etc.)
+                // Row 2: Column names (Store, Store, Net Amount, Transaction Qty, Buying Power)
+                // Row 3+: Data
                 const salesLines = salesCsv.split('\n');
                 const salesMap = {};
                 
-                for (let i = 1; i < salesLines.length; i++) {
+                // Start from row 3 (index 2) to skip both header rows
+                for (let i = 2; i < salesLines.length; i++) {
                     const line = salesLines[i].trim();
                     if (!line) continue;
                     
                     const values = this.parseCSVLine(line);
-                    if (values.length >= 4) {
+                    if (values.length >= 6) {
                         const shortName = values[0]?.trim(); // Column A: Short Name (outlet code)
                         const revenue = parseFloat(values[2]?.replace(/,/g, '')) || 0; // Column C: Net Amount (Revenue)
                         const transQty = parseFloat(values[3]?.replace(/,/g, '')) || 0; // Column D: Trans Qty
+                        const buyingPower = parseFloat(values[5]?.replace(/,/g, '')) || 0; // Column F: Buying Power
                         
                         if (shortName) {
-                            salesMap[shortName] = { revenue, transQty };
+                            salesMap[shortName] = { revenue, transQty, buyingPower };
                         }
                     }
                 }
@@ -9481,7 +9489,7 @@
                         }
                         
                         // Get sales data
-                        const salesData = salesMap[outletCode] || { revenue: 0, transQty: 0 };
+                        const salesData = salesMap[outletCode] || { revenue: 0, transQty: 0, buyingPower: 0 };
                         
                         // Calculate forecast (simple projection)
                         const daysInMonth = 30;
@@ -9500,9 +9508,18 @@
                             bmType,
                             revenue: salesData.revenue,
                             transQty: salesData.transQty,
+                            buyingPower: salesData.buyingPower,
                             forecastSales,
                             goalBulanan,
                             targetJuni,
+                            vsGoalBulanan,
+                            vsTargetJuni,
+                            revenueDisplay: salesData.revenue.toLocaleString(),
+                            buyingPowerDisplay: salesData.buyingPower.toLocaleString(),
+                            forecastDisplay: forecastSales.toLocaleString('en-US', { maximumFractionDigits: 0 }),
+                            goalBulananDisplay: goalBulanan.toLocaleString(),
+                            targetJuniDisplay: targetJuni.toLocaleString()
+                        };
                             vsGoalBulanan,
                             vsTargetJuni,
                             revenueDisplay: salesData.revenue.toLocaleString(),
@@ -9823,6 +9840,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">Rp ${record.revenueDisplay}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">${record.transQty.toLocaleString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-indigo-600">Rp ${record.buyingPowerDisplay}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-purple-600">Rp ${record.forecastDisplay}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
                             <div class="flex flex-col items-end">
