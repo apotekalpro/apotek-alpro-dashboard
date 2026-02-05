@@ -1287,9 +1287,9 @@
                     });
                 }
                 
-                const bcaData = weeklyBCA.get(detailKey);
-                bcaData.totalAmount += amount;
-                bcaData.transactionCount++;
+                const bcaDetail = weeklyBCA.get(detailKey);
+                bcaDetail.totalAmount += amount;
+                bcaDetail.transactionCount++;
                 
                 // Summary by outlet only
                 const summaryKey = outletCode;
@@ -1440,7 +1440,7 @@
             
             console.log(`Created ${summaryResults.length} summary, ${detailResults.length} detail results`);
             
-            return { summary: summaryResults, details: detailResults };
+            return { summaryResults: summaryResults, detailResults: detailResults };
         }
         
         function calculateWeeklySetoranMatch(weekKey, outletCode, bcaData, acmmData, pivotMap) {
