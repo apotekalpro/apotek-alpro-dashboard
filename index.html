@@ -9439,9 +9439,10 @@
                 this.performanceData = [];
                 
                 // Log first few rows for debugging
-                console.log('📝 First 5 mapping rows:');
-                for (let i = 0; i < Math.min(5, mappingLines.length); i++) {
-                    console.log(`Row ${i}:`, mappingLines[i].substring(0, 150));
+                console.log('📝 First 3 mapping rows:');
+                for (let i = 0; i < Math.min(3, mappingLines.length); i++) {
+                    const testValues = this.parseCSVLine(mappingLines[i]);
+                    console.log(`Row ${i} (${testValues.length} cols):`, testValues.slice(0, 20));
                 }
                 
                 for (let i = 2; i < mappingLines.length; i++) {
@@ -9453,23 +9454,28 @@
                     // Debug first record
                     if (i === 2) {
                         console.log('🔍 First data row parsed values:', values.length, 'columns');
-                        console.log('  - values[3] (D):', values[3]);
-                        console.log('  - values[4] (E):', values[4]);
-                        console.log('  - values[8] (I):', values[8]);
-                        console.log('  - values[9] (J):', values[9]);
-                        console.log('  - values[12] (M):', values[12]);
+                        console.log('  All values (first 20):', values.slice(0, 20));
+                        console.log('  - values[2] (C - Store Code):', values[2]);
+                        console.log('  - values[4] (E - Store Name):', values[4]);
+                        console.log('  - values[8] (I - New AM):', values[8]);
+                        console.log('  - values[9] (J - Clan AM):', values[9]);
+                        console.log('  - values[12] (M - BM Type):', values[12]);
+                        console.log('  - values[13] (N - Final Target):', values[13]);
                         console.log('  - values[14] (O):', values[14]);
+                        console.log('  - values[15] (P):', values[15]);
+                        console.log('  - values[16] (Q):', values[16]);
+                        console.log('  - values[17] (R):', values[17]);
                         console.log('  - values[18] (S):', values[18]);
                     }
                     
-                    if (values.length >= 19) {
-                        const outletCode = values[3]?.trim(); // Column D: Outlet code
-                        const outletName = values[4]?.trim(); // Column E: Outlet full name
-                        const amName = values[8]?.trim(); // Column I: AM name
-                        const clanName = values[9]?.trim(); // Column J: Clan name
-                        const bmType = values[12]?.trim(); // Column M: BM type (SBM/EBM)
-                        const targetJuni = parseFloat(values[14]?.replace(/,/g, '')) || 0; // Column O: Target Juni
-                        const goalBulanan = parseFloat(values[18]?.replace(/,/g, '')) || 0; // Column S: Goal Bulanan
+                    if (values.length >= 15) {
+                        const outletCode = values[2]?.trim(); // Column C: Store Code
+                        const outletName = values[4]?.trim(); // Column E: Store Name
+                        const amName = values[8]?.trim(); // Column I: New AM
+                        const clanName = values[9]?.trim(); // Column J: Clan AM
+                        const bmType = values[12]?.trim(); // Column M: Branch Manager/Senior Branch Manager
+                        const targetJuni = parseFloat(values[13]?.replace(/,/g, '')) || 0; // Column N: Final Target (Jan 2026 to June 2026)
+                        const goalBulanan = parseFloat(values[17]?.replace(/,/g, '')) || 0; // Column R: Goal Bulanan (assuming it's a few columns after)
                         
                         if (!outletCode || !clanName || !bmType) {
                             if (i < 5) {
