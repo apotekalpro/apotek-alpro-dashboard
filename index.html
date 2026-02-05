@@ -9458,18 +9458,18 @@
                             'J-Clan(9)': values[9],
                             'M-BMType(12)': values[12],
                             'N-Target(13)': values[13],
-                            'R-Goal(17)': values[17]
+                            'Q-Goal(16)': values[16]
                         });
                     }
                     
-                    if (values.length >= 18) {
+                    if (values.length >= 17) {
                         const outletCode = values[3]?.trim(); // Column D: Short Name (outlet code)
                         const outletName = values[4]?.trim(); // Column E: Store Name (full name)
                         const amName = values[8]?.trim(); // Column I: New AM
                         const clanName = values[9]?.trim(); // Column J: Clan AM
                         const bmType = values[12]?.trim(); // Column M: BM Type (contains "SENIOR BRANCH MANAGER" or "BRANCH MANAGER ELITE")
                         const targetJuni = parseFloat(values[13]?.replace(/,/g, '')) || 0; // Column N: Final Target
-                        const goalBulanan = parseFloat(values[17]?.replace(/,/g, '')) || 0; // Column R: Goal Bulanan
+                        const goalBulanan = parseFloat(values[16]?.replace(/,/g, '')) || 0; // Column Q: Goal Bulanan
                         
                         // Determine BM Type (SBM or EBM)
                         let bmTypeShort = '';
