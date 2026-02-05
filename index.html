@@ -9364,12 +9364,14 @@
                     }
                     
                     const salesCsvData = await salesResponse.text();
-                    console.log('📄 BM Tracker: Sales data fetched');
+                    console.log('📄 BM Tracker: Sales data fetched, length:', salesCsvData.length);
+                    console.log('📄 BM Tracker: First 200 chars:', salesCsvData.substring(0, 200));
                     
                     // Fetch mapping sheet (Jan 2026 to June 2026)
+                    // Sheet GID: 1109752445 based on the URL provided
                     const mappingSheetId = '1tVfNg_I0AGSESb1lxhwVGv59ps6BSB5192SQLeYastE';
-                    const mappingSheetName = '(Jan 2026 to June 2026)';
-                    const mappingUrl = `https://docs.google.com/spreadsheets/d/${mappingSheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(mappingSheetName)}&timestamp=${timestamp}`;
+                    const mappingGid = '1109752445'; // (Jan 2026 to June 2026) sheet
+                    const mappingUrl = `https://docs.google.com/spreadsheets/d/${mappingSheetId}/export?format=csv&gid=${mappingGid}&timestamp=${timestamp}`;
                     
                     console.log('🔗 BM Tracker: Fetching mapping data from:', mappingUrl);
                     const mappingResponse = await fetch(mappingUrl, {
@@ -9383,7 +9385,8 @@
                     }
                     
                     const mappingCsvData = await mappingResponse.text();
-                    console.log('📄 BM Tracker: Mapping data fetched');
+                    console.log('📄 BM Tracker: Mapping data fetched, length:', mappingCsvData.length);
+                    console.log('📄 BM Tracker: First 200 chars:', mappingCsvData.substring(0, 200));
                     
                     // Parse the data
                     this.parseAndCombineData(salesCsvData, mappingCsvData);
