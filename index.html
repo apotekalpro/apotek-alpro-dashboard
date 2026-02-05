@@ -9312,8 +9312,8 @@
             ebmData: {},
             currentPage: 1,
             itemsPerPage: 20,
-            currentSort: 'outlet',
-            sortDirection: 'asc',
+            currentSort: 'vsGoalBulanan',
+            sortDirection: 'desc',
             
             // Parse CSV line with quote handling
             parseCSVLine(line) {
@@ -9558,7 +9558,7 @@
                 const container = document.getElementById('clanLeaderboard');
                 container.innerHTML = '';
                 
-                const topClans = this.clanData.slice(0, 5);
+                const topClans = this.clanData.slice(0, 3);
                 topClans.forEach((clan, index) => {
                     const rank = index + 1;
                     const rankIcon = this.getRankIcon(rank);
@@ -9587,7 +9587,7 @@
                 const container = document.getElementById('sbmLeaderboard');
                 container.innerHTML = '';
                 
-                const topSBMs = this.sbmData.slice(0, 5);
+                const topSBMs = this.sbmData.slice(0, 3);
                 topSBMs.forEach((sbm, index) => {
                     const rank = index + 1;
                     const rankIcon = this.getRankIcon(rank);
@@ -9616,7 +9616,7 @@
                 const container = document.getElementById('ebmLeaderboard');
                 container.innerHTML = '';
                 
-                const topEBMs = this.ebmData.slice(0, 5);
+                const topEBMs = this.ebmData.slice(0, 3);
                 topEBMs.forEach((ebm, index) => {
                     const rank = index + 1;
                     const rankIcon = this.getRankIcon(rank);
@@ -9724,6 +9724,11 @@
                     const matchesBmType = !bmTypeFilter || record.bmType === bmTypeFilter;
                     
                     return matchesSearch && matchesAM && matchesClan && matchesBmType;
+                });
+                
+                // Apply default sort by vsGoalBulanan descending
+                this.filteredData.sort((a, b) => {
+                    return this.sortDirection === 'desc' ? b.vsGoalBulanan - a.vsGoalBulanan : a.vsGoalBulanan - b.vsGoalBulanan;
                 });
                 
                 this.currentPage = 1;
