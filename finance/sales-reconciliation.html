@@ -348,20 +348,11 @@
                 <button class="tab-button active" onclick="showResultTab('all')">
                     <i class="fas fa-list mr-2"></i>All Results
                 </button>
-                <button class="tab-button" onclick="showResultTab('cdm')">
-                    <i class="fas fa-money-bill-wave mr-2"></i>CDM (Cash)
+                <button class="tab-button" onclick="showResultTab('matched')">
+                    <i class="fas fa-check-circle mr-2"></i>Matched
                 </button>
-                <button class="tab-button" onclick="showResultTab('creditcard')">
-                    <i class="fas fa-credit-card mr-2"></i>Credit Card
-                </button>
-                <button class="tab-button" onclick="showResultTab('qris')">
-                    <i class="fas fa-qrcode mr-2"></i>QRIS
-                </button>
-                <button class="tab-button" onclick="showResultTab('debit')">
-                    <i class="fas fa-credit-card mr-2"></i>Debit Card
-                </button>
-                <button class="tab-button" onclick="showResultTab('setoran')">
-                    <i class="fas fa-hand-holding-usd mr-2"></i>Setoran Tunai
+                <button class="tab-button" onclick="showResultTab('unmatched')">
+                    <i class="fas fa-exclamation-circle mr-2"></i>Unmatched
                 </button>
             </div>
 
@@ -375,21 +366,6 @@
                 </button>
                 <button onclick="exportResults('unmatched')" class="btn-secondary">
                     <i class="fas fa-times mr-2"></i>Export Unmatched
-                </button>
-                <button onclick="exportResults('cdm')" class="btn-secondary">
-                    <i class="fas fa-money-bill-wave mr-2"></i>Export CDM
-                </button>
-                <button onclick="exportResults('creditcard')" class="btn-secondary">
-                    <i class="fas fa-credit-card mr-2"></i>Export Credit Card
-                </button>
-                <button onclick="exportResults('qris')" class="btn-secondary">
-                    <i class="fas fa-qrcode mr-2"></i>Export QRIS
-                </button>
-                <button onclick="exportResults('debit')" class="btn-secondary">
-                    <i class="fas fa-credit-card mr-2"></i>Export Debit
-                </button>
-                <button onclick="exportResults('setoran')" class="btn-secondary">
-                    <i class="fas fa-hand-holding-usd mr-2"></i>Export Setoran
                 </button>
             </div>
 
@@ -1679,8 +1655,8 @@
         function displayResults() {
             const totalCash = cashReconciliationResults.length;
             const matchedCash = cashReconciliationResults.filter(r => r.status === 'MATCHED').length;
-            const totalNonCash = nonCashReconciliationResults.length;
-            const matchedNonCash = nonCashReconciliationResults.filter(r => r.status === 'MATCHED').length;
+            const totalNonCash = nonCashTotalReconciliationResults.length;
+            const matchedNonCash = nonCashTotalReconciliationResults.filter(r => r.status === 'MATCHED').length;
             const totalRecords = totalCash + totalNonCash;
             const matched = matchedCash + matchedNonCash;
             const unmatched = totalRecords - matched;
@@ -1689,7 +1665,7 @@
             document.getElementById('total-records').textContent = totalRecords;
             document.getElementById('matched-count').textContent = matched;
             document.getElementById('unmatched-count').textContent = unmatched;
-            document.getElementById('match-rate').textContent = `${matchRate}% (Cash: ${reconciliationStatistics.cashMatchRate}%, Non-Cash: ${reconciliationStatistics.nonCashMatchRate}%)`;
+            document.getElementById('match-rate').textContent = `${matchRate}% (Cash: ${reconciliationStatistics.cashMatchRate}%, Non-Cash: ${reconciliationStatistics.nonCashTotalMatchRate}%)`;
 
             updateResultsTable();
         }
@@ -1699,31 +1675,13 @@
             const tbody = document.getElementById('results-tbody');
             tbody.innerHTML = '';
 
-            // Combine cash and non-cash results
-            let filteredResults = [...cashReconciliationResults, ...nonCashReconciliationResults];
+            // Combine cash and non-cash total results
+            let filteredResults = [...cashReconciliationResults, ...nonCashTotalReconciliationResults];
 
             if (currentTab === 'matched') {
                 filteredResults = filteredResults.filter(r => r.status === 'MATCHED');
             } else if (currentTab === 'unmatched') {
                 filteredResults = filteredResults.filter(r => r.status !== 'MATCHED');
-            } else if (currentTab === 'cdm' || currentTab === 'setoran') {
-                // Filter for CASH transactions only
-                filteredResults = cashReconciliationResults;
-                if (currentTab !== 'all') {
-                    const msg = currentTab === 'cdm' ? 'CDM' : 'SETORAN';
-                    filteredResults = cashReconciliationResults.filter(r => r.bcaBreakdown.includes(msg));
-                }
-            } else if (currentTab !== 'all') {
-                // For non-cash transaction type filters
-                const typeMap = {
-                    'creditcard': 'CREDITCARD',
-                    'qris': 'QRIS',
-                    'debit': 'DEBITCARD'
-                };
-                const filterType = typeMap[currentTab];
-                if (filterType) {
-                    filteredResults = nonCashReconciliationResults.filter(r => r.transactionType === filterType);
-                }
             }
 
             if (filteredResults.length === 0) {
@@ -1840,51 +1798,7 @@
             ];
             XLSX.utils.book_append_sheet(wb, wsCash, 'Cash Reconciliation');
             
-            // SHEET 2: NON-CASH RECONCILIATION
-            const nonCashData = [
-                ['Category', 'Week', 'Outlet Code', 'Transaction Type', 'BCA Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'BCA Breakdown']
-            ];
-            
-            let nonCashToExport = nonCashReconciliationResults;
-            if (type === 'matched') {
-                nonCashToExport = nonCashReconciliationResults.filter(r => r.status === 'MATCHED');
-            } else if (type === 'unmatched') {
-                nonCashToExport = nonCashReconciliationResults.filter(r => r.status !== 'MATCHED');
-            } else if (type !== 'all') {
-                const typeMap = {
-                    'creditcard': 'CREDITCARD',
-                    'qris': 'QRIS',
-                    'debit': 'DEBITCARD'
-                };
-                const filterType = typeMap[type];
-                if (filterType) {
-                    nonCashToExport = nonCashReconciliationResults.filter(r => r.transactionType === filterType);
-                }
-            }
-            
-            nonCashToExport.forEach(row => {
-                nonCashData.push([
-                    row.category,
-                    row.weekLabel,
-                    row.outletCode,
-                    row.transactionType,
-                    row.bcaTotal,
-                    row.acmmTotal,
-                    row.difference,
-                    row.status,
-                    row.acmmBreakdown,
-                    row.bcaBreakdown || '-'
-                ]);
-            });
-            
-            const wsNonCash = XLSX.utils.aoa_to_sheet(nonCashData);
-            wsNonCash['!cols'] = [
-                { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 18 },
-                { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 40 }, { wch: 40 }
-            ];
-            XLSX.utils.book_append_sheet(wb, wsNonCash, 'Non-Cash Breakdown');
-            
-            // SHEET 3: NON-CASH TOTAL RECONCILIATION
+            // SHEET 2: NON-CASH TOTAL RECONCILIATION
             const nonCashTotalData = [
                 ['Category', 'Week', 'Outlet Code', 'BCA Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'BCA Breakdown']
             ];
@@ -1918,7 +1832,7 @@
             ];
             XLSX.utils.book_append_sheet(wb, wsNonCashTotal, 'Non-Cash Total');
             
-            // SHEET 4: STATISTICS SUMMARY
+            // SHEET 3: STATISTICS SUMMARY
             const statsData = [
                 ['Category', 'Total Records', 'Matched', 'Unmatched', 'Match Rate'],
                 [
@@ -1929,31 +1843,24 @@
                     `${reconciliationStatistics.cashMatchRate || 0}%`
                 ],
                 [
-                    'NON-CASH (Breakdown)',
-                    reconciliationStatistics.nonCashTotal || 0,
-                    reconciliationStatistics.nonCashMatched || 0,
-                    (reconciliationStatistics.nonCashTotal || 0) - (reconciliationStatistics.nonCashMatched || 0),
-                    `${reconciliationStatistics.nonCashMatchRate || 0}%`
-                ],
-                [
-                    'NON-CASH (Total)',
+                    'NON-CASH',
                     reconciliationStatistics.nonCashTotalCount || 0,
                     reconciliationStatistics.nonCashTotalMatched || 0,
                     (reconciliationStatistics.nonCashTotalCount || 0) - (reconciliationStatistics.nonCashTotalMatched || 0),
                     `${reconciliationStatistics.nonCashTotalMatchRate || 0}%`
                 ],
                 [
-                    'GRAND TOTAL',
-                    (reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotal || 0),
-                    (reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashMatched || 0),
-                    ((reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotal || 0)) - ((reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashMatched || 0)),
-                    `${((reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashMatched || 0)) / ((reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotal || 0)) * 100 || 0}%`
+                    'TOTAL',
+                    (reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotalCount || 0),
+                    (reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashTotalMatched || 0),
+                    ((reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotalCount || 0)) - ((reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashTotalMatched || 0)),
+                    `${((reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashTotalMatched || 0)) / ((reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotalCount || 0)) * 100 || 0}%`
                 ]
             ];
             
             const wsStats = XLSX.utils.aoa_to_sheet(statsData);
             wsStats['!cols'] = [
-                { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
+                { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
             ];
             XLSX.utils.book_append_sheet(wb, wsStats, 'Statistics');
             
@@ -1961,7 +1868,7 @@
             const filename = `reconciliation_cash_noncash_${type}_${timestamp}.xlsx`;
             XLSX.writeFile(wb, filename);
             
-            console.log(`Exported ${cashToExport.length} CASH records, ${nonCashToExport.length} NON-CASH breakdown records, ${nonCashTotalToExport.length} NON-CASH total records`);
+            console.log(`Exported ${cashToExport.length} CASH records, ${nonCashTotalToExport.length} NON-CASH total records`);
         }
 
         // Reset all data
