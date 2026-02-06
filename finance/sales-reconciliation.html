@@ -1133,8 +1133,9 @@
         // ============================================================================
         
         // Global variables for weekly results
-        let weeklySummaryResults = [];
-        let weeklyDetailResults = [];
+        let cashReconciliationResults = [];
+        let nonCashReconciliationResults = [];
+        let reconciliationStatistics = {};
         
         function aggregateACMMByWeek(pivotMap) {
             const weeklyACMM = new Map();
@@ -1330,47 +1331,16 @@
         }
         
         function matchWeeklyData(acmmData, bcaData, pivotMap, lookups) {
-            const summaryResults = [];
-            const detailResults = [];
+            const cashResults = [];
+            const nonCashResults = [];
             
-            console.log('=== Performing Total Matching (All Dates) ===');
+            console.log('=== Performing Total Matching (All Dates) - Separated by CASH and NON-CASH ===');
             
-            // Summary matching by outlet
-            const allOutlets = new Set([...Array.from(acmmData.weeklySummary.keys()), ...Array.from(bcaData.weeklySummary.keys())]);
+            // Define CASH and NON-CASH transaction types
+            const cashTypes = ['CDM', 'SETORAN_TUNAI'];
+            const nonCashTypes = ['CREDITCARD', 'DEBITCARD', 'QRIS'];
             
-            for (const outletCode of allOutlets) {
-                const acmmSummary = acmmData.weeklySummary.get(outletCode);
-                const bcaSummary = bcaData.weeklySummary.get(outletCode);
-                
-                const acmmTotal = acmmSummary ? acmmSummary.totalAmount : 0;
-                const bcaTotal = bcaSummary ? bcaSummary.totalAmount : 0;
-                const difference = bcaTotal - acmmTotal;
-                
-                let status = 'UNMATCHED';
-                if (acmmTotal > 0 && bcaTotal > 0) {
-                    status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
-                } else if (acmmTotal === 0) {
-                    status = 'NO_ACMM_DATA';
-                } else if (bcaTotal === 0) {
-                    status = 'NO_BCA_DATA';
-                }
-                
-                summaryResults.push({
-                    weekKey: 'ALL',
-                    weekLabel: 'All Dates',
-                    weekStart: '',
-                    weekEnd: '',
-                    outletCode,
-                    bcaTotal,
-                    acmmTotal,
-                    difference,
-                    status,
-                    acmmBreakdown: acmmSummary ? JSON.stringify(acmmSummary.byType) : '{}',
-                    bcaBreakdown: bcaSummary ? JSON.stringify(bcaSummary.byType) : '{}'
-                });
-            }
-            
-            // Detail matching by outlet and payment type
+            // Type mapping for ACMM payment methods to BCA transaction types
             const typeMapping = {
                 'CREDITCARD': ['VISA', 'MASTER', 'BCA CARD', 'JCB CARD', 'AMEX CARD', 'OTHER CARD'],
                 'DEBITCARD': ['DEBIT BANK SAMA', 'DEBIT BANK LAIN'],
@@ -1379,18 +1349,94 @@
                 'SETORAN_TUNAI': ['CASH']
             };
             
+            // Collect all outlets
+            const allOutlets = new Set([...Array.from(acmmData.weeklySummary.keys()), ...Array.from(bcaData.weeklySummary.keys())]);
+            
+            // Match CASH transactions for each outlet
+            for (const outletCode of allOutlets) {
+                // Get ACMM CASH total
+                let acmmCashTotal = 0;
+                const acmmCashMethods = [];
+                const acmmKey = `${outletCode}|CASH`;
+                if (acmmData.weeklyACMM.has(acmmKey)) {
+                    const acmmDetail = acmmData.weeklyACMM.get(acmmKey);
+                    acmmCashTotal = acmmDetail.totalAmount;
+                    acmmCashMethods.push(`CASH: ${acmmDetail.totalAmount.toFixed(2)}`);
+                }
+                
+                // Get BCA CASH total (CDM + SETORAN_TUNAI)
+                let bcaCashTotal = 0;
+                const bcaCashBreakdown = [];
+                
+                // Add CDM
+                const cdmKey = `${outletCode}|CDM`;
+                if (bcaData.weeklyBCA.has(cdmKey)) {
+                    const cdmDetail = bcaData.weeklyBCA.get(cdmKey);
+                    bcaCashTotal += cdmDetail.totalAmount;
+                    bcaCashBreakdown.push(`CDM: ${cdmDetail.totalAmount.toFixed(2)}`);
+                }
+                
+                // Add SETORAN_TUNAI
+                const setoranKey = `${outletCode}|SETORAN_TUNAI`;
+                if (bcaData.weeklyBCA.has(setoranKey)) {
+                    const setoranDetail = bcaData.weeklyBCA.get(setoranKey);
+                    bcaCashTotal += setoranDetail.totalAmount;
+                    bcaCashBreakdown.push(`SETORAN: ${setoranDetail.totalAmount.toFixed(2)}`);
+                }
+                
+                // Only add to results if there's data from either side
+                if (acmmCashTotal > 0 || bcaCashTotal > 0) {
+                    const difference = bcaCashTotal - acmmCashTotal;
+                    
+                    let status = 'UNMATCHED';
+                    if (acmmCashTotal > 0 && bcaCashTotal > 0) {
+                        status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                    } else if (acmmCashTotal === 0) {
+                        status = 'NO_ACMM_DATA';
+                    } else if (bcaCashTotal === 0) {
+                        status = 'NO_BCA_DATA';
+                    }
+                    
+                    cashResults.push({
+                        weekKey: 'ALL',
+                        weekLabel: 'All Dates',
+                        weekStart: '',
+                        weekEnd: '',
+                        outletCode,
+                        category: 'CASH',
+                        bcaTotal: bcaCashTotal,
+                        acmmTotal: acmmCashTotal,
+                        difference,
+                        status,
+                        acmmBreakdown: acmmCashMethods.join('; '),
+                        bcaBreakdown: bcaCashBreakdown.join('; ')
+                    });
+                }
+            }
+            
+            // Match NON-CASH transactions for each outlet and type
             const allDetailKeys = new Set();
-            for (const key of bcaData.weeklyBCA.keys()) allDetailKeys.add(key);
+            for (const key of bcaData.weeklyBCA.keys()) {
+                const [outletCode, transactionType] = key.split('|');
+                if (nonCashTypes.includes(transactionType)) {
+                    allDetailKeys.add(key);
+                }
+            }
+            
             for (const [key, data] of acmmData.weeklyACMM.entries()) {
                 const [outletCode, paymentMethod] = key.split('|');
-                let transactionType = 'UNKNOWN';
-                for (const [type, methods] of Object.entries(typeMapping)) {
-                    if (methods.includes(paymentMethod)) {
-                        transactionType = type;
-                        break;
+                if (paymentMethod !== 'CASH') {
+                    let transactionType = 'UNKNOWN';
+                    for (const [type, methods] of Object.entries(typeMapping)) {
+                        if (nonCashTypes.includes(type) && methods.includes(paymentMethod)) {
+                            transactionType = type;
+                            break;
+                        }
+                    }
+                    if (transactionType !== 'UNKNOWN') {
+                        allDetailKeys.add(`${outletCode}|${transactionType}`);
                     }
                 }
-                allDetailKeys.add(`${outletCode}|${transactionType}`);
             }
             
             for (const key of allDetailKeys) {
@@ -1423,24 +1469,45 @@
                     status = 'NO_BCA_DATA';
                 }
                 
-                detailResults.push({
+                nonCashResults.push({
                     weekKey: 'ALL',
                     weekLabel: 'All Dates',
                     weekStart: '',
                     weekEnd: '',
                     outletCode,
+                    category: 'NON-CASH',
                     transactionType,
                     bcaTotal,
                     acmmTotal,
                     difference,
                     status,
-                    acmmMethods: acmmMethods.join('; ')
+                    acmmBreakdown: acmmMethods.join('; ')
                 });
             }
             
-            console.log(`Created ${summaryResults.length} summary, ${detailResults.length} detail results`);
+            console.log(`Created ${cashResults.length} CASH results, ${nonCashResults.length} NON-CASH results`);
             
-            return { summaryResults: summaryResults, detailResults: detailResults };
+            // Calculate match statistics
+            const cashMatched = cashResults.filter(r => r.status === 'MATCHED').length;
+            const nonCashMatched = nonCashResults.filter(r => r.status === 'MATCHED').length;
+            const cashMatchRate = cashResults.length > 0 ? ((cashMatched / cashResults.length) * 100).toFixed(1) : 0;
+            const nonCashMatchRate = nonCashResults.length > 0 ? ((nonCashMatched / nonCashResults.length) * 100).toFixed(1) : 0;
+            
+            console.log(`📊 CASH Match Rate: ${cashMatchRate}% (${cashMatched}/${cashResults.length})`);
+            console.log(`📊 NON-CASH Match Rate: ${nonCashMatchRate}% (${nonCashMatched}/${nonCashResults.length})`);
+            
+            return { 
+                cashResults: cashResults, 
+                nonCashResults: nonCashResults,
+                statistics: {
+                    cashTotal: cashResults.length,
+                    cashMatched: cashMatched,
+                    cashMatchRate: cashMatchRate,
+                    nonCashTotal: nonCashResults.length,
+                    nonCashMatched: nonCashMatched,
+                    nonCashMatchRate: nonCashMatchRate
+                }
+            };
         }
         
         function calculateWeeklySetoranMatch(weekKey, outletCode, bcaData, acmmData, pivotMap) {
@@ -1521,11 +1588,13 @@
                 
                 const matchResults = matchWeeklyData(acmmWeekly, bcaWeekly, pivotMap, lookups);
                 
-                weeklySummaryResults = matchResults.summaryResults;
-                weeklyDetailResults = matchResults.detailResults;
+                cashReconciliationResults = matchResults.cashResults;
+                nonCashReconciliationResults = matchResults.nonCashResults;
+                reconciliationStatistics = matchResults.statistics;
                 
-                console.log(`Generated ${weeklySummaryResults.length} summary results`);
-                console.log(`Generated ${weeklyDetailResults.length} detail results`);
+                console.log(`Generated ${cashReconciliationResults.length} CASH results`);
+                console.log(`Generated ${nonCashReconciliationResults.length} NON-CASH results`);
+                console.log(`📊 Statistics:`, reconciliationStatistics);
 
                 // Display results
                 displayResults();
@@ -1542,42 +1611,53 @@
 
         // Display reconciliation results - WEEKLY VERSION
         function displayResults() {
-            const totalRecords = weeklySummaryResults.length;
-            const matched = weeklySummaryResults.filter(r => r.status === 'MATCHED').length;
+            const totalCash = cashReconciliationResults.length;
+            const matchedCash = cashReconciliationResults.filter(r => r.status === 'MATCHED').length;
+            const totalNonCash = nonCashReconciliationResults.length;
+            const matchedNonCash = nonCashReconciliationResults.filter(r => r.status === 'MATCHED').length;
+            const totalRecords = totalCash + totalNonCash;
+            const matched = matchedCash + matchedNonCash;
             const unmatched = totalRecords - matched;
             const matchRate = totalRecords > 0 ? ((matched / totalRecords) * 100).toFixed(1) : 0;
 
             document.getElementById('total-records').textContent = totalRecords;
             document.getElementById('matched-count').textContent = matched;
             document.getElementById('unmatched-count').textContent = unmatched;
-            document.getElementById('match-rate').textContent = `${matchRate}%`;
+            document.getElementById('match-rate').textContent = `${matchRate}% (Cash: ${reconciliationStatistics.cashMatchRate}%, Non-Cash: ${reconciliationStatistics.nonCashMatchRate}%)`;
 
             updateResultsTable();
         }
 
-        // Update results table based on current filter - WEEKLY VERSION
+        // Update results table based on current filter - SEPARATED BY CASH/NON-CASH
         function updateResultsTable() {
             const tbody = document.getElementById('results-tbody');
             tbody.innerHTML = '';
 
-            // Always show summary results for now
-            let filteredResults = weeklySummaryResults;
+            // Combine cash and non-cash results
+            let filteredResults = [...cashReconciliationResults, ...nonCashReconciliationResults];
 
             if (currentTab === 'matched') {
-                filteredResults = weeklySummaryResults.filter(r => r.status === 'MATCHED');
+                filteredResults = filteredResults.filter(r => r.status === 'MATCHED');
             } else if (currentTab === 'unmatched') {
-                filteredResults = weeklySummaryResults.filter(r => r.status !== 'MATCHED');
+                filteredResults = filteredResults.filter(r => r.status !== 'MATCHED');
+            } else if (currentTab === 'cdm' || currentTab === 'setoran') {
+                // Filter for CASH transactions only
+                filteredResults = cashReconciliationResults;
+                if (currentTab !== 'all') {
+                    const msg = currentTab === 'cdm' ? 'CDM' : 'SETORAN';
+                    filteredResults = cashReconciliationResults.filter(r => r.bcaBreakdown.includes(msg));
+                }
             } else if (currentTab !== 'all') {
-                // For transaction type filters, use detail results
+                // For non-cash transaction type filters
                 const typeMap = {
-                    'cdm': 'CDM',
                     'creditcard': 'CREDITCARD',
                     'qris': 'QRIS',
-                    'debit': 'DEBITCARD',
-                    'setoran': 'SETORAN_TUNAI'
+                    'debit': 'DEBITCARD'
                 };
                 const filterType = typeMap[currentTab];
-                filteredResults = weeklyDetailResults.filter(r => r.transactionType === filterType);
+                if (filterType) {
+                    filteredResults = nonCashReconciliationResults.filter(r => r.transactionType === filterType);
+                }
             }
 
             if (filteredResults.length === 0) {
@@ -1597,15 +1677,20 @@
                 
                 const difference = result.difference !== null ? result.difference.toFixed(2) : '-';
                 const diffClass = result.difference !== null && Math.abs(result.difference) > 0.01 ? 'text-red-600 font-bold' : 'text-gray-600';
+                
+                const categoryBadge = result.category === 'CASH' ? 
+                    '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">CASH</span>' :
+                    '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-semibold">NON-CASH</span>';
+                
+                const typeBadge = result.transactionType ? 
+                    `<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold ml-1">${result.transactionType}</span>` : '';
 
                 const row = `
                     <tr class="border-b hover:bg-gray-50">
                         <td class="px-4 py-3">${index + 1}</td>
                         <td class="px-4 py-3">${result.weekLabel || result.weekKey}</td>
                         <td class="px-4 py-3">
-                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">
-                                ${result.transactionType || 'ALL TYPES'}
-                            </span>
+                            ${categoryBadge}${typeBadge}
                         </td>
                         <td class="px-4 py-3 font-semibold">${result.outletCode}</td>
                         <td class="px-4 py-3 text-right font-mono">${result.bcaTotal.toFixed(2)}</td>
@@ -1637,7 +1722,7 @@
 
         // Export results to Excel - DUAL SHEET VERSION
         function exportResults(type = 'all') {
-            if (weeklySummaryResults.length === 0 && weeklyDetailResults.length === 0) {
+            if (cashReconciliationResults.length === 0 && nonCashReconciliationResults.length === 0) {
                 alert('No data to export. Please run reconciliation first.');
                 return;
             }
@@ -1645,23 +1730,22 @@
             const wb = XLSX.utils.book_new();
             const timestamp = new Date().toISOString().split('T')[0];
             
-            // SHEET 1: WEEKLY SUMMARY
-            const summaryData = [
-                ['Week', 'Week Start', 'Week End', 'Outlet Code', 'BCA Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'BCA Breakdown']
+            // SHEET 1: CASH RECONCILIATION
+            const cashData = [
+                ['Category', 'Week', 'Outlet Code', 'BCA Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'BCA Breakdown']
             ];
             
-            let summaryToExport = weeklySummaryResults;
+            let cashToExport = cashReconciliationResults;
             if (type === 'matched') {
-                summaryToExport = weeklySummaryResults.filter(r => r.status === 'MATCHED');
+                cashToExport = cashReconciliationResults.filter(r => r.status === 'MATCHED');
             } else if (type === 'unmatched') {
-                summaryToExport = weeklySummaryResults.filter(r => r.status !== 'MATCHED');
+                cashToExport = cashReconciliationResults.filter(r => r.status !== 'MATCHED');
             }
             
-            summaryToExport.forEach(row => {
-                summaryData.push([
+            cashToExport.forEach(row => {
+                cashData.push([
+                    row.category,
                     row.weekLabel,
-                    row.weekStart,
-                    row.weekEnd,
                     row.outletCode,
                     row.bcaTotal,
                     row.acmmTotal,
@@ -1672,40 +1756,39 @@
                 ]);
             });
             
-            const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-            wsSummary['!cols'] = [
-                { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
-                { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 20 },
-                { wch: 40 }, { wch: 40 }
+            const wsCash = XLSX.utils.aoa_to_sheet(cashData);
+            wsCash['!cols'] = [
+                { wch: 12 }, { wch: 15 }, { wch: 12 },
+                { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 },
+                { wch: 30 }, { wch: 40 }
             ];
-            XLSX.utils.book_append_sheet(wb, wsSummary, 'Weekly Summary');
+            XLSX.utils.book_append_sheet(wb, wsCash, 'Cash Reconciliation');
             
-            // SHEET 2: WEEKLY DETAILS
-            const detailData = [
-                ['Week', 'Outlet Code', 'Transaction Type', 'BCA Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'BCA Transaction Count']
+            // SHEET 2: NON-CASH RECONCILIATION
+            const nonCashData = [
+                ['Category', 'Week', 'Outlet Code', 'Transaction Type', 'BCA Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown']
             ];
             
-            let detailToExport = weeklyDetailResults;
+            let nonCashToExport = nonCashReconciliationResults;
             if (type === 'matched') {
-                detailToExport = weeklyDetailResults.filter(r => r.status === 'MATCHED');
+                nonCashToExport = nonCashReconciliationResults.filter(r => r.status === 'MATCHED');
             } else if (type === 'unmatched') {
-                detailToExport = weeklyDetailResults.filter(r => r.status !== 'MATCHED');
+                nonCashToExport = nonCashReconciliationResults.filter(r => r.status !== 'MATCHED');
             } else if (type !== 'all') {
                 const typeMap = {
-                    'cdm': 'CDM',
                     'creditcard': 'CREDITCARD',
                     'qris': 'QRIS',
-                    'debit': 'DEBITCARD',
-                    'setoran': 'SETORAN_TUNAI'
+                    'debit': 'DEBITCARD'
                 };
                 const filterType = typeMap[type];
                 if (filterType) {
-                    detailToExport = weeklyDetailResults.filter(r => r.transactionType === filterType);
+                    nonCashToExport = nonCashReconciliationResults.filter(r => r.transactionType === filterType);
                 }
             }
             
-            detailToExport.forEach(row => {
-                detailData.push([
+            nonCashToExport.forEach(row => {
+                nonCashData.push([
+                    row.category,
                     row.weekLabel,
                     row.outletCode,
                     row.transactionType,
@@ -1713,23 +1796,54 @@
                     row.acmmTotal,
                     row.difference,
                     row.status,
-                    row.acmmBreakdown,
-                    row.bcaTransactionCount
+                    row.acmmBreakdown
                 ]);
             });
             
-            const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
-            wsDetail['!cols'] = [
-                { wch: 15 }, { wch: 12 }, { wch: 18 }, { wch: 15 },
-                { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 60 }, { wch: 20 }
+            const wsNonCash = XLSX.utils.aoa_to_sheet(nonCashData);
+            wsNonCash['!cols'] = [
+                { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 18 },
+                { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 60 }
             ];
-            XLSX.utils.book_append_sheet(wb, wsDetail, 'Weekly Details');
+            XLSX.utils.book_append_sheet(wb, wsNonCash, 'Non-Cash Reconciliation');
+            
+            // SHEET 3: STATISTICS SUMMARY
+            const statsData = [
+                ['Category', 'Total Records', 'Matched', 'Unmatched', 'Match Rate'],
+                [
+                    'CASH', 
+                    reconciliationStatistics.cashTotal || 0,
+                    reconciliationStatistics.cashMatched || 0,
+                    (reconciliationStatistics.cashTotal || 0) - (reconciliationStatistics.cashMatched || 0),
+                    `${reconciliationStatistics.cashMatchRate || 0}%`
+                ],
+                [
+                    'NON-CASH',
+                    reconciliationStatistics.nonCashTotal || 0,
+                    reconciliationStatistics.nonCashMatched || 0,
+                    (reconciliationStatistics.nonCashTotal || 0) - (reconciliationStatistics.nonCashMatched || 0),
+                    `${reconciliationStatistics.nonCashMatchRate || 0}%`
+                ],
+                [
+                    'TOTAL',
+                    (reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotal || 0),
+                    (reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashMatched || 0),
+                    ((reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotal || 0)) - ((reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashMatched || 0)),
+                    `${((reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashMatched || 0)) / ((reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotal || 0)) * 100 || 0}%`
+                ]
+            ];
+            
+            const wsStats = XLSX.utils.aoa_to_sheet(statsData);
+            wsStats['!cols'] = [
+                { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
+            ];
+            XLSX.utils.book_append_sheet(wb, wsStats, 'Statistics');
             
             // Export
-            const filename = `weekly_reconciliation_${type}_${timestamp}.xlsx`;
+            const filename = `reconciliation_cash_noncash_${type}_${timestamp}.xlsx`;
             XLSX.writeFile(wb, filename);
             
-            console.log(`Exported ${summaryToExport.length} summary, ${detailToExport.length} detail rows`);
+            console.log(`Exported ${cashToExport.length} CASH records, ${nonCashToExport.length} NON-CASH records`);
         }
 
         // Reset all data
@@ -1739,8 +1853,9 @@
             }
 
             uploadedFiles = {};
-            weeklySummaryResults = [];
-            weeklyDetailResults = [];
+            cashReconciliationResults = [];
+            nonCashReconciliationResults = [];
+            reconciliationStatistics = {};
             currentTab = 'all';
 
             // Reset UI
