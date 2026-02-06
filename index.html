@@ -9593,8 +9593,8 @@
                             }
                         }
                         
-                        // Skip rows without required fields
-                        if (!outletCode || !clanName || !bmType) {
+                        // Skip rows without required fields (only outlet code and clan required)
+                        if (!outletCode || !clanName) {
                             if (i < 5) console.log(`⚠️ Row ${i} skipped:`, { outletCode, clanName, bmType, groupBM });
                             continue;
                         }
@@ -9965,7 +9965,7 @@
                             <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">${record.clanBM || '-'}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full ${record.bmType === 'SBM' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">${record.bmType}</span>
+                            ${record.bmType ? `<span class="px-2 py-1 text-xs font-semibold rounded-full ${record.bmType === 'SBM' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">${record.bmType}</span>` : '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-500">-</span>'}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">Rp ${record.revenueDisplay}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">${record.transQty.toLocaleString()}</td>
