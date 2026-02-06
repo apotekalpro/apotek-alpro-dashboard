@@ -1135,6 +1135,7 @@
         // Global variables for weekly results
         let cashReconciliationResults = [];
         let nonCashReconciliationResults = [];
+        let nonCashTotalReconciliationResults = [];
         let reconciliationStatistics = {};
         
         function aggregateACMMByWeek(pivotMap) {
@@ -1487,27 +1488,88 @@
                 });
             }
             
-            console.log(`Created ${cashResults.length} CASH results, ${nonCashResults.length} NON-CASH results`);
+            // Create NON-CASH TOTAL summary (aggregate all non-cash types per outlet)
+            const nonCashTotalResults = [];
+            const nonCashByOutlet = new Map();
+            
+            // Aggregate all NON-CASH types per outlet
+            for (const result of nonCashResults) {
+                if (!nonCashByOutlet.has(result.outletCode)) {
+                    nonCashByOutlet.set(result.outletCode, {
+                        bcaTotal: 0,
+                        acmmTotal: 0,
+                        bcaBreakdown: [],
+                        acmmBreakdown: []
+                    });
+                }
+                const summary = nonCashByOutlet.get(result.outletCode);
+                summary.bcaTotal += result.bcaTotal;
+                summary.acmmTotal += result.acmmTotal;
+                if (result.bcaBreakdown && result.bcaBreakdown !== '-') {
+                    summary.bcaBreakdown.push(result.bcaBreakdown);
+                }
+                if (result.acmmBreakdown && result.acmmBreakdown !== '-') {
+                    summary.acmmBreakdown.push(result.acmmBreakdown);
+                }
+            }
+            
+            // Create summary results
+            for (const [outletCode, summary] of nonCashByOutlet.entries()) {
+                const difference = summary.bcaTotal - summary.acmmTotal;
+                
+                let status = 'UNMATCHED';
+                if (summary.acmmTotal > 0 && summary.bcaTotal > 0) {
+                    status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                } else if (summary.acmmTotal === 0) {
+                    status = 'NO_ACMM_DATA';
+                } else if (summary.bcaTotal === 0) {
+                    status = 'NO_BCA_DATA';
+                }
+                
+                nonCashTotalResults.push({
+                    weekKey: 'ALL',
+                    weekLabel: 'All Dates',
+                    weekStart: '',
+                    weekEnd: '',
+                    outletCode,
+                    category: 'NON-CASH-TOTAL',
+                    bcaTotal: summary.bcaTotal,
+                    acmmTotal: summary.acmmTotal,
+                    difference,
+                    status,
+                    acmmBreakdown: summary.acmmBreakdown.join('; '),
+                    bcaBreakdown: summary.bcaBreakdown.join('; ')
+                });
+            }
+            
+            console.log(`Created ${cashResults.length} CASH results, ${nonCashResults.length} NON-CASH breakdown results, ${nonCashTotalResults.length} NON-CASH total results`);
             
             // Calculate match statistics
             const cashMatched = cashResults.filter(r => r.status === 'MATCHED').length;
             const nonCashMatched = nonCashResults.filter(r => r.status === 'MATCHED').length;
+            const nonCashTotalMatched = nonCashTotalResults.filter(r => r.status === 'MATCHED').length;
             const cashMatchRate = cashResults.length > 0 ? ((cashMatched / cashResults.length) * 100).toFixed(1) : 0;
             const nonCashMatchRate = nonCashResults.length > 0 ? ((nonCashMatched / nonCashResults.length) * 100).toFixed(1) : 0;
+            const nonCashTotalMatchRate = nonCashTotalResults.length > 0 ? ((nonCashTotalMatched / nonCashTotalResults.length) * 100).toFixed(1) : 0;
             
             console.log(`📊 CASH Match Rate: ${cashMatchRate}% (${cashMatched}/${cashResults.length})`);
-            console.log(`📊 NON-CASH Match Rate: ${nonCashMatchRate}% (${nonCashMatched}/${nonCashResults.length})`);
+            console.log(`📊 NON-CASH Breakdown Match Rate: ${nonCashMatchRate}% (${nonCashMatched}/${nonCashResults.length})`);
+            console.log(`📊 NON-CASH Total Match Rate: ${nonCashTotalMatchRate}% (${nonCashTotalMatched}/${nonCashTotalResults.length})`);
             
             return { 
                 cashResults: cashResults, 
                 nonCashResults: nonCashResults,
+                nonCashTotalResults: nonCashTotalResults,
                 statistics: {
                     cashTotal: cashResults.length,
                     cashMatched: cashMatched,
                     cashMatchRate: cashMatchRate,
                     nonCashTotal: nonCashResults.length,
                     nonCashMatched: nonCashMatched,
-                    nonCashMatchRate: nonCashMatchRate
+                    nonCashMatchRate: nonCashMatchRate,
+                    nonCashTotalCount: nonCashTotalResults.length,
+                    nonCashTotalMatched: nonCashTotalMatched,
+                    nonCashTotalMatchRate: nonCashTotalMatchRate
                 }
             };
         }
@@ -1592,10 +1654,12 @@
                 
                 cashReconciliationResults = matchResults.cashResults;
                 nonCashReconciliationResults = matchResults.nonCashResults;
+                nonCashTotalReconciliationResults = matchResults.nonCashTotalResults;
                 reconciliationStatistics = matchResults.statistics;
                 
                 console.log(`Generated ${cashReconciliationResults.length} CASH results`);
-                console.log(`Generated ${nonCashReconciliationResults.length} NON-CASH results`);
+                console.log(`Generated ${nonCashReconciliationResults.length} NON-CASH breakdown results`);
+                console.log(`Generated ${nonCashTotalReconciliationResults.length} NON-CASH total results`);
                 console.log(`📊 Statistics:`, reconciliationStatistics);
 
                 // Display results
@@ -1818,9 +1882,43 @@
                 { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 18 },
                 { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 40 }, { wch: 40 }
             ];
-            XLSX.utils.book_append_sheet(wb, wsNonCash, 'Non-Cash Reconciliation');
+            XLSX.utils.book_append_sheet(wb, wsNonCash, 'Non-Cash Breakdown');
             
-            // SHEET 3: STATISTICS SUMMARY
+            // SHEET 3: NON-CASH TOTAL RECONCILIATION
+            const nonCashTotalData = [
+                ['Category', 'Week', 'Outlet Code', 'BCA Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'BCA Breakdown']
+            ];
+            
+            let nonCashTotalToExport = nonCashTotalReconciliationResults;
+            if (type === 'matched') {
+                nonCashTotalToExport = nonCashTotalReconciliationResults.filter(r => r.status === 'MATCHED');
+            } else if (type === 'unmatched') {
+                nonCashTotalToExport = nonCashTotalReconciliationResults.filter(r => r.status !== 'MATCHED');
+            }
+            
+            nonCashTotalToExport.forEach(row => {
+                nonCashTotalData.push([
+                    row.category,
+                    row.weekLabel,
+                    row.outletCode,
+                    row.bcaTotal,
+                    row.acmmTotal,
+                    row.difference,
+                    row.status,
+                    row.acmmBreakdown,
+                    row.bcaBreakdown || '-'
+                ]);
+            });
+            
+            const wsNonCashTotal = XLSX.utils.aoa_to_sheet(nonCashTotalData);
+            wsNonCashTotal['!cols'] = [
+                { wch: 15 }, { wch: 15 }, { wch: 12 },
+                { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 },
+                { wch: 50 }, { wch: 50 }
+            ];
+            XLSX.utils.book_append_sheet(wb, wsNonCashTotal, 'Non-Cash Total');
+            
+            // SHEET 4: STATISTICS SUMMARY
             const statsData = [
                 ['Category', 'Total Records', 'Matched', 'Unmatched', 'Match Rate'],
                 [
@@ -1831,14 +1929,21 @@
                     `${reconciliationStatistics.cashMatchRate || 0}%`
                 ],
                 [
-                    'NON-CASH',
+                    'NON-CASH (Breakdown)',
                     reconciliationStatistics.nonCashTotal || 0,
                     reconciliationStatistics.nonCashMatched || 0,
                     (reconciliationStatistics.nonCashTotal || 0) - (reconciliationStatistics.nonCashMatched || 0),
                     `${reconciliationStatistics.nonCashMatchRate || 0}%`
                 ],
                 [
-                    'TOTAL',
+                    'NON-CASH (Total)',
+                    reconciliationStatistics.nonCashTotalCount || 0,
+                    reconciliationStatistics.nonCashTotalMatched || 0,
+                    (reconciliationStatistics.nonCashTotalCount || 0) - (reconciliationStatistics.nonCashTotalMatched || 0),
+                    `${reconciliationStatistics.nonCashTotalMatchRate || 0}%`
+                ],
+                [
+                    'GRAND TOTAL',
                     (reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotal || 0),
                     (reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashMatched || 0),
                     ((reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotal || 0)) - ((reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashMatched || 0)),
@@ -1848,7 +1953,7 @@
             
             const wsStats = XLSX.utils.aoa_to_sheet(statsData);
             wsStats['!cols'] = [
-                { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
+                { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
             ];
             XLSX.utils.book_append_sheet(wb, wsStats, 'Statistics');
             
@@ -1856,7 +1961,7 @@
             const filename = `reconciliation_cash_noncash_${type}_${timestamp}.xlsx`;
             XLSX.writeFile(wb, filename);
             
-            console.log(`Exported ${cashToExport.length} CASH records, ${nonCashToExport.length} NON-CASH records`);
+            console.log(`Exported ${cashToExport.length} CASH records, ${nonCashToExport.length} NON-CASH breakdown records, ${nonCashTotalToExport.length} NON-CASH total records`);
         }
 
         // Reset all data
@@ -1868,6 +1973,7 @@
             uploadedFiles = {};
             cashReconciliationResults = [];
             nonCashReconciliationResults = [];
+            nonCashTotalReconciliationResults = [];
             reconciliationStatistics = {};
             currentTab = 'all';
 
