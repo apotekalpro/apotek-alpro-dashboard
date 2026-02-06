@@ -3042,6 +3042,7 @@
                                                 <option value="warehouse">Warehouse</option>
                                                 <option value="ppr">PPR</option>
                                                 <option value="academy">Academy</option>
+                                                <option value="sgm">SGM</option>
                                             </select>
                                         </div>
                                         <div>
@@ -5370,29 +5371,52 @@
         // Set Default Tab
         function setDefaultTab() {
             const role = currentUserRole?.toLowerCase();
-            let defaultTab = 'operations';
+            const accessibleTabs = getAccessibleTabs();
             
-            if (role === 'strategy') {
-                defaultTab = 'strategy';
-            } else if (role === 'ppm') {
-                defaultTab = 'ppm';
-            } else if (role === 'finance') {
-                defaultTab = 'finance';
-            } else if (role === 'bpt') {
-                defaultTab = 'bpt';
-            } else if (role === 'procurement') {
-                defaultTab = 'procurement';
-            } else if (role === 'warehouse' || role === 'warehouseapd') {
-                defaultTab = 'warehouseApd';
-            } else if (role === 'ppr') {
-                defaultTab = 'ppr';
-            } else if (role === 'academy') {
-                defaultTab = 'academy';
-            } else if (role === 'sgm') {
-                defaultTab = 'sgm';
+            console.log('🎯 Setting default tab for role:', role);
+            console.log('📋 Accessible tabs:', accessibleTabs);
+            
+            // Priority 1: If user has access to 'operations', always default to operations
+            if (accessibleTabs.includes('operations')) {
+                console.log('✅ Defaulting to Operations (has access)');
+                showTab('operations');
+                return;
             }
             
-            showTab(defaultTab);
+            // Priority 2: Use role-specific default page if accessible
+            const roleDefaultMap = {
+                'strategy': 'strategy',
+                'ppm': 'ppm',
+                'finance': 'finance',
+                'bpt': 'bpt',
+                'procurement': 'procurement',
+                'warehouse': 'warehouseApd',
+                'warehouseapd': 'warehouseApd',
+                'ppr': 'ppr',
+                'academy': 'academy',
+                'sgm': 'sgm',
+                'admin': 'adminConfig',
+                'chief': 'operations'
+            };
+            
+            const roleDefault = roleDefaultMap[role];
+            if (roleDefault && accessibleTabs.includes(roleDefault)) {
+                console.log(`✅ Defaulting to role-specific page: ${roleDefault}`);
+                showTab(roleDefault);
+                return;
+            }
+            
+            // Priority 3: Fallback to the first accessible tab
+            if (accessibleTabs.length > 0) {
+                const fallbackTab = accessibleTabs[0];
+                console.log(`⚠️ Using fallback - first accessible tab: ${fallbackTab}`);
+                showTab(fallbackTab);
+                return;
+            }
+            
+            // Priority 4: Last resort - show operations (even if not accessible, for safety)
+            console.log('⚠️ No accessible tabs found, defaulting to operations as last resort');
+            showTab('operations');
         }
 
         // Show Tab Content
