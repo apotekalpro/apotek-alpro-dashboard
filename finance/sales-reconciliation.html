@@ -1458,6 +1458,7 @@
                 }
                 
                 const bcaTotal = bcaDetail ? bcaDetail.totalAmount : 0;
+                const bcaBreakdown = bcaDetail ? `${transactionType}: ${bcaDetail.totalAmount.toFixed(2)} (${bcaDetail.transactionCount || 0} txns)` : '-';
                 const difference = bcaTotal - acmmTotal;
                 
                 let status = 'UNMATCHED';
@@ -1481,7 +1482,8 @@
                     acmmTotal,
                     difference,
                     status,
-                    acmmBreakdown: acmmMethods.join('; ')
+                    acmmBreakdown: acmmMethods.join('; '),
+                    bcaBreakdown: bcaBreakdown
                 });
             }
             
@@ -1685,6 +1687,16 @@
                 const typeBadge = result.transactionType ? 
                     `<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold ml-1">${result.transactionType}</span>` : '';
 
+                // Build details column with both ACMM and BCA breakdowns
+                let detailsHtml = '<div class="text-xs space-y-1">';
+                if (result.acmmBreakdown) {
+                    detailsHtml += `<div><strong class="text-blue-700">ACMM:</strong> ${result.acmmBreakdown}</div>`;
+                }
+                if (result.bcaBreakdown) {
+                    detailsHtml += `<div><strong class="text-green-700">BCA:</strong> ${result.bcaBreakdown}</div>`;
+                }
+                detailsHtml += '</div>';
+
                 const row = `
                     <tr class="border-b hover:bg-gray-50">
                         <td class="px-4 py-3">${index + 1}</td>
@@ -1699,7 +1711,7 @@
                         <td class="px-4 py-3">
                             <span class="status-badge ${statusClass}">${result.status}</span>
                         </td>
-                        <td class="px-4 py-3 text-sm text-gray-600">${result.acmmBreakdown || '-'}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${detailsHtml}</td>
                     </tr>
                 `;
                 tbody.innerHTML += row;
@@ -1766,7 +1778,7 @@
             
             // SHEET 2: NON-CASH RECONCILIATION
             const nonCashData = [
-                ['Category', 'Week', 'Outlet Code', 'Transaction Type', 'BCA Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown']
+                ['Category', 'Week', 'Outlet Code', 'Transaction Type', 'BCA Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'BCA Breakdown']
             ];
             
             let nonCashToExport = nonCashReconciliationResults;
@@ -1796,14 +1808,15 @@
                     row.acmmTotal,
                     row.difference,
                     row.status,
-                    row.acmmBreakdown
+                    row.acmmBreakdown,
+                    row.bcaBreakdown || '-'
                 ]);
             });
             
             const wsNonCash = XLSX.utils.aoa_to_sheet(nonCashData);
             wsNonCash['!cols'] = [
                 { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 18 },
-                { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 60 }
+                { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 }, { wch: 40 }, { wch: 40 }
             ];
             XLSX.utils.book_append_sheet(wb, wsNonCash, 'Non-Cash Reconciliation');
             
