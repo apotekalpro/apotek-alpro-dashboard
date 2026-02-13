@@ -177,6 +177,64 @@
             color: #2563eb;
             border-bottom-color: #2563eb;
         }
+        
+        /* Procurement Sub-tabs Styles */
+        .procurement-subtab {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .procurement-subtab:hover {
+            border-color: #9ca3af !important;
+            color: #374151 !important;
+        }
+        
+        .procurement-subtab.active {
+            border-color: #3b82f6 !important;
+            color: #3b82f6 !important;
+        }
+        
+        .procurement-subcontent {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Championship Animations */
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+        
+        .animate-shimmer {
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes pulse-slow {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
     </style>
 </head>
 <body>
@@ -292,6 +350,11 @@
                                     class="subtab-button px-4 py-2">
                                 <i class="fas fa-chart-bar mr-2"></i>
                                 AM Performance Tracker
+                            </button>
+                            <button onclick="showOperationsSubtab('elite-bm-performance-tracker')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-crown mr-2"></i>
+                                Elite BM Performance Tracker
                             </button>
                         </div>
                         
@@ -670,6 +733,314 @@
                                     </button>
                                     <span id="amTrackerPageInfo" class="px-3 py-1 text-gray-600">Page 1 of 1</span>
                                     <button id="amTrackerNextPageBtn" onclick="amTracker.changePage(1)" 
+                                            class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Elite BM Performance Tracker Subtab -->
+                        <div id="eliteBmPerformanceTrackerSubtab" class="operations-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Elite BM Performance Tracker</h3>
+                                    <p class="text-gray-600">Branch Manager performance monitoring by Clan with goal achievement tracking</p>
+                                </div>
+                                <button onclick="bmTracker.refreshData()" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-sync-alt mr-2"></i>
+                                    Refresh Data
+                                </button>
+                            </div>
+                            
+                            <!-- Loading State -->
+                            <div id="bmTrackerLoading" class="text-center py-8 hidden">
+                                <div class="inline-flex items-center">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+                                    <span class="text-gray-700">Loading Elite BM performance data...</span>
+                                </div>
+                            </div>
+
+                            <!-- Error State -->
+                            <div id="bmTrackerError" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 hidden">
+                                <div class="flex items-center">
+                                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                                    <span class="text-red-700">Error loading Elite BM performance data. Please check your connection and try again.</span>
+                                </div>
+                            </div>
+
+                            <!-- KAKTUS vs CUAN HUNTER Clan Championship -->
+                            <div class="relative bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-400 rounded-2xl p-1 mb-6 shadow-2xl animate-pulse-slow">
+                                <div class="bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-50 rounded-2xl p-6">
+                                    <div class="absolute top-4 right-4 opacity-20">
+                                        <i class="fas fa-fire text-6xl text-orange-600"></i>
+                                    </div>
+                                    <h4 class="text-2xl font-black text-center mb-6 relative">
+                                        <span class="bg-gradient-to-r from-orange-600 to-yellow-600 bg-clip-text text-transparent">
+                                            <i class="fas fa-fire mr-2"></i>
+                                            KAKTUS vs CUAN HUNTER
+                                            <i class="fas fa-fire ml-2"></i>
+                                        </span>
+                                        <div class="text-sm font-bold text-gray-600 mt-1">⚔️ CLAN BATTLE ROYALE ⚔️</div>
+                                    </h4>
+                                    <div class="grid grid-cols-3 gap-6 items-center">
+                                        <!-- KAKTUS Side -->
+                                        <div class="transform hover:scale-105 transition-all duration-300">
+                                            <div class="bg-gradient-to-br from-white to-green-50 rounded-xl p-6 text-center shadow-lg border-4 border-green-400 relative overflow-hidden">
+                                                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent animate-shimmer"></div>
+                                                <div class="text-2xl font-black text-green-800 mb-3 flex items-center justify-center">
+                                                    <i class="fas fa-cactus mr-2"></i>KAKTUS
+                                                </div>
+                                                <div id="kaktusGoalRate" class="text-5xl font-black text-green-700 mb-2">0%</div>
+                                                <div class="text-xs font-bold text-gray-600 uppercase tracking-wide">Goal Achievement</div>
+                                                <div id="kaktusCrown" class="mt-4 hidden animate-bounce">
+                                                    <div class="text-5xl mb-2">👑</div>
+                                                    <div class="text-lg font-black text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full inline-block">
+                                                        🏆 CHAMPION! 🏆
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- VS Badge -->
+                                        <div class="text-center relative">
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <div class="w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full opacity-20 animate-ping"></div>
+                                            </div>
+                                            <div class="relative bg-gradient-to-br from-gray-800 to-gray-900 text-white rounded-full w-24 h-24 flex items-center justify-center mx-auto shadow-xl transform hover:rotate-180 transition-transform duration-500">
+                                                <span class="text-4xl font-black">VS</span>
+                                            </div>
+                                            <div class="mt-2 text-xl">⚡⚔️⚡</div>
+                                        </div>
+                                        
+                                        <!-- CUAN HUNTER Side -->
+                                        <div class="transform hover:scale-105 transition-all duration-300">
+                                            <div class="bg-gradient-to-br from-white to-yellow-50 rounded-xl p-6 text-center shadow-lg border-4 border-yellow-400 relative overflow-hidden">
+                                                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-500 to-transparent animate-shimmer"></div>
+                                                <div class="text-2xl font-black text-yellow-800 mb-3 flex items-center justify-center">
+                                                    <i class="fas fa-coins mr-2"></i>CUAN HUNTER
+                                                </div>
+                                                <div id="cuanHunterGoalRate" class="text-5xl font-black text-yellow-700 mb-2">0%</div>
+                                                <div class="text-xs font-bold text-gray-600 uppercase tracking-wide">Goal Achievement</div>
+                                                <div id="cuanHunterCrown" class="mt-4 hidden animate-bounce">
+                                                    <div class="text-5xl mb-2">👑</div>
+                                                    <div class="text-lg font-black text-yellow-600 bg-yellow-100 px-3 py-1 rounded-full inline-block">
+                                                        🏆 CHAMPION! 🏆
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SBM vs EBM Head-to-Head Comparison -->
+                            <div class="relative bg-gradient-to-r from-purple-500 via-blue-500 to-green-500 rounded-2xl p-1 mb-6 shadow-2xl animate-pulse-slow">
+                                <div class="bg-gradient-to-br from-purple-50 via-blue-50 to-green-50 rounded-2xl p-6">
+                                    <div class="absolute top-4 right-4 opacity-20">
+                                        <i class="fas fa-trophy text-6xl text-purple-600"></i>
+                                    </div>
+                                    <h4 class="text-2xl font-black text-center mb-6 relative">
+                                        <span class="bg-gradient-to-r from-purple-600 via-blue-600 to-green-600 bg-clip-text text-transparent">
+                                            <i class="fas fa-trophy mr-2"></i>
+                                            SBM vs EBM CHAMPIONSHIP
+                                            <i class="fas fa-trophy ml-2"></i>
+                                        </span>
+                                        <div class="text-sm font-bold text-gray-600 mt-1">🎯 ULTIMATE SHOWDOWN 🎯</div>
+                                    </h4>
+                                    <div class="grid grid-cols-3 gap-6 items-center">
+                                        <!-- SBM Side -->
+                                        <div class="transform hover:scale-105 transition-all duration-300">
+                                            <div class="bg-gradient-to-br from-white to-blue-50 rounded-xl p-6 text-center shadow-lg border-4 border-blue-400 relative overflow-hidden">
+                                                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-shimmer"></div>
+                                                <div class="text-2xl font-black text-blue-800 mb-3 flex items-center justify-center">
+                                                    <i class="fas fa-user-tie mr-2"></i>SENIOR BM
+                                                </div>
+                                                <div id="sbmGoalRate" class="text-5xl font-black text-blue-700 mb-2">0%</div>
+                                                <div class="text-xs font-bold text-gray-600 uppercase tracking-wide">Goal Achievement</div>
+                                                <div id="sbmCrown" class="mt-4 hidden animate-bounce">
+                                                    <div class="text-5xl mb-2">🥇</div>
+                                                    <div class="text-lg font-black text-blue-600 bg-blue-100 px-3 py-1 rounded-full inline-block">
+                                                        💪 VICTORY! 💪
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- VS Badge -->
+                                        <div class="text-center relative">
+                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                <div class="w-24 h-24 bg-gradient-to-r from-purple-400 to-green-400 rounded-full opacity-20 animate-ping"></div>
+                                            </div>
+                                            <div class="relative bg-gradient-to-br from-purple-800 to-green-800 text-white rounded-full w-24 h-24 flex items-center justify-center mx-auto shadow-xl transform hover:rotate-180 transition-transform duration-500">
+                                                <span class="text-4xl font-black">VS</span>
+                                            </div>
+                                            <div class="mt-2 text-xl">💥⚡💥</div>
+                                        </div>
+                                        
+                                        <!-- EBM Side -->
+                                        <div class="transform hover:scale-105 transition-all duration-300">
+                                            <div class="bg-gradient-to-br from-white to-green-50 rounded-xl p-6 text-center shadow-lg border-4 border-green-400 relative overflow-hidden">
+                                                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent animate-shimmer"></div>
+                                                <div class="text-2xl font-black text-green-800 mb-3 flex items-center justify-center">
+                                                    <i class="fas fa-star mr-2"></i>ELITE BM
+                                                </div>
+                                                <div id="ebmGoalRate" class="text-5xl font-black text-green-700 mb-2">0%</div>
+                                                <div class="text-xs font-bold text-gray-600 uppercase tracking-wide">Goal Achievement</div>
+                                                <div id="ebmCrown" class="mt-4 hidden animate-bounce">
+                                                    <div class="text-5xl mb-2">🥇</div>
+                                                    <div class="text-lg font-black text-green-600 bg-green-100 px-3 py-1 rounded-full inline-block">
+                                                        🔥 DOMINANT! 🔥
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Leaderboard Cards -->
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                                <!-- Senior BM Leaderboard -->
+                                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6 border border-blue-200">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h4 class="text-lg font-bold text-blue-800 flex items-center">
+                                            <i class="fas fa-medal mr-2"></i>
+                                            Top Senior BMs
+                                        </h4>
+                                        <i class="fas fa-star text-2xl text-blue-600"></i>
+                                    </div>
+                                    <div id="sbmLeaderboard" class="space-y-3">
+                                        <!-- SBM rankings will be populated here -->
+                                    </div>
+                                </div>
+
+                                <!-- Elite BM Leaderboard -->
+                                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-6 border border-green-200">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h4 class="text-lg font-bold text-green-800 flex items-center">
+                                            <i class="fas fa-crown mr-2"></i>
+                                            Top Elite BMs
+                                        </h4>
+                                        <i class="fas fa-trophy text-2xl text-green-600"></i>
+                                    </div>
+                                    <div id="ebmLeaderboard" class="space-y-3">
+                                        <!-- EBM rankings will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Filters and Controls -->
+                            <div class="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Search Outlet</label>
+                                        <input type="text" id="bmTrackerSearchInput" placeholder="Search outlet..." 
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                               oninput="bmTracker.filterData()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Filter by AM</label>
+                                        <select id="bmTrackerAmFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                onchange="bmTracker.filterData()">
+                                            <option value="">All AMs</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Clan</label>
+                                        <select id="bmTrackerClanFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                onchange="bmTracker.filterData()">
+                                            <option value="">All Clans</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Clan BM</label>
+                                        <select id="bmTrackerClanBMFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500" 
+                                                onchange="bmTracker.filterData()">
+                                            <option value="">All Clan BMs</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Filter by BM Type</label>
+                                        <select id="bmTrackerBmTypeFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                onchange="bmTracker.filterData()">
+                                            <option value="">All BMs</option>
+                                            <option value="SBM">Senior BM (SBM)</option>
+                                            <option value="EBM">Elite BM (EBM)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Performance Table -->
+                            <div class="bg-white rounded-lg shadow overflow-hidden">
+                                <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                                    <h4 class="text-lg font-semibold text-gray-800 flex items-center">
+                                        <i class="fas fa-table mr-2 text-blue-600"></i>
+                                        Outlet Performance Details
+                                    </h4>
+                                    <p class="text-sm text-gray-600 mt-1">Complete performance metrics for all outlets by Clan</p>
+                                </div>
+                                
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th onclick="bmTracker.sortTable('outlet')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    Outlet <i class="fas fa-sort ml-1"></i>
+                                                </th>
+                                                <th onclick="bmTracker.sortTable('outletName')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    Outlet Name <i class="fas fa-sort ml-1"></i>
+                                                </th>
+                                                <th onclick="bmTracker.sortTable('amName')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    AM Name <i class="fas fa-sort ml-1"></i>
+                                                </th>
+                                                <th onclick="bmTracker.sortTable('clanName')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    Clan <i class="fas fa-sort ml-1"></i>
+                                                </th>
+                                                <th onclick="bmTracker.sortTable('clanBM')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    Clan BM <i class="fas fa-sort ml-1"></i>
+                                                </th>
+                                                <th onclick="bmTracker.sortTable('bmType')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    BM Type <i class="fas fa-sort ml-1"></i>
+                                                </th>
+                                                <th onclick="bmTracker.sortTable('revenue')" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    Revenue <i class="fas fa-sort ml-1"></i>
+                                                </th>
+                                                <th onclick="bmTracker.sortTable('transQty')" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    Trans Qty <i class="fas fa-sort ml-1"></i>
+                                                </th>
+                                                <th onclick="bmTracker.sortTable('forecastSales')" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    Forecast <i class="fas fa-sort ml-1"></i>
+                                                </th>
+                                                <th onclick="bmTracker.sortTable('goalBulanan')" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    vs Goal Bulanan <i class="fas fa-sort ml-1"></i>
+                                                </th>
+                                                <th onclick="bmTracker.sortTable('targetJuni')" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
+                                                    vs Target Juni <i class="fas fa-sort ml-1"></i>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bmTrackerTableBody" class="bg-white divide-y divide-gray-200">
+                                            <!-- Table rows will be populated dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Pagination -->
+                            <div class="flex justify-between items-center mt-6">
+                                <div class="text-sm text-gray-700">
+                                    Showing <span id="bmTrackerShowingStart">1</span> to <span id="bmTrackerShowingEnd">10</span> of <span id="bmTrackerTotalRecords">0</span> outlets
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button id="bmTrackerPrevPageBtn" onclick="bmTracker.changePage(-1)" 
+                                            class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        Previous
+                                    </button>
+                                    <span id="bmTrackerPageInfo" class="px-3 py-1 text-gray-600">Page 1 of 1</span>
+                                    <button id="bmTrackerNextPageBtn" onclick="bmTracker.changePage(1)" 
                                             class="px-3 py-1 border border-gray-300 rounded text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                                         Next
                                     </button>
@@ -1892,22 +2263,64 @@
 
                 <!-- Procurement Content -->
                 <div id="procurementContent" class="tab-content hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                                <i class="fas fa-shopping-cart mr-3 text-blue-600"></i>
-                                Procurement Dashboard
-                            </h2>
-                            <p class="text-gray-600">Procurement analysis and management system</p>
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-2">
+                            <i class="fas fa-shopping-cart mr-3 text-blue-600"></i>
+                            Procurement Dashboard
+                        </h2>
+                        <p class="text-gray-600 mb-4">Procurement analysis and management system</p>
+                        
+                        <!-- Procurement Sub-tabs -->
+                        <div class="border-b border-gray-200 mb-4">
+                            <nav class="flex space-x-8" aria-label="Procurement Tabs">
+                                <button onclick="showProcurementSubTab('mainDashboard')" 
+                                        id="mainDashboardTab"
+                                        class="procurement-subtab active whitespace-nowrap py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+                                    <i class="fas fa-chart-pie mr-2"></i>
+                                    Main Dashboard
+                                </button>
+                                <button onclick="showProcurementSubTab('lossSalesTracker')" 
+                                        id="lossSalesTrackerTab"
+                                        class="procurement-subtab whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    <i class="fas fa-chart-line mr-2"></i>
+                                    Loss Sales Tracker
+                                </button>
+                                <button onclick="showProcurementSubTab('performanceDashboard')" 
+                                        id="performanceDashboardTab"
+                                        class="procurement-subtab whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    <i class="fas fa-chart-bar mr-2"></i>
+                                    Procurement Performance Dashboard
+                                </button>
+                            </nav>
                         </div>
-                        <button onclick="openInNewTab('https://procurementanalys.github.io/dashboardproc/')" 
-                                class="btn-primary text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-external-link-alt mr-2"></i>
-                            Open in New Tab
-                        </button>
                     </div>
-                    <div class="iframe-container">
-                        <iframe data-src="https://procurementanalys.github.io/dashboardproc/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+
+                    <!-- Main Dashboard Sub-content -->
+                    <div id="mainDashboardContent" class="procurement-subcontent">
+                        <div class="flex justify-end mb-4">
+                            <button onclick="openInNewTab('https://procurementanalys.github.io/dashboardproc/')" 
+                                    class="btn-primary text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-external-link-alt mr-2"></i>
+                                Open in New Tab
+                            </button>
+                        </div>
+                        <div class="iframe-container">
+                            <iframe data-src="https://procurementanalys.github.io/dashboardproc/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Loss Sales Tracker Sub-content -->
+                    <div id="lossSalesTrackerContent" class="procurement-subcontent hidden">
+                        <div class="iframe-container">
+                            <iframe data-src="loss-sales-tracker.html" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Procurement Performance Dashboard Sub-content -->
+                    <div id="performanceDashboardContent" class="procurement-subcontent hidden">
+                        <div class="iframe-container">
+                            <iframe data-src="https://procurementanalys.github.io/sales-budget/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                        </div>
                     </div>
                 </div>
 
@@ -2629,6 +3042,7 @@
                                                 <option value="warehouse">Warehouse</option>
                                                 <option value="ppr">PPR</option>
                                                 <option value="academy">Academy</option>
+                                                <option value="sgm">SGM</option>
                                             </select>
                                         </div>
                                         <div>
@@ -4957,29 +5371,52 @@
         // Set Default Tab
         function setDefaultTab() {
             const role = currentUserRole?.toLowerCase();
-            let defaultTab = 'operations';
+            const accessibleTabs = getAccessibleTabs();
             
-            if (role === 'strategy') {
-                defaultTab = 'strategy';
-            } else if (role === 'ppm') {
-                defaultTab = 'ppm';
-            } else if (role === 'finance') {
-                defaultTab = 'finance';
-            } else if (role === 'bpt') {
-                defaultTab = 'bpt';
-            } else if (role === 'procurement') {
-                defaultTab = 'procurement';
-            } else if (role === 'warehouse' || role === 'warehouseapd') {
-                defaultTab = 'warehouseApd';
-            } else if (role === 'ppr') {
-                defaultTab = 'ppr';
-            } else if (role === 'academy') {
-                defaultTab = 'academy';
-            } else if (role === 'sgm') {
-                defaultTab = 'sgm';
+            console.log('🎯 Setting default tab for role:', role);
+            console.log('📋 Accessible tabs:', accessibleTabs);
+            
+            // Priority 1: If user has access to 'operations', always default to operations
+            if (accessibleTabs.includes('operations')) {
+                console.log('✅ Defaulting to Operations (has access)');
+                showTab('operations');
+                return;
             }
             
-            showTab(defaultTab);
+            // Priority 2: Use role-specific default page if accessible
+            const roleDefaultMap = {
+                'strategy': 'strategy',
+                'ppm': 'ppm',
+                'finance': 'finance',
+                'bpt': 'bpt',
+                'procurement': 'procurement',
+                'warehouse': 'warehouseApd',
+                'warehouseapd': 'warehouseApd',
+                'ppr': 'ppr',
+                'academy': 'academy',
+                'sgm': 'sgm',
+                'admin': 'adminConfig',
+                'chief': 'operations'
+            };
+            
+            const roleDefault = roleDefaultMap[role];
+            if (roleDefault && accessibleTabs.includes(roleDefault)) {
+                console.log(`✅ Defaulting to role-specific page: ${roleDefault}`);
+                showTab(roleDefault);
+                return;
+            }
+            
+            // Priority 3: Fallback to the first accessible tab
+            if (accessibleTabs.length > 0) {
+                const fallbackTab = accessibleTabs[0];
+                console.log(`⚠️ Using fallback - first accessible tab: ${fallbackTab}`);
+                showTab(fallbackTab);
+                return;
+            }
+            
+            // Priority 4: Last resort - show operations (even if not accessible, for safety)
+            console.log('⚠️ No accessible tabs found, defaulting to operations as last resort');
+            showTab('operations');
         }
 
         // Show Tab Content
@@ -5122,6 +5559,41 @@
             
             // Add active class to clicked button
             event.target.classList.add('active');
+        }
+
+        // Procurement Subtab Functions
+        function showProcurementSubTab(subtabId) {
+            // Hide all procurement sub-contents
+            document.querySelectorAll('.procurement-subcontent').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all procurement sub-tabs
+            document.querySelectorAll('.procurement-subtab').forEach(tab => {
+                tab.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                tab.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Show selected sub-content
+            const contentId = subtabId + 'Content';
+            const content = document.getElementById(contentId);
+            if (content) {
+                content.classList.remove('hidden');
+                
+                // Load iframe if it exists and hasn't been loaded yet
+                const iframe = content.querySelector('iframe.lazy-iframe');
+                if (iframe && !iframe.src && iframe.dataset.src) {
+                    iframe.src = iframe.dataset.src;
+                }
+            }
+            
+            // Add active class to clicked tab
+            const tabId = subtabId + 'Tab';
+            const tab = document.getElementById(tabId);
+            if (tab) {
+                tab.classList.add('active', 'border-blue-500', 'text-blue-600');
+                tab.classList.remove('border-transparent', 'text-gray-500');
+            }
         }
 
         // Strategy Subtab Functions
@@ -5767,7 +6239,8 @@
             const subtabMap = {
                 'outlet-dashboard': 'outletDashboardSubtab',
                 'opps-ed-project': 'oppsEdProjectSubtab',
-                'am-performance-tracker': 'amPerformanceTrackerSubtab'
+                'am-performance-tracker': 'amPerformanceTrackerSubtab',
+                'elite-bm-performance-tracker': 'eliteBmPerformanceTrackerSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
@@ -5780,6 +6253,14 @@
                 // Only load data if not already loaded or if data is empty
                 if (!amTracker.performanceData || amTracker.performanceData.length === 0) {
                     amTracker.fetchData();
+                }
+            }
+            
+            // Load BM tracker data if Elite BM Performance Tracker is selected
+            if (subtabId === 'elite-bm-performance-tracker') {
+                // Only load data if not already loaded or if data is empty
+                if (!bmTracker.performanceData || bmTracker.performanceData.length === 0) {
+                    bmTracker.fetchData();
                 }
             }
             
@@ -8691,7 +9172,7 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            ${this.getPerformanceBadge(am.performanceScore)}
+                            ${this.getPerformanceBadge(am.forecastPercent)}
                         </td>
                     `;
                     
@@ -8720,7 +9201,7 @@
                                 ${this.getRankIcon(rank)}
                                 <span class="text-lg font-semibold text-gray-800">${am.amName}</span>
                             </div>
-                            ${this.getPerformanceBadge(am.performanceScore)}
+                            ${this.getPerformanceBadge(am.forecastPercent)}
                         </div>
                         
                         <div class="space-y-3">
@@ -8948,10 +9429,10 @@
             
             // Helper functions
             getPerformanceBadge(score) {
-                if (score >= 80) return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-star mr-1"></i>Excellent</span>';
-                if (score >= 60) return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><i class="fas fa-thumbs-up mr-1"></i>Good</span>';
-                if (score >= 40) return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-exclamation mr-1"></i>Average</span>';
-                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-arrow-down mr-1"></i>Needs Improvement</span>';
+                if (score >= 100) return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"><i class="fas fa-star mr-1"></i>Excellent</span>';
+                if (score >= 90) return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><i class="fas fa-thumbs-up mr-1"></i>Good</span>';
+                if (score >= 80) return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-exclamation-triangle mr-1"></i>Needs Improvement</span>';
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800"><i class="fas fa-exclamation-circle mr-1"></i>Red Alert</span>';
             },
             
             getRankIcon(rank) {
@@ -8959,6 +9440,603 @@
                 if (rank === 2) return '<i class="fas fa-medal text-gray-400 mr-2"></i>';
                 if (rank === 3) return '<i class="fas fa-award text-yellow-600 mr-2"></i>';
                 return `<span class="text-gray-500 mr-2 font-medium">${rank}</span>`;
+            }
+        };
+
+        // Elite BM Performance Tracker Namespace - All functions isolated
+        const bmTracker = {
+            // Data variables
+            performanceData: [],
+            filteredData: [],
+            clanData: {},
+            sbmData: {},
+            ebmData: {},
+            currentPage: 1,
+            itemsPerPage: 20,
+            currentSort: 'vsGoalBulanan',
+            sortDirection: 'desc',
+            
+            // Parse CSV line with quote handling
+            parseCSVLine(line) {
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                
+                values.push(current);
+                return values;
+            },
+            
+            // Fetch data from SBM EBM DASHBOARD sheet
+            async fetchData() {
+                console.log('🚀 BM Tracker: Starting data fetch...');
+                
+                try {
+                    document.getElementById('bmTrackerLoading').classList.remove('hidden');
+                    document.getElementById('bmTrackerError').classList.add('hidden');
+                    
+                    // Fetch SBM EBM DASHBOARD sheet
+                    const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
+                    const sheetName = 'SBM EBM DASHBOARD'; // Sheet name
+                    const timestamp = new Date().getTime();
+                    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&timestamp=${timestamp}`;
+                    
+                    console.log('🔗 BM Tracker: Fetching data from:', url);
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        cache: 'no-store',
+                        redirect: 'follow'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch data: ${response.status}`);
+                    }
+                    
+                    const csvData = await response.text();
+                    console.log('📄 BM Tracker: Data fetched, length:', csvData.length);
+                    console.log('📄 BM Tracker: First 300 chars:', csvData.substring(0, 300));
+                    
+                    // Parse the data
+                    this.parseData(csvData);
+                    
+                    // Generate reports
+                    this.generateLeaderboards();
+                    this.generateClanChampionship();
+                    this.generateSBMvsEBMComparison();
+                    this.populateFilters();
+                    this.filterData();
+                    
+                    document.getElementById('bmTrackerLoading').classList.add('hidden');
+                    console.log('✅ BM Tracker: Data loaded successfully!');
+                    
+                } catch (error) {
+                    console.error('❌ BM Tracker: Error fetching data:', error);
+                    document.getElementById('bmTrackerLoading').classList.add('hidden');
+                    document.getElementById('bmTrackerError').classList.remove('hidden');
+                }
+            },
+            
+            // Parse and combine data from both sheets
+            parseData(csv) {
+                console.log('📊 BM Tracker: Parsing data...');
+                
+                // Parse SBM EBM DASHBOARD sheet
+                // Row 1: Title/header row (skip)
+                // Row 2: Column names (skip)
+                // Row 3+: Data
+                const lines = csv.split('\n');
+                this.performanceData = [];
+                
+                console.log('🔍 First 3 rows:', lines.slice(0, 3));
+                
+                // Start from row 3 (index 2)
+                for (let i = 2; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const values = this.parseCSVLine(line);
+                    
+                    // Log first data row for debugging
+                    if (i === 2) {
+                        console.log(`🔍 First data row [${values.length}]:`, {
+                            'A-OutletCode(0)': values[0],
+                            'B-OutletName(1)': values[1],
+                            'C-AM(2)': values[2],
+                            'D-Clan(3)': values[3],
+                            'E-ClanBM(4)': values[4],
+                            'F-GroupBM(5)': values[5],
+                            'G-BMName(6)': values[6],
+                            'H-Target(7)': values[7],
+                            'I-Goal(8)': values[8],
+                            'J-Revenue(9)': values[9],
+                            'K-TransQty(10)': values[10],
+                            'L-BuyingPower(11)': values[11],
+                            'M-Forecast(12)': values[12]
+                        });
+                    }
+                    
+                    if (values.length >= 13) {
+                        const outletCode = values[0]?.trim(); // Column A: Outlet code
+                        const outletName = values[1]?.trim(); // Column B: Full name outlet
+                        const amName = values[2]?.trim(); // Column C: AM name
+                        const clanName = values[3]?.trim(); // Column D: Clan name
+                        const clanBM = values[4]?.trim(); // Column E: Clan BM
+                        const groupBM = values[5]?.trim(); // Column F: Group BM
+                        const bmName = values[6]?.trim(); // Column G: Name of EBM/SBM
+                        const targetJuni = parseFloat(values[7]?.replace(/,/g, '')) || 0; // Column H: Target
+                        const goalBulanan = parseFloat(values[8]?.replace(/,/g, '')) || 0; // Column I: Goal
+                        const revenue = parseFloat(values[9]?.replace(/,/g, '')) || 0; // Column J: Up to date revenue
+                        const transQty = parseFloat(values[10]?.replace(/,/g, '')) || 0; // Column K: Transaction
+                        const buyingPower = parseFloat(values[11]?.replace(/,/g, '')) || 0; // Column L: Buying power
+                        const forecastSales = parseFloat(values[12]?.replace(/,/g, '')) || 0; // Column M: Forecasted month end revenue
+                        
+                        // Determine BM Type (SBM or EBM) from Group BM column
+                        let bmType = '';
+                        if (groupBM) {
+                            const groupUpper = groupBM.toUpperCase();
+                            if (groupUpper.includes('SBM') || groupUpper.includes('SENIOR')) {
+                                bmType = 'SBM';
+                            } else if (groupUpper.includes('EBM') || groupUpper.includes('ELITE')) {
+                                bmType = 'EBM';
+                            }
+                        }
+                        
+                        // Skip rows without required fields (only outlet code and clan required)
+                        if (!outletCode || !clanName) {
+                            if (i < 5) console.log(`⚠️ Row ${i} skipped:`, { outletCode, clanName, bmType, groupBM });
+                            continue;
+                        }
+                        
+                        // Calculate percentages
+                        const vsGoalBulanan = goalBulanan > 0 ? (forecastSales / goalBulanan) * 100 : 0;
+                        const vsTargetJuni = targetJuni > 0 ? (forecastSales / targetJuni) * 100 : 0;
+                        
+                        const record = {
+                            outlet: outletCode,
+                            outletName: outletName || outletCode,
+                            amName: amName || 'N/A',
+                            clanName,
+                            clanBM,
+                            groupBM,
+                            bmName,
+                            bmType,
+                            revenue,
+                            transQty,
+                            buyingPower,
+                            forecastSales,
+                            goalBulanan,
+                            targetJuni,
+                            vsGoalBulanan,
+                            vsTargetJuni,
+                            revenueDisplay: revenue.toLocaleString(),
+                            transQtyDisplay: transQty.toLocaleString(),
+                            buyingPowerDisplay: buyingPower.toLocaleString(),
+                            forecastDisplay: forecastSales.toLocaleString('en-US', { maximumFractionDigits: 0 }),
+                            goalBulananDisplay: goalBulanan.toLocaleString(),
+                            targetJuniDisplay: targetJuni.toLocaleString()
+                        };
+                        
+                        this.performanceData.push(record);
+                    }
+                }
+                
+                console.log(`✅ Processed ${this.performanceData.length} outlet records`);
+            },
+            
+            // Generate leaderboards for Clan, SBM, and EBM
+            generateLeaderboards() {
+                console.log('🏆 BM Tracker: Generating leaderboards...');
+                
+                // Reset data structures
+                this.clanData = {};
+                this.sbmData = {};
+                this.ebmData = {};
+                
+                // Aggregate data by Clan and individual BM names
+                this.performanceData.forEach(record => {
+                    // Clan aggregation
+                    if (!this.clanData[record.clanName]) {
+                        this.clanData[record.clanName] = {
+                            name: record.clanName,
+                            totalForecast: 0,
+                            totalGoal: 0,
+                            outlets: []
+                        };
+                    }
+                    this.clanData[record.clanName].totalForecast += record.forecastSales;
+                    this.clanData[record.clanName].totalGoal += record.goalBulanan;
+                    this.clanData[record.clanName].outlets.push(record);
+                    
+                    // BM aggregation by individual BM name (column G)
+                    if (record.bmName) {
+                        const bmData = record.bmType === 'SBM' ? this.sbmData : this.ebmData;
+                        const key = record.bmName; // Use bmName as key instead of clan
+                        
+                        if (!bmData[key]) {
+                            bmData[key] = {
+                                name: record.bmName,
+                                bmType: record.bmType,
+                                clanName: record.clanName,
+                                clanBM: record.clanBM, // Add Clan BM (column E)
+                                totalForecast: 0,
+                                totalGoal: 0,
+                                outlets: []
+                            };
+                        }
+                        bmData[key].totalForecast += record.forecastSales;
+                        bmData[key].totalGoal += record.goalBulanan;
+                        bmData[key].outlets.push(record);
+                    }
+                });
+                
+                // Calculate goal hitting rates and sort
+                const calculateRate = (group) => {
+                    group.goalRate = group.totalGoal > 0 ? (group.totalForecast / group.totalGoal) * 100 : 0;
+                    return group;
+                };
+                
+                this.clanData = Object.values(this.clanData).map(calculateRate).sort((a, b) => b.goalRate - a.goalRate);
+                this.sbmData = Object.values(this.sbmData).map(calculateRate).sort((a, b) => b.goalRate - a.goalRate);
+                this.ebmData = Object.values(this.ebmData).map(calculateRate).sort((a, b) => b.goalRate - a.goalRate);
+                
+                // Display leaderboards
+                this.displaySBMLeaderboard();
+                this.displayEBMLeaderboard();
+                
+                console.log('✅ Leaderboards generated');
+            },
+            
+            // Display SBM Leaderboard
+            displaySBMLeaderboard() {
+                const container = document.getElementById('sbmLeaderboard');
+                container.innerHTML = '';
+                
+                const topSBMs = this.sbmData.slice(0, 3);
+                topSBMs.forEach((sbm, index) => {
+                    const rank = index + 1;
+                    const rankIcon = this.getRankIcon(rank);
+                    
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200 shadow-sm hover:shadow-md transition-shadow';
+                    div.innerHTML = `
+                        <div class="flex items-center">
+                            <div class="text-xl mr-3">${rankIcon}</div>
+                            <div>
+                                <div class="font-semibold text-gray-800">${sbm.name}</div>
+                                <div class="text-xs text-blue-600">${sbm.clanBM || sbm.clanName}</div>
+                                <div class="text-xs text-gray-600">${sbm.outlets.length} outlets</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold ${sbm.goalRate >= 100 ? 'text-green-600' : 'text-blue-600'}">${sbm.goalRate.toFixed(1)}%</div>
+                            <div class="text-xs text-gray-600">Goal Rate</div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            },
+            
+            // Display EBM Leaderboard
+            displayEBMLeaderboard() {
+                const container = document.getElementById('ebmLeaderboard');
+                container.innerHTML = '';
+                
+                const topEBMs = this.ebmData.slice(0, 3);
+                topEBMs.forEach((ebm, index) => {
+                    const rank = index + 1;
+                    const rankIcon = this.getRankIcon(rank);
+                    
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-3 bg-white rounded-lg border border-green-200 shadow-sm hover:shadow-md transition-shadow';
+                    div.innerHTML = `
+                        <div class="flex items-center">
+                            <div class="text-xl mr-3">${rankIcon}</div>
+                            <div>
+                                <div class="font-semibold text-gray-800">${ebm.name}</div>
+                                <div class="text-xs text-green-600">${ebm.clanBM || ebm.clanName}</div>
+                                <div class="text-xs text-gray-600">${ebm.outlets.length} outlets</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold ${ebm.goalRate >= 100 ? 'text-green-600' : 'text-green-600'}">${ebm.goalRate.toFixed(1)}%</div>
+                            <div class="text-xs text-gray-600">Goal Rate</div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            },
+            
+            // Generate SBM vs EBM comparison
+            // Generate KAKTUS vs CUAN HUNTER Clan Championship
+            generateClanChampionship() {
+                console.log('⚔️ BM Tracker: Generating Clan Championship...');
+                
+                // Find KAKTUS and CUAN HUNTER clan data
+                const kaktus = this.clanData.find(clan => clan.name === 'KAKTUS');
+                const cuanHunter = this.clanData.find(clan => clan.name === 'CUAN HUNTER');
+                
+                const kaktusRate = kaktus ? kaktus.goalRate : 0;
+                const cuanHunterRate = cuanHunter ? cuanHunter.goalRate : 0;
+                
+                // Update UI
+                document.getElementById('kaktusGoalRate').textContent = `${kaktusRate.toFixed(1)}%`;
+                document.getElementById('cuanHunterGoalRate').textContent = `${cuanHunterRate.toFixed(1)}%`;
+                
+                // Show crown for winner
+                const kaktusCrown = document.getElementById('kaktusCrown');
+                const cuanHunterCrown = document.getElementById('cuanHunterCrown');
+                
+                kaktusCrown.classList.add('hidden');
+                cuanHunterCrown.classList.add('hidden');
+                
+                if (kaktusRate > cuanHunterRate) {
+                    kaktusCrown.classList.remove('hidden');
+                } else if (cuanHunterRate > kaktusRate) {
+                    cuanHunterCrown.classList.remove('hidden');
+                }
+                
+                console.log(`🏆 KAKTUS: ${kaktusRate.toFixed(1)}% vs CUAN HUNTER: ${cuanHunterRate.toFixed(1)}%`);
+            },
+            
+            // Generate SBM vs EBM comparison
+            generateSBMvsEBMComparison() {
+                console.log('⚔️ BM Tracker: Generating SBM vs EBM comparison...');
+                
+                // Calculate overall SBM goal rate
+                let sbmTotalForecast = 0;
+                let sbmTotalGoal = 0;
+                this.sbmData.forEach(sbm => {
+                    sbmTotalForecast += sbm.totalForecast;
+                    sbmTotalGoal += sbm.totalGoal;
+                });
+                const sbmGoalRate = sbmTotalGoal > 0 ? (sbmTotalForecast / sbmTotalGoal) * 100 : 0;
+                
+                // Calculate overall EBM goal rate
+                let ebmTotalForecast = 0;
+                let ebmTotalGoal = 0;
+                this.ebmData.forEach(ebm => {
+                    ebmTotalForecast += ebm.totalForecast;
+                    ebmTotalGoal += ebm.totalGoal;
+                });
+                const ebmGoalRate = ebmTotalGoal > 0 ? (ebmTotalForecast / ebmTotalGoal) * 100 : 0;
+                
+                // Update UI
+                document.getElementById('sbmGoalRate').textContent = `${sbmGoalRate.toFixed(1)}%`;
+                document.getElementById('ebmGoalRate').textContent = `${ebmGoalRate.toFixed(1)}%`;
+                
+                // Show crown for winner
+                const sbmCrown = document.getElementById('sbmCrown');
+                const ebmCrown = document.getElementById('ebmCrown');
+                
+                sbmCrown.classList.add('hidden');
+                ebmCrown.classList.add('hidden');
+                
+                if (sbmGoalRate > ebmGoalRate) {
+                    sbmCrown.classList.remove('hidden');
+                } else if (ebmGoalRate > sbmGoalRate) {
+                    ebmCrown.classList.remove('hidden');
+                }
+                
+                console.log(`🏆 SBM: ${sbmGoalRate.toFixed(1)}% vs EBM: ${ebmGoalRate.toFixed(1)}%`);
+            },
+            
+            // Populate filter dropdowns
+            populateFilters() {
+                // Get unique values
+                const ams = [...new Set(this.performanceData.map(r => r.amName))].sort();
+                const clans = [...new Set(this.performanceData.map(r => r.clanName))].sort();
+                const clanBMs = [...new Set(this.performanceData.map(r => r.clanBM).filter(cb => cb))].sort();
+                
+                // Populate AM filter
+                const amFilter = document.getElementById('bmTrackerAmFilter');
+                amFilter.innerHTML = '<option value="">All AMs</option>';
+                ams.forEach(am => {
+                    const option = document.createElement('option');
+                    option.value = am;
+                    option.textContent = am;
+                    amFilter.appendChild(option);
+                });
+                
+                // Populate Clan filter
+                const clanFilter = document.getElementById('bmTrackerClanFilter');
+                clanFilter.innerHTML = '<option value="">All Clans</option>';
+                clans.forEach(clan => {
+                    const option = document.createElement('option');
+                    option.value = clan;
+                    option.textContent = clan;
+                    clanFilter.appendChild(option);
+                });
+                
+                // Populate Clan BM filter
+                const clanBMFilter = document.getElementById('bmTrackerClanBMFilter');
+                clanBMFilter.innerHTML = '<option value="">All Clan BMs</option>';
+                clanBMs.forEach(clanBM => {
+                    const option = document.createElement('option');
+                    option.value = clanBM;
+                    option.textContent = clanBM;
+                    clanBMFilter.appendChild(option);
+                });
+            },
+            
+            // Filter data based on selections
+            filterData() {
+                const searchTerm = document.getElementById('bmTrackerSearchInput').value.toLowerCase();
+                const amFilter = document.getElementById('bmTrackerAmFilter').value;
+                const clanFilter = document.getElementById('bmTrackerClanFilter').value;
+                const clanBMFilter = document.getElementById('bmTrackerClanBMFilter').value;
+                const bmTypeFilter = document.getElementById('bmTrackerBmTypeFilter').value;
+                
+                this.filteredData = this.performanceData.filter(record => {
+                    const matchesSearch = record.outlet.toLowerCase().includes(searchTerm) || 
+                                        record.outletName.toLowerCase().includes(searchTerm);
+                    const matchesAM = !amFilter || record.amName === amFilter;
+                    const matchesClan = !clanFilter || record.clanName === clanFilter;
+                    const matchesClanBM = !clanBMFilter || record.clanBM === clanBMFilter;
+                    const matchesBmType = !bmTypeFilter || record.bmType === bmTypeFilter;
+                    
+                    return matchesSearch && matchesAM && matchesClan && matchesClanBM && matchesBmType;
+                });
+                
+                // Apply default sort by vsGoalBulanan descending
+                this.filteredData.sort((a, b) => {
+                    return this.sortDirection === 'desc' ? b.vsGoalBulanan - a.vsGoalBulanan : a.vsGoalBulanan - b.vsGoalBulanan;
+                });
+                
+                this.currentPage = 1;
+                this.displayTable();
+                this.updatePagination();
+            },
+            
+            // Sort table
+            sortTable(column) {
+                if (this.currentSort === column) {
+                    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    this.currentSort = column;
+                    this.sortDirection = 'asc';
+                }
+                
+                this.filteredData.sort((a, b) => {
+                    let aVal = a[column];
+                    let bVal = b[column];
+                    
+                    // Handle numeric vs string comparison
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        return this.sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+                    } else {
+                        aVal = String(aVal).toLowerCase();
+                        bVal = String(bVal).toLowerCase();
+                        if (this.sortDirection === 'asc') {
+                            return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                        } else {
+                            return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                        }
+                    }
+                });
+                
+                this.displayTable();
+            },
+            
+            // Display table
+            displayTable() {
+                const tbody = document.getElementById('bmTrackerTableBody');
+                tbody.innerHTML = '';
+                
+                const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+                const endIndex = Math.min(startIndex + this.itemsPerPage, this.filteredData.length);
+                
+                if (this.filteredData.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="11" class="px-6 py-4 text-center text-gray-500">
+                                No outlets found matching the current filters.
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                for (let i = startIndex; i < endIndex; i++) {
+                    const record = this.filteredData[i];
+                    
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${record.outlet}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${record.outletName}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-medium">${record.amName}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">${record.clanName}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">${record.clanBM || '-'}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            ${record.bmType ? `<span class="px-2 py-1 text-xs font-semibold rounded-full ${record.bmType === 'SBM' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">${record.bmType}</span>` : '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-500">-</span>'}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">Rp ${record.revenueDisplay}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">${record.transQty.toLocaleString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-purple-600">Rp ${record.forecastDisplay}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                            <div class="flex flex-col items-end">
+                                <span class="font-medium ${record.vsGoalBulanan >= 100 ? 'text-green-600' : 'text-orange-600'}">${record.vsGoalBulanan.toFixed(1)}%</span>
+                                <div class="w-20 bg-gray-200 rounded-full h-1.5 mt-1">
+                                    <div class="bg-gradient-to-r from-orange-500 to-green-500 h-1.5 rounded-full" style="width: ${Math.min(100, record.vsGoalBulanan)}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                            <div class="flex flex-col items-end">
+                                <span class="font-medium ${record.vsTargetJuni >= 100 ? 'text-green-600' : 'text-blue-600'}">${record.vsTargetJuni.toFixed(1)}%</span>
+                                <div class="w-20 bg-gray-200 rounded-full h-1.5 mt-1">
+                                    <div class="bg-gradient-to-r from-blue-500 to-green-500 h-1.5 rounded-full" style="width: ${Math.min(100, record.vsTargetJuni)}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                    
+                    tbody.appendChild(row);
+                }
+            },
+            
+            // Change page
+            changePage(direction) {
+                const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
+                
+                if (direction === -1 && this.currentPage > 1) {
+                    this.currentPage--;
+                } else if (direction === 1 && this.currentPage < totalPages) {
+                    this.currentPage++;
+                }
+                
+                this.displayTable();
+                this.updatePagination();
+            },
+            
+            // Update pagination
+            updatePagination() {
+                const totalRecords = this.filteredData.length;
+                const totalPages = Math.ceil(totalRecords / this.itemsPerPage);
+                const startIndex = (this.currentPage - 1) * this.itemsPerPage + 1;
+                const endIndex = Math.min(this.currentPage * this.itemsPerPage, totalRecords);
+                
+                document.getElementById('bmTrackerShowingStart').textContent = totalRecords > 0 ? startIndex : 0;
+                document.getElementById('bmTrackerShowingEnd').textContent = endIndex;
+                document.getElementById('bmTrackerTotalRecords').textContent = totalRecords;
+                document.getElementById('bmTrackerPageInfo').textContent = `Page ${this.currentPage} of ${totalPages}`;
+                
+                const prevBtn = document.getElementById('bmTrackerPrevPageBtn');
+                const nextBtn = document.getElementById('bmTrackerNextPageBtn');
+                
+                prevBtn.disabled = this.currentPage === 1;
+                nextBtn.disabled = this.currentPage === totalPages || totalPages === 0;
+            },
+            
+            // Refresh data manually
+            refreshData() {
+                console.log('🔄 BM Tracker: Manual refresh triggered');
+                this.fetchData();
+            },
+            
+            // Helper functions
+            getRankIcon(rank) {
+                if (rank === 1) return '<i class="fas fa-trophy text-yellow-500"></i>';
+                if (rank === 2) return '<i class="fas fa-medal text-gray-400"></i>';
+                if (rank === 3) return '<i class="fas fa-award text-yellow-600"></i>';
+                return `<span class="text-gray-500 font-medium">${rank}</span>`;
             }
         };
 
@@ -9680,7 +10758,7 @@ Ready for deployment! 🚀
         let hidePending = false; // Filter to hide outlets without reviews
         
         // ===== GOOGLE REVIEW SUPABASE CLIENT (SEPARATE FROM AUTH) =====
-        let supabase; // Separate Supabase client for Google Reviews ONLY
+        let googleReviewSupabase; // Separate Supabase client for Google Reviews ONLY
         
         // Initialize Google Review Supabase client (separate from authentication)
         function initGoogleReviewSupabase() {
@@ -9695,7 +10773,7 @@ Ready for deployment! 🚀
                 }
                 
                 // Create SEPARATE client for Google Reviews (does NOT affect authentication)
-                supabase = window.supabase.createClient(GOOGLE_REVIEW_SUPABASE_URL, GOOGLE_REVIEW_SUPABASE_ANON_KEY);
+                googleReviewSupabase = window.supabase.createClient(GOOGLE_REVIEW_SUPABASE_URL, GOOGLE_REVIEW_SUPABASE_ANON_KEY);
                 console.log('✅ Google Review Supabase client initialized (separate from auth)');
                 console.log('📊 Google Review Supabase URL:', GOOGLE_REVIEW_SUPABASE_URL);
                 return true;
@@ -9721,7 +10799,7 @@ Ready for deployment! 🚀
         // Load outlets from Supabase or localStorage
         async function loadOutlets() {
             // Try loading from Supabase first
-            if (supabase) {
+            if (googleReviewSupabase) {
                 try {
                     await loadReviewsFromSupabase();
                     if (outletsData.length > 0) {
@@ -10867,18 +11945,18 @@ Ready for deployment! 🚀
         
         async function loadReviewsFromSupabase() {
             console.log('🔍 loadReviewsFromSupabase() called');
-            console.log('🔍 Supabase initialized:', !!supabase);
+            console.log('🔍 Google Review Supabase initialized:', !!googleReviewSupabase);
             
-            if (!supabase) {
-                console.warn('⚠️ Supabase not initialized, using localStorage');
+            if (!googleReviewSupabase) {
+                console.warn('⚠️ Google Review Supabase not initialized, using localStorage');
                 return;
             }
             
             try {
                 console.log('📥 Loading reviews from Supabase...');
-                console.log('📊 Supabase URL:', supabase.supabaseUrl);
+                console.log('📊 Supabase URL:', googleReviewSupabase.supabaseUrl);
                 
-                const { data, error } = await supabase
+                const { data, error } = await googleReviewSupabase
                     .from('google_reviews')
                     .select('*')
                     .order('review_count', { ascending: false });
@@ -11769,10 +12847,10 @@ Ready for deployment! 🚀
     </script>
     
     <!-- Incentive Calculator Module -->
-    <script src="assets/js/incentive-calculator.js"></script>
+    <script src="assets/js/incentive-calculator.js?v=2.0"></script>
     
     <!-- Product Incentive Calculator Module -->
-    <script src="assets/js/product-incentive-calculator.js"></script>
+    <script src="assets/js/product-incentive-calculator.js?v=1.0"></script>
     
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95a376871c4135f2","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
