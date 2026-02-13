@@ -86,12 +86,43 @@ const IncentiveCalculator = {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
                 
-                // Process the data based on file type
-                this.processFileData(jsonData, fileType);
-                this.showStatus(`Parsed: ${file.name} (${jsonData.length} rows)`, 'success');
+                // For outletMapping, also read "Goal Bulanan" sheet if it exists
+                if (fileType === 'outletMapping') {
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    // Check if "Goal Bulanan" sheet exists
+                    const goalBulananSheetName = workbook.SheetNames.find(name => 
+                        name.toLowerCase().includes('goal bulanan') || 
+                        name.toLowerCase().includes('goalbulan')
+                    );
+                    
+                    if (goalBulananSheetName) {
+                        const goalBulananSheet = workbook.Sheets[goalBulananSheetName];
+                        const goalBulananData = XLSX.utils.sheet_to_json(goalBulananSheet, { header: 1 });
+                        
+                        console.log(`✅ Found "Goal Bulanan" sheet with ${goalBulananData.length} rows`);
+                        
+                        // Store goal bulanan data
+                        this.data.goalBulananData = this.parseGoalBulanan(goalBulananData);
+                    } else {
+                        console.warn('⚠️ "Goal Bulanan" sheet not found in Outlet Mapping file');
+                        this.data.goalBulananData = {};
+                    }
+                    
+                    // Process the data based on file type
+                    this.processFileData(jsonData, fileType);
+                    this.showStatus(`Parsed: ${file.name} (${jsonData.length} rows, Goal Bulanan: ${Object.keys(this.data.goalBulananData || {}).length} outlets)`, 'success');
+                } else {
+                    // For other files, read first sheet only
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                    
+                    // Process the data based on file type
+                    this.processFileData(jsonData, fileType);
+                    this.showStatus(`Parsed: ${file.name} (${jsonData.length} rows)`, 'success');
+                }
             } catch (error) {
                 console.error('Error parsing file:', error);
                 this.showStatus(`Error parsing ${file.name}: ${error.message}`, 'error');
@@ -434,6 +465,46 @@ const IncentiveCalculator = {
         return data;
     },
     
+    // Parse Goal Bulanan sheet from Outlet Mapping file
+    // Expected structure: Column A (Outlet Code), Column B (Goal Bulanan)
+    // Excel columns: A=1st, B=2nd
+    // 0-indexed arrays: A=0, B=1
+    parseGoalBulanan: function(rows) {
+        const data = {};
+        
+        // Find header row (look for "Outlet" or similar in first few rows)
+        let dataStartRow = 1;  // Default: assume row 1 is header, data starts at row 2
+        
+        for (let i = 0; i < Math.min(5, rows.length); i++) {
+            const firstCell = this.toSafeString(rows[i][0]).toLowerCase();
+            if (firstCell.includes('outlet') || firstCell.includes('store') || firstCell.includes('toko')) {
+                dataStartRow = i + 1;
+                console.log(`✅ Goal Bulanan header found at row ${i + 1}, data starts at row ${dataStartRow + 1}`);
+                break;
+            }
+        }
+        
+        // Parse data rows
+        rows.slice(dataStartRow).forEach((row, idx) => {
+            if (row.length >= 2 && row[0]) {  // Need at least column B (index 1)
+                const outlet = this.toSafeString(row[0]);         // Column A: Outlet Code (index 0)
+                const goalBulanan = parseFloat(row[1]) || 0;      // Column B: Goal Bulanan (index 1)
+                
+                if (outlet && goalBulanan > 0) {
+                    data[outlet] = goalBulanan;
+                    
+                    // Log first few for verification
+                    if (idx < 3) {
+                        console.log(`Goal Bulanan Row ${idx + 1}:`, { outlet, goalBulanan });
+                    }
+                }
+            }
+        });
+        
+        console.log('✅ Parsed Goal Bulanan:', Object.keys(data).length, 'outlets');
+        return data;
+    },
+    
     // Update Calculate button state
     updateCalculateButton: function() {
         const btn = document.getElementById('calculateIncentivesBtn');
@@ -590,6 +661,27 @@ const IncentiveCalculator = {
         return false;
     },
     
+    // Find Goal Bulanan target for an outlet (with flexible matching)
+    findGoalBulananForOutlet: function(outletCode) {
+        if (!this.data.goalBulananData || Object.keys(this.data.goalBulananData).length === 0) {
+            return 0;
+        }
+        
+        // First try exact match
+        if (this.data.goalBulananData[outletCode]) {
+            return this.data.goalBulananData[outletCode];
+        }
+        
+        // Try flexible matching
+        for (let goalOutlet in this.data.goalBulananData) {
+            if (this.outletMatch(goalOutlet, outletCode)) {
+                return this.data.goalBulananData[goalOutlet];
+            }
+        }
+        
+        return 0;
+    },
+    
     // Match employees
     matchEmployees: function() {
         const matched = [];
@@ -642,6 +734,32 @@ const IncentiveCalculator = {
                             personalSales.achievement = (personalSales.personalSales / outletMapping.target) * 100;
                         }
                         
+                        // Check Goal Bulanan: Compare outlet's actual Net Sales vs Goal Bulanan target
+                        let goalBulananHit = 'NO';
+                        let goalBulananTarget = 0;
+                        let goalBulananAchievement = 0;
+                        
+                        if (this.data.goalBulananData && salesData) {
+                            // Try to find goal bulanan for this outlet (flexible matching)
+                            const goalTarget = this.findGoalBulananForOutlet(outletCode);
+                            
+                            if (goalTarget > 0) {
+                                goalBulananTarget = goalTarget;
+                                goalBulananAchievement = (salesData.totalSales / goalTarget) * 100;
+                                goalBulananHit = goalBulananAchievement >= 100 ? 'YES' : 'NO';
+                                
+                                // Log first few for verification
+                                if (index < 3) {
+                                    console.log(`📊 Goal Bulanan Check for ${outletCode}:`, {
+                                        target: goalTarget,
+                                        actualSales: salesData.totalSales,
+                                        achievement: goalBulananAchievement.toFixed(2) + '%',
+                                        hit: goalBulananHit
+                                    });
+                                }
+                            }
+                        }
+                        
                         matched.push({
                             employee: {
                                 ...activeEmployee,
@@ -654,6 +772,9 @@ const IncentiveCalculator = {
                             outletMapping: outletMapping,
                             salesData: salesData,
                             personalSales: personalSales,
+                            goalBulananHit: goalBulananHit,
+                            goalBulananTarget: goalBulananTarget,
+                            goalBulananAchievement: goalBulananAchievement,
                             amReward: 0,
                             bmReward: 0,
                             alproeanReward: 0,
@@ -688,12 +809,31 @@ const IncentiveCalculator = {
                         salesData.achievement = (salesData.totalSales / outletMapping.target) * 100;
                     }
                     
+                    // Check Goal Bulanan: Compare outlet's actual Net Sales vs Goal Bulanan target
+                    let goalBulananHit = 'NO';
+                    let goalBulananTarget = 0;
+                    let goalBulananAchievement = 0;
+                    
+                    if (this.data.goalBulananData && salesData) {
+                        // Try to find goal bulanan for this outlet (flexible matching)
+                        const goalTarget = this.findGoalBulananForOutlet(outletCode);
+                        
+                        if (goalTarget > 0) {
+                            goalBulananTarget = goalTarget;
+                            goalBulananAchievement = (salesData.totalSales / goalTarget) * 100;
+                            goalBulananHit = goalBulananAchievement >= 100 ? 'YES' : 'NO';
+                        }
+                    }
+                    
                     matched.push({
                         employee: activeEmployee,
                         fullData: fullMatch,
                         outletMapping: outletMapping,
                         salesData: salesData,
                         personalSales: null,
+                        goalBulananHit: goalBulananHit,
+                        goalBulananTarget: goalBulananTarget,
+                        goalBulananAchievement: goalBulananAchievement,
                         amReward: 0,
                         bmReward: 0,
                         alproeanReward: 0,
@@ -824,6 +964,7 @@ const IncentiveCalculator = {
                     totalSales: 0,
                     totalGP: 0,
                     totalTarget: 0,
+                    totalGoalBulanan: 0,  // Accumulated Goal Bulanan for all outlets
                     amEmployee: null  // Will find the actual AM employee
                 };
             }
@@ -833,17 +974,22 @@ const IncentiveCalculator = {
                 this.outletMatch(sales.outlet, mapping.outlet)
             );
             
+            // Find Goal Bulanan for this outlet
+            const outletGoalBulanan = this.findGoalBulananForOutlet(mapping.outlet);
+            
             if (salesData && mapping.target > 0) {
                 amAreas[amName].outlets.push({
                     outletCode: mapping.outlet,
                     salesData: salesData,
                     target: mapping.target,
-                    achievement: (salesData.totalSales / mapping.target) * 100
+                    achievement: (salesData.totalSales / mapping.target) * 100,
+                    goalBulanan: outletGoalBulanan
                 });
                 
                 amAreas[amName].totalSales += salesData.totalSales;
                 amAreas[amName].totalGP += salesData.gp || 0;
                 amAreas[amName].totalTarget += mapping.target;
+                amAreas[amName].totalGoalBulanan += outletGoalBulanan;  // Accumulate Goal Bulanan
             }
         });
         
@@ -927,6 +1073,18 @@ const IncentiveCalculator = {
             // Total AM Reward = Area Reward + Outlet Incentives
             emp.amReward = areaReward + outletIncentivesTotal;
             
+            // AREA GOAL BULANAN CHECK
+            // Compare total area sales vs total area Goal Bulanan
+            const areaGoalBulananAchievement = amArea.totalGoalBulanan > 0
+                ? (amArea.totalSales / amArea.totalGoalBulanan) * 100
+                : 0;
+            const areaGoalBulananHit = areaGoalBulananAchievement >= 100 ? 'YES' : 'NO';
+            
+            // Store Area Goal Bulanan data in employee record
+            emp.areaGoalBulananHit = areaGoalBulananHit;
+            emp.areaGoalBulananTarget = amArea.totalGoalBulanan;
+            emp.areaGoalBulananAchievement = areaGoalBulananAchievement;
+            
             // Debug first AM
             if (Object.values(amAreas).indexOf(amArea) === 0) {
                 console.log('📊 Sample AM Calculation:', {
@@ -938,7 +1096,10 @@ const IncentiveCalculator = {
                     areaGPMargin: areaGPMargin.toFixed(2) + '%',
                     areaReward: areaReward.toFixed(2),
                     outletIncentives: outletIncentivesTotal.toFixed(2),
-                    totalAMReward: emp.amReward.toFixed(2)
+                    totalAMReward: emp.amReward.toFixed(2),
+                    areaGoalBulanan: amArea.totalGoalBulanan,
+                    areaGoalBulananAchievement: areaGoalBulananAchievement.toFixed(2) + '%',
+                    areaGoalBulananHit: areaGoalBulananHit
                 });
             }
         });
@@ -1202,7 +1363,7 @@ const IncentiveCalculator = {
     exportMatched: function() {
         const exportData = [];
         
-        // Add headers (removed Region column, added Personal Sales and Contribution %)
+        // Add headers (removed Region column, added Personal Sales and Contribution %, Goal Bulanan, Area Goal Bulanan)
         exportData.push([
             'Employee Name',
             'Employee ID',
@@ -1211,6 +1372,10 @@ const IncentiveCalculator = {
             'Personal Sales (Rp)',
             'Contribution Ratio (%)',
             'GP Margin (%)',
+            'Goal Bulanan',
+            'Goal Bulanan Target (Rp)',
+            'Area Goal Bulanan',
+            'Area Goal Bulanan Target (Rp)',
             'AM Reward (Rp)',
             'BM Reward (Rp)',
             'Alproean Reward (Rp)',
@@ -1233,6 +1398,10 @@ const IncentiveCalculator = {
                     personalSales: 0,
                     contributionRatio: 0,
                     gpMargin: 0,
+                    goalBulananHits: [],
+                    goalBulananTargets: [],
+                    areaGoalBulananHit: emp.areaGoalBulananHit || '',  // For AM only
+                    areaGoalBulananTarget: emp.areaGoalBulananTarget || 0,  // For AM only
                     amReward: 0,
                     bmReward: 0,
                     alproeanReward: 0,
@@ -1243,6 +1412,16 @@ const IncentiveCalculator = {
             
             // Add outlet
             aggregatedResults[key].outlets.push(emp.employee.outlet);
+            
+            // Track Goal Bulanan status for each outlet
+            aggregatedResults[key].goalBulananHits.push(emp.goalBulananHit || 'NO');
+            aggregatedResults[key].goalBulananTargets.push(emp.goalBulananTarget || 0);
+            
+            // Track Area Goal Bulanan (for AM only, will be same across all outlets)
+            if (emp.areaGoalBulananHit) {
+                aggregatedResults[key].areaGoalBulananHit = emp.areaGoalBulananHit;
+                aggregatedResults[key].areaGoalBulananTarget = emp.areaGoalBulananTarget || 0;
+            }
             
             // Sum personal sales
             if (emp.personalSales) {
@@ -1279,6 +1458,21 @@ const IncentiveCalculator = {
                 ? emp.outlets.join(', ') + ` [${emp.outlets.length} outlets]`
                 : emp.outlets[0] || '';
             
+            // Determine overall Goal Bulanan status
+            // If ANY outlet hits goal, show YES; otherwise NO
+            const goalBulananOverall = emp.goalBulananHits.includes('YES') ? 'YES' : 'NO';
+            
+            // For target, show all targets if multiple outlets, or single target
+            const goalBulananTargetDisplay = emp.outlets.length > 1
+                ? emp.goalBulananTargets.map((t, i) => `${emp.outlets[i]}: ${this.formatCurrency(t)}`).join('; ')
+                : this.formatCurrency(emp.goalBulananTargets[0] || 0);
+            
+            // Area Goal Bulanan (for AM only)
+            const areaGoalBulananDisplay = emp.areaGoalBulananHit || '';
+            const areaGoalBulananTargetDisplay = emp.areaGoalBulananTarget > 0 
+                ? this.formatCurrency(emp.areaGoalBulananTarget) 
+                : '';
+            
             exportData.push([
                 emp.employeeName,
                 emp.employeeId,
@@ -1287,6 +1481,10 @@ const IncentiveCalculator = {
                 emp.personalSales,
                 avgContributionRatio.toFixed(2),
                 avgGpMargin.toFixed(2),
+                goalBulananOverall,
+                goalBulananTargetDisplay,
+                areaGoalBulananDisplay,
+                areaGoalBulananTargetDisplay,
                 emp.amReward,
                 emp.bmReward,
                 emp.alproeanReward,
