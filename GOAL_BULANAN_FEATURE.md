@@ -252,3 +252,109 @@ The Goal Bulanan feature has been successfully implemented and tested. It seamle
 **Implementation by**: AI Assistant  
 **Date**: February 13, 2026  
 **Version**: 1.0  
+
+---
+
+## ⚠️ UPDATE: 10% Contribution Ratio Rule
+
+**Updated**: February 13, 2026  
+**Rule**: Employees must have >10% contribution to get Goal Bulanan credit
+
+### Problem Statement
+
+**Original Issue**: Employee working in 3 outlets gets "YES" for Goal Bulanan if ANY outlet hits goal, even if their contribution to that outlet is only 0.1%. This is unfair if their main contribution is in outlets that didn't hit goals.
+
+**Example**:
+- Outlet 1: Hit goal (120%), employee contribution 0.83% → Should be NO
+- Outlet 2: Hit goal (105%), employee contribution 35% → Should be YES
+- Outlet 3: Missed goal (87%), employee contribution 28% → Should be NO
+
+### New Rule
+
+**Employee gets YES for Goal Bulanan ONLY if**:
+1. ✅ Outlet hit goal (achievement ≥ 100%), **AND**
+2. ✅ Employee contribution ratio > 10%
+
+### Implementation
+
+**Modified Logic** (lines 737-783):
+
+```javascript
+// Calculate employee's contribution ratio to this outlet
+contributionRatio = salesData.totalSales > 0 
+    ? (personalSales.personalSales / salesData.totalSales) * 100 
+    : 0;
+
+// Employee gets YES only if:
+// 1. Outlet hit goal (achievement >= 100%), AND
+// 2. Employee contribution > 10%
+const outletHitGoal = goalBulananAchievement >= 100;
+const significantContribution = contributionRatio > 10;
+
+goalBulananHit = (outletHitGoal && significantContribution) ? 'YES' : 'NO';
+```
+
+### Test Results
+
+**Scenario: Staff A with 3 outlets**
+
+| Outlet | Goal | Sales | Personal Sales | Goal Achv | Contribution | Result |
+|--------|------|-------|----------------|-----------|--------------|--------|
+| Outlet 1 | 100M | 120M | 15M | 120% ✅ | 12.5% ✅ | **YES** |
+| Outlet 2 | 50M | 60M | 500K | 120% ✅ | 0.83% ❌ | **NO** |
+| Outlet 3 | 80M | 70M | 20M | 87.5% ❌ | 28.57% ✅ | **NO** |
+
+**Analysis**:
+- **Outlet 1**: YES ✅ (both conditions met)
+- **Outlet 2**: NO ❌ (outlet hit goal but contribution too small)
+- **Outlet 3**: NO ❌ (high contribution but outlet missed goal)
+- **Overall Export**: YES (ANY outlet YES = overall YES)
+
+### Business Impact
+
+**Benefits**:
+1. **Fair Recognition**: Employees only credited for outlets where they meaningfully contributed
+2. **Prevents Gaming**: Eliminates unfair advantage from minimal sales in high-performing outlets
+3. **Encourages Focus**: Motivates employees to focus on outlets where they have significant impact
+
+**Example**:
+- Before: Employee with 0.1% contribution in outlet that hit goal gets YES
+- After: Employee must have >10% contribution to get YES
+- Result: Fair recognition for actual performance
+
+### Edge Cases
+
+1. **No Personal Sales Data**: Always NO (cannot verify contribution)
+2. **Zero Total Sales**: Contribution = 0%, NO
+3. **Exactly 10% Contribution**: NO (must be > 10%, not ≥ 10%)
+4. **Multiple Outlets**: Each outlet evaluated independently
+
+### Console Logging
+
+Enhanced debug output includes contribution ratio:
+
+```javascript
+console.log(`📊 Goal Bulanan Check for ${outletCode}:`, {
+    employee: activeEmployee.employeeName,
+    target: goalTarget,
+    actualSales: salesData.totalSales,
+    achievement: goalBulananAchievement.toFixed(2) + '%',
+    personalSales: personalSales.personalSales,
+    contributionRatio: contributionRatio.toFixed(2) + '%',
+    outletHitGoal: outletHitGoal,
+    significantContribution: significantContribution,
+    hit: goalBulananHit
+});
+```
+
+### Summary
+
+The 10% contribution ratio rule ensures that:
+- ✅ Employees are fairly credited for outlets where they have meaningful impact
+- ✅ Small contributions to high-performing outlets don't unfairly boost Goal Bulanan status
+- ✅ Focus is on outlets where employee makes significant contributions (>10%)
+- ✅ Overall YES/NO aggregation still works (ANY outlet YES = overall YES)
+
+**Implementation**: Complete and tested  
+**Status**: ✅ Ready for Production  
+

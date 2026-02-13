@@ -735,25 +735,46 @@ const IncentiveCalculator = {
                         }
                         
                         // Check Goal Bulanan: Compare outlet's actual Net Sales vs Goal Bulanan target
+                        // IMPORTANT: Employee only gets YES if:
+                        // 1. Outlet hit goal (achievement >= 100%), AND
+                        // 2. Employee's contribution ratio > 10%
                         let goalBulananHit = 'NO';
                         let goalBulananTarget = 0;
                         let goalBulananAchievement = 0;
+                        let contributionRatio = 0;
                         
-                        if (this.data.goalBulananData && salesData) {
+                        if (this.data.goalBulananData && salesData && personalSales) {
                             // Try to find goal bulanan for this outlet (flexible matching)
                             const goalTarget = this.findGoalBulananForOutlet(outletCode);
                             
                             if (goalTarget > 0) {
                                 goalBulananTarget = goalTarget;
                                 goalBulananAchievement = (salesData.totalSales / goalTarget) * 100;
-                                goalBulananHit = goalBulananAchievement >= 100 ? 'YES' : 'NO';
+                                
+                                // Calculate employee's contribution ratio to this outlet
+                                contributionRatio = salesData.totalSales > 0 
+                                    ? (personalSales.personalSales / salesData.totalSales) * 100 
+                                    : 0;
+                                
+                                // Employee gets YES only if:
+                                // 1. Outlet hit goal (achievement >= 100%), AND
+                                // 2. Employee contribution > 10%
+                                const outletHitGoal = goalBulananAchievement >= 100;
+                                const significantContribution = contributionRatio > 10;
+                                
+                                goalBulananHit = (outletHitGoal && significantContribution) ? 'YES' : 'NO';
                                 
                                 // Log first few for verification
                                 if (index < 3) {
                                     console.log(`📊 Goal Bulanan Check for ${outletCode}:`, {
+                                        employee: activeEmployee.employeeName,
                                         target: goalTarget,
                                         actualSales: salesData.totalSales,
                                         achievement: goalBulananAchievement.toFixed(2) + '%',
+                                        personalSales: personalSales.personalSales,
+                                        contributionRatio: contributionRatio.toFixed(2) + '%',
+                                        outletHitGoal: outletHitGoal,
+                                        significantContribution: significantContribution,
                                         hit: goalBulananHit
                                     });
                                 }
@@ -810,6 +831,8 @@ const IncentiveCalculator = {
                     }
                     
                     // Check Goal Bulanan: Compare outlet's actual Net Sales vs Goal Bulanan target
+                    // NOTE: Without personal sales data, we cannot calculate contribution ratio
+                    // Therefore, employee always gets NO for Goal Bulanan (cannot verify >10% contribution)
                     let goalBulananHit = 'NO';
                     let goalBulananTarget = 0;
                     let goalBulananAchievement = 0;
@@ -821,7 +844,8 @@ const IncentiveCalculator = {
                         if (goalTarget > 0) {
                             goalBulananTarget = goalTarget;
                             goalBulananAchievement = (salesData.totalSales / goalTarget) * 100;
-                            goalBulananHit = goalBulananAchievement >= 100 ? 'YES' : 'NO';
+                            // Always NO because we cannot verify contribution ratio without personal sales
+                            goalBulananHit = 'NO';
                         }
                     }
                     
