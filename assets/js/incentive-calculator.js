@@ -964,6 +964,7 @@ const IncentiveCalculator = {
                     totalSales: 0,
                     totalGP: 0,
                     totalTarget: 0,
+                    totalGoalBulanan: 0,  // Accumulated Goal Bulanan for all outlets
                     amEmployee: null  // Will find the actual AM employee
                 };
             }
@@ -973,17 +974,22 @@ const IncentiveCalculator = {
                 this.outletMatch(sales.outlet, mapping.outlet)
             );
             
+            // Find Goal Bulanan for this outlet
+            const outletGoalBulanan = this.findGoalBulananForOutlet(mapping.outlet);
+            
             if (salesData && mapping.target > 0) {
                 amAreas[amName].outlets.push({
                     outletCode: mapping.outlet,
                     salesData: salesData,
                     target: mapping.target,
-                    achievement: (salesData.totalSales / mapping.target) * 100
+                    achievement: (salesData.totalSales / mapping.target) * 100,
+                    goalBulanan: outletGoalBulanan
                 });
                 
                 amAreas[amName].totalSales += salesData.totalSales;
                 amAreas[amName].totalGP += salesData.gp || 0;
                 amAreas[amName].totalTarget += mapping.target;
+                amAreas[amName].totalGoalBulanan += outletGoalBulanan;  // Accumulate Goal Bulanan
             }
         });
         
@@ -1067,6 +1073,18 @@ const IncentiveCalculator = {
             // Total AM Reward = Area Reward + Outlet Incentives
             emp.amReward = areaReward + outletIncentivesTotal;
             
+            // AREA GOAL BULANAN CHECK
+            // Compare total area sales vs total area Goal Bulanan
+            const areaGoalBulananAchievement = amArea.totalGoalBulanan > 0
+                ? (amArea.totalSales / amArea.totalGoalBulanan) * 100
+                : 0;
+            const areaGoalBulananHit = areaGoalBulananAchievement >= 100 ? 'YES' : 'NO';
+            
+            // Store Area Goal Bulanan data in employee record
+            emp.areaGoalBulananHit = areaGoalBulananHit;
+            emp.areaGoalBulananTarget = amArea.totalGoalBulanan;
+            emp.areaGoalBulananAchievement = areaGoalBulananAchievement;
+            
             // Debug first AM
             if (Object.values(amAreas).indexOf(amArea) === 0) {
                 console.log('📊 Sample AM Calculation:', {
@@ -1078,7 +1096,10 @@ const IncentiveCalculator = {
                     areaGPMargin: areaGPMargin.toFixed(2) + '%',
                     areaReward: areaReward.toFixed(2),
                     outletIncentives: outletIncentivesTotal.toFixed(2),
-                    totalAMReward: emp.amReward.toFixed(2)
+                    totalAMReward: emp.amReward.toFixed(2),
+                    areaGoalBulanan: amArea.totalGoalBulanan,
+                    areaGoalBulananAchievement: areaGoalBulananAchievement.toFixed(2) + '%',
+                    areaGoalBulananHit: areaGoalBulananHit
                 });
             }
         });
@@ -1342,7 +1363,7 @@ const IncentiveCalculator = {
     exportMatched: function() {
         const exportData = [];
         
-        // Add headers (removed Region column, added Personal Sales and Contribution %, Goal Bulanan)
+        // Add headers (removed Region column, added Personal Sales and Contribution %, Goal Bulanan, Area Goal Bulanan)
         exportData.push([
             'Employee Name',
             'Employee ID',
@@ -1353,6 +1374,8 @@ const IncentiveCalculator = {
             'GP Margin (%)',
             'Goal Bulanan',
             'Goal Bulanan Target (Rp)',
+            'Area Goal Bulanan',
+            'Area Goal Bulanan Target (Rp)',
             'AM Reward (Rp)',
             'BM Reward (Rp)',
             'Alproean Reward (Rp)',
@@ -1377,6 +1400,8 @@ const IncentiveCalculator = {
                     gpMargin: 0,
                     goalBulananHits: [],
                     goalBulananTargets: [],
+                    areaGoalBulananHit: emp.areaGoalBulananHit || '',  // For AM only
+                    areaGoalBulananTarget: emp.areaGoalBulananTarget || 0,  // For AM only
                     amReward: 0,
                     bmReward: 0,
                     alproeanReward: 0,
@@ -1391,6 +1416,12 @@ const IncentiveCalculator = {
             // Track Goal Bulanan status for each outlet
             aggregatedResults[key].goalBulananHits.push(emp.goalBulananHit || 'NO');
             aggregatedResults[key].goalBulananTargets.push(emp.goalBulananTarget || 0);
+            
+            // Track Area Goal Bulanan (for AM only, will be same across all outlets)
+            if (emp.areaGoalBulananHit) {
+                aggregatedResults[key].areaGoalBulananHit = emp.areaGoalBulananHit;
+                aggregatedResults[key].areaGoalBulananTarget = emp.areaGoalBulananTarget || 0;
+            }
             
             // Sum personal sales
             if (emp.personalSales) {
@@ -1436,6 +1467,12 @@ const IncentiveCalculator = {
                 ? emp.goalBulananTargets.map((t, i) => `${emp.outlets[i]}: ${this.formatCurrency(t)}`).join('; ')
                 : this.formatCurrency(emp.goalBulananTargets[0] || 0);
             
+            // Area Goal Bulanan (for AM only)
+            const areaGoalBulananDisplay = emp.areaGoalBulananHit || '';
+            const areaGoalBulananTargetDisplay = emp.areaGoalBulananTarget > 0 
+                ? this.formatCurrency(emp.areaGoalBulananTarget) 
+                : '';
+            
             exportData.push([
                 emp.employeeName,
                 emp.employeeId,
@@ -1446,6 +1483,8 @@ const IncentiveCalculator = {
                 avgGpMargin.toFixed(2),
                 goalBulananOverall,
                 goalBulananTargetDisplay,
+                areaGoalBulananDisplay,
+                areaGoalBulananTargetDisplay,
                 emp.amReward,
                 emp.bmReward,
                 emp.alproeanReward,
