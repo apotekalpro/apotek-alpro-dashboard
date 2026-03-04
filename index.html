@@ -243,30 +243,32 @@
             min-height: 500px;
         }
 
-        .map-region {
+        .bo-map-region {
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.18s ease;
         }
 
-        .map-region:hover {
-            opacity: 0.9;
-            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+        .bo-map-region:hover {
+            fill-opacity: 0.95 !important;
+            filter: drop-shadow(0 3px 10px rgba(0,0,0,0.35));
         }
 
-        .outlet-card {
-            transition: all 0.2s ease;
+        .bo-outlet-card {
+            transition: all 0.18s ease;
         }
 
-        .outlet-card:hover {
-            transform: translateY(-2px);
+        .bo-outlet-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.10) !important;
         }
 
-        .region-card {
-            transition: all 0.2s ease;
+        .bo-region-card {
+            transition: all 0.18s ease;
         }
 
-        .region-card:hover {
-            transform: translateX(4px);
+        .bo-region-card:hover {
+            transform: translateX(3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
         .bo-search-item:hover {
@@ -274,12 +276,12 @@
         }
 
         @keyframes bo-fadein {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(10px); }
             to   { opacity: 1; transform: translateY(0); }
         }
 
-        .bo-container > * {
-            animation: bo-fadein 0.3s ease-out;
+        #bo-main-container > * {
+            animation: bo-fadein 0.25s ease-out;
         }
 
         .line-clamp-2 {
