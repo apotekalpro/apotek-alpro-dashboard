@@ -235,6 +235,61 @@
         .animate-pulse-slow {
             animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+
+        /* ================================================
+           BIODATA OUTLET STYLES
+        ================================================ */
+        .bo-container {
+            min-height: 500px;
+        }
+
+        .bo-map-region {
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .bo-map-region:hover {
+            fill-opacity: 0.95 !important;
+            filter: drop-shadow(0 3px 10px rgba(0,0,0,0.35));
+        }
+
+        .bo-outlet-card {
+            transition: all 0.18s ease;
+        }
+
+        .bo-outlet-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.10) !important;
+        }
+
+        .bo-region-card {
+            transition: all 0.18s ease;
+        }
+
+        .bo-region-card:hover {
+            transform: translateX(3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .bo-search-item:hover {
+            background-color: #EFF6FF;
+        }
+
+        @keyframes bo-fadein {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        #bo-main-container > * {
+            animation: bo-fadein 0.25s ease-out;
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -355,6 +410,11 @@
                                     class="subtab-button px-4 py-2">
                                 <i class="fas fa-crown mr-2"></i>
                                 Elite BM Performance Tracker
+                            </button>
+                            <button onclick="showOperationsSubtab('biodata-outlet')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-map-marked-alt mr-2"></i>
+                                Biodata Outlet
                             </button>
                         </div>
                         
@@ -1045,6 +1105,19 @@
                                         Next
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Biodata Outlet Subtab -->
+                <div id="biodataOutletSubtab" class="operations-subtab hidden">
+                    <div id="bo-main-container" class="bo-container">
+                        <!-- Content dynamically rendered by BiodataOutlet JS -->
+                        <div class="flex items-center justify-center py-20 text-gray-400">
+                            <div class="text-center">
+                                <i class="fas fa-map-marked-alt text-5xl mb-4 block text-blue-300"></i>
+                                <p class="text-lg font-medium">Loading Biodata Outlet...</p>
                             </div>
                         </div>
                     </div>
@@ -6240,7 +6313,8 @@
                 'outlet-dashboard': 'outletDashboardSubtab',
                 'opps-ed-project': 'oppsEdProjectSubtab',
                 'am-performance-tracker': 'amPerformanceTrackerSubtab',
-                'elite-bm-performance-tracker': 'eliteBmPerformanceTrackerSubtab'
+                'elite-bm-performance-tracker': 'eliteBmPerformanceTrackerSubtab',
+                'biodata-outlet': 'biodataOutletSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
@@ -6261,6 +6335,13 @@
                 // Only load data if not already loaded or if data is empty
                 if (!bmTracker.performanceData || bmTracker.performanceData.length === 0) {
                     bmTracker.fetchData();
+                }
+            }
+
+            // Init Biodata Outlet if selected
+            if (subtabId === 'biodata-outlet') {
+                if (typeof BiodataOutlet !== 'undefined') {
+                    BiodataOutlet.init();
                 }
             }
             
@@ -12851,6 +12932,9 @@ Ready for deployment! 🚀
     
     <!-- Product Incentive Calculator Module -->
     <script src="assets/js/product-incentive-calculator.js?v=1.0"></script>
+
+    <!-- Biodata Outlet Module -->
+    <script src="biodata-outlet.js?v=1.0"></script>
     
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95a376871c4135f2","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
