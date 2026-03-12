@@ -56,34 +56,89 @@
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">
                 <i class="fas fa-upload mr-2 text-blue-600"></i>
-                Step 1: Upload Excel File
+                Step 1: Upload Files
             </h2>
             
-            <!-- Drop Zone -->
-            <div id="dropZone" class="upload-zone rounded-lg p-12 text-center cursor-pointer mb-4">
-                <i class="fas fa-cloud-upload-alt text-6xl text-gray-400 mb-4"></i>
-                <p class="text-lg text-gray-600 mb-2">
-                    Drag and drop your Excel file here or click to browse
-                </p>
-                <p class="text-sm text-gray-500">
-                    Supported formats: .xlsx, .xls
-                </p>
-                <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden">
+            <!-- PV Excel File Upload -->
+            <div class="mb-6">
+                <h3 class="text-md font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-file-excel mr-2 text-green-600"></i>
+                    1. Upload PV Excel File (Required)
+                </h3>
+                <!-- Drop Zone -->
+                <div id="dropZone" class="upload-zone rounded-lg p-8 text-center cursor-pointer mb-3">
+                    <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-3"></i>
+                    <p class="text-md text-gray-600 mb-2">
+                        Drag and drop your PV Excel file here or click to browse
+                    </p>
+                    <p class="text-sm text-gray-500">
+                        Supported formats: .xlsx, .xls
+                    </p>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls" class="hidden">
+                </div>
+
+                <!-- Selected File Info -->
+                <div id="selectedFileInfo" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-file-excel text-green-600 text-2xl mr-3"></i>
+                            <div>
+                                <p class="font-semibold text-gray-800" id="fileName"></p>
+                                <p class="text-sm text-gray-600" id="fileSize"></p>
+                            </div>
+                        </div>
+                        <button id="removeFileBtn" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Selected File Info -->
-            <div id="selectedFileInfo" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <i class="fas fa-file-excel text-green-600 text-2xl mr-3"></i>
-                        <div>
-                            <p class="font-semibold text-gray-800" id="fileName"></p>
-                            <p class="text-sm text-gray-600" id="fileSize"></p>
-                        </div>
-                    </div>
-                    <button id="removeFileBtn" class="text-red-600 hover:text-red-800">
-                        <i class="fas fa-times text-xl"></i>
+            <!-- Email Mapping Upload -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-md font-semibold text-gray-700">
+                        <i class="fas fa-envelope mr-2 text-purple-600"></i>
+                        2. Upload Email Master List (Optional)
+                    </h3>
+                    <button id="downloadEmailTemplateBtn" class="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded transition">
+                        <i class="fas fa-download mr-1"></i>
+                        Download Template
                     </button>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                    <p class="text-xs text-yellow-800">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <strong>Upload Excel file with:</strong> Column A = Company Name (PT Name), Column B = Email Address<br>
+                        <strong>If not uploaded:</strong> System will fallback to reading email from cell D12 in each sheet (legacy method)
+                    </p>
+                </div>
+                <!-- Email Drop Zone -->
+                <div id="emailDropZone" class="upload-zone rounded-lg p-6 text-center cursor-pointer">
+                    <i class="fas fa-envelope text-4xl text-gray-400 mb-2"></i>
+                    <p class="text-sm text-gray-600 mb-1">
+                        Drag and drop email mapping file or click to browse
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        Format: .xlsx, .xls
+                    </p>
+                    <input type="file" id="emailFileInput" accept=".xlsx,.xls" class="hidden">
+                </div>
+
+                <!-- Selected Email File Info -->
+                <div id="selectedEmailFileInfo" class="hidden bg-purple-50 border border-purple-200 rounded-lg p-3 mt-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-envelope text-purple-600 text-xl mr-2"></i>
+                            <div>
+                                <p class="font-semibold text-gray-800 text-sm" id="emailFileName"></p>
+                                <p class="text-xs text-gray-600" id="emailFileSize"></p>
+                            </div>
+                        </div>
+                        <button id="removeEmailFileBtn" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -91,7 +146,7 @@
             <div class="mt-4">
                 <button id="splitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                     <i class="fas fa-scissors mr-2"></i>
-                    Split Excel File
+                    Process & Split Files
                 </button>
             </div>
         </div>
@@ -177,7 +232,7 @@
                             <div class="text-sm text-gray-700 space-y-2">
                                 <p class="font-medium text-blue-900">Step-by-step:</p>
                                 <ol class="list-decimal list-inside space-y-1 ml-2">
-                                    <li>Files are grouped by email address (from D12)</li>
+                                    <li>Files are grouped by email address (from uploaded email list or D12)</li>
                                     <li>Click "Prepare Emails" to see all recipients</li>
                                     <li>For each recipient, click "Open Gmail" to open compose window</li>
                                     <li>Download the files for that recipient</li>
@@ -218,11 +273,32 @@
     <script>
         // API Configuration
         // API Configuration - automatically detects the backend URL
-        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://localhost:5001'
-            : 'https://5001-iuy38bzhv3g2h09erp5i1-cbeee0f9.sandbox.novita.ai';
+        const API_BASE = (() => {
+            const hostname = window.location.hostname;
+            
+            // Localhost development
+            if (hostname === 'localhost' || hostname === '127.0.0.1') {
+                return 'http://localhost:5001';
+            }
+            
+            // Sandbox environment
+            if (hostname.includes('sandbox.novita.ai')) {
+                const sandboxId = hostname.split('-').slice(1).join('-');
+                return `https://5001-${sandboxId}`;
+            }
+            
+            // GitHub Pages production - point to active sandbox backend (TEMPORARY)
+            // TODO: Replace with your production backend URL when available
+            if (hostname.includes('github.io')) {
+                return 'https://5001-iuy38bzhv3g2h09erp5i1-cbeee0f9.sandbox.novita.ai';
+            }
+            
+            // Default fallback
+            return 'https://5001-iuy38bzhv3g2h09erp5i1-cbeee0f9.sandbox.novita.ai';
+        })();
 
         let uploadedFile = null;
+        let emailMappingFile = null;
         let splitResults = null;
 
         // DOM Elements
@@ -232,6 +308,12 @@
         const fileName = document.getElementById('fileName');
         const fileSize = document.getElementById('fileSize');
         const removeFileBtn = document.getElementById('removeFileBtn');
+        const emailDropZone = document.getElementById('emailDropZone');
+        const emailFileInput = document.getElementById('emailFileInput');
+        const selectedEmailFileInfo = document.getElementById('selectedEmailFileInfo');
+        const emailFileName = document.getElementById('emailFileName');
+        const emailFileSize = document.getElementById('emailFileSize');
+        const removeEmailFileBtn = document.getElementById('removeEmailFileBtn');
         const splitBtn = document.getElementById('splitBtn');
         const processingStatus = document.getElementById('processingStatus');
         const resultsSection = document.getElementById('resultsSection');
@@ -245,27 +327,100 @@
         dropZone.addEventListener('drop', handleDrop);
         fileInput.addEventListener('change', handleFileSelect);
         removeFileBtn.addEventListener('click', clearFile);
+        emailDropZone.addEventListener('click', () => emailFileInput.click());
+        emailDropZone.addEventListener('dragover', handleEmailDragOver);
+        emailDropZone.addEventListener('dragleave', handleEmailDragLeave);
+        emailDropZone.addEventListener('drop', handleEmailDrop);
+        emailFileInput.addEventListener('change', handleEmailFileSelect);
+        removeEmailFileBtn.addEventListener('click', clearEmailFile);
+        document.getElementById('downloadEmailTemplateBtn').addEventListener('click', downloadEmailTemplate);
         splitBtn.addEventListener('click', splitFile);
         document.getElementById('downloadAllBtn').addEventListener('click', downloadAll);
         document.getElementById('emailBtn').addEventListener('click', prepareEmails);
 
         function handleDragOver(e) {
             e.preventDefault();
+            e.stopPropagation();
             dropZone.classList.add('dragover');
         }
 
         function handleDragLeave(e) {
             e.preventDefault();
+            e.stopPropagation();
             dropZone.classList.remove('dragover');
         }
 
         function handleDrop(e) {
             e.preventDefault();
+            e.stopPropagation();
             dropZone.classList.remove('dragover');
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 handleFile(files[0]);
             }
+        }
+
+        function handleEmailDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            emailDropZone.classList.add('dragover');
+        }
+
+        function handleEmailDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            emailDropZone.classList.remove('dragover');
+        }
+
+        function handleEmailDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            emailDropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleEmailFile(files[0]);
+            }
+        }
+
+        function handleEmailFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleEmailFile(files[0]);
+            }
+        }
+
+        function handleEmailFile(file) {
+            if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+                showError('Please select an Excel file (.xlsx or .xls) for email mapping');
+                return;
+            }
+
+            emailMappingFile = file;
+            emailFileName.textContent = file.name;
+            emailFileSize.textContent = formatFileSize(file.size);
+            selectedEmailFileInfo.classList.remove('hidden');
+            hideError();
+        }
+
+        function clearEmailFile() {
+            emailMappingFile = null;
+            emailFileInput.value = '';
+            selectedEmailFileInfo.classList.add('hidden');
+        }
+
+        function downloadEmailTemplate() {
+            // Create CSV content
+            const csvContent = `Company Name,Email Address,Notes
+PT. EXAMPLE COMPANY,finance@example.com,Enter exact company name from D9
+PT. ANOTHER COMPANY,accounting@another.com,One company per row
+PT. THIRD COMPANY,admin@third.co.id,Save as .xlsx after filling`;
+            
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Email_Mapping_Template.csv';
+            link.click();
         }
 
         function handleFileSelect(e) {
@@ -315,6 +470,11 @@
 
             const formData = new FormData();
             formData.append('file', uploadedFile);
+            
+            // Add email mapping file if provided
+            if (emailMappingFile) {
+                formData.append('email_mapping', emailMappingFile);
+            }
 
             try {
                 const response = await fetch(`${API_BASE}/api/split-excel`, {
@@ -434,7 +594,7 @@
             if (emails.length === 0) {
                 emailPreview.innerHTML = `
                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <p class="text-yellow-800">No valid email addresses found in the Excel sheets (D12).</p>
+                        <p class="text-yellow-800">No valid email addresses found. Make sure you've uploaded an email mapping file or that cell D12 contains valid email addresses in each sheet.</p>
                     </div>
                 `;
                 return;

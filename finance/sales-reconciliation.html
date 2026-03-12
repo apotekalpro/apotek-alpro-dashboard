@@ -254,10 +254,10 @@
                     </div>
                 </div>
 
-                <!-- File 5: Merchant Rate Matching Checker -->
+                <!-- File 5: Master BCA Cabang x Alpro Matching -->
                 <div class="upload-container">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        5. Merchant Rate Matching Checker
+                        5. Master BCA Cabang x Alpro
                     </label>
                     <div class="upload-zone" id="upload-zone-5" onclick="document.getElementById('file-5').click()">
                         <input type="file" id="file-5" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(5, this.files[0])">
@@ -268,28 +268,13 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- File 6: Master BCA Cabang x Alpro Matching -->
-                <div class="upload-container">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        6. Master BCA Cabang x Alpro
-                    </label>
-                    <div class="upload-zone" id="upload-zone-6" onclick="document.getElementById('file-6').click()">
-                        <input type="file" id="file-6" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(6, this.files[0])">
-                        <div class="p-4 text-center">
-                            <i class="fas fa-file-excel text-4xl text-gray-400 mb-2"></i>
-                            <p class="text-sm text-gray-600" id="file-name-6">Click to upload Excel file</p>
-                            <p class="text-xs text-gray-400 mt-1" id="file-status-6"></p>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Progress Bar -->
             <div class="mt-6">
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-sm font-semibold text-gray-700">Upload Progress</span>
-                    <span class="text-sm text-gray-600" id="upload-progress-text">0/6 files uploaded</span>
+                    <span class="text-sm text-gray-600" id="upload-progress-text">0/5 files uploaded</span>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
@@ -363,20 +348,11 @@
                 <button class="tab-button active" onclick="showResultTab('all')">
                     <i class="fas fa-list mr-2"></i>All Results
                 </button>
-                <button class="tab-button" onclick="showResultTab('cdm')">
-                    <i class="fas fa-money-bill-wave mr-2"></i>CDM (Cash)
+                <button class="tab-button" onclick="showResultTab('matched')">
+                    <i class="fas fa-check-circle mr-2"></i>Matched
                 </button>
-                <button class="tab-button" onclick="showResultTab('creditcard')">
-                    <i class="fas fa-credit-card mr-2"></i>Credit Card
-                </button>
-                <button class="tab-button" onclick="showResultTab('qris')">
-                    <i class="fas fa-qrcode mr-2"></i>QRIS
-                </button>
-                <button class="tab-button" onclick="showResultTab('debit')">
-                    <i class="fas fa-credit-card mr-2"></i>Debit Card
-                </button>
-                <button class="tab-button" onclick="showResultTab('setoran')">
-                    <i class="fas fa-hand-holding-usd mr-2"></i>Setoran Tunai
+                <button class="tab-button" onclick="showResultTab('unmatched')">
+                    <i class="fas fa-exclamation-circle mr-2"></i>Unmatched
                 </button>
             </div>
 
@@ -390,21 +366,6 @@
                 </button>
                 <button onclick="exportResults('unmatched')" class="btn-secondary">
                     <i class="fas fa-times mr-2"></i>Export Unmatched
-                </button>
-                <button onclick="exportResults('cdm')" class="btn-secondary">
-                    <i class="fas fa-money-bill-wave mr-2"></i>Export CDM
-                </button>
-                <button onclick="exportResults('creditcard')" class="btn-secondary">
-                    <i class="fas fa-credit-card mr-2"></i>Export Credit Card
-                </button>
-                <button onclick="exportResults('qris')" class="btn-secondary">
-                    <i class="fas fa-qrcode mr-2"></i>Export QRIS
-                </button>
-                <button onclick="exportResults('debit')" class="btn-secondary">
-                    <i class="fas fa-credit-card mr-2"></i>Export Debit
-                </button>
-                <button onclick="exportResults('setoran')" class="btn-secondary">
-                    <i class="fas fa-hand-holding-usd mr-2"></i>Export Setoran
                 </button>
             </div>
 
@@ -485,9 +446,9 @@
         // Update progress bar
         function updateProgress() {
             const uploadedCount = Object.keys(uploadedFiles).length;
-            const progressPercent = (uploadedCount / 6) * 100;
+            const progressPercent = (uploadedCount / 5) * 100;
             document.getElementById('progress-fill').style.width = `${progressPercent}%`;
-            document.getElementById('upload-progress-text').textContent = `${uploadedCount}/6 files uploaded`;
+            document.getElementById('upload-progress-text').textContent = `${uploadedCount}/5 files uploaded`;
 
             // Enable process button if BCA statement is uploaded
             if (uploadedFiles[2]) {
@@ -496,7 +457,7 @@
         }
 
         // Parse date from various formats
-        function parseDate(dateValue) {
+        function parseDate(dateValue, referenceYear = null) {
             if (!dateValue) return null;
             
             // If it's already a Date object
@@ -509,7 +470,32 @@
                 if (parts.length === 2) {
                     const day = parseInt(parts[0]);
                     const month = parseInt(parts[1]) - 1;
-                    const year = new Date().getFullYear();
+                    
+                    // Smart year inference:
+                    // 1. Use referenceYear if provided
+                    // 2. Otherwise, if transaction month > current month, assume previous year
+                    // 3. Otherwise use current year
+                    let year;
+                    if (referenceYear) {
+                        year = referenceYear;
+                    } else {
+                        const currentDate = new Date();
+                        const currentYear = currentDate.getFullYear();
+                        const currentMonth = currentDate.getMonth();
+                        
+                        // TEMPORARY FIX: Hard-code 2026 for current data
+                        // TODO: Add year input field in UI
+                        year = 2026;
+                        
+                        // If transaction month is after current month, it's likely from previous year
+                        // e.g., in January 2026, a transaction dated 10/10 (October) is from 2025
+                        // if (month > currentMonth) {
+                        //     year = currentYear - 1;
+                        // } else {
+                        //     year = currentYear;
+                        // }
+                    }
+                    
                     return new Date(year, month, day);
                 }
                 
@@ -575,7 +561,99 @@
             return amount;
         }
 
-        // Round down to nearest 50,000
+        // NEW: Parse BCA amount from Column B description (before deduction)
+        function parseBCAAmountFromDescription(description, transactionType = null) {
+            if (!description) return 0;
+            
+            // For CDM: Extract from "SETORAN VIA CDM BCA ... Rp xxx.xxx,xx"
+            if (transactionType === 'CDM') {
+                // Pattern: "Rp 1.234.567,89" or "Rp 1234567.89"
+                const rpMatch = description.match(/Rp\s*([\d.,]+)/i);
+                if (rpMatch) {
+                    // Clean: remove dots (thousand separators), replace comma with decimal point
+                    let cleanAmount = rpMatch[1].replace(/\./g, '').replace(/,/g, '.');
+                    return parseFloat(cleanAmount) || 0;
+                }
+            }
+            
+            // For SETORAN_TUNAI: Extract from "SETORAN TUNAI ... xxx.xxx,xx"
+            if (transactionType === 'SETORAN_TUNAI') {
+                // Pattern: numbers with dots/commas at end of description
+                const amountMatch = description.match(/([\d.,]+)\s*$/i);
+                if (amountMatch) {
+                    let cleanAmount = amountMatch[1].replace(/\./g, '').replace(/,/g, '.');
+                    return parseFloat(cleanAmount) || 0;
+                }
+            }
+            
+            // NEW Pattern: BCA statement with asterisk-delimited format
+            // Example: "*QRIS*:8735997,*SALES*:12759015,*CASH*:2169118,*DEBIT LAIN*:8898400"
+            // We need to extract SALES amount or sum all payment types
+            
+            // Try to find *SALES* amount (this is usually the total)
+            const salesMatch = description.match(/\*SALES\*\s*:\s*([\d,]+\.?\d*)/i);
+            if (salesMatch) {
+                const cleanAmount = salesMatch[1].replace(/,/g, '');
+                return parseFloat(cleanAmount) || 0;
+            }
+            
+            // If no SALES field, sum all payment types
+            // Pattern: *TYPE*:amount
+            const paymentPattern = /\*[^*]+\*\s*:\s*([\d,]+\.?\d*)/g;
+            let totalAmount = 0;
+            let match;
+            
+            while ((match = paymentPattern.exec(description)) !== null) {
+                const cleanAmount = match[1].replace(/,/g, '');
+                const amount = parseFloat(cleanAmount);
+                if (!isNaN(amount)) {
+                    totalAmount += amount;
+                }
+            }
+            
+            if (totalAmount > 0) {
+                return totalAmount;
+            }
+            
+            // Pattern for KR OTOMATIS with TGH: (Debit Card)
+            // Example: "KR OTOMATIS MID : 885004119892 ALPRO KALIBATA CIT  TGH:     743450.00"
+            const tghMatch = description.match(/TGH\s*:\s*([\d,]+\.?\d*)/i);
+            if (tghMatch) {
+                const cleanAmount = tghMatch[1].replace(/,/g, '');
+                return parseFloat(cleanAmount) || 0;
+            }
+            
+            // Pattern for QR: amount (for QRIS)
+            const qrMatch = description.match(/QR\s*:\s*([\d,]+\.?\d*)/i);
+            if (qrMatch) {
+                const cleanAmount = qrMatch[1].replace(/,/g, '');
+                return parseFloat(cleanAmount) || 0;
+            }
+            
+            // Fallback: return 0 if no pattern matched
+            return 0;
+        }
+
+        // NEW: Get date range - NO week calculation, just use the date itself
+        // User controls the date range by uploading specific date ranges
+        // ACMM: 2-8 Jan; BCA: 3-9 Jan (H+1 adjustment handled elsewhere)
+        function getWeekRange(date) {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            
+            // Use the date itself as the "week key"
+            // This allows flexible date ranges controlled by uploaded files
+            const dateStr = formatDate(d);
+            
+            return {
+                weekStart: d,
+                weekEnd: d,
+                weekLabel: dateStr,  // Just show the date
+                weekKey: dateStr     // Use date as identifier
+            };
+        }
+
+        // Round down to nearest 50,000 (DEPRECATED - keeping for backward compatibility but not used in weekly matching)
         function roundDownTo50k(amount) {
             return Math.floor(amount / 50000) * 50000;
         }
@@ -611,18 +689,29 @@
 
         // Parse BCA description for Debit Card MID
         function parseDebitCard(description) {
-            const krMatch = description.match(/KR OTOMATIS.*?MID\s*:\s*(\d+)/i);
-            if (krMatch && !description.includes('QR :')) {
-                return extractLastDigits(krMatch[1], 7);
+            // Pattern 1: KR OTOMATIS with MID: label
+            const midMatch = description.match(/KR OTOMATIS.*?MID\s*:\s*(\d+)/i);
+            if (midMatch && !description.includes('QR :')) {
+                return extractLastDigits(midMatch[1], 7);
             }
+            
+            // Pattern 2: KR OTOMATIS with FLAZZ (no MID: label)
+            // Example: "KR OTOMATIS 02/10/2025 04:00 FLAZZ 885004119892  ALPRO..."
+            const flazzMatch = description.match(/FLAZZ\s+(\d+)/i);
+            if (flazzMatch && !description.includes('QR :')) {
+                return extractLastDigits(flazzMatch[1], 7);
+            }
+            
             return null;
         }
 
         // Parse BCA description for Setoran Tunai outlet
         function parseSetoranTunai(description) {
-            const setoranMatch = description.match(/SETORAN TUNAI.*?([A-Z0-9]{6,})/i);
-            if (setoranMatch) {
-                return setoranMatch[1];
+            // Pattern: Extract outlet code from description like "069-JKJSKR1 141 02025"
+            // Look for pattern: any word containing letters and numbers (6+ chars)
+            const outletMatch = description.match(/([A-Z]{2,}[A-Z0-9]{4,})/i);
+            if (outletMatch) {
+                return outletMatch[1];
             }
             return null;
         }
@@ -634,7 +723,9 @@
             if (description.includes('SETORAN VIA CDM')) return 'CDM';
             if (description.includes('KARTU KREDIT')) return 'CREDITCARD';
             if (description.includes('QR :')) return 'QRIS';
-            if (description.includes('KR OTOMATIS') && !description.includes('QR :')) return 'DEBIT';
+            // KR OTOMATIS with TGH: is debit card transaction
+            if (description.includes('KR OTOMATIS') && description.includes('TGH:')) return 'DEBITCARD';
+            if (description.includes('KR OTOMATIS') && !description.includes('QR :')) return 'DEBITCARD';
             if (description.includes('SETORAN TUNAI')) return 'SETORAN_TUNAI';
             
             return 'OTHER';
@@ -645,11 +736,7 @@
             const lookups = {
                 kartuDebit: new Map(),
                 mid: new Map(),
-                cabang: new Map(),
-                merchantRate: {
-                    byCard: new Map(),
-                    byPaymentType: new Map()
-                }
+                cabang: new Map()
             };
 
             console.log('=== Building Master Lookups ===');
@@ -677,10 +764,10 @@
                 
                 for (let i = 1; i < data.length; i++) {
                     const row = data[i];
-                    // Extract last 7 digits from Column D MID
+                    // Extract last 7 digits from Column D MID (index 3)
                     const midFull = row[3]?.toString() || '';
                     const mid = extractLastDigits(midFull, 7);
-                    const outletCode = row[4]; // Column E (index 4)
+                    const outletCode = row[4]; // Column E - Outlet Code (index 4)
                     
                     if (mid && outletCode) {
                         lookups.mid.set(mid, outletCode);
@@ -697,8 +784,8 @@
             }
 
             // Master BCA Cabang (File 6)
-            if (uploadedFiles[6]) {
-                const data = uploadedFiles[6].data;
+            if (uploadedFiles[5]) {
+                const data = uploadedFiles[5].data;
                 console.log(`Processing Cabang file: ${data.length - 1} rows`);
                 console.log('Sample header row:', data[0]);
                 
@@ -746,41 +833,6 @@
                 console.log('Sample Cabang codes in lookup:', sampleCabang);
             }
 
-            // Merchant Rate Checker (File 5)
-            if (uploadedFiles[5]) {
-                const data = uploadedFiles[5].data;
-                console.log(`Processing Merchant Rate file: ${data.length - 1} rows`);
-                
-                for (let i = 1; i < data.length; i++) {
-                    const row = data[i];
-                    const cardLast6 = row[0]?.toString() || ''; // Column A - last 6 digits of card
-                    const paymentType = row[1]?.toString() || ''; // Column B - payment type description
-                    const rate = parseFloat(row[2]) || 0; // Column C - merchant rate
-                    
-                    // For card number matching (Column A) - STORE BOTH RATE AND PAYMENT TYPE OVERRIDE
-                    if (cardLast6 && cardLast6 !== '000000') {
-                        // Store card-specific rate AND the correct payment type for override
-                        lookups.merchantRate.byCard.set(cardLast6, {
-                            rate: rate,
-                            paymentType: paymentType // Store correct payment type for override
-                        });
-                    }
-                    
-                    // For payment type matching (Column B) - PRIORITY!
-                    if (paymentType) {
-                        const paymentUpper = paymentType.toUpperCase();
-                        // Store with exact payment type as key
-                        // If multiple rates for same type, last one wins (but shouldn't happen in clean data)
-                        if (!lookups.merchantRate.byPaymentType.has(paymentUpper) || cardLast6 === '000000') {
-                            // Priority: 000000 entries (general rules) or first occurrence
-                            lookups.merchantRate.byPaymentType.set(paymentUpper, rate);
-                        }
-                    }
-                }
-                console.log(`Loaded ${lookups.merchantRate.byCard.size} card-specific rates with payment type overrides`);
-                console.log(`Loaded ${lookups.merchantRate.byPaymentType.size} payment type rates`);
-            }
-
             console.log('=== Lookup Building Complete ===');
             return lookups;
         }
@@ -791,13 +843,18 @@
 
             const pivotMap = new Map();
             const data = uploadedFiles[1].data;
+            
+            console.log('=== Pivoting Transaction Summary ===');
+            console.log('Sample header:', data[0]);
 
             for (let i = 1; i < data.length; i++) {
                 const row = data[i];
                 const date = parseDate(row[0]); // Column A
                 const storeName = row[2]; // Column C
-                let paymentMethod = row[5]; // Column F - will be overridden by card number match
+                let paymentMethod = row[5]; // Column F
                 const cardNum = row[6]; // Column G
+                const debitCredit = row[11]?.toString().trim().toUpperCase(); // Column L (index 11) - "DEBIT" or "CREDIT"
+                const coaAccount = row[12]?.toString().trim(); // Column M (index 12) - COA Account
                 const amount = parseFloat(row[13]) || 0; // Column N (index 13)
                 const commission = parseFloat(row[10]) || 0; // Column K (index 10)
 
@@ -805,97 +862,66 @@
 
                 const outletCode = parseOutletCode(storeName);
                 if (!outletCode) continue;
-
-                // STEP 1: CARD NUMBER OVERRIDE FIRST (HIGHEST PRIORITY)
-                // If card matches CC Merchant Checker Column A, override payment type with Column B
-                const cardLast6 = extractLastDigits(cardNum, 6);
-                let merchantRate = 0;
-                let matchSource = '';
-                let wasOverridden = false;
                 
-                if (cardLast6 && cardLast6 !== '000000' && lookups.merchantRate.byCard.has(cardLast6)) {
-                    const cardMatch = lookups.merchantRate.byCard.get(cardLast6);
-                    const originalPaymentMethod = paymentMethod;
-                    
-                    // OVERRIDE: Replace payment type with the correct one from CC Merchant Checker
-                    paymentMethod = cardMatch.paymentType;
-                    merchantRate = cardMatch.rate;
-                    matchSource = `card ${cardLast6} (override)`;
-                    wasOverridden = true;
-                    
-                    if (originalPaymentMethod !== paymentMethod) {
-                        console.log(`✓ Override Row ${i}: Card ${cardLast6} - "${originalPaymentMethod}" → "${paymentMethod}" (rate: ${merchantRate}%)`);
-                    }
+                // PRE-FILTER: Only process specific COA accounts (Column M)
+                // Only include:
+                //   - "11201010 - PIUTANG KARTU KREDIT - BCA"
+                //   - "11201100 - PIUTANG PENJUALAN CASH"
+                const validAccounts = [
+                    '11201010 - PIUTANG KARTU KREDIT - BCA',
+                    '11201100 - PIUTANG PENJUALAN CASH'
+                ];
+                
+                if (!validAccounts.includes(coaAccount)) {
+                    continue; // Skip rows with other COA accounts
                 }
                 
-                // STEP 2: If not overridden, determine merchant rate based on payment type
-                if (!wasOverridden) {
-                    // For QRIS, use QRIS rate
-                    if (paymentMethod && paymentMethod.toUpperCase() === 'QRIS') {
-                        if (lookups.merchantRate.byPaymentType.has('QRIS')) {
-                            merchantRate = lookups.merchantRate.byPaymentType.get('QRIS');
-                            matchSource = 'QRIS type';
-                        }
-                    }
-                    // For other payment types, match by payment type description
-                    else if (paymentMethod) {
-                        const paymentUpper = paymentMethod.toUpperCase();
-                        // Try exact match first
-                        if (lookups.merchantRate.byPaymentType.has(paymentUpper)) {
-                            merchantRate = lookups.merchantRate.byPaymentType.get(paymentUpper);
-                            matchSource = `type ${paymentUpper}`;
-                        } else {
-                            // Try partial match (for generic types)
-                            for (let [key, rate] of lookups.merchantRate.byPaymentType) {
-                                if (paymentUpper.includes(key) || key.includes(paymentUpper)) {
-                                    merchantRate = rate;
-                                    matchSource = `partial ${key}`;
-                                    break;
-                                }
-                            }
-                        }
-                    }
+                // Exclude "SALES" payment method
+                if (paymentMethod === 'SALES') {
+                    continue;
                 }
-
-                // Calculate net amount after commission
-                let netAmount = amount;
-                if (merchantRate > 0) {
-                    netAmount = amount - (amount * merchantRate / 100);
-                } else if (commission > 0) {
-                    netAmount = amount - commission;
-                }
-
-                // Create pivot key
-                const dateStr = formatDate(date);
-                const key = `${dateStr}|${outletCode}|${paymentMethod}`;
-
+                
+                // Process DEBIT and CREDIT rows
+                // DEBIT = payments received (add to total)
+                // CREDIT = refunds/returns (subtract from total)
+                
+                // Create pivot key by OUTLET and PAYMENT METHOD only (no date)
+                // This groups all dates together for total matching
+                const key = `${outletCode}|${paymentMethod}`;
+                
                 if (!pivotMap.has(key)) {
                     pivotMap.set(key, {
-                        date: date,
                         outletCode: outletCode,
                         paymentMethod: paymentMethod,
                         amount: 0,
-                        netAmount: 0,
-                        merchantRate: 0,
+                        debitAmount: 0,   // Track debits separately
+                        creditAmount: 0,  // Track credits separately
                         count: 0,
                         transactions: []
                     });
                 }
-
+                
                 const pivot = pivotMap.get(key);
-                pivot.amount += amount;
-                pivot.netAmount += netAmount;
-                pivot.merchantRate = merchantRate; // Store the rate used
+                
+                // Add to appropriate counter based on DEBIT/CREDIT
+                if (debitCredit === 'DEBIT') {
+                    pivot.debitAmount += amount;
+                } else if (debitCredit === 'CREDIT') {
+                    pivot.creditAmount += amount;
+                }
+                
+                // Net amount = DEBIT - CREDIT
+                pivot.amount = pivot.debitAmount - pivot.creditAmount;
                 pivot.count++;
                 pivot.transactions.push({
                     cardNum: cardNum,
-                    cardLast6: cardLast6,
+                    cardLast6: extractLastDigits(cardNum, 6),
                     amount: amount,
-                    netAmount: netAmount,
-                    merchantRate: merchantRate,
-                    commission: commission
+                    debitCredit: debitCredit
                 });
             }
+            
+            console.log(`Created ${pivotMap.size} pivot entries (Debit payment types + Credit SALES)`);
 
             return pivotMap;
         }
@@ -913,7 +939,7 @@
                 const tglTransaksi = parseDate(row[0]);
                 const description = row[1]?.toString() || '';
                 const cabang = row[2]?.toString() || '';
-                const amount = parseBCAAmount(row[3]);
+                const columnD = row[3]; // Column D - Jumlah
                 
                 if (!tglTransaksi || !description) continue;
                 
@@ -925,6 +951,14 @@
                 }
                 
                 const transactionType = determineTransactionType(description);
+                
+                // For SETORAN_TUNAI: use Column D (Jumlah)
+                let amount;
+                if (transactionType === 'SETORAN_TUNAI') {
+                    amount = parseBCAAmount(columnD);
+                } else {
+                    amount = parseBCAAmountFromDescription(description, transactionType);
+                }
                 if (transactionType === 'SETORAN_TUNAI') {
                     const cabangStr = cabang.toString().trim();
                     if (lookups.cabang.has(cabangStr)) {
@@ -1070,7 +1104,478 @@
             return setoranMatches;
         }
         
-        // Main reconciliation function
+        // ============================================================================
+        // WEEKLY AGGREGATION AND MATCHING FUNCTIONS
+        // ============================================================================
+        
+        // Global variables for weekly results
+        let cashReconciliationResults = [];
+        let nonCashReconciliationResults = [];
+        let nonCashTotalReconciliationResults = [];
+        let reconciliationStatistics = {};
+        
+        function aggregateACMMByWeek(pivotMap) {
+            const weeklyACMM = new Map();
+            const weeklySummary = new Map();
+            
+            console.log('=== Aggregating ACMM Totals (All Dates) ===');
+            console.log('🔍 DEBUG: Pivot map has', pivotMap.size, 'entries');
+            
+            let sampleCount = 0;
+            for (const [key, pivot] of pivotMap.entries()) {
+                const [outletCode, paymentMethod] = key.split('|');
+                
+                // DEBUG: Log first 5 ACMM entries
+                if (sampleCount < 5) {
+                    console.log(`🔍 ACMM Entry ${sampleCount + 1}:`);
+                    console.log(`  🏪 Outlet: ${outletCode} | Method: ${paymentMethod}`);
+                    console.log(`  💰 Total Amount: ${pivot.amount.toFixed(2)} (${pivot.count} transactions)`);
+                    console.log(`  📊 Debit: ${pivot.debitAmount.toFixed(2)} | Credit: ${pivot.creditAmount.toFixed(2)}`);
+                    console.log('');
+                    sampleCount++;
+                }
+                
+                // Store by outlet and payment method
+                const detailKey = `${outletCode}|${paymentMethod}`;
+                weeklyACMM.set(detailKey, {
+                    outletCode, 
+                    paymentMethod, 
+                    totalAmount: pivot.amount,
+                    transactionCount: pivot.count,
+                    weekKey: 'ALL',
+                    weekLabel: 'All Dates',
+                    weekStart: null,
+                    weekEnd: null
+                });
+                
+                // Summary by outlet only
+                const summaryKey = outletCode;
+                if (!weeklySummary.has(summaryKey)) {
+                    weeklySummary.set(summaryKey, {
+                        outletCode,
+                        totalAmount: 0,
+                        byType: {},
+                        weekKey: 'ALL',
+                        weekLabel: 'All Dates',
+                        weekStart: null,
+                        weekEnd: null
+                    });
+                }
+                
+                const summary = weeklySummary.get(summaryKey);
+                summary.totalAmount += pivot.amount;
+                if (!summary.byType[paymentMethod]) summary.byType[paymentMethod] = 0;
+                summary.byType[paymentMethod] += pivot.amount;
+            }
+            
+            console.log(`Aggregated ${weeklyACMM.size} ACMM totals by payment type`);
+            console.log(`Aggregated ${weeklySummary.size} ACMM totals by outlet`);
+            
+            // DEBUG: Show sample ACMM weeks
+            console.log('🔍 ACMM Summary Keys (first 5):');
+            let count = 0;
+            for (const [key, data] of weeklySummary.entries()) {
+                if (count++ >= 5) break;
+                console.log(`  ${key} => Week: ${data.weekLabel}, Amount: ${data.totalAmount.toFixed(2)}`);
+            }
+            console.log('');
+            
+            return { weeklyACMM, weeklySummary };
+        }
+        
+        function aggregateBCAByWeek(bcaData, lookups, referenceYear = null) {
+            const weeklyBCA = new Map();
+            const weeklySummary = new Map();
+            
+            console.log('=== Aggregating BCA Totals (All Dates) ===');
+            console.log('🔍 DEBUG: BCA has', bcaData.length - 1, 'rows (excluding header)');
+            console.log('🔍 DEBUG: Using reference year:', referenceYear || 'auto-detect');
+            
+            for (let i = 1; i < bcaData.length; i++) {
+                const row = bcaData[i];
+                const tglTransaksi = parseDate(row[0], referenceYear);
+                const description = row[1]?.toString() || '';
+                const cabang = row[2]?.toString() || '';
+                const columnD = row[3]; // Column D - Jumlah (Amount)
+                
+                if (!tglTransaksi || !description) continue;
+                if (description.includes('BI-FAST') || description.includes('TRSF E-BANKING') || description.includes('BYR')) continue;
+                
+                const transactionType = determineTransactionType(description);
+                
+                // Amount parsing based on transaction type:
+                // - CDM and SETORAN_TUNAI: Use Column D (Jumlah)
+                // - QRIS, CREDITCARD, DEBITCARD: Parse from description (Column B)
+                let amount;
+                if (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') {
+                    amount = parseBCAAmount(columnD);
+                } else {
+                    amount = parseBCAAmountFromDescription(description, transactionType);
+                }
+                let outletCode = null;
+                
+                if (transactionType === 'CDM') {
+                    const kartuDebit = parseCDM(description);
+                    if (kartuDebit && lookups.kartuDebit.has(kartuDebit)) outletCode = lookups.kartuDebit.get(kartuDebit);
+                } else if (transactionType === 'SETORAN_TUNAI') {
+                    const cabangStr = cabang.toString().trim();
+                    if (lookups.cabang.has(cabangStr)) outletCode = lookups.cabang.get(cabangStr);
+                } else if (transactionType === 'CREDITCARD') {
+                    const mid = parseCreditCardMID(description);
+                    if (mid && lookups.mid.has(mid)) outletCode = lookups.mid.get(mid);
+                } else if (transactionType === 'DEBITCARD') {
+                    const mid = parseDebitCard(description);
+                    if (mid && lookups.mid.has(mid)) outletCode = lookups.mid.get(mid);
+                } else if (transactionType === 'QRIS') {
+                    const mid = parseQRIS(description);
+                    if (mid && lookups.mid.has(mid)) outletCode = lookups.mid.get(mid);
+                }
+                
+                if (!outletCode) {
+                    if (i <= 20 && (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI' || transactionType === 'DEBITCARD')) {
+                        console.log(`⚠️ SKIPPED Row ${i}: Type=${transactionType}, Amount=${amount.toFixed(2)}, No outlet found`);
+                        console.log(`   Desc: ${description.substring(0, 100)}`);
+                    }
+                    continue;
+                }
+                
+                // DEBUG: Log first 10 rows
+                if (i <= 10) {
+                    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                    const acmmDate = subtractOneDay(tglTransaksi);
+                    console.log(`🔍 BCA Row ${i}:`);
+                    console.log(`  📅 BCA Date: ${formatDate(tglTransaksi)} (${days[tglTransaksi.getDay()]})`);
+                    console.log(`  📅 ACMM Date (H+1): ${formatDate(acmmDate)} (${days[acmmDate.getDay()]})`);
+                    console.log(`  🏪 Outlet: ${outletCode} | Type: ${transactionType} | Amount: ${amount.toFixed(2)}`);
+                    console.log('');
+                }
+                
+                // Group by outlet and transaction type only (no date)
+                const detailKey = `${outletCode}|${transactionType}`;
+                if (!weeklyBCA.has(detailKey)) {
+                    weeklyBCA.set(detailKey, {
+                        outletCode,
+                        transactionType,
+                        totalAmount: 0,
+                        transactionCount: 0,
+                        weekKey: 'ALL',
+                        weekLabel: 'All Dates',
+                        weekStart: null,
+                        weekEnd: null
+                    });
+                }
+                
+                const bcaDetail = weeklyBCA.get(detailKey);
+                bcaDetail.totalAmount += amount;
+                bcaDetail.transactionCount++;
+                
+                // Summary by outlet only
+                const summaryKey = outletCode;
+                if (!weeklySummary.has(summaryKey)) {
+                    weeklySummary.set(summaryKey, {
+                        outletCode,
+                        totalAmount: 0,
+                        byType: {},
+                        weekKey: 'ALL',
+                        weekLabel: 'All Dates',
+                        weekStart: null,
+                        weekEnd: null
+                    });
+                }
+                
+                const summary = weeklySummary.get(summaryKey);
+                summary.totalAmount += amount;
+                if (!summary.byType[transactionType]) summary.byType[transactionType] = 0;
+                summary.byType[transactionType] += amount;
+            }
+            
+            console.log(`Aggregated ${weeklyBCA.size} BCA totals by payment type`);
+            console.log(`Aggregated ${weeklySummary.size} BCA totals by outlet`);
+            
+            console.log(`Aggregated ${weeklyBCA.size} BCA weekly details`);
+            console.log(`Aggregated ${weeklySummary.size} BCA weekly summaries`);
+            
+            // DEBUG: Show sample BCA weeks
+            console.log('🔍 BCA Summary Keys (first 5):');
+            let count = 0;
+            for (const [key, data] of weeklySummary.entries()) {
+                if (count++ >= 5) break;
+                console.log(`  ${key} => Week: ${data.weekLabel}, Amount: ${data.totalAmount.toFixed(2)}`);
+            }
+            console.log('');
+            
+            return { weeklyBCA, weeklySummary };
+        }
+        
+        function matchWeeklyData(acmmData, bcaData, pivotMap, lookups) {
+            const cashResults = [];
+            const nonCashResults = [];
+            
+            console.log('=== Performing Total Matching (All Dates) - Separated by CASH and NON-CASH ===');
+            
+            // Define CASH and NON-CASH transaction types
+            const cashTypes = ['CDM', 'SETORAN_TUNAI'];
+            const nonCashTypes = ['CREDITCARD', 'DEBITCARD', 'QRIS'];
+            
+            // Type mapping for ACMM payment methods to BCA transaction types
+            const typeMapping = {
+                'CREDITCARD': ['VISA', 'MASTER', 'BCA CARD', 'JCB CARD', 'AMEX CARD', 'OTHER CARD'],
+                'DEBITCARD': ['DEBIT BANK SAMA', 'DEBIT BANK LAIN'],
+                'QRIS': ['QRIS'],
+                'CDM': ['CASH'],
+                'SETORAN_TUNAI': ['CASH']
+            };
+            
+            // Collect all outlets
+            const allOutlets = new Set([...Array.from(acmmData.weeklySummary.keys()), ...Array.from(bcaData.weeklySummary.keys())]);
+            
+            // Match CASH transactions for each outlet
+            for (const outletCode of allOutlets) {
+                // Get ACMM CASH total
+                let acmmCashTotal = 0;
+                const acmmCashMethods = [];
+                const acmmKey = `${outletCode}|CASH`;
+                if (acmmData.weeklyACMM.has(acmmKey)) {
+                    const acmmDetail = acmmData.weeklyACMM.get(acmmKey);
+                    acmmCashTotal = acmmDetail.totalAmount;
+                    acmmCashMethods.push(`CASH: ${acmmDetail.totalAmount.toFixed(2)}`);
+                }
+                
+                // Get BCA CASH total (CDM + SETORAN_TUNAI)
+                let bcaCashTotal = 0;
+                const bcaCashBreakdown = [];
+                
+                // Add CDM
+                const cdmKey = `${outletCode}|CDM`;
+                if (bcaData.weeklyBCA.has(cdmKey)) {
+                    const cdmDetail = bcaData.weeklyBCA.get(cdmKey);
+                    bcaCashTotal += cdmDetail.totalAmount;
+                    bcaCashBreakdown.push(`CDM: ${cdmDetail.totalAmount.toFixed(2)}`);
+                }
+                
+                // Add SETORAN_TUNAI
+                const setoranKey = `${outletCode}|SETORAN_TUNAI`;
+                if (bcaData.weeklyBCA.has(setoranKey)) {
+                    const setoranDetail = bcaData.weeklyBCA.get(setoranKey);
+                    bcaCashTotal += setoranDetail.totalAmount;
+                    bcaCashBreakdown.push(`SETORAN: ${setoranDetail.totalAmount.toFixed(2)}`);
+                }
+                
+                // Only add to results if there's data from either side
+                if (acmmCashTotal > 0 || bcaCashTotal > 0) {
+                    const difference = bcaCashTotal - acmmCashTotal;
+                    
+                    let status = 'UNMATCHED';
+                    if (acmmCashTotal > 0 && bcaCashTotal > 0) {
+                        status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                    } else if (acmmCashTotal === 0) {
+                        status = 'NO_ACMM_DATA';
+                    } else if (bcaCashTotal === 0) {
+                        status = 'NO_BCA_DATA';
+                    }
+                    
+                    cashResults.push({
+                        weekKey: 'ALL',
+                        weekLabel: 'All Dates',
+                        weekStart: '',
+                        weekEnd: '',
+                        outletCode,
+                        category: 'CASH',
+                        bcaTotal: bcaCashTotal,
+                        acmmTotal: acmmCashTotal,
+                        difference,
+                        status,
+                        acmmBreakdown: acmmCashMethods.join('; '),
+                        bcaBreakdown: bcaCashBreakdown.join('; ')
+                    });
+                }
+            }
+            
+            // Match NON-CASH transactions for each outlet and type
+            const allDetailKeys = new Set();
+            for (const key of bcaData.weeklyBCA.keys()) {
+                const [outletCode, transactionType] = key.split('|');
+                if (nonCashTypes.includes(transactionType)) {
+                    allDetailKeys.add(key);
+                }
+            }
+            
+            for (const [key, data] of acmmData.weeklyACMM.entries()) {
+                const [outletCode, paymentMethod] = key.split('|');
+                if (paymentMethod !== 'CASH') {
+                    let transactionType = 'UNKNOWN';
+                    for (const [type, methods] of Object.entries(typeMapping)) {
+                        if (nonCashTypes.includes(type) && methods.includes(paymentMethod)) {
+                            transactionType = type;
+                            break;
+                        }
+                    }
+                    if (transactionType !== 'UNKNOWN') {
+                        allDetailKeys.add(`${outletCode}|${transactionType}`);
+                    }
+                }
+            }
+            
+            for (const key of allDetailKeys) {
+                const [outletCode, transactionType] = key.split('|');
+                const bcaDetail = bcaData.weeklyBCA.get(key);
+                
+                let acmmTotal = 0;
+                const acmmMethods = [];
+                
+                if (typeMapping[transactionType]) {
+                    for (const paymentMethod of typeMapping[transactionType]) {
+                        const acmmKey = `${outletCode}|${paymentMethod}`;
+                        if (acmmData.weeklyACMM.has(acmmKey)) {
+                            const acmmDetail = acmmData.weeklyACMM.get(acmmKey);
+                            acmmTotal += acmmDetail.totalAmount;
+                            acmmMethods.push(`${paymentMethod}: ${acmmDetail.totalAmount.toFixed(2)}`);
+                        }
+                    }
+                }
+                
+                const bcaTotal = bcaDetail ? bcaDetail.totalAmount : 0;
+                const bcaBreakdown = bcaDetail ? `${transactionType}: ${bcaDetail.totalAmount.toFixed(2)} (${bcaDetail.transactionCount || 0} txns)` : '-';
+                const difference = bcaTotal - acmmTotal;
+                
+                let status = 'UNMATCHED';
+                if (acmmTotal > 0 && bcaTotal > 0) {
+                    status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                } else if (acmmTotal === 0) {
+                    status = 'NO_ACMM_DATA';
+                } else if (bcaTotal === 0) {
+                    status = 'NO_BCA_DATA';
+                }
+                
+                nonCashResults.push({
+                    weekKey: 'ALL',
+                    weekLabel: 'All Dates',
+                    weekStart: '',
+                    weekEnd: '',
+                    outletCode,
+                    category: 'NON-CASH',
+                    transactionType,
+                    bcaTotal,
+                    acmmTotal,
+                    difference,
+                    status,
+                    acmmBreakdown: acmmMethods.join('; '),
+                    bcaBreakdown: bcaBreakdown
+                });
+            }
+            
+            // Create NON-CASH TOTAL summary (aggregate all non-cash types per outlet)
+            const nonCashTotalResults = [];
+            const nonCashByOutlet = new Map();
+            
+            // Aggregate all NON-CASH types per outlet
+            for (const result of nonCashResults) {
+                if (!nonCashByOutlet.has(result.outletCode)) {
+                    nonCashByOutlet.set(result.outletCode, {
+                        bcaTotal: 0,
+                        acmmTotal: 0,
+                        bcaBreakdown: [],
+                        acmmBreakdown: []
+                    });
+                }
+                const summary = nonCashByOutlet.get(result.outletCode);
+                summary.bcaTotal += result.bcaTotal;
+                summary.acmmTotal += result.acmmTotal;
+                if (result.bcaBreakdown && result.bcaBreakdown !== '-') {
+                    summary.bcaBreakdown.push(result.bcaBreakdown);
+                }
+                if (result.acmmBreakdown && result.acmmBreakdown !== '-') {
+                    summary.acmmBreakdown.push(result.acmmBreakdown);
+                }
+            }
+            
+            // Create summary results
+            for (const [outletCode, summary] of nonCashByOutlet.entries()) {
+                const difference = summary.bcaTotal - summary.acmmTotal;
+                
+                let status = 'UNMATCHED';
+                if (summary.acmmTotal > 0 && summary.bcaTotal > 0) {
+                    status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                } else if (summary.acmmTotal === 0) {
+                    status = 'NO_ACMM_DATA';
+                } else if (summary.bcaTotal === 0) {
+                    status = 'NO_BCA_DATA';
+                }
+                
+                nonCashTotalResults.push({
+                    weekKey: 'ALL',
+                    weekLabel: 'All Dates',
+                    weekStart: '',
+                    weekEnd: '',
+                    outletCode,
+                    category: 'NON-CASH-TOTAL',
+                    bcaTotal: summary.bcaTotal,
+                    acmmTotal: summary.acmmTotal,
+                    difference,
+                    status,
+                    acmmBreakdown: summary.acmmBreakdown.join('; '),
+                    bcaBreakdown: summary.bcaBreakdown.join('; ')
+                });
+            }
+            
+            console.log(`Created ${cashResults.length} CASH results, ${nonCashResults.length} NON-CASH breakdown results, ${nonCashTotalResults.length} NON-CASH total results`);
+            
+            // Calculate match statistics
+            const cashMatched = cashResults.filter(r => r.status === 'MATCHED').length;
+            const nonCashMatched = nonCashResults.filter(r => r.status === 'MATCHED').length;
+            const nonCashTotalMatched = nonCashTotalResults.filter(r => r.status === 'MATCHED').length;
+            const cashMatchRate = cashResults.length > 0 ? ((cashMatched / cashResults.length) * 100).toFixed(1) : 0;
+            const nonCashMatchRate = nonCashResults.length > 0 ? ((nonCashMatched / nonCashResults.length) * 100).toFixed(1) : 0;
+            const nonCashTotalMatchRate = nonCashTotalResults.length > 0 ? ((nonCashTotalMatched / nonCashTotalResults.length) * 100).toFixed(1) : 0;
+            
+            console.log(`📊 CASH Match Rate: ${cashMatchRate}% (${cashMatched}/${cashResults.length})`);
+            console.log(`📊 NON-CASH Breakdown Match Rate: ${nonCashMatchRate}% (${nonCashMatched}/${nonCashResults.length})`);
+            console.log(`📊 NON-CASH Total Match Rate: ${nonCashTotalMatchRate}% (${nonCashTotalMatched}/${nonCashTotalResults.length})`);
+            
+            return { 
+                cashResults: cashResults, 
+                nonCashResults: nonCashResults,
+                nonCashTotalResults: nonCashTotalResults,
+                statistics: {
+                    cashTotal: cashResults.length,
+                    cashMatched: cashMatched,
+                    cashMatchRate: cashMatchRate,
+                    nonCashTotal: nonCashResults.length,
+                    nonCashMatched: nonCashMatched,
+                    nonCashMatchRate: nonCashMatchRate,
+                    nonCashTotalCount: nonCashTotalResults.length,
+                    nonCashTotalMatched: nonCashTotalMatched,
+                    nonCashTotalMatchRate: nonCashTotalMatchRate
+                }
+            };
+        }
+        
+        function calculateWeeklySetoranMatch(weekKey, outletCode, bcaData, acmmData, pivotMap) {
+            let cdmBalance = 0, cashSales = 0;
+            
+            const cdmKey = `${weekKey}|${outletCode}|CDM`;
+            if (bcaData.weeklyBCA.has(cdmKey)) {
+                const cdmData = bcaData.weeklyBCA.get(cdmKey);
+                for (const txn of cdmData.transactions) {
+                    const pivotKey = `${formatDate(txn.acmmDate)}|${outletCode}|CASH`;
+                    if (pivotMap.has(pivotKey)) {
+                        const pivot = pivotMap.get(pivotKey);
+                        const grossAmount = pivot.amount;
+                        const roundedAmount = roundDownTo50k(grossAmount);
+                        cdmBalance += (grossAmount - roundedAmount);
+                    }
+                }
+            }
+            
+            const acmmKey = `${weekKey}|${outletCode}|CASH`;
+            if (acmmData.weeklyACMM.has(acmmKey)) {
+                cashSales = acmmData.weeklyACMM.get(acmmKey).totalAmount;
+            }
+            
+            return { cdmBalance, cashSales, expectedTotal: cdmBalance + cashSales };
+        }
+        
+        // Main reconciliation function - WEEKLY VERSION
         async function startReconciliation() {
             if (!uploadedFiles[2]) {
                 alert('Please upload BCA Statement file first!');
@@ -1092,528 +1597,46 @@
                 document.getElementById('processing-text').textContent = 'Pivoting transaction summary...';
                 await new Promise(resolve => setTimeout(resolve, 100));
 
-                // Pivot transaction summary (now with card number overrides)
+                // Pivot transaction summary
                 const pivotMap = pivotTransactionSummary(lookups);
                 
-                // Get BCA data first (needed for Setoran matcher)
+                // Get BCA data
                 const bcaData = uploadedFiles[2].data;
-                
-                // Build Setoran Tunai matcher with balance accumulation between Setoran dates
-                const setoranMatcher = buildSetoranTunaiMatcher(lookups, pivotMap, bcaData);
 
-                document.getElementById('processing-text').textContent = 'Processing BCA statement...';
+                document.getElementById('processing-text').textContent = 'Aggregating ACMM data by week...';
                 await new Promise(resolve => setTimeout(resolve, 100));
-
-                // Process BCA Statement
-                reconciliationResults = [];
                 
-                console.log('=== Processing BCA Statement ===');
-                console.log(`Total BCA rows: ${bcaData.length - 1}`);
-
-                // STEP 1: Aggregate BCA transactions (for CDM and Setoran Tunai)
-                // Group by: date + transaction type + outlet code
-                const bcaAggregated = new Map();
-                const bcaRawTransactions = [];
+                const acmmWeekly = aggregateACMMByWeek(pivotMap);
                 
-                for (let i = 1; i < bcaData.length; i++) {
-                    const row = bcaData[i];
-                    const tglTransaksi = parseDate(row[0]); // Column A
-                    const description = row[1]?.toString() || ''; // Column B
-                    const cabang = row[2]?.toString() || ''; // Column C
-                    const amount = parseBCAAmount(row[3]); // Column D - with CR handling
-
-                    if (!tglTransaksi || !description) continue;
-                    
-                    // Filter out transactions that don't need matching
-                    if (description.includes('BI-FAST') || 
-                        description.includes('TRSF E-BANKING') || 
-                        description.includes('BYR')) {
-                        continue; // Skip this transaction
-                    }
-                    
-                    const transactionType = determineTransactionType(description);
-                    
-                    // Store raw transaction
-                    bcaRawTransactions.push({
-                        row: i,
-                        tglTransaksi,
-                        description,
-                        cabang,
-                        amount,
-                        transactionType
-                    });
-                }
-                
-                console.log(`Loaded ${bcaRawTransactions.length} BCA transactions`);
-                
-                // Aggregate CDM and Setoran Tunai transactions by date + outlet + type
-                for (const txn of bcaRawTransactions) {
-                    const transactionType = txn.transactionType;
-                    let outletCode = null;
-                    
-                    // Get outlet code for CDM/Setoran Tunai
-                    if (transactionType === 'CDM') {
-                        const kartuDebit = parseCDM(txn.description);
-                        if (kartuDebit && lookups.kartuDebit.has(kartuDebit)) {
-                            outletCode = lookups.kartuDebit.get(kartuDebit);
-                        }
-                    } else if (transactionType === 'SETORAN_TUNAI') {
-                        // Try to find outlet via cabang
-                        const cabangStr = txn.cabang.toString().trim();
-                        if (lookups.cabang.has(cabangStr)) {
-                            outletCode = lookups.cabang.get(cabangStr);
-                        }
-                    }
-                    
-                    // For CDM and Setoran Tunai with valid outlet, aggregate
-                    if ((transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') && outletCode) {
-                        const dateStr = formatDate(txn.tglTransaksi);
-                        const aggKey = `${dateStr}|${transactionType}|${outletCode}`;
-                        
-                        if (!bcaAggregated.has(aggKey)) {
-                            bcaAggregated.set(aggKey, {
-                                date: txn.tglTransaksi,
-                                transactionType: transactionType,
-                                outletCode: outletCode,
-                                totalAmount: 0,
-                                transactions: [],
-                                cabang: txn.cabang
-                            });
-                        }
-                        
-                        const agg = bcaAggregated.get(aggKey);
-                        agg.totalAmount += txn.amount;
-                        agg.transactions.push(txn);
+                // Detect year from ACMM data for BCA parsing
+                let referenceYear = null;
+                for (const [key, data] of acmmWeekly.weeklySummary.entries()) {
+                    if (data.weekStart) {
+                        referenceYear = data.weekStart.getFullYear();
+                        console.log(`🔍 Detected reference year from ACMM: ${referenceYear}`);
+                        break;
                     }
                 }
                 
-                console.log(`Aggregated ${bcaAggregated.size} CDM/Setoran groups`);
-                if (bcaAggregated.size > 0) {
-                    console.log('Sample aggregations:');
-                    let count = 0;
-                    for (const [key, agg] of bcaAggregated.entries()) {
-                        if (count++ < 5) {
-                            console.log(`  ${key}: ${agg.transactions.length} txns, total ${agg.totalAmount}`);
-                        }
-                    }
-                }
+                document.getElementById('processing-text').textContent = 'Aggregating BCA data by week...';
+                await new Promise(resolve => setTimeout(resolve, 100));
                 
-                // STEP 2: Process all transactions (use aggregated for CDM/Setoran, individual for others)
-                const processedKeys = new Set(); // Track which transactions we've already processed via aggregation
+                const bcaWeekly = aggregateBCAByWeek(bcaData, lookups, referenceYear);
                 
-                for (let i = 1; i < bcaData.length; i++) {
-                    const row = bcaData[i];
-                    const tglTransaksi = parseDate(row[0]); // Column A
-                    const description = row[1]?.toString() || ''; // Column B
-                    const cabang = row[2]?.toString() || ''; // Column C
-                    const amount = parseBCAAmount(row[3]); // Column D - with CR handling
-
-                    if (!tglTransaksi || !description) continue;
-                    
-                    // Filter out transactions that don't need matching
-                    if (description.includes('BI-FAST') || 
-                        description.includes('TRSF E-BANKING') || 
-                        description.includes('BYR')) {
-                        continue; // Skip this transaction
-                    }
-
-                    const transactionType = determineTransactionType(description);
-                    const matchDate = subtractOneDay(tglTransaksi);
-                    let outletCode = null;
-                    let matchedAmount = null;
-                    let matchStatus = 'UNMATCHED';
-                    let details = '';
-                    
-                    // Check if this transaction is part of an aggregated group
-                    let isAggregated = false;
-                    let aggregatedData = null;
-                    
-                    if (transactionType === 'CDM') {
-                        const kartuDebit = parseCDM(description);
-                        if (kartuDebit && lookups.kartuDebit.has(kartuDebit)) {
-                            outletCode = lookups.kartuDebit.get(kartuDebit);
-                            const dateStr = formatDate(tglTransaksi);
-                            const aggKey = `${dateStr}|${transactionType}|${outletCode}`;
-                            
-                            if (bcaAggregated.has(aggKey)) {
-                                // This transaction is part of an aggregated group
-                                if (processedKeys.has(aggKey)) {
-                                    // Already processed this group, skip individual transaction
-                                    continue;
-                                }
-                                isAggregated = true;
-                                aggregatedData = bcaAggregated.get(aggKey);
-                                processedKeys.add(aggKey);
-                            }
-                        }
-                    } else if (transactionType === 'SETORAN_TUNAI') {
-                        const cabangStr = cabang.toString().trim();
-                        if (lookups.cabang.has(cabangStr)) {
-                            outletCode = lookups.cabang.get(cabangStr);
-                            const dateStr = formatDate(tglTransaksi);
-                            const aggKey = `${dateStr}|${transactionType}|${outletCode}`;
-                            
-                            if (bcaAggregated.has(aggKey)) {
-                                // This transaction is part of an aggregated group
-                                if (processedKeys.has(aggKey)) {
-                                    // Already processed this group, skip individual transaction
-                                    continue;
-                                }
-                                isAggregated = true;
-                                aggregatedData = bcaAggregated.get(aggKey);
-                                processedKeys.add(aggKey);
-                            }
-                        }
-                    }
-                    
-                    // Use aggregated amount if applicable
-                    const bcaAmount = isAggregated ? aggregatedData.totalAmount : amount;
-                    const transactionCount = isAggregated ? aggregatedData.transactions.length : 1;
-
-                    // Process based on transaction type
-                    if (transactionType === 'CDM') {
-                        const kartuDebit = parseCDM(description);
-                        if (kartuDebit && lookups.kartuDebit.has(kartuDebit)) {
-                            outletCode = lookups.kartuDebit.get(kartuDebit);
-                            const key = `${formatDate(matchDate)}|${outletCode}|CASH`;
-                            let grossAmount = null;
-                            
-                            if (pivotMap.has(key)) {
-                                const pivot = pivotMap.get(key);
-                                // Round down ACMM amount to nearest 50,000
-                                grossAmount = pivot.amount;
-                                matchedAmount = roundDownTo50k(grossAmount);
-                                const balance = grossAmount - matchedAmount;
-                                
-                                // Tolerance: ±100 Rp
-                                if (Math.abs(bcaAmount - matchedAmount) <= 100) {
-                                    matchStatus = 'MATCHED';
-                                } else {
-                                    matchStatus = 'AMOUNT_MISMATCH';
-                                }
-                                
-                                if (isAggregated) {
-                                    details = `Kartu: ${kartuDebit}, Aggregated ${transactionCount} BCA txns (${bcaAmount.toFixed(2)}), ACMM Gross: ${grossAmount.toFixed(2)}, Rounded: ${matchedAmount.toFixed(2)}, Balance: ${balance.toFixed(2)}, ACMM Txns: ${pivot.count}`;
-                                } else {
-                                    details = `Kartu: ${kartuDebit}, ACMM Gross: ${grossAmount.toFixed(2)}, Rounded: ${matchedAmount.toFixed(2)}, Balance: ${balance.toFixed(2)}, ACMM Txns: ${pivot.count}`;
-                                }
-                            } else {
-                                details = `Kartu: ${kartuDebit}, No matching CASH transaction found in ACMM`;
-                            }
-                            
-                            reconciliationResults.push({
-                                bcaDate: formatDate(tglTransaksi),
-                                matchDate: formatDate(matchDate),
-                                transactionType: transactionType,
-                                outletCode: outletCode || 'N/A',
-                                description: isAggregated ? `[AGG ${transactionCount}x] ${description}` : description,
-                                cabang: cabang,
-                                bcaAmount: bcaAmount,
-                                acmmAmount: matchedAmount,
-                                acmmGrossAmount: grossAmount,
-                                merchantRate: 0,
-                                difference: matchedAmount !== null ? bcaAmount - matchedAmount : null,
-                                status: matchStatus,
-                                details: details
-                            });
-                            continue; // Skip the generic push at the end
-                        } else {
-                            details = `Kartu Debit not found: ${kartuDebit}`;
-                        }
-                    }
-                    else if (transactionType === 'CREDITCARD') {
-                        const mid = parseCreditCardMID(description);
-                        
-                        // Debug MID matching
-                        if (mid) {
-                            const hasMID = lookups.mid.has(mid);
-                            if (!hasMID) {
-                                console.log(`⚠️ MID not found in lookup: "${mid}" from description: "${description}"`);
-                            }
-                        }
-                        
-                        if (mid && lookups.mid.has(mid)) {
-                            outletCode = lookups.mid.get(mid);
-                            
-                            // Look for credit card payment types - SUM ALL TYPES for this date+outlet
-                            const paymentTypes = ['OTHER CARD', 'MASTER', 'VISA', 'BCA CARD', 'JCB CARD', 'AMEX CARD'];
-                            let found = false;
-                            let grossAmount = null;
-                            let totalGrossAmount = 0;
-                            let totalNetAmount = 0;
-                            let usedRate = null;
-                            let matchedCardLast6 = '';
-                            const matchedPaymentTypes = [];
-                            
-                            // Sum up all credit card types for this date+outlet
-                            for (const paymentType of paymentTypes) {
-                                const key = `${formatDate(matchDate)}|${outletCode}|${paymentType}`;
-                                if (pivotMap.has(key)) {
-                                    const pivot = pivotMap.get(key);
-                                    totalGrossAmount += pivot.amount;
-                                    totalNetAmount += pivot.netAmount;
-                                    
-                                    // Use merchant rate from first matched type
-                                    if (usedRate === null) {
-                                        usedRate = pivot.merchantRate || 0;
-                                    }
-                                    
-                                    // Get card last 6 from first transaction
-                                    if (!matchedCardLast6 && pivot.transactions && pivot.transactions.length > 0) {
-                                        matchedCardLast6 = pivot.transactions[0].cardLast6;
-                                    }
-                                    
-                                    matchedPaymentTypes.push(paymentType);
-                                    found = true;
-                                }
-                            }
-                            
-                            if (found) {
-                                matchedAmount = totalNetAmount;
-                                grossAmount = totalGrossAmount;
-                                
-                                // Tolerance: ±100 Rp
-                                if (Math.abs(amount - matchedAmount) <= 100) {
-                                    matchStatus = 'MATCHED';
-                                } else {
-                                    matchStatus = 'AMOUNT_MISMATCH';
-                                }
-                                details = `MID: ${mid}, Combined CC Types: [${matchedPaymentTypes.join(', ')}], Gross: ${grossAmount.toFixed(2)}, Rate: ${usedRate}%, Net: ${matchedAmount.toFixed(2)}`;
-                            } else {
-                                details = `MID: ${mid}, No matching credit card transaction found`;
-                            }
-                            
-                            // Store gross, rate, and card last 6 for export
-                            reconciliationResults.push({
-                                bcaDate: formatDate(tglTransaksi),
-                                matchDate: formatDate(matchDate),
-                                transactionType: transactionType,
-                                outletCode: outletCode || 'N/A',
-                                description: description,
-                                cabang: cabang,
-                                cardLast6: matchedCardLast6,
-                                bcaAmount: amount,
-                                acmmAmount: matchedAmount,
-                                acmmGrossAmount: grossAmount,
-                                merchantRate: usedRate,
-                                difference: matchedAmount !== null ? amount - matchedAmount : null,
-                                status: matchStatus,
-                                details: details
-                            });
-                            continue; // Skip the generic push at the end
-                        } else {
-                            details = `MID not found: ${mid}`;
-                        }
-                    }
-                    else if (transactionType === 'QRIS') {
-                        const mid = parseQRIS(description);
-                        if (mid && lookups.mid.has(mid)) {
-                            outletCode = lookups.mid.get(mid);
-                            const key = `${formatDate(matchDate)}|${outletCode}|QRIS`;
-                            let grossAmount = null;
-                            let usedRate = null;
-                            let matchedCardLast6 = '';
-                            
-                            if (pivotMap.has(key)) {
-                                const pivot = pivotMap.get(key);
-                                grossAmount = pivot.amount;
-                                matchedAmount = pivot.netAmount;
-                                usedRate = pivot.merchantRate || 0;
-                                
-                                // Get card last 6 from first transaction in pivot (after override)
-                                matchedCardLast6 = pivot.transactions && pivot.transactions.length > 0 ? pivot.transactions[0].cardLast6 : '';
-                                
-                                // Tolerance: ±100 Rp
-                                if (Math.abs(amount - matchedAmount) <= 100) {
-                                    matchStatus = 'MATCHED';
-                                } else {
-                                    matchStatus = 'AMOUNT_MISMATCH';
-                                }
-                                details = `MID: ${mid}, Gross: ${grossAmount.toFixed(2)}, Rate: ${usedRate}%, Net: ${matchedAmount.toFixed(2)}`;
-                            } else {
-                                details = `MID: ${mid}, No matching QRIS transaction found`;
-                            }
-                            
-                            reconciliationResults.push({
-                                bcaDate: formatDate(tglTransaksi),
-                                matchDate: formatDate(matchDate),
-                                transactionType: transactionType,
-                                outletCode: outletCode || 'N/A',
-                                description: description,
-                                cabang: cabang,
-                                cardLast6: matchedCardLast6,
-                                bcaAmount: amount,
-                                acmmAmount: matchedAmount,
-                                acmmGrossAmount: grossAmount,
-                                merchantRate: usedRate,
-                                difference: matchedAmount !== null ? amount - matchedAmount : null,
-                                status: matchStatus,
-                                details: details
-                            });
-                            continue; // Skip the generic push at the end
-                        } else {
-                            details = `MID not found: ${mid}`;
-                        }
-                    }
-                    else if (transactionType === 'DEBIT') {
-                        const mid = parseDebitCard(description);
-                        if (mid && lookups.mid.has(mid)) {
-                            outletCode = lookups.mid.get(mid);
-                            
-                            // Look for debit payment types - SUM ALL TYPES for this date+outlet
-                            const paymentTypes = ['DEBIT BANK LAIN', 'DEBIT BANK SAMA'];
-                            let found = false;
-                            let grossAmount = null;
-                            let totalGrossAmount = 0;
-                            let totalNetAmount = 0;
-                            let usedRate = null;
-                            let matchedCardLast6 = '';
-                            const matchedPaymentTypes = [];
-                            
-                            // Sum up all debit types for this date+outlet
-                            for (const paymentType of paymentTypes) {
-                                const key = `${formatDate(matchDate)}|${outletCode}|${paymentType}`;
-                                if (pivotMap.has(key)) {
-                                    const pivot = pivotMap.get(key);
-                                    totalGrossAmount += pivot.amount;
-                                    totalNetAmount += pivot.netAmount;
-                                    
-                                    // Use merchant rate from first matched type
-                                    if (usedRate === null) {
-                                        usedRate = pivot.merchantRate || 0;
-                                    }
-                                    
-                                    // Get card last 6 from first transaction
-                                    if (!matchedCardLast6 && pivot.transactions && pivot.transactions.length > 0) {
-                                        matchedCardLast6 = pivot.transactions[0].cardLast6;
-                                    }
-                                    
-                                    matchedPaymentTypes.push(paymentType);
-                                    found = true;
-                                }
-                            }
-                            
-                            if (found) {
-                                matchedAmount = totalNetAmount;
-                                grossAmount = totalGrossAmount;
-                                
-                                // Tolerance: ±100 Rp
-                                if (Math.abs(amount - matchedAmount) <= 100) {
-                                    matchStatus = 'MATCHED';
-                                } else {
-                                    matchStatus = 'AMOUNT_MISMATCH';
-                                }
-                                details = `MID: ${mid}, Combined Debit Types: [${matchedPaymentTypes.join(', ')}], Gross: ${grossAmount.toFixed(2)}, Rate: ${usedRate}%, Net: ${matchedAmount.toFixed(2)}`;
-                            } else {
-                                details = `MID: ${mid}, No matching debit transaction found`;
-                            }
-                            
-                            reconciliationResults.push({
-                                bcaDate: formatDate(tglTransaksi),
-                                matchDate: formatDate(matchDate),
-                                transactionType: transactionType,
-                                outletCode: outletCode || 'N/A',
-                                description: description,
-                                cabang: cabang,
-                                cardLast6: matchedCardLast6,
-                                bcaAmount: amount,
-                                acmmAmount: matchedAmount,
-                                acmmGrossAmount: grossAmount,
-                                merchantRate: usedRate,
-                                difference: matchedAmount !== null ? amount - matchedAmount : null,
-                                status: matchStatus,
-                                details: details
-                            });
-                            continue; // Skip the generic push at the end
-                        } else {
-                            details = `MID not found: ${mid}`;
-                        }
-                    }
-                    else if (transactionType === 'SETORAN_TUNAI') {
-                        // For Setoran Tunai, use cabang to find outlet and match against accumulated CDM balances
-                        const cabangStr = cabang.toString().trim();
-                        
-                        // Debug cabang matching
-                        const hasCabang = lookups.cabang.has(cabangStr);
-                        if (!hasCabang) {
-                            console.log(`⚠️ Cabang not found in lookup: "${cabangStr}" (type: ${typeof cabangStr})`);
-                            // Try to find similar cabang codes
-                            const allCabangCodes = Array.from(lookups.cabang.keys());
-                            const similar = allCabangCodes.filter(c => c.toString().includes(cabangStr) || cabangStr.includes(c.toString()));
-                            if (similar.length > 0) {
-                                console.log(`  Similar cabang codes found: ${similar.slice(0, 5).join(', ')}`);
-                            }
-                        }
-                        
-                        if (hasCabang) {
-                            outletCode = lookups.cabang.get(cabangStr);
-                            
-                            // Match against accumulated CDM balance BETWEEN Setoran dates
-                            const setoranKey = `${formatDate(tglTransaksi)}|${outletCode}`;
-                            
-                            if (setoranMatcher.has(setoranKey)) {
-                                const match = setoranMatcher.get(setoranKey);
-                                const expectedBalance = match.expectedBalance;
-                                matchedAmount = expectedBalance;
-                                
-                                // Tolerance: ±100 Rp
-                                if (Math.abs(bcaAmount - expectedBalance) <= 100) {
-                                    matchStatus = 'MATCHED';
-                                } else {
-                                    matchStatus = 'AMOUNT_MISMATCH';
-                                }
-                                
-                                // Build detail string showing CDM balances + CASH sales only
-                                const cdmBalanceDates = match.contributingCDMDates.join(', ');
-                                const cdmDayCount = match.contributingCDMDates.length;
-                                const cdmBalanceSum = match.cdmBalanceSum;
-                                const fullCashSales = match.fullCashSales;
-                                const dayBeforeSales = match.dayBeforeSales;
-                                
-                                // Calculate total CDM deposits for verification
-                                let totalCDMDeposits = 0;
-                                for (const detail of match.cdmBalanceDetails) {
-                                    totalCDMDeposits += detail.rounded;
-                                }
-                                
-                                const breakdown = `CDM Balance (${cdmDayCount} days: ${cdmBalanceDates || 'none'}): ${cdmBalanceSum.toFixed(2)} + CASH Sales (${dayBeforeSales}): ${fullCashSales.toFixed(2)} = ${expectedBalance.toFixed(2)}`;
-                                const verification = `Total CDM Deposits: ${totalCDMDeposits.toFixed(2)} + Setoran: ${bcaAmount.toFixed(2)} = ${(totalCDMDeposits + bcaAmount).toFixed(2)}`;
-                                
-                                if (isAggregated) {
-                                    details = `Cabang: ${cabangStr}, Aggregated ${transactionCount} BCA txns (${bcaAmount.toFixed(2)}), ${breakdown}. Verify: ${verification}`;
-                                } else {
-                                    details = `Cabang: ${cabangStr}, ${breakdown}. Verify: ${verification}`;
-                                }
-                            } else {
-                                // No CDM balance match found for this Setoran date
-                                if (isAggregated) {
-                                    details = `Cabang: ${cabangStr}, Aggregated ${transactionCount} BCA txns (${bcaAmount.toFixed(2)}), No CDM balance calculated for this Setoran date`;
-                                } else {
-                                    details = `Cabang: ${cabangStr}, No CDM balance calculated for this Setoran date (check if CDM transactions exist between last Setoran and this one)`;
-                                }
-                                matchStatus = 'UNMATCHED';
-                            }
-                        } else {
-                            details = `Cabang not found: ${cabangStr}`;
-                        }
-                    }
-
-                    reconciliationResults.push({
-                        bcaDate: formatDate(tglTransaksi),
-                        matchDate: formatDate(matchDate),
-                        transactionType: transactionType,
-                        outletCode: outletCode || 'N/A',
-                        description: isAggregated ? `[AGG ${transactionCount}x] ${description}` : description,
-                        cabang: cabang,
-                        bcaAmount: bcaAmount,
-                        acmmAmount: matchedAmount,
-                        acmmGrossAmount: null,
-                        merchantRate: null,
-                        difference: matchedAmount !== null ? bcaAmount - matchedAmount : null,
-                        status: matchStatus,
-                        details: details
-                    });
-                }
+                document.getElementById('processing-text').textContent = 'Performing weekly matching...';
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const matchResults = matchWeeklyData(acmmWeekly, bcaWeekly, pivotMap, lookups);
+                
+                cashReconciliationResults = matchResults.cashResults;
+                nonCashReconciliationResults = matchResults.nonCashResults;
+                nonCashTotalReconciliationResults = matchResults.nonCashTotalResults;
+                reconciliationStatistics = matchResults.statistics;
+                
+                console.log(`Generated ${cashReconciliationResults.length} CASH results`);
+                console.log(`Generated ${nonCashReconciliationResults.length} NON-CASH breakdown results`);
+                console.log(`Generated ${nonCashTotalReconciliationResults.length} NON-CASH total results`);
+                console.log(`📊 Statistics:`, reconciliationStatistics);
 
                 // Display results
                 displayResults();
@@ -1628,39 +1651,37 @@
             }
         }
 
-        // Display reconciliation results
+        // Display reconciliation results - WEEKLY VERSION
         function displayResults() {
-            const totalRecords = reconciliationResults.length;
-            const matched = reconciliationResults.filter(r => r.status === 'MATCHED').length;
+            const totalCash = cashReconciliationResults.length;
+            const matchedCash = cashReconciliationResults.filter(r => r.status === 'MATCHED').length;
+            const totalNonCash = nonCashTotalReconciliationResults.length;
+            const matchedNonCash = nonCashTotalReconciliationResults.filter(r => r.status === 'MATCHED').length;
+            const totalRecords = totalCash + totalNonCash;
+            const matched = matchedCash + matchedNonCash;
             const unmatched = totalRecords - matched;
             const matchRate = totalRecords > 0 ? ((matched / totalRecords) * 100).toFixed(1) : 0;
 
             document.getElementById('total-records').textContent = totalRecords;
             document.getElementById('matched-count').textContent = matched;
             document.getElementById('unmatched-count').textContent = unmatched;
-            document.getElementById('match-rate').textContent = `${matchRate}%`;
+            document.getElementById('match-rate').textContent = `${matchRate}% (Cash: ${reconciliationStatistics.cashMatchRate}%, Non-Cash: ${reconciliationStatistics.nonCashTotalMatchRate}%)`;
 
             updateResultsTable();
         }
 
-        // Update results table based on current filter
+        // Update results table based on current filter - SEPARATED BY CASH/NON-CASH
         function updateResultsTable() {
             const tbody = document.getElementById('results-tbody');
             tbody.innerHTML = '';
 
-            let filteredResults = reconciliationResults;
+            // Combine cash and non-cash total results
+            let filteredResults = [...cashReconciliationResults, ...nonCashTotalReconciliationResults];
 
-            // Filter by tab
-            if (currentTab !== 'all') {
-                const typeMap = {
-                    'cdm': 'CDM',
-                    'creditcard': 'CREDITCARD',
-                    'qris': 'QRIS',
-                    'debit': 'DEBIT',
-                    'setoran': 'SETORAN_TUNAI'
-                };
-                const filterType = typeMap[currentTab];
-                filteredResults = reconciliationResults.filter(r => r.transactionType === filterType);
+            if (currentTab === 'matched') {
+                filteredResults = filteredResults.filter(r => r.status === 'MATCHED');
+            } else if (currentTab === 'unmatched') {
+                filteredResults = filteredResults.filter(r => r.status !== 'MATCHED');
             }
 
             if (filteredResults.length === 0) {
@@ -1680,24 +1701,39 @@
                 
                 const difference = result.difference !== null ? result.difference.toFixed(2) : '-';
                 const diffClass = result.difference !== null && Math.abs(result.difference) > 0.01 ? 'text-red-600 font-bold' : 'text-gray-600';
+                
+                const categoryBadge = result.category === 'CASH' ? 
+                    '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">CASH</span>' :
+                    '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-semibold">NON-CASH</span>';
+                
+                const typeBadge = result.transactionType ? 
+                    `<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold ml-1">${result.transactionType}</span>` : '';
+
+                // Build details column with both ACMM and BCA breakdowns
+                let detailsHtml = '<div class="text-xs space-y-1">';
+                if (result.acmmBreakdown) {
+                    detailsHtml += `<div><strong class="text-blue-700">ACMM:</strong> ${result.acmmBreakdown}</div>`;
+                }
+                if (result.bcaBreakdown) {
+                    detailsHtml += `<div><strong class="text-green-700">BCA:</strong> ${result.bcaBreakdown}</div>`;
+                }
+                detailsHtml += '</div>';
 
                 const row = `
                     <tr class="border-b hover:bg-gray-50">
                         <td class="px-4 py-3">${index + 1}</td>
-                        <td class="px-4 py-3">${result.bcaDate}</td>
+                        <td class="px-4 py-3">${result.weekLabel || result.weekKey}</td>
                         <td class="px-4 py-3">
-                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">
-                                ${result.transactionType}
-                            </span>
+                            ${categoryBadge}${typeBadge}
                         </td>
                         <td class="px-4 py-3 font-semibold">${result.outletCode}</td>
-                        <td class="px-4 py-3 text-right font-mono">${result.bcaAmount.toFixed(2)}</td>
-                        <td class="px-4 py-3 text-right font-mono">${result.acmmAmount !== null ? result.acmmAmount.toFixed(2) : '-'}</td>
+                        <td class="px-4 py-3 text-right font-mono">${result.bcaTotal.toFixed(2)}</td>
+                        <td class="px-4 py-3 text-right font-mono">${result.acmmTotal.toFixed(2)}</td>
                         <td class="px-4 py-3 text-right font-mono ${diffClass}">${difference}</td>
                         <td class="px-4 py-3">
                             <span class="status-badge ${statusClass}">${result.status}</span>
                         </td>
-                        <td class="px-4 py-3 text-sm text-gray-600">${result.details}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${detailsHtml}</td>
                     </tr>
                 `;
                 tbody.innerHTML += row;
@@ -1718,86 +1754,121 @@
             updateResultsTable();
         }
 
-        // Export results to Excel
-        function exportResults(type) {
-            let dataToExport = [];
-            let filename = 'reconciliation_results';
-
-            if (type === 'all') {
-                dataToExport = reconciliationResults;
-                filename += '_all';
-            } else if (type === 'matched') {
-                dataToExport = reconciliationResults.filter(r => r.status === 'MATCHED');
-                filename += '_matched';
-            } else if (type === 'unmatched') {
-                dataToExport = reconciliationResults.filter(r => r.status !== 'MATCHED');
-                filename += '_unmatched';
-            } else {
-                // Export by transaction type
-                const typeMap = {
-                    'cdm': 'CDM',
-                    'creditcard': 'CREDITCARD',
-                    'qris': 'QRIS',
-                    'debit': 'DEBIT',
-                    'setoran': 'SETORAN_TUNAI'
-                };
-                const filterType = typeMap[type];
-                dataToExport = reconciliationResults.filter(r => r.transactionType === filterType);
-                filename += `_${type}`;
-            }
-
-            if (dataToExport.length === 0) {
-                alert('No data to export for this selection.');
+        // Export results to Excel - DUAL SHEET VERSION
+        function exportResults(type = 'all') {
+            if (cashReconciliationResults.length === 0 && nonCashReconciliationResults.length === 0) {
+                alert('No data to export. Please run reconciliation first.');
                 return;
             }
-
-            // Convert to Excel format
-            const wsData = [
-                ['BCA Date', 'Match Date', 'BCA Description', 'Transaction Type', 'Outlet Code', 'Cabang', 'BCA Amount', 'ACMM Gross Amount', 'Merchant Rate (%)', 'ACMM Net Amount', 'Difference', 'Status', 'Details']
+            
+            const wb = XLSX.utils.book_new();
+            const timestamp = new Date().toISOString().split('T')[0];
+            
+            // SHEET 1: CASH RECONCILIATION
+            const cashData = [
+                ['Category', 'Week', 'Outlet Code', 'BCA Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'BCA Breakdown']
             ];
-
-            dataToExport.forEach(row => {
-                wsData.push([
-                    row.bcaDate,
-                    row.matchDate,
-                    row.description,
-                    row.transactionType,
+            
+            let cashToExport = cashReconciliationResults;
+            if (type === 'matched') {
+                cashToExport = cashReconciliationResults.filter(r => r.status === 'MATCHED');
+            } else if (type === 'unmatched') {
+                cashToExport = cashReconciliationResults.filter(r => r.status !== 'MATCHED');
+            }
+            
+            cashToExport.forEach(row => {
+                cashData.push([
+                    row.category,
+                    row.weekLabel,
                     row.outletCode,
-                    row.cabang || '',
-                    row.bcaAmount,
-                    row.acmmGrossAmount || '',
-                    row.merchantRate || '',
-                    row.acmmAmount || '',
-                    row.difference !== null ? row.difference : '',
+                    row.bcaTotal,
+                    row.acmmTotal,
+                    row.difference,
                     row.status,
-                    row.details
+                    row.acmmBreakdown,
+                    row.bcaBreakdown
                 ]);
             });
-
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Reconciliation');
-
-            // Auto-size columns
-            const colWidths = [
-                { wch: 12 }, // BCA Date
-                { wch: 12 }, // Match Date
-                { wch: 60 }, // BCA Description
-                { wch: 15 }, // Transaction Type
-                { wch: 12 }, // Outlet Code
-                { wch: 10 }, // Cabang
-                { wch: 15 }, // BCA Amount
-                { wch: 18 }, // ACMM Gross Amount
-                { wch: 12 }, // Merchant Rate
-                { wch: 18 }, // ACMM Net Amount
-                { wch: 12 }, // Difference
-                { wch: 20 }, // Status
-                { wch: 50 }  // Details
+            
+            const wsCash = XLSX.utils.aoa_to_sheet(cashData);
+            wsCash['!cols'] = [
+                { wch: 12 }, { wch: 15 }, { wch: 12 },
+                { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 },
+                { wch: 30 }, { wch: 40 }
             ];
-            ws['!cols'] = colWidths;
-
+            XLSX.utils.book_append_sheet(wb, wsCash, 'Cash Reconciliation');
+            
+            // SHEET 2: NON-CASH TOTAL RECONCILIATION
+            const nonCashTotalData = [
+                ['Category', 'Week', 'Outlet Code', 'BCA Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'BCA Breakdown']
+            ];
+            
+            let nonCashTotalToExport = nonCashTotalReconciliationResults;
+            if (type === 'matched') {
+                nonCashTotalToExport = nonCashTotalReconciliationResults.filter(r => r.status === 'MATCHED');
+            } else if (type === 'unmatched') {
+                nonCashTotalToExport = nonCashTotalReconciliationResults.filter(r => r.status !== 'MATCHED');
+            }
+            
+            nonCashTotalToExport.forEach(row => {
+                nonCashTotalData.push([
+                    row.category,
+                    row.weekLabel,
+                    row.outletCode,
+                    row.bcaTotal,
+                    row.acmmTotal,
+                    row.difference,
+                    row.status,
+                    row.acmmBreakdown,
+                    row.bcaBreakdown || '-'
+                ]);
+            });
+            
+            const wsNonCashTotal = XLSX.utils.aoa_to_sheet(nonCashTotalData);
+            wsNonCashTotal['!cols'] = [
+                { wch: 15 }, { wch: 15 }, { wch: 12 },
+                { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 },
+                { wch: 50 }, { wch: 50 }
+            ];
+            XLSX.utils.book_append_sheet(wb, wsNonCashTotal, 'Non-Cash Total');
+            
+            // SHEET 3: STATISTICS SUMMARY
+            const statsData = [
+                ['Category', 'Total Records', 'Matched', 'Unmatched', 'Match Rate'],
+                [
+                    'CASH', 
+                    reconciliationStatistics.cashTotal || 0,
+                    reconciliationStatistics.cashMatched || 0,
+                    (reconciliationStatistics.cashTotal || 0) - (reconciliationStatistics.cashMatched || 0),
+                    `${reconciliationStatistics.cashMatchRate || 0}%`
+                ],
+                [
+                    'NON-CASH',
+                    reconciliationStatistics.nonCashTotalCount || 0,
+                    reconciliationStatistics.nonCashTotalMatched || 0,
+                    (reconciliationStatistics.nonCashTotalCount || 0) - (reconciliationStatistics.nonCashTotalMatched || 0),
+                    `${reconciliationStatistics.nonCashTotalMatchRate || 0}%`
+                ],
+                [
+                    'TOTAL',
+                    (reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotalCount || 0),
+                    (reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashTotalMatched || 0),
+                    ((reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotalCount || 0)) - ((reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashTotalMatched || 0)),
+                    `${((reconciliationStatistics.cashMatched || 0) + (reconciliationStatistics.nonCashTotalMatched || 0)) / ((reconciliationStatistics.cashTotal || 0) + (reconciliationStatistics.nonCashTotalCount || 0)) * 100 || 0}%`
+                ]
+            ];
+            
+            const wsStats = XLSX.utils.aoa_to_sheet(statsData);
+            wsStats['!cols'] = [
+                { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
+            ];
+            XLSX.utils.book_append_sheet(wb, wsStats, 'Statistics');
+            
             // Export
-            XLSX.writeFile(wb, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+            const filename = `reconciliation_cash_noncash_${type}_${timestamp}.xlsx`;
+            XLSX.writeFile(wb, filename);
+            
+            console.log(`Exported ${cashToExport.length} CASH records, ${nonCashTotalToExport.length} NON-CASH total records`);
         }
 
         // Reset all data
@@ -1807,11 +1878,14 @@
             }
 
             uploadedFiles = {};
-            reconciliationResults = [];
+            cashReconciliationResults = [];
+            nonCashReconciliationResults = [];
+            nonCashTotalReconciliationResults = [];
+            reconciliationStatistics = {};
             currentTab = 'all';
 
             // Reset UI
-            for (let i = 1; i <= 6; i++) {
+            for (let i = 1; i <= 5; i++) {
                 const zone = document.getElementById(`upload-zone-${i}`);
                 const fileName = document.getElementById(`file-name-${i}`);
                 const fileStatus = document.getElementById(`file-status-${i}`);
@@ -1824,7 +1898,7 @@
             }
 
             document.getElementById('progress-fill').style.width = '0%';
-            document.getElementById('upload-progress-text').textContent = '0/6 files uploaded';
+            document.getElementById('upload-progress-text').textContent = '0/5 files uploaded';
             document.getElementById('process-btn').disabled = true;
             document.getElementById('results-section').classList.add('hidden');
         }
