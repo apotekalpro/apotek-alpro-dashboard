@@ -759,8 +759,9 @@
             const uniqueOutlets = new Set(allData.map(item => item.outlet));
             document.getElementById('outletsAffected').textContent = uniqueOutlets.size.toLocaleString();
             
-            const months = [...new Set(allData.map(item => item.month))].filter(m => m !== 'N/A');
-            document.getElementById('currentMonth').textContent = months[months.length - 1] || 'N/A';
+            const months = sortMonths([...new Set(allData.map(item => item.month))].filter(m => m !== 'N/A'));
+            const latestMonth = months[0] || 'N/A';
+            document.getElementById('currentMonth').textContent = latestMonth !== 'N/A' ? formatMonthWithYear(latestMonth) : 'N/A';
         }
 
         // Populate filter dropdowns
@@ -774,7 +775,7 @@
             months.forEach(month => {
                 const option = document.createElement('option');
                 option.value = month;
-                option.textContent = month;
+                option.textContent = formatMonthWithYear(month);
                 monthFilter.appendChild(option);
             });
             
