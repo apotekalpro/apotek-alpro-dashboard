@@ -404,11 +404,21 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Code</th>
-                                <th>Description</th>
-                                <th>TIDAK Count</th>
-                                <th>YES Count</th>
-                                <th>Compliance %</th>
+                                <th class="sortable" onclick="opexDashboard.sortCompliance('code')">
+                                    Code <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" onclick="opexDashboard.sortCompliance('description')">
+                                    Description <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" onclick="opexDashboard.sortCompliance('tidakCount')">
+                                    TIDAK Count <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" onclick="opexDashboard.sortCompliance('yesCount')">
+                                    YES Count <i class="fas fa-sort sort-icon"></i>
+                                </th>
+                                <th class="sortable" onclick="opexDashboard.sortCompliance('compliance')">
+                                    Compliance % <i class="fas fa-sort sort-icon"></i>
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="fullDetailTable">
@@ -460,6 +470,18 @@
             <h3 class="font-bold text-gray-800 mb-2 mt-4">
                 <i class="fas fa-table mr-2"></i>All STTK Shrinkage Records
             </h3>
+            
+            <!-- STTK Filters -->
+            <div class="filter-container mb-3">
+                <input type="text" id="sttkOutletFilter" class="filter-input" placeholder="Filter by Outlet...">
+                <input type="text" id="sttkAmFilter" class="filter-input" placeholder="Filter by AM...">
+                <select id="sttkMonthFilter" class="filter-input">
+                    <option value="">All Months</option>
+                </select>
+                <button onclick="applySttkFilters()" class="btn-primary">Apply Filters</button>
+                <button onclick="clearSttkFilters()" class="btn-secondary">Clear</button>
+            </div>
+            
             <div class="overflow-x-auto">
                 <table class="data-table">
                     <thead>
@@ -582,27 +604,73 @@
             <h3 class="font-bold text-gray-800 mb-2 mt-4">
                 <i class="fas fa-table mr-2"></i>All CCTV Audit Records
             </h3>
+            
+            <!-- CCTV Filters -->
+            <div class="filter-container mb-3">
+                <input type="text" id="cctvOutletFilter" class="filter-input" placeholder="Filter by Outlet...">
+                <input type="text" id="cctvAmFilter" class="filter-input" placeholder="Filter by AM...">
+                <select id="cctvMonthFilter" class="filter-input">
+                    <option value="">All Months</option>
+                </select>
+                <button onclick="applyCctvFilters()" class="btn-primary">Apply Filters</button>
+                <button onclick="clearCctvFilters()" class="btn-secondary">Clear</button>
+            </div>
+            
             <div class="overflow-x-auto">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Month</th>
-                            <th>Check Date</th>
-                            <th>Video Date</th>
-                            <th>Outlet</th>
-                            <th>AM</th>
-                            <th>Total Traffik</th>
-                            <th>Total Transa</th>
-                            <th>Total Lost S</th>
-                            <th class="bg-green-600">Total Titipan</th>
-                            <th class="bg-green-600">Total Upselling</th>
-                            <th class="bg-green-600">Total Tensi</th>
-                            <th class="bg-green-600">Total Bundle</th>
-                            <th class="bg-green-600">Total Member</th>
-                            <th class="bg-red-600">Total Kosong</th>
-                            <th class="bg-red-600">Total Mahal</th>
-                            <th class="bg-red-600">Total Titipan</th>
-                            <th class="bg-red-600">Total Lainnya</th>
+                            <th class="sortable" onclick="opexDashboard.sortCctv('month')">
+                                Month <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="opexDashboard.sortCctv('checkDate')">
+                                Check Date <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="opexDashboard.sortCctv('videoDate')">
+                                Video Date <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="opexDashboard.sortCctv('outlet')">
+                                Outlet <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="opexDashboard.sortCctv('am')">
+                                AM <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="opexDashboard.sortCctv('totalTraffic')">
+                                Total Traffik <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="opexDashboard.sortCctv('totalTransa')">
+                                Total Transa <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="opexDashboard.sortCctv('totalLostSales')">
+                                Total Lost S <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="bg-green-600 sortable" onclick="opexDashboard.sortCctv('totalTitipan')">
+                                Total Titipan <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="bg-green-600 sortable" onclick="opexDashboard.sortCctv('totalUpselling')">
+                                Total Upselling <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="bg-green-600 sortable" onclick="opexDashboard.sortCctv('totalTensi')">
+                                Total Tensi <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="bg-green-600 sortable" onclick="opexDashboard.sortCctv('totalBundle')">
+                                Total Bundle <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="bg-green-600 sortable" onclick="opexDashboard.sortCctv('totalMember')">
+                                Total Member <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="bg-red-600 sortable" onclick="opexDashboard.sortCctv('totalKosong')">
+                                Total Kosong <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="bg-red-600 sortable" onclick="opexDashboard.sortCctv('totalMahal')">
+                                Total Mahal <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="bg-red-600 sortable" onclick="opexDashboard.sortCctv('totalTitipan2')">
+                                Total Titipan <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="bg-red-600 sortable" onclick="opexDashboard.sortCctv('totalLainnya')">
+                                Total Lainnya <i class="fas fa-sort sort-icon"></i>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="cctvDataTable">
@@ -789,6 +857,31 @@
             if (opexDashboard) {
                 opexDashboard.pagination.cctv.currentPage = 1;
                 opexDashboard.renderCctvSection();
+            }
+        }
+        
+        // New filter functions for updated UI
+        function applySttkFilters() {
+            if (opexDashboard) {
+                opexDashboard.applySttkFilters();
+            }
+        }
+        
+        function clearSttkFilters() {
+            if (opexDashboard) {
+                opexDashboard.clearSttkFilters();
+            }
+        }
+        
+        function applyCctvFilters() {
+            if (opexDashboard) {
+                opexDashboard.applyCctvFilters();
+            }
+        }
+        
+        function clearCctvFilters() {
+            if (opexDashboard) {
+                opexDashboard.clearCctvFilters();
             }
         }
         
