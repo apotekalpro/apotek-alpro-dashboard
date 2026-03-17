@@ -6648,14 +6648,46 @@
                 
                 console.log('📅 Previous month column:', prevMonthCol, powerlifeData.lastMonth);
                 
-                // Parse product data - IMPORTANT: Start from row 6 (index 5) to skip headers
-                // Row 1 = Company Revenue, Row 2 = Total, Row 3 = Month headers, Row 4 = Column headers, Row 5 = Start of data
+                // Parse product data - IMPORTANT: Data starts from row 6 (Excel row 6 = array index 5)
+                // Row 1 (index 0) = Company Revenue
+                // Row 2 (index 1) = Total Revenue  
+                // Row 3 (index 2) = Month headers
+                // Row 4 (index 3) = Column headers (SKU, SKU Description, Division...)
+                // Row 5 (index 4) = Another header row or empty
+                // Row 6 (index 5) = FIRST PRODUCT DATA
                 const products = [];
+                
+                console.log('🔍 Checking first few rows for debugging:');
+                for (let i = 0; i < Math.min(8, rows.length); i++) {
+                    console.log(`Row ${i + 1} (index ${i}):`, rows[i][0], rows[i][1], rows[i][2]);
+                }
+                
                 for (let i = 5; i < rows.length; i++) {
                     const row = rows[i];
                     
-                    // Skip empty rows or rows that look like headers
-                    if (!row[0] || row[0].trim() === '' || row[0].toLowerCase().includes('sku') || row[0].toLowerCase().includes('item')) continue;
+                    // Skip empty rows
+                    if (!row[0] || row[0].trim() === '') continue;
+                    
+                    // Skip header rows - be more aggressive in detection
+                    const firstCol = row[0].toLowerCase().trim();
+                    const secondCol = (row[1] || '').toLowerCase().trim();
+                    
+                    // Skip if it looks like a header
+                    if (firstCol === 'sku' || 
+                        firstCol.includes('item code') ||
+                        firstCol.includes('product') ||
+                        secondCol === 'sku description' ||
+                        secondCol.includes('description') ||
+                        secondCol.includes('name')) {
+                        console.log(`⏭️ Skipping header row ${i + 1}:`, row[0], row[1]);
+                        continue;
+                    }
+                    
+                    // Additional check: if first column is not a number/code format, skip
+                    if (firstCol.length < 5 && isNaN(firstCol)) {
+                        console.log(`⏭️ Skipping invalid row ${i + 1}:`, row[0]);
+                        continue;
+                    }
                     
                     const itemCode = row[0];
                     const itemName = row[1];
@@ -6703,6 +6735,7 @@
                 powerlifeData.lastFetchTime = new Date();
                 
                 console.log(`✅ Parsed ${products.length} products`);
+                console.log('📦 First 3 products:', products.slice(0, 3));
                 
                 // Render the dashboard
                 renderPowerlifeDashboard();
@@ -6774,8 +6807,8 @@
                     divisions.map(d => `<option value="${d}">${d}</option>`).join('');
             }
             
-            // Render products table
-            renderPowerlifeProductsTable(products);
+            // Render products table with initial sort
+            sortAndRenderPowerlifeTable();
         }
 
         // Render top/bottom list
