@@ -2927,7 +2927,7 @@
                                 <div class="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-xl shadow-xl p-6 mb-8 border border-purple-200">
                                     <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
                                         <i class="fas fa-chart-line text-purple-500 text-2xl mr-3 animate-pulse"></i>
-                                        Last 3 Months Performance
+                                        Last 2 Months + Current Forecast Performance
                                     </h3>
                                 </div>
 
@@ -2936,7 +2936,7 @@
                                     <div class="bg-gradient-to-br from-cyan-50 to-blue-100 rounded-xl shadow-xl p-6 border border-cyan-200">
                                         <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                                             <i class="fas fa-medal text-cyan-500 text-2xl mr-3"></i>
-                                            Top 5 Products by Total Revenue (Last 3 Months)
+                                            Top 5 Products by Total Revenue (Last 2M + Current Forecast)
                                         </h4>
                                         <div id="powerlife-top-3month-total" class="space-y-3">
                                             <!-- Will be populated dynamically -->
@@ -2947,31 +2947,9 @@
                                     <div class="bg-gradient-to-br from-gray-50 to-slate-100 rounded-xl shadow-xl p-6 border border-gray-300">
                                         <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
                                             <i class="fas fa-chart-bar text-gray-500 text-2xl mr-3"></i>
-                                            Bottom 5 Products by Total Revenue (Last 3 Months)
+                                            Bottom 5 Products by Total Revenue (Last 2M + Current Forecast)
                                         </h4>
                                         <div id="powerlife-bottom-3month-total" class="space-y-3">
-                                            <!-- Will be populated dynamically -->
-                                        </div>
-                                    </div>
-
-                                    <!-- Top 5 by 3-Month Average Revenue -->
-                                    <div class="bg-gradient-to-br from-teal-50 to-green-100 rounded-xl shadow-xl p-6 border border-teal-200">
-                                        <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                                            <i class="fas fa-star text-teal-500 text-2xl mr-3"></i>
-                                            Top 5 Products by Avg Revenue (Last 3 Months)
-                                        </h4>
-                                        <div id="powerlife-top-3month-avg" class="space-y-3">
-                                            <!-- Will be populated dynamically -->
-                                        </div>
-                                    </div>
-
-                                    <!-- Bottom 5 by 3-Month Average Revenue -->
-                                    <div class="bg-gradient-to-br from-amber-50 to-yellow-100 rounded-xl shadow-xl p-6 border border-amber-200">
-                                        <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                                            <i class="fas fa-chart-area text-amber-500 text-2xl mr-3"></i>
-                                            Bottom 5 Products by Avg Revenue (Last 3 Months)
-                                        </h4>
-                                        <div id="powerlife-bottom-3month-avg" class="space-y-3">
                                             <!-- Will be populated dynamically -->
                                         </div>
                                     </div>
@@ -6784,14 +6762,13 @@
                     const prevMonthQty = parseFloat(row[prevMonthCol]?.replace(/,/g, '') || '0');
                     const prevMonthRevenue = parseFloat(row[prevMonthCol + 1]?.replace(/,/g, '') || '0'); // Revenue is next col after qty
                     
-                    // Get last 3 months data for total and average calculations
+                    // Calculate Last 2 Months + Current Forecast Total
                     // Each month takes 2 columns (Qty, Revenue)
-                    const month3Col = prevMonthCol - 4; // 2 months before prev month
-                    const month2Col = prevMonthCol - 2; // 1 month before prev month
+                    const month2Col = prevMonthCol - 2; // 1 month before prev month (2 months ago)
                     
-                    const month3Revenue = month3Col >= 0 ? parseFloat(row[month3Col + 1]?.replace(/,/g, '') || '0') : 0;
                     const month2Revenue = month2Col >= 0 ? parseFloat(row[month2Col + 1]?.replace(/,/g, '') || '0') : 0;
-                    const threeMonthTotalRevenue = month3Revenue + month2Revenue + prevMonthRevenue;
+                    // Total = Month-2 + Month-1 (prev) + Current Forecast
+                    const threeMonthTotalRevenue = month2Revenue + prevMonthRevenue + currentMonthForecastRevenue;
                     const threeMonthAvgRevenue = threeMonthTotalRevenue / 3;
                     
                     // Calculate growth using FORECASTED EOM vs Previous Month
@@ -6907,20 +6884,6 @@
                 .slice(0, 5);
             render3MonthList('powerlife-bottom-3month-total', bottom3MonthTotal, 'total');
             
-            // Top 5 by 3-month average revenue
-            const top3MonthAvg = [...products]
-                .filter(p => p.threeMonthAvgRevenue > 0)
-                .sort((a, b) => b.threeMonthAvgRevenue - a.threeMonthAvgRevenue)
-                .slice(0, 5);
-            render3MonthList('powerlife-top-3month-avg', top3MonthAvg, 'average');
-            
-            // Bottom 5 by 3-month average revenue
-            const bottom3MonthAvg = [...products]
-                .filter(p => p.threeMonthAvgRevenue > 0)
-                .sort((a, b) => a.threeMonthAvgRevenue - b.threeMonthAvgRevenue)
-                .slice(0, 5);
-            render3MonthList('powerlife-bottom-3month-avg', bottom3MonthAvg, 'average');
-            
             // Populate division filter
             const divisions = [...new Set(products.map(p => p.division).filter(d => d))];
             const divisionFilter = document.getElementById('powerlife-division-filter');
@@ -6985,8 +6948,10 @@
             }
             
             container.innerHTML = products.map((product, index) => {
-                const value = type === 'total' ? product.threeMonthTotalRevenue : product.threeMonthAvgRevenue;
-                const displayValue = formatCurrency(value);
+                const totalValue = product.threeMonthTotalRevenue;
+                const avgValue = product.threeMonthAvgRevenue;
+                const displayValue = formatCurrency(totalValue);
+                const avgDisplay = formatCurrency(avgValue);
                 const bgColorClass = 'from-purple-50 to-indigo-50';
                 
                 return `
@@ -7000,7 +6965,10 @@
                                 <div class="text-xs text-gray-500 truncate">${product.itemCode} • ${product.division}</div>
                             </div>
                         </div>
-                        <div class="font-bold text-purple-600 text-right ml-2 whitespace-nowrap text-lg">${displayValue}</div>
+                        <div class="text-right ml-2 whitespace-nowrap">
+                            <div class="font-bold text-purple-600 text-lg">${displayValue}</div>
+                            <div class="text-xs text-purple-500 font-medium">(Avg: ${avgDisplay})</div>
+                        </div>
                     </div>
                 `;
             }).join('');
