@@ -854,24 +854,40 @@ class OpexDashboardV2 {
                     <h4 class="font-semibold mb-2">Overall Compliance</h4>
                     <p class="text-sm text-gray-600 mb-2">Full breakdown comparing Outlet vs AM results</p>
                     <div class="table-container" style="max-height: 400px; overflow-y: auto;">
-                        <table class="w-full">
+                        <table class="w-full" id="overallComplianceTable">
                             <thead>
                                 <tr class="bg-purple-600 text-white">
-                                    <th class="p-2 text-left" rowspan="2">Code</th>
-                                    <th class="p-2 text-left" rowspan="2">Description</th>
+                                    <th class="p-2 text-left sortable cursor-pointer" rowspan="2" onclick="opexDashboard.sortOverallCompliance('code')">
+                                        Code <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="p-2 text-left sortable cursor-pointer" rowspan="2" onclick="opexDashboard.sortOverallCompliance('description')">
+                                        Description <i class="fas fa-sort sort-icon"></i>
+                                    </th>
                                     <th class="p-2 text-center" colspan="3">Outlet Results</th>
                                     <th class="p-2 text-center" colspan="3">AM Results</th>
                                 </tr>
                                 <tr class="bg-purple-500 text-white">
-                                    <th class="p-2">TIDAK</th>
-                                    <th class="p-2">YES</th>
-                                    <th class="p-2">Total</th>
-                                    <th class="p-2">TIDAK</th>
-                                    <th class="p-2">YES</th>
-                                    <th class="p-2">Total</th>
+                                    <th class="p-2 sortable cursor-pointer" onclick="opexDashboard.sortOverallCompliance('outletTidak')">
+                                        TIDAK <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="p-2 sortable cursor-pointer" onclick="opexDashboard.sortOverallCompliance('outletYa')">
+                                        YES <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="p-2 sortable cursor-pointer" onclick="opexDashboard.sortOverallCompliance('outletTotal')">
+                                        Total <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="p-2 sortable cursor-pointer" onclick="opexDashboard.sortOverallCompliance('amTidak')">
+                                        TIDAK <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="p-2 sortable cursor-pointer" onclick="opexDashboard.sortOverallCompliance('amYa')">
+                                        YES <i class="fas fa-sort sort-icon"></i>
+                                    </th>
+                                    <th class="p-2 sortable cursor-pointer" onclick="opexDashboard.sortOverallCompliance('amTotal')">
+                                        Total <i class="fas fa-sort sort-icon"></i>
+                                    </th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="overallComplianceBody">
             `;
             
             this.data.auditAnalysis.codes.forEach(item => {
@@ -1160,6 +1176,111 @@ class OpexDashboardV2 {
         });
         
         this.updateElement('fullDetailTable', html);
+    }
+    
+    sortOverallCompliance(column) {
+        // Initialize sorting state for overall compliance if not exists
+        if (!this.sorting.overallCompliance) {
+            this.sorting.overallCompliance = { column: null, direction: 'asc' };
+        }
+        
+        const state = this.sorting.overallCompliance;
+        
+        if (state.column === column) {
+            state.direction = state.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            state.column = column;
+            state.direction = 'asc';
+        }
+        
+        // Get audit analysis data
+        if (!this.data.auditAnalysis || !this.data.auditAnalysis.codes) {
+            console.warn('No audit analysis data to sort');
+            return;
+        }
+        
+        // Sort the codes array based on the selected column
+        const sortedCodes = [...this.data.auditAnalysis.codes].sort((a, b) => {
+            let aVal, bVal;
+            
+            switch(column) {
+                case 'code':
+                    aVal = a.code;
+                    bVal = b.code;
+                    break;
+                case 'description':
+                    aVal = a.name;
+                    bVal = b.name;
+                    break;
+                case 'outletTidak':
+                    aVal = a.outletTidak || 0;
+                    bVal = b.outletTidak || 0;
+                    break;
+                case 'outletYa':
+                    aVal = a.outletYa || 0;
+                    bVal = b.outletYa || 0;
+                    break;
+                case 'outletTotal':
+                    aVal = a.outletTotal || 0;
+                    bVal = b.outletTotal || 0;
+                    break;
+                case 'amTidak':
+                    aVal = a.amTidak || 0;
+                    bVal = b.amTidak || 0;
+                    break;
+                case 'amYa':
+                    aVal = a.amYa || 0;
+                    bVal = b.amYa || 0;
+                    break;
+                case 'amTotal':
+                    aVal = a.amTotal || 0;
+                    bVal = b.amTotal || 0;
+                    break;
+                default:
+                    return 0;
+            }
+            
+            // Compare values
+            if (typeof aVal === 'string') {
+                aVal = aVal.toLowerCase();
+                bVal = bVal.toLowerCase();
+            }
+            
+            if (aVal < bVal) return state.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return state.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        // Re-render the Overall Compliance table body
+        this.renderOverallComplianceBody(sortedCodes);
+        console.log(`Overall Compliance sorted by ${column} (${state.direction})`);
+    }
+    
+    renderOverallComplianceBody(sortedCodes) {
+        const codes = sortedCodes || this.data.auditAnalysis.codes;
+        
+        let html = '';
+        codes.forEach(item => {
+            const outletCompliance = item.outletTotal > 0 ? 
+                ((item.outletYa / item.outletTotal) * 100).toFixed(1) : 0;
+            const amCompliance = item.amTotal > 0 ? 
+                ((item.amYa / item.amTotal) * 100).toFixed(1) : 0;
+            
+            html += `
+                <tr>
+                    <td class="p-2 border-b">${this.escapeHtml(item.code)}</td>
+                    <td class="p-2 border-b">${this.escapeHtml(item.name)}</td>
+                    <td class="p-2 border-b text-center"><span class="badge badge-red">${item.outletTidak}</span></td>
+                    <td class="p-2 border-b text-center"><span class="badge badge-green">${item.outletYa}</span></td>
+                    <td class="p-2 border-b text-center">${item.outletTotal}</td>
+                    <td class="p-2 border-b text-center"><span class="badge badge-red">${item.amTidak}</span></td>
+                    <td class="p-2 border-b text-center"><span class="badge badge-green">${item.amYa}</span></td>
+                    <td class="p-2 border-b text-center">${item.amTotal}</td>
+                </tr>
+            `;
+        });
+        
+        this.updateElement('overallComplianceBody', html);
     }
     
     createComplianceRows() {
