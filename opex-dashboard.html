@@ -270,14 +270,6 @@
                 1. Field Audit
             </h2>
             
-            <!-- Filters -->
-            <div class="filter-container">
-                <input type="text" id="auditFilterAM" class="filter-input" placeholder="Filter by AM Name">
-                <input type="text" id="auditFilterOutlet" class="filter-input" placeholder="Filter by Outlet Code">
-                <button onclick="applyAuditFilters()" class="btn-primary">Apply Filters</button>
-                <button onclick="clearAuditFilters()" class="btn-secondary">Clear</button>
-            </div>
-
             <!-- Summary Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div class="summary-card">
@@ -334,10 +326,18 @@
                 </div>
             </div>
 
-            <!-- All Audit Data Table -->
+            <!-- All Field Audit Records Table -->
             <h3 class="font-bold text-gray-800 mb-2 mt-4">
-                <i class="fas fa-table mr-2"></i>All Audit Records
+                <i class="fas fa-table mr-2"></i>All Field Audit Records
             </h3>
+            
+            <!-- Filters for this table -->
+            <div class="filter-container">
+                <input type="text" id="auditFilterAM" class="filter-input" placeholder="Filter by AM Name">
+                <input type="text" id="auditFilterOutlet" class="filter-input" placeholder="Filter by Outlet Code">
+                <button onclick="applyAuditFilters()" class="btn-primary">Apply Filters</button>
+                <button onclick="clearAuditFilters()" class="btn-secondary">Clear</button>
+            </div>
             <div class="overflow-x-auto">
                 <table class="data-table">
                     <thead>
@@ -365,6 +365,9 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination Controls -->
+            <div id="auditPagination"></div>
 
             <!-- Field Audit Detail Summary -->
             <h3 class="font-bold text-gray-800 mb-2 mt-6">
@@ -478,6 +481,9 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination Controls -->
+            <div id="sttkPagination"></div>
         </div>
 
         <!-- Section 3: Top 30 Shrinkage Items -->
@@ -598,6 +604,9 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Pagination Controls -->
+            <div id="cctvPagination"></div>
 
             <!-- Loss Sales Reason Summary -->
             <h3 class="font-bold text-gray-800 mb-2 mt-6">
@@ -657,640 +666,139 @@
     </div>
 
     <script>
-        // Google Sheets Configuration
-        const SHEET_ID = '1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M';
-        const API_KEY = 'YOUR_GOOGLE_SHEETS_API_KEY'; // Replace with your API key
+    <!-- External JS files for modular architecture -->
+    <script src="opex-config.js"></script>
+    <script src="opex-dashboard-v2.js"></script>
+    <script>
+        // Initialize dashboard V2 with external class if config is valid
+        let opexDashboard;
         
-        // Data storage
-        let auditData = [];
-        let auditDetailData = [];
-        let indexData = [];
-        let sttkData = [];
-        let shrinkageData = [];
-        let cctvData = [];
-        
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadAllData();
-        });
-        
-        // Load all data from Google Sheets
-        async function loadAllData() {
-            await Promise.all([
-                loadAuditData(),
-                loadAuditDetailData(),
-                loadIndexData(),
-                loadSttkData(),
-                loadShrinkageData(),
-                loadCctvData()
-            ]);
-            
-            renderAllSections();
-        }
-        
-        // Load Audit sheet data
-        async function loadAuditData() {
-            try {
-                const range = 'Audit!A:N';
-                const response = await fetch(
-                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
-                );
-                const data = await response.json();
-                
-                if (data.values) {
-                    const headers = data.values[0];
-                    auditData = data.values.slice(1)
-                        .filter(row => row[12] && row[12] !== '0.00%') // Column M (index 12) is not 0.00%
-                        .map(row => ({
-                            outletCode: row[10], // K
-                            amName: row[3], // D
-                            visitDate: row[11], // L
-                            month: row[6], // G
-                            scoring: row[12], // M
-                            finalScore: row[13] // N
-                        }));
-                    
-                    // Keep only latest record per outlet
-                    auditData = getLatestRecordPerOutlet(auditData);
-                }
-            } catch (error) {
-                console.error('Error loading audit data:', error);
-                showToast('Error loading audit data. Using sample data.', 'error');
-                loadSampleAuditData();
-            }
-        }
-        
-        // Get latest record per outlet based on month
-        function getLatestRecordPerOutlet(data) {
-            const outletMap = new Map();
-            
-            data.forEach(record => {
-                const outlet = record.outletCode;
-                const currentMonth = parseMonth(record.month);
-                
-                if (!outletMap.has(outlet)) {
-                    outletMap.set(outlet, record);
+        if (typeof OPEX_CONFIG !== 'undefined' && validateOpexConfig()) {
+            console.log('✅ Initializing OpEX Dashboard V2 with Google Sheets integration...');
+            opexDashboard = new OpexDashboardV2(OPEX_CONFIG.SHEET_ID, OPEX_CONFIG.API_KEY);
+            opexDashboard.init().then(success => {
+                if (success) {
+                    console.log('✅ OpEX Dashboard V2 initialized successfully!');
                 } else {
-                    const existingMonth = parseMonth(outletMap.get(outlet).month);
-                    if (currentMonth > existingMonth) {
-                        outletMap.set(outlet, record);
-                    }
+                    console.warn('⚠️  Using sample data due to API connection issues');
                 }
             });
-            
-            return Array.from(outletMap.values());
+        } else {
+            console.warn('⚠️  OpEX Config not found or invalid - using V2 with sample data');
+            opexDashboard = new OpexDashboardV2('1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M', 'YOUR_API_KEY_HERE');
+            opexDashboard.loadSampleData();
+            opexDashboard.renderAll();
         }
         
-        // Parse month string to date for comparison
-        function parseMonth(monthStr) {
-            if (!monthStr) return new Date(0);
-            // Assuming format like "Maret 2026" or "Januari 2026"
-            const monthMap = {
-                'januari': 0, 'februari': 1, 'maret': 2, 'april': 3,
-                'mei': 4, 'juni': 5, 'juli': 6, 'agustus': 7,
-                'september': 8, 'oktober': 9, 'november': 10, 'desember': 11
-            };
-            
-            const parts = monthStr.toLowerCase().split(' ');
-            const month = monthMap[parts[0]] || 0;
-            const year = parseInt(parts[1]) || 2026;
-            
-            return new Date(year, month);
-        }
-        
-        // Load Audit Detail data
-        async function loadAuditDetailData() {
-            try {
-                const range = 'FieldAudit_Detail!A:AU';
-                const response = await fetch(
-                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
-                );
-                const data = await response.json();
-                
-                if (data.values) {
-                    const headers = data.values[0];
-                    auditDetailData = data.values.slice(1);
-                }
-            } catch (error) {
-                console.error('Error loading audit detail data:', error);
-            }
-        }
-        
-        // Load Index data for code mappings
-        async function loadIndexData() {
-            try {
-                const range = 'INDEX!A:B';
-                const response = await fetch(
-                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
-                );
-                const data = await response.json();
-                
-                if (data.values) {
-                    indexData = data.values.slice(1).map(row => ({
-                        code: row[0],
-                        name: row[1]
-                    }));
-                }
-            } catch (error) {
-                console.error('Error loading index data:', error);
-            }
-        }
-        
-        // Load STTK Shrinkage data
-        async function loadSttkData() {
-            try {
-                const range = 'STTK_SHRINKAGE!A:G';
-                const response = await fetch(
-                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
-                );
-                const data = await response.json();
-                
-                if (data.values) {
-                    sttkData = data.values.slice(1)
-                        .map(row => ({
-                            month: row[0], // A
-                            outletName: row[1], // B
-                            areaManager: row[6], // G
-                            stockLoss: parseFloat(row[6]) || 0 // Assuming stock loss value column
-                        }))
-                        .filter(row => row.stockLoss < 0); // Only negative values (losses)
-                }
-            } catch (error) {
-                console.error('Error loading STTK data:', error);
-                loadSampleSttkData();
-            }
-        }
-        
-        // Load Shrinkage Top 30 data
-        async function loadShrinkageData() {
-            try {
-                const range = 'Shrinkage_Top30!A:G';
-                const response = await fetch(
-                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
-                );
-                const data = await response.json();
-                
-                if (data.values) {
-                    shrinkageData = data.values.slice(1)
-                        .slice(0, 30) // Top 30 only
-                        .map(row => ({
-                            itemCode: row[4], // E
-                            itemName: row[5], // F
-                            value: parseFloat(row[6]) || 0 // G
-                        }));
-                }
-            } catch (error) {
-                console.error('Error loading shrinkage data:', error);
-                loadSampleShrinkageData();
-            }
-        }
-        
-        // Load CCTV 14H data
-        async function loadCctvData() {
-            try {
-                const range = 'CCTV_14H!A:Q';
-                const response = await fetch(
-                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
-                );
-                const data = await response.json();
-                
-                if (data.values) {
-                    cctvData = data.values.slice(1)
-                        .filter(row => parseFloat(row[4]) > 0) // E (traffic) > 0
-                        .map(row => ({
-                            month: row[16], // Q
-                            checkDate: row[0], // A
-                            videoDate: row[1], // B
-                            outlet: row[2], // C
-                            am: row[3], // D
-                            totalTraffic: parseFloat(row[4]) || 0, // E
-                            lossSales: parseFloat(row[6]) || 0, // G
-                            greeting: parseFloat(row[7]) || 0, // H
-                            offerHelp: parseFloat(row[8]) || 0, // I
-                            infoProduct: parseFloat(row[9]) || 0, // J
-                            offerMore: parseFloat(row[10]) || 0, // K
-                            closing: parseFloat(row[11]) || 0, // L
-                            noStaff: parseFloat(row[12]) || 0, // M
-                            staffBusy: parseFloat(row[13]) || 0, // N
-                            noStock: parseFloat(row[14]) || 0, // O
-                            others: parseFloat(row[15]) || 0 // P
-                        }));
-                }
-            } catch (error) {
-                console.error('Error loading CCTV data:', error);
-                loadSampleCctvData();
-            }
-        }
-        
-        // Render all sections
-        function renderAllSections() {
-            renderAuditSection();
-            renderSttkSection();
-            renderShrinkageSection();
-            renderCctvSection();
-        }
-        
-        // Render Audit Section
-        function renderAuditSection() {
-            // Summary cards
-            document.getElementById('totalAudits').textContent = auditData.length;
-            const avgScore = auditData.reduce((sum, item) => {
-                const score = parseFloat(item.scoring.replace('%', '')) || 0;
-                return sum + score;
-            }, 0) / auditData.length || 0;
-            document.getElementById('avgScore').textContent = avgScore.toFixed(1) + '%';
-            document.getElementById('outletsAudited').textContent = new Set(auditData.map(a => a.outletCode)).size;
-            
-            // Sort by scoring
-            const sorted = [...auditData].sort((a, b) => {
-                const scoreA = parseFloat(a.scoring.replace('%', '')) || 0;
-                const scoreB = parseFloat(b.scoring.replace('%', '')) || 0;
-                return scoreB - scoreA;
-            });
-            
-            // Top 5
-            const top5 = sorted.slice(0, 5);
-            document.getElementById('top5Leaderboard').innerHTML = top5.map((item, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.outletCode}</td>
-                    <td>${item.amName}</td>
-                    <td><span class="badge badge-green">${item.scoring}</span></td>
-                </tr>
-            `).join('');
-            
-            // Bottom 5
-            const bottom5 = sorted.slice(-5).reverse();
-            document.getElementById('bottom5Leaderboard').innerHTML = bottom5.map((item, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.outletCode}</td>
-                    <td>${item.amName}</td>
-                    <td><span class="badge badge-red">${item.scoring}</span></td>
-                </tr>
-            `).join('');
-            
-            // All audit data
-            document.getElementById('auditDataTable').innerHTML = sorted.map(item => `
-                <tr class="clickable-row" onclick="showAuditDetail('${item.outletCode}', '${item.month}', '${item.visitDate}')">
-                    <td>${item.outletCode}</td>
-                    <td>${item.amName}</td>
-                    <td>${item.visitDate}</td>
-                    <td>${item.scoring}</td>
-                    <td>${item.finalScore}</td>
-                    <td>
-                        <button class="btn-primary text-xs px-3 py-1" onclick="event.stopPropagation(); showAuditDetail('${item.outletCode}', '${item.month}', '${item.visitDate}')">
-                            <i class="fas fa-eye mr-1"></i>View Details
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-        
-        // Render STTK Section
-        function renderSttkSection() {
-            // Sort by stock loss (most negative first)
-            const sorted = [...sttkData].sort((a, b) => a.stockLoss - b.stockLoss);
-            
-            // Top 5 worst
-            const worst5 = sorted.slice(0, 5);
-            document.getElementById('worstStockLoss').innerHTML = worst5.map((item, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.month}</td>
-                    <td>${item.outletName}</td>
-                    <td>${item.areaManager}</td>
-                    <td><span class="badge badge-red">${item.stockLoss.toFixed(2)}</span></td>
-                </tr>
-            `).join('');
-            
-            // All STTK data
-            document.getElementById('sttkDataTable').innerHTML = sorted.map(item => `
-                <tr>
-                    <td>${item.month}</td>
-                    <td>${item.outletName}</td>
-                    <td>${item.areaManager}</td>
-                    <td><span class="badge ${item.stockLoss < 0 ? 'badge-red' : 'badge-green'}">${item.stockLoss.toFixed(2)}</span></td>
-                </tr>
-            `).join('');
-            
-            // Populate month filter
-            const months = [...new Set(sttkData.map(item => item.month))].sort();
-            document.getElementById('sttkFilterMonth').innerHTML = '<option value="">All Months</option>' +
-                months.map(m => `<option value="${m}">${m}</option>`).join('');
-        }
-        
-        // Render Shrinkage Section
-        function renderShrinkageSection() {
-            document.getElementById('shrinkageItemsTable').innerHTML = shrinkageData.map((item, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.itemCode}</td>
-                    <td>${item.itemName}</td>
-                    <td><span class="badge badge-red">${item.value.toFixed(2)}</span></td>
-                </tr>
-            `).join('');
-        }
-        
-        // Render CCTV Section
-        function renderCctvSection() {
-            // Summary cards
-            const totalTraffic = cctvData.reduce((sum, item) => sum + item.totalTraffic, 0);
-            const totalLossSales = cctvData.reduce((sum, item) => sum + item.lossSales, 0);
-            const conversionRate = totalTraffic > 0 ? ((totalTraffic - totalLossSales) / totalTraffic * 100) : 0;
-            const avgLoss = cctvData.length > 0 ? (totalLossSales / cctvData.length) : 0;
-            
-            document.getElementById('totalTraffic').textContent = totalTraffic.toLocaleString();
-            document.getElementById('totalLossSales').textContent = totalLossSales.toLocaleString();
-            document.getElementById('conversionRate').textContent = conversionRate.toFixed(1) + '%';
-            document.getElementById('avgLoss').textContent = avgLoss.toFixed(0);
-            
-            // Top 10 loss sales
-            const sortedByLoss = [...cctvData].sort((a, b) => b.lossSales - a.lossSales).slice(0, 10);
-            document.getElementById('top10LossSales').innerHTML = sortedByLoss.map((item, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.month}</td>
-                    <td>${item.outlet}</td>
-                    <td>${item.am}</td>
-                    <td><span class="badge badge-red">${item.lossSales}</span></td>
-                </tr>
-            `).join('');
-            
-            // All CCTV data - sorted by latest month first
-            const sortedByMonth = [...cctvData].sort((a, b) => {
-                const dateA = parseMonth(a.month);
-                const dateB = parseMonth(b.month);
-                return dateB - dateA;
-            });
-            
-            document.getElementById('cctvDataTable').innerHTML = sortedByMonth.map(item => `
-                <tr>
-                    <td>${item.month}</td>
-                    <td>${item.checkDate}</td>
-                    <td>${item.videoDate}</td>
-                    <td>${item.outlet}</td>
-                    <td>${item.am}</td>
-                    <td>${item.totalTraffic}</td>
-                    <td><span class="badge badge-red">${item.lossSales}</span></td>
-                    <td class="bg-green-50">${item.greeting}</td>
-                    <td class="bg-green-50">${item.offerHelp}</td>
-                    <td class="bg-green-50">${item.infoProduct}</td>
-                    <td class="bg-green-50">${item.offerMore}</td>
-                    <td class="bg-green-50">${item.closing}</td>
-                    <td class="bg-red-50">${item.noStaff}</td>
-                    <td class="bg-red-50">${item.staffBusy}</td>
-                    <td class="bg-red-50">${item.noStock}</td>
-                    <td class="bg-red-50">${item.others}</td>
-                </tr>
-            `).join('');
-            
-            // Populate month filters
-            const months = [...new Set(cctvData.map(item => item.month))].sort();
-            const monthOptions = '<option value="">All Months</option>' +
-                months.map(m => `<option value="${m}">${m}</option>`).join('');
-            document.getElementById('cctvFilterMonth').innerHTML = monthOptions;
-            document.getElementById('lossSalesMonthFilter').innerHTML = monthOptions;
-            
-            // Render summaries
-            updateLossSalesSummary();
-            updateTaskPerformanceSummary();
-        }
-        
-        // Update Loss Sales Reason Summary
-        function updateLossSalesSummary() {
-            const selectedMonth = document.getElementById('lossSalesMonthFilter').value;
-            const filteredData = selectedMonth ? 
-                cctvData.filter(item => item.month === selectedMonth) : 
-                cctvData;
-            
-            const totalNoStaff = filteredData.reduce((sum, item) => sum + item.noStaff, 0);
-            const totalStaffBusy = filteredData.reduce((sum, item) => sum + item.staffBusy, 0);
-            const totalNoStock = filteredData.reduce((sum, item) => sum + item.noStock, 0);
-            const totalOthers = filteredData.reduce((sum, item) => sum + item.others, 0);
-            
-            const total = totalNoStaff + totalStaffBusy + totalNoStock + totalOthers;
-            
-            const reasons = [
-                { name: 'No Staff Available', count: totalNoStaff },
-                { name: 'Staff Busy', count: totalStaffBusy },
-                { name: 'No Stock', count: totalNoStock },
-                { name: 'Others', count: totalOthers }
-            ].sort((a, b) => b.count - a.count);
-            
-            document.getElementById('lossSalesReasonTable').innerHTML = reasons.map(reason => `
-                <tr>
-                    <td>${reason.name}</td>
-                    <td><span class="badge badge-red">${reason.count}</span></td>
-                    <td>${total > 0 ? ((reason.count / total) * 100).toFixed(1) : 0}%</td>
-                </tr>
-            `).join('');
-        }
-        
-        // Update Task Performance Summary
-        function updateTaskPerformanceSummary() {
-            const totalGreeting = cctvData.reduce((sum, item) => sum + item.greeting, 0);
-            const totalOfferHelp = cctvData.reduce((sum, item) => sum + item.offerHelp, 0);
-            const totalInfoProduct = cctvData.reduce((sum, item) => sum + item.infoProduct, 0);
-            const totalOfferMore = cctvData.reduce((sum, item) => sum + item.offerMore, 0);
-            const totalClosing = cctvData.reduce((sum, item) => sum + item.closing, 0);
-            const totalTraffic = cctvData.reduce((sum, item) => sum + item.totalTraffic, 0);
-            
-            const tasks = [
-                { name: 'Greeting', count: totalGreeting },
-                { name: 'Offer Help', count: totalOfferHelp },
-                { name: 'Info Product', count: totalInfoProduct },
-                { name: 'Offer More', count: totalOfferMore },
-                { name: 'Closing', count: totalClosing }
-            ].sort((a, b) => b.count - a.count);
-            
-            document.getElementById('taskPerformanceTable').innerHTML = tasks.map(task => {
-                const avgPerTraffic = totalTraffic > 0 ? (task.count / totalTraffic) : 0;
-                const performanceLevel = avgPerTraffic > 0.8 ? 'Excellent' : 
-                                       avgPerTraffic > 0.6 ? 'Good' : 
-                                       avgPerTraffic > 0.4 ? 'Average' : 'Needs Improvement';
-                const badgeClass = avgPerTraffic > 0.8 ? 'badge-green' : 
-                                  avgPerTraffic > 0.6 ? 'badge-yellow' : 'badge-red';
-                
-                return `
-                    <tr>
-                        <td>${task.name}</td>
-                        <td><span class="badge badge-green">${task.count}</span></td>
-                        <td>${avgPerTraffic.toFixed(2)}</td>
-                        <td><span class="badge ${badgeClass}">${performanceLevel}</span></td>
-                    </tr>
-                `;
-            }).join('');
-        }
-        
-        // Show audit detail modal
-        function showAuditDetail(outletCode, month, visitDate) {
-            document.getElementById('modalOutletCode').textContent = outletCode;
-            
-            // Filter detail data for this outlet
-            // This is a placeholder - implement based on your actual data structure
-            const detailHtml = `
-                <div class="p-4">
-                    <h3 class="font-bold mb-2">Outlet: ${outletCode}</h3>
-                    <p>Month: ${month}</p>
-                    <p>Visit Date: ${visitDate}</p>
-                    <div class="mt-4">
-                        <h4 class="font-semibold mb-2">Detailed Audit Results</h4>
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Result Type</th>
-                                    <th>Issues Found</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Hasil Outlet</td>
-                                    <td>Loading...</td>
-                                </tr>
-                                <tr>
-                                    <td>Hasil AM</td>
-                                    <td>Loading...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('modalContent').innerHTML = detailHtml;
-            document.getElementById('auditDetailModal').style.display = 'block';
-        }
-        
-        // Close audit detail modal
+        // Helper functions for UI interactions
         function closeAuditDetailModal() {
             document.getElementById('auditDetailModal').style.display = 'none';
         }
         
-        // Filter functions
         function applyAuditFilters() {
-            const amFilter = document.getElementById('auditFilterAM').value.toLowerCase();
-            const outletFilter = document.getElementById('auditFilterOutlet').value.toLowerCase();
+            if (!opexDashboard) return;
+            const amFilter = document.getElementById('auditFilterAM').value;
+            const outletFilter = document.getElementById('auditFilterOutlet').value;
             
-            const filtered = auditData.filter(item => {
-                const matchAM = !amFilter || item.amName.toLowerCase().includes(amFilter);
-                const matchOutlet = !outletFilter || item.outletCode.toLowerCase().includes(outletFilter);
+            // Filter the data
+            const filtered = opexDashboard.data.audit.filter(item => {
+                const matchAM = !amFilter || item.amName.toLowerCase().includes(amFilter.toLowerCase());
+                const matchOutlet = !outletFilter || item.outletCode.toLowerCase().includes(outletFilter.toLowerCase());
                 return matchAM && matchOutlet;
             });
             
-            // Re-render with filtered data
-            // Implementation details...
+            // Temporarily replace data and re-render
+            const originalData = opexDashboard.data.audit;
+            opexDashboard.data.audit = filtered;
+            opexDashboard.pagination.audit.total = filtered.length;
+            opexDashboard.pagination.audit.currentPage = 1;
+            opexDashboard.renderAuditTable();
+            opexDashboard.data.audit = originalData; // Restore for next filter
         }
         
         function clearAuditFilters() {
             document.getElementById('auditFilterAM').value = '';
             document.getElementById('auditFilterOutlet').value = '';
-            renderAuditSection();
+            if (opexDashboard) {
+                opexDashboard.pagination.audit.currentPage = 1;
+                opexDashboard.renderAuditTable();
+            }
         }
         
         function applySttkFilters() {
-            // Implementation...
+            if (!opexDashboard) return;
+            const amFilter = document.getElementById('sttkFilterAM').value;
+            const outletFilter = document.getElementById('sttkFilterOutlet').value;
+            const monthFilter = document.getElementById('sttkFilterMonth').value;
+            
+            const filtered = opexDashboard.data.sttk.filter(item => {
+                const matchAM = !amFilter || (item.am && item.am.toLowerCase().includes(amFilter.toLowerCase()));
+                const matchOutlet = !outletFilter || item.storeName.toLowerCase().includes(outletFilter.toLowerCase());
+                const matchMonth = !monthFilter || item.month === monthFilter;
+                return matchAM && matchOutlet && matchMonth;
+            });
+            
+            const originalData = opexDashboard.data.sttk;
+            opexDashboard.data.sttk = filtered;
+            opexDashboard.pagination.sttk.total = filtered.length;
+            opexDashboard.pagination.sttk.currentPage = 1;
+            opexDashboard.renderSttkTable();
+            opexDashboard.data.sttk = originalData;
         }
         
         function clearSttkFilters() {
             document.getElementById('sttkFilterAM').value = '';
             document.getElementById('sttkFilterOutlet').value = '';
             document.getElementById('sttkFilterMonth').value = '';
-            renderSttkSection();
+            if (opexDashboard) {
+                opexDashboard.pagination.sttk.currentPage = 1;
+                opexDashboard.renderSttkTable();
+            }
         }
         
         function applyCctvFilters() {
-            // Implementation...
+            if (!opexDashboard) return;
+            const amFilter = document.getElementById('cctvFilterAM').value;
+            const outletFilter = document.getElementById('cctvFilterOutlet').value;
+            const monthFilter = document.getElementById('cctvFilterMonth').value;
+            
+            const filtered = opexDashboard.data.cctv.filter(item => {
+                const matchAM = !amFilter || item.am.toLowerCase().includes(amFilter.toLowerCase());
+                const matchOutlet = !outletFilter || item.outlet.toLowerCase().includes(outletFilter.toLowerCase());
+                const matchMonth = !monthFilter || item.month === monthFilter;
+                return matchAM && matchOutlet && matchMonth;
+            });
+            
+            const originalData = opexDashboard.data.cctv;
+            opexDashboard.data.cctv = filtered;
+            opexDashboard.pagination.cctv.total = filtered.length;
+            opexDashboard.pagination.cctv.currentPage = 1;
+            opexDashboard.renderCctvTable();
+            opexDashboard.data.cctv = originalData;
         }
         
         function clearCctvFilters() {
             document.getElementById('cctvFilterAM').value = '';
             document.getElementById('cctvFilterOutlet').value = '';
             document.getElementById('cctvFilterMonth').value = '';
-            renderCctvSection();
+            if (opexDashboard) {
+                opexDashboard.pagination.cctv.currentPage = 1;
+                opexDashboard.renderCctvSection();
+            }
         }
         
-        // Sort table
-        function sortTable(tableType, columnIndex) {
-            // Implementation for sorting tables
-            console.log(`Sorting ${tableType} table by column ${columnIndex}`);
+        function refreshAllData() {
+            if (opexDashboard) {
+                console.log('Refreshing all data...');
+                opexDashboard.init();
+            }
         }
         
-        // Refresh all data
-        async function refreshAllData() {
-            showToast('Refreshing data...', 'info');
-            await loadAllData();
-            showToast('Data refreshed successfully!', 'success');
-        }
-        
-        // Toast notification
-        function showToast(message, type = 'info') {
-            console.log(`${type.toUpperCase()}: ${message}`);
-            // Implement actual toast notification UI
-        }
-        
-        // Load sample data for testing
-        function loadSampleAuditData() {
-            auditData = [
-                { outletCode: 'OUT001', amName: 'John Doe', visitDate: '2026-03-15', month: 'Maret 2026', scoring: '95.5%', finalScore: 'A' },
-                { outletCode: 'OUT002', amName: 'Jane Smith', visitDate: '2026-03-14', month: 'Maret 2026', scoring: '88.2%', finalScore: 'B' },
-                { outletCode: 'OUT003', amName: 'Bob Wilson', visitDate: '2026-03-13', month: 'Maret 2026', scoring: '72.1%', finalScore: 'C' }
-            ];
-        }
-        
-        function loadSampleSttkData() {
-            sttkData = [
-                { month: 'March 2026', outletName: 'Outlet A', areaManager: 'Manager 1', stockLoss: -15000 },
-                { month: 'March 2026', outletName: 'Outlet B', areaManager: 'Manager 2', stockLoss: -12000 },
-                { month: 'March 2026', outletName: 'Outlet C', areaManager: 'Manager 3', stockLoss: -8500 }
-            ];
-        }
-        
-        function loadSampleShrinkageData() {
-            shrinkageData = [
-                { itemCode: 'ITEM001', itemName: 'Product 1', value: 5000 },
-                { itemCode: 'ITEM002', itemName: 'Product 2', value: 4500 },
-                { itemCode: 'ITEM003', itemName: 'Product 3', value: 4000 }
-            ];
-        }
-        
-        function loadSampleCctvData() {
-            cctvData = [
-                {
-                    month: 'March 2026', checkDate: '2026-03-15', videoDate: '2026-03-14',
-                    outlet: 'Outlet A', am: 'Manager 1', totalTraffic: 150, lossSales: 30,
-                    greeting: 120, offerHelp: 110, infoProduct: 100, offerMore: 90, closing: 85,
-                    noStaff: 10, staffBusy: 8, noStock: 7, others: 5
-                }
-            ];
-        }
-    </script>
-    
-    <!-- External JS files for modular architecture -->
-    <script src="opex-config.js"></script>
-    <script src="opex-dashboard.js"></script>
-    <script>
-        // Initialize dashboard with external class if config is valid
-        let opexDashboard;
-        
-        if (typeof OPEX_CONFIG !== 'undefined' && validateOpexConfig()) {
-            console.log('✅ Initializing OpEX Dashboard with Google Sheets integration...');
-            opexDashboard = new OpexDashboard(OPEX_CONFIG.SHEET_ID, OPEX_CONFIG.API_KEY);
-            opexDashboard.init().then(success => {
-                if (success) {
-                    console.log('✅ OpEX Dashboard initialized successfully!');
-                } else {
-                    console.warn('⚠️  Using sample data due to API connection issues');
-                }
-            });
-        } else {
-            console.warn('⚠️  OpEX Config not found or invalid - using inline initialization with sample data');
-            // Inline initialization will use the existing code above
-        }
-        
-        // Helper function to close modal (works with both implementations)
-        function closeAuditDetailModal() {
-            document.getElementById('auditDetailModal').style.display = 'none';
+        function updateLossSalesSummary() {
+            if (opexDashboard) {
+                const monthFilter = document.getElementById('lossSalesMonthFilter').value;
+                opexDashboard.updateLossSalesSummary(monthFilter);
+            }
         }
         
         // Click outside modal to close
