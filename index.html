@@ -6585,6 +6585,8 @@
             filteredProducts: [],
             currentMonth: '',
             lastMonth: '',
+            companyCurrentMonthRevenue: 0,
+            companyPrevMonthRevenue: 0,
             lastFetchTime: null,
             sortColumn: 'currentMonthRevenue',
             sortDirection: 'desc'
@@ -6693,6 +6695,17 @@
                 }
                 
                 console.log('📅 Previous month column:', prevMonthCol, powerlifeData.lastMonth);
+                
+                // Extract Company Revenue from Row 1 (index 0) for percentage calculations
+                const companyRow = rows[0] || [];
+                const companyCurrentMonthRevenue = parseFloat(companyRow[currentMonthCol + 3]?.replace(/,/g, '') || '0'); // O column (Forecast Revenue)
+                const companyPrevMonthRevenue = parseFloat(companyRow[prevMonthCol + 1]?.replace(/,/g, '') || '0'); // Previous month revenue
+                
+                powerlifeData.companyCurrentMonthRevenue = companyCurrentMonthRevenue;
+                powerlifeData.companyPrevMonthRevenue = companyPrevMonthRevenue;
+                
+                console.log('🏢 Company Current Month Revenue:', companyCurrentMonthRevenue);
+                console.log('🏢 Company Previous Month Revenue:', companyPrevMonthRevenue);
                 
                 // Parse product data - IMPORTANT: Data starts from row 6 (Excel row 6 = array index 5)
                 // Row 1 (index 0) = Company Revenue
@@ -6851,14 +6864,24 @@
             const lastMonthTotalRevenue = products.reduce((sum, p) => sum + p.prevMonthRevenue, 0);
             const lastMonthTotalQty = products.reduce((sum, p) => sum + p.prevMonthQty, 0);
             
-            // Update summary cards
-            document.getElementById('powerlife-total-revenue').textContent = formatCurrency(totalRevenue);
+            // Calculate percentage of company revenue
+            const currentMonthPct = powerlifeData.companyCurrentMonthRevenue > 0 
+                ? (totalRevenue / powerlifeData.companyCurrentMonthRevenue * 100).toFixed(2)
+                : '0.00';
+            const lastMonthPct = powerlifeData.companyPrevMonthRevenue > 0 
+                ? (lastMonthTotalRevenue / powerlifeData.companyPrevMonthRevenue * 100).toFixed(2)
+                : '0.00';
+            
+            // Update summary cards with percentage
+            document.getElementById('powerlife-total-revenue').textContent = 
+                `${formatCurrency(totalRevenue)} (${currentMonthPct}% of Alpro Revenue)`;
             document.getElementById('powerlife-total-products').textContent = products.length.toLocaleString();
             document.getElementById('powerlife-total-qty').textContent = totalQty.toLocaleString('id-ID', {maximumFractionDigits: 1});
             document.getElementById('powerlife-avg-growth').textContent = avgGrowth.toFixed(1) + '%';
             
-            // Update last month comparison values
-            document.getElementById('powerlife-last-month-revenue').textContent = formatCurrency(lastMonthTotalRevenue);
+            // Update last month comparison values with percentage
+            document.getElementById('powerlife-last-month-revenue').textContent = 
+                `${formatCurrency(lastMonthTotalRevenue)} (${lastMonthPct}% of Alpro Revenue)`;
             document.getElementById('powerlife-last-month-qty').textContent = lastMonthTotalQty.toLocaleString('id-ID', {maximumFractionDigits: 1});
             
             // Top 5 by revenue
