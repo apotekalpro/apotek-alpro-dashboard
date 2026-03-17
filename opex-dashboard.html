@@ -1265,5 +1265,41 @@
             ];
         }
     </script>
+    
+    <!-- External JS files for modular architecture -->
+    <script src="opex-config.js"></script>
+    <script src="opex-dashboard.js"></script>
+    <script>
+        // Initialize dashboard with external class if config is valid
+        let opexDashboard;
+        
+        if (typeof OPEX_CONFIG !== 'undefined' && validateOpexConfig()) {
+            console.log('✅ Initializing OpEX Dashboard with Google Sheets integration...');
+            opexDashboard = new OpexDashboard(OPEX_CONFIG.SHEET_ID, OPEX_CONFIG.API_KEY);
+            opexDashboard.init().then(success => {
+                if (success) {
+                    console.log('✅ OpEX Dashboard initialized successfully!');
+                } else {
+                    console.warn('⚠️  Using sample data due to API connection issues');
+                }
+            });
+        } else {
+            console.warn('⚠️  OpEX Config not found or invalid - using inline initialization with sample data');
+            // Inline initialization will use the existing code above
+        }
+        
+        // Helper function to close modal (works with both implementations)
+        function closeAuditDetailModal() {
+            document.getElementById('auditDetailModal').style.display = 'none';
+        }
+        
+        // Click outside modal to close
+        window.onclick = function(event) {
+            const modal = document.getElementById('auditDetailModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+    </script>
 </body>
 </html>

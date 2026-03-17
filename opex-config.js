@@ -20,7 +20,7 @@
 
 const OPEX_CONFIG = {
     // Your Google Sheets API Key
-    API_KEY: 'YOUR_API_KEY_HERE', // Replace with your actual API key
+    API_KEY: 'AIzaSyCwK1q9OWeIqZ5suEWOB9IpE5o5VDYmYYA', // Replace with your actual API key
     
     // Your Google Sheets ID (from the URL)
     SHEET_ID: '1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M',
