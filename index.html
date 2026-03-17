@@ -7218,6 +7218,13 @@
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
             if (targetSubtab) {
                 targetSubtab.classList.remove('hidden');
+                
+                // Load iframe if it exists and hasn't been loaded yet (for lazy loading)
+                const iframe = targetSubtab.querySelector('iframe.lazy-iframe');
+                if (iframe && !iframe.src && iframe.dataset.src) {
+                    console.log('Loading iframe for:', subtabId);
+                    iframe.src = iframe.dataset.src;
+                }
             }
             
             // Load AM tracker data if AM Performance Tracker is selected
