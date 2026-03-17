@@ -370,50 +370,52 @@
             <div id="auditPagination"></div>
 
             <!-- Field Audit Detail Summary -->
-            <h3 class="font-bold text-gray-800 mb-2 mt-6">
-                <i class="fas fa-chart-bar mr-2"></i>Field Audit Detail Summary
-            </h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <h4 class="font-semibold text-red-600 mb-2">Top 10 Issues (TIDAK)</h4>
+            <div id="fieldAuditSummary">
+                <h3 class="font-bold text-gray-800 mb-2 mt-6">
+                    <i class="fas fa-chart-bar mr-2"></i>Field Audit Detail Summary
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <h4 class="font-semibold text-red-600 mb-2">Top 10 Issues (TIDAK)</h4>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Code</th>
+                                    <th>Description</th>
+                                    <th>Count</th>
+                                </tr>
+                            </thead>
+                            <tbody id="top10Issues">
+                                <tr><td colspan="4" class="no-data">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-green-600 mb-2">Overall Compliance</h4>
+                        <div id="complianceChart" class="chart-container"></div>
+                    </div>
+                </div>
+
+                <!-- Full Detail Table -->
+                <h4 class="font-semibold text-gray-800 mb-2">Full Audit Detail Analysis</h4>
+                <div class="overflow-x-auto">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Rank</th>
                                 <th>Code</th>
                                 <th>Description</th>
-                                <th>Count</th>
+                                <th>TIDAK Count</th>
+                                <th>YES Count</th>
+                                <th>Compliance %</th>
                             </tr>
                         </thead>
-                        <tbody id="top10Issues">
-                            <tr><td colspan="4" class="no-data">Loading...</td></tr>
+                        <tbody id="fullDetailTable">
+                            <tr><td colspan="5" class="loading">Loading detail analysis...</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <div>
-                    <h4 class="font-semibold text-green-600 mb-2">Overall Compliance</h4>
-                    <div id="complianceChart" class="chart-container"></div>
-                </div>
-            </div>
-
-            <!-- Full Detail Table -->
-            <h4 class="font-semibold text-gray-800 mb-2">Full Audit Detail Analysis</h4>
-            <div class="overflow-x-auto">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Code</th>
-                            <th>Description</th>
-                            <th>TIDAK Count</th>
-                            <th>YES Count</th>
-                            <th>Compliance %</th>
-                        </tr>
-                    </thead>
-                    <tbody id="fullDetailTable">
-                        <tr><td colspan="5" class="loading">Loading detail analysis...</td></tr>
-                    </tbody>
-                </table>
             </div>
         </div>
 
@@ -469,15 +471,18 @@
                                 Outlet Name <i class="fas fa-sort sort-icon"></i>
                             </th>
                             <th class="sortable" onclick="sortTable('sttk', 2)">
-                                Area Manager <i class="fas fa-sort sort-icon"></i>
+                                Shrinkage Qty <i class="fas fa-sort sort-icon"></i>
                             </th>
                             <th class="sortable" onclick="sortTable('sttk', 3)">
-                                Stock Loss <i class="fas fa-sort sort-icon"></i>
+                                Area Manager <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable('sttk', 4)">
+                                Stock Loss Value <i class="fas fa-sort sort-icon"></i>
                             </th>
                         </tr>
                     </thead>
                     <tbody id="sttkDataTable">
-                        <tr><td colspan="4" class="loading">Loading STTK data...</td></tr>
+                        <tr><td colspan="5" class="loading">Loading STTK data...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -586,21 +591,22 @@
                             <th>Video Date</th>
                             <th>Outlet</th>
                             <th>AM</th>
-                            <th>Traffic</th>
-                            <th>Loss Sales</th>
-                            <th class="bg-green-600">Greeting</th>
-                            <th class="bg-green-600">Offer Help</th>
-                            <th class="bg-green-600">Info Product</th>
-                            <th class="bg-green-600">Offer More</th>
-                            <th class="bg-green-600">Closing</th>
-                            <th class="bg-red-600">No Staff</th>
-                            <th class="bg-red-600">Staff Busy</th>
-                            <th class="bg-red-600">No Stock</th>
-                            <th class="bg-red-600">Others</th>
+                            <th>Total Traffik</th>
+                            <th>Total Transa</th>
+                            <th>Total Lost S</th>
+                            <th class="bg-green-600">Total Titipan</th>
+                            <th class="bg-green-600">Total Upselling</th>
+                            <th class="bg-green-600">Total Tensi</th>
+                            <th class="bg-green-600">Total Bundle</th>
+                            <th class="bg-green-600">Total Member</th>
+                            <th class="bg-red-600">Total Kosong</th>
+                            <th class="bg-red-600">Total Mahal</th>
+                            <th class="bg-red-600">Total Titipan</th>
+                            <th class="bg-red-600">Total Lainnya</th>
                         </tr>
                     </thead>
                     <tbody id="cctvDataTable">
-                        <tr><td colspan="16" class="loading">Loading CCTV data...</td></tr>
+                        <tr><td colspan="17" class="loading">Loading CCTV data...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -665,7 +671,6 @@
         </div>
     </div>
 
-    <script>
     <!-- External JS files for modular architecture -->
     <script src="opex-config.js"></script>
     <script src="opex-dashboard-v2.js"></script>

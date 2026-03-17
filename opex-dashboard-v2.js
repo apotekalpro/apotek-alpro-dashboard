@@ -9,6 +9,7 @@ class OpexDashboardV2 {
         this.data = {
             audit: [],
             auditDetail: [],
+            auditAnalysis: { outletTotal: [], outletTidak: [], outletYa: [], amTotal: [], amTidak: [], amYa: [] },
             index: [],
             sttk: [],
             shrinkage: [],
@@ -53,7 +54,8 @@ class OpexDashboardV2 {
             this.loadSheetData('INDEX', 'A:B'),
             this.loadSheetData('STTK_SHRINKAGE', 'A:I'),
             this.loadSheetData('Shrinkage_Items_Raw', 'A:G'),
-            this.loadSheetData('CCTV_14H', 'A1:Q500')
+            this.loadSheetData('CCTV_14H', 'A:Q'),  // Load all rows, no limit
+            this.loadSheetData('Analysis Field Audit Detail', 'A:AS')
         ];
 
         const results = await Promise.all(promises);
@@ -64,6 +66,12 @@ class OpexDashboardV2 {
         this.processSttkData(results[3]);
         this.processShrinkageData(results[4]);
         this.processCctvData(results[5]);
+        this.processAuditAnalysisData(results[6]);
+        
+        // After processing audit analysis, render the summary
+        if (this.data.auditAnalysis && this.data.auditAnalysis.codes) {
+            this.renderAuditSummary(new Map());
+        }
     }
 
     async loadSheetData(sheetName, range) {
@@ -148,35 +156,58 @@ class OpexDashboardV2 {
         const headers = rawData[0];
         console.log('CCTV Headers:', headers);
         
+        // Count how many rows have data
+        let validRowCount = 0;
+        let emptyRowCount = 0;
+        
         // Process data rows (skip header)
         this.data.cctv = rawData.slice(1)
             .filter(row => {
-                // Find traffic column (should be around column E based on your data)
-                const traffic = this.parseNumber(row[4]); // Column E (index 4)
-                return traffic > 0;
+                // Column E = Total Traffic (index 4)
+                const trafficValue = row[4];
+                const trafficNum = this.parseNumber(trafficValue);
+                
+                // Also check if outlet name exists (column C, index 2)
+                const hasOutlet = row[2] && row[2].trim() !== '';
+                
+                const shouldInclude = trafficNum > 0 && hasOutlet;
+                
+                if (!hasOutlet) {
+                    emptyRowCount++;
+                } else if (trafficNum <= 0) {
+                    console.log('Row with outlet but no traffic:', row[2], 'traffic:', trafficValue);
+                } else {
+                    validRowCount++;
+                    console.log('✓ Including:', row[2], 'traffic:', trafficNum);
+                }
+                
+                return shouldInclude;
             })
             .map(row => {
                 return {
-                    checkDate: row[0] || '',      // A: Tgl Pengecekan
-                    videoDate: row[1] || '',      // B: Tgl Video
-                    outlet: row[2] || '',         // C: Nama Toko
+                    checkDate: row[0] || '',      // A: Tanggal Per
+                    videoDate: row[1] || '',      // B: Video Date  
+                    outlet: row[2] || '',         // C: Outlet
                     am: row[3] || '',             // D: AM
-                    totalTraffic: this.parseNumber(row[4]) || 0,  // E: Total Traffic
-                    // Columns F-G might be other metrics
-                    lossSales: this.parseNumber(row[6]) || 0,      // G: Loss Sales
-                    greeting: this.parseNumber(row[7]) || 0,       // H: Greeting
-                    offerHelp: this.parseNumber(row[8]) || 0,      // I: Offer Help
-                    infoProduct: this.parseNumber(row[9]) || 0,    // J: Info Product
-                    offerMore: this.parseNumber(row[10]) || 0,     // K: Offer More
-                    closing: this.parseNumber(row[11]) || 0,       // L: Closing
-                    noStaff: this.parseNumber(row[12]) || 0,       // M: No Staff
-                    staffBusy: this.parseNumber(row[13]) || 0,     // N: Staff Busy
-                    noStock: this.parseNumber(row[14]) || 0,       // O: No Stock
-                    others: this.parseNumber(row[15]) || 0,        // P: Others
+                    totalTraffic: this.parseNumber(row[4]) || 0,   // E: Total Traffik
+                    totalTransa: this.parseNumber(row[5]) || 0,    // F: Total Transa
+                    totalLostSales: this.parseNumber(row[6]) || 0, // G: Total Lost S
+                    // GREEN COLUMNS - Task Performance
+                    totalTitipan: this.parseNumber(row[7]) || 0,   // H: Total Titipan
+                    totalUpselling: this.parseNumber(row[8]) || 0, // I: Total Upselling
+                    totalTensi: this.parseNumber(row[9]) || 0,     // J: Total Tensi
+                    totalBundle: this.parseNumber(row[10]) || 0,   // K: Total Bundle
+                    totalMember: this.parseNumber(row[11]) || 0,   // L: Total Member
+                    // RED COLUMNS - Loss Reasons
+                    totalKosong: this.parseNumber(row[12]) || 0,   // M: Total Kosong
+                    totalMahal: this.parseNumber(row[13]) || 0,    // N: Total Mahal
+                    totalTitipan2: this.parseNumber(row[14]) || 0, // O: Total Titipan (red)
+                    totalLainnya: this.parseNumber(row[15]) || 0,  // P: Total Lainnya
                     month: row[16] || ''          // Q: Month
                 };
             });
 
+        console.log('CCTV Summary: Valid rows:', validRowCount, 'Empty rows:', emptyRowCount);
         console.log('Processed CCTV records:', this.data.cctv.length);
         this.pagination.cctv.total = this.data.cctv.length;
     }
@@ -215,6 +246,58 @@ class OpexDashboardV2 {
             code: row[0] || '',
             name: row[1] || ''
         }));
+    }
+
+    processAuditAnalysisData(rawData) {
+        if (!rawData || rawData.length < 7) {
+            console.warn('No Audit Analysis data found, rows:', rawData ? rawData.length : 0);
+            return;
+        }
+
+        console.log('Processing Audit Analysis data, rows:', rawData.length);
+        
+        // Row 1 = Headers (columns C to AS contain audit codes)
+        const headers = rawData[0];
+        console.log('Analysis headers sample:', headers.slice(0, 10));
+        
+        // Row 2-4: Outlet Hasil (Total, TIDAK, YES)
+        // Row 5-7: AM Hasil (Total, TIDAK, YES)
+        const outletTotal = rawData[1];  // Row 2
+        const outletTidak = rawData[2];  // Row 3
+        const outletYa = rawData[3];     // Row 4
+        const amTotal = rawData[4];      // Row 5
+        const amTidak = rawData[5];      // Row 6
+        const amYa = rawData[6];         // Row 7
+        
+        // Process columns C onwards (index 2+)
+        this.data.auditAnalysis = {
+            codes: [],
+            outletData: [],
+            amData: []
+        };
+        
+        // Start from column C (index 2)
+        for (let i = 2; i < headers.length && i < 47; i++) {  // Up to column AS (index 46)
+            const code = headers[i];
+            if (!code) continue;
+            
+            // Find name from INDEX
+            const indexEntry = this.data.index.find(idx => idx.code === code);
+            const name = indexEntry ? indexEntry.name : code;
+            
+            this.data.auditAnalysis.codes.push({
+                code: code,
+                name: name,
+                outletTotal: this.parseNumber(outletTotal[i]) || 0,
+                outletTidak: this.parseNumber(outletTidak[i]) || 0,
+                outletYa: this.parseNumber(outletYa[i]) || 0,
+                amTotal: this.parseNumber(amTotal[i]) || 0,
+                amTidak: this.parseNumber(amTidak[i]) || 0,
+                amYa: this.parseNumber(amYa[i]) || 0
+            });
+        }
+        
+        console.log('Processed Audit Analysis codes:', this.data.auditAnalysis.codes.length);
     }
 
     getLatestRecordPerOutlet(data) {
@@ -347,15 +430,18 @@ class OpexDashboardV2 {
         const sorted = [...data].sort((a, b) => a.stockLoss - b.stockLoss);
         
         // Top 5 worst
-        const worst5Html = sorted.slice(0, 5).map((item, index) => `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${this.escapeHtml(item.month)}</td>
-                <td>${this.escapeHtml(item.storeName)}</td>
-                <td>${this.escapeHtml(item.am || 'N/A')}</td>
-                <td><span class="badge badge-red">${item.stockLoss.toFixed(2)}</span></td>
-            </tr>
-        `).join('');
+        const worst5Html = sorted.slice(0, 5).map((item, index) => {
+            const formattedCost = 'Rp ' + Math.abs(item.stockLoss).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${this.escapeHtml(item.month)}</td>
+                    <td>${this.escapeHtml(item.storeName)}</td>
+                    <td>${this.escapeHtml(item.am || 'N/A')}</td>
+                    <td><span class="badge badge-red">${formattedCost}</span></td>
+                </tr>
+            `;
+        }).join('');
         this.updateElement('worstStockLoss', worst5Html || '<tr><td colspan="5" class="no-data">No data</td></tr>');
         
         // Paginated table
@@ -370,16 +456,23 @@ class OpexDashboardV2 {
         const endIdx = startIdx + pageSize;
         const pageData = sorted.slice(startIdx, endIdx);
         
-        const tableHtml = pageData.map(item => `
-            <tr>
-                <td>${this.escapeHtml(item.month)}</td>
-                <td>${this.escapeHtml(item.storeName)}</td>
-                <td>${this.escapeHtml(item.am || 'N/A')}</td>
-                <td><span class="badge ${item.stockLoss < 0 ? 'badge-red' : 'badge-green'}">${item.stockLoss.toFixed(2)}</span></td>
-            </tr>
-        `).join('');
+        const tableHtml = pageData.map(item => {
+            // Format: Rp 2,202,519 (no decimals, with separator)
+            const formattedCost = 'Rp ' + Math.abs(item.stockLoss).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const formattedQty = item.shrinkageQty.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            
+            return `
+                <tr>
+                    <td>${this.escapeHtml(item.month)}</td>
+                    <td>${this.escapeHtml(item.storeName)}</td>
+                    <td>${formattedQty}</td>
+                    <td>${this.escapeHtml(item.am || 'N/A')}</td>
+                    <td><span class="badge ${item.stockLoss < 0 ? 'badge-red' : 'badge-green'}">${formattedCost}</span></td>
+                </tr>
+            `;
+        }).join('');
         
-        this.updateElement('sttkDataTable', tableHtml || '<tr><td colspan="4" class="no-data">No data</td></tr>');
+        this.updateElement('sttkDataTable', tableHtml || '<tr><td colspan="5" class="no-data">No data</td></tr>');
         this.updatePaginationControls('sttk', sorted.length);
     }
 
@@ -404,24 +497,24 @@ class OpexDashboardV2 {
         
         // Summary cards
         const totalTraffic = data.reduce((sum, item) => sum + item.totalTraffic, 0);
-        const totalLossSales = data.reduce((sum, item) => sum + item.lossSales, 0);
-        const conversionRate = totalTraffic > 0 ? ((totalTraffic - totalLossSales) / totalTraffic * 100) : 0;
-        const avgLoss = data.length > 0 ? (totalLossSales / data.length) : 0;
+        const totalLostSales = data.reduce((sum, item) => sum + item.totalLostSales, 0);
+        const conversionRate = totalTraffic > 0 ? ((totalTraffic - totalLostSales) / totalTraffic * 100) : 0;
+        const avgLoss = data.length > 0 ? (totalLostSales / data.length) : 0;
         
         this.updateElement('totalTraffic', totalTraffic.toLocaleString());
-        this.updateElement('totalLossSales', totalLossSales.toLocaleString());
+        this.updateElement('totalLossSales', totalLostSales.toLocaleString());
         this.updateElement('conversionRate', conversionRate.toFixed(1) + '%');
         this.updateElement('avgLoss', avgLoss.toFixed(0));
         
         // Top 10 loss sales
-        const sortedByLoss = [...data].sort((a, b) => b.lossSales - a.lossSales).slice(0, 10);
+        const sortedByLoss = [...data].sort((a, b) => b.totalLostSales - a.totalLostSales).slice(0, 10);
         const top10Html = sortedByLoss.map((item, index) => `
             <tr>
                 <td>${index + 1}</td>
                 <td>${this.escapeHtml(item.month)}</td>
                 <td>${this.escapeHtml(item.outlet)}</td>
                 <td>${this.escapeHtml(item.am)}</td>
-                <td><span class="badge badge-red">${item.lossSales}</span></td>
+                <td><span class="badge badge-red">${item.totalLostSales}</span></td>
             </tr>
         `).join('');
         this.updateElement('top10LossSales', top10Html || '<tr><td colspan="5" class="no-data">No data</td></tr>');
@@ -452,20 +545,21 @@ class OpexDashboardV2 {
                 <td>${this.escapeHtml(item.outlet)}</td>
                 <td>${this.escapeHtml(item.am)}</td>
                 <td>${item.totalTraffic}</td>
-                <td><span class="badge badge-red">${item.lossSales}</span></td>
-                <td class="bg-green-50">${item.greeting}</td>
-                <td class="bg-green-50">${item.offerHelp}</td>
-                <td class="bg-green-50">${item.infoProduct}</td>
-                <td class="bg-green-50">${item.offerMore}</td>
-                <td class="bg-green-50">${item.closing}</td>
-                <td class="bg-red-50">${item.noStaff}</td>
-                <td class="bg-red-50">${item.staffBusy}</td>
-                <td class="bg-red-50">${item.noStock}</td>
-                <td class="bg-red-50">${item.others}</td>
+                <td>${item.totalTransa}</td>
+                <td><span class="badge badge-red">${item.totalLostSales}</span></td>
+                <td class="bg-green-50">${item.totalTitipan}</td>
+                <td class="bg-green-50">${item.totalUpselling}</td>
+                <td class="bg-green-50">${item.totalTensi}</td>
+                <td class="bg-green-50">${item.totalBundle}</td>
+                <td class="bg-green-50">${item.totalMember}</td>
+                <td class="bg-red-50">${item.totalKosong}</td>
+                <td class="bg-red-50">${item.totalMahal}</td>
+                <td class="bg-red-50">${item.totalTitipan2}</td>
+                <td class="bg-red-50">${item.totalLainnya}</td>
             </tr>
         `).join('');
         
-        this.updateElement('cctvDataTable', tableHtml || '<tr><td colspan="16" class="no-data">No data</td></tr>');
+        this.updateElement('cctvDataTable', tableHtml || '<tr><td colspan="17" class="no-data">No data</td></tr>');
         this.updatePaginationControls('cctv', sorted.length);
     }
 
@@ -515,18 +609,18 @@ class OpexDashboardV2 {
             this.data.cctv.filter(item => item.month === monthFilter) : 
             this.data.cctv;
 
-        const totalNoStaff = data.reduce((sum, item) => sum + item.noStaff, 0);
-        const totalStaffBusy = data.reduce((sum, item) => sum + item.staffBusy, 0);
-        const totalNoStock = data.reduce((sum, item) => sum + item.noStock, 0);
-        const totalOthers = data.reduce((sum, item) => sum + item.others, 0);
+        const totalKosong = data.reduce((sum, item) => sum + item.totalKosong, 0);
+        const totalMahal = data.reduce((sum, item) => sum + item.totalMahal, 0);
+        const totalTitipan = data.reduce((sum, item) => sum + item.totalTitipan2, 0);
+        const totalLainnya = data.reduce((sum, item) => sum + item.totalLainnya, 0);
 
-        const total = totalNoStaff + totalStaffBusy + totalNoStock + totalOthers;
+        const total = totalKosong + totalMahal + totalTitipan + totalLainnya;
 
         const reasons = [
-            { name: 'No Staff Available', count: totalNoStaff },
-            { name: 'Staff Busy', count: totalStaffBusy },
-            { name: 'No Stock', count: totalNoStock },
-            { name: 'Others', count: totalOthers }
+            { name: 'Kosong (Out of Stock)', count: totalKosong },
+            { name: 'Mahal (Too Expensive)', count: totalMahal },
+            { name: 'Titipan', count: totalTitipan },
+            { name: 'Lainnya (Others)', count: totalLainnya }
         ].sort((a, b) => b.count - a.count);
 
         const html = reasons.map(reason => `
@@ -543,19 +637,19 @@ class OpexDashboardV2 {
     updateTaskPerformanceSummary() {
         const data = this.data.cctv;
 
-        const totalGreeting = data.reduce((sum, item) => sum + item.greeting, 0);
-        const totalOfferHelp = data.reduce((sum, item) => sum + item.offerHelp, 0);
-        const totalInfoProduct = data.reduce((sum, item) => sum + item.infoProduct, 0);
-        const totalOfferMore = data.reduce((sum, item) => sum + item.offerMore, 0);
-        const totalClosing = data.reduce((sum, item) => sum + item.closing, 0);
+        const totalTitipan = data.reduce((sum, item) => sum + item.totalTitipan, 0);
+        const totalUpselling = data.reduce((sum, item) => sum + item.totalUpselling, 0);
+        const totalTensi = data.reduce((sum, item) => sum + item.totalTensi, 0);
+        const totalBundle = data.reduce((sum, item) => sum + item.totalBundle, 0);
+        const totalMember = data.reduce((sum, item) => sum + item.totalMember, 0);
         const totalTraffic = data.reduce((sum, item) => sum + item.totalTraffic, 0);
 
         const tasks = [
-            { name: 'Greeting', count: totalGreeting },
-            { name: 'Offer Help', count: totalOfferHelp },
-            { name: 'Info Product', count: totalInfoProduct },
-            { name: 'Offer More', count: totalOfferMore },
-            { name: 'Closing', count: totalClosing }
+            { name: 'Titipan', count: totalTitipan },
+            { name: 'Upselling', count: totalUpselling },
+            { name: 'Tensi (Blood Pressure Check)', count: totalTensi },
+            { name: 'Bundle', count: totalBundle },
+            { name: 'Member', count: totalMember }
         ].sort((a, b) => b.count - a.count);
 
         const html = tasks.map(task => {
@@ -569,20 +663,231 @@ class OpexDashboardV2 {
             return `
                 <tr>
                     <td>${this.escapeHtml(task.name)}</td>
-                    <td><span class="badge badge-green">${task.count}</span></td>
-                    <td>${avgPerTraffic.toFixed(2)}</td>
+                    <td><span class="badge ${badgeClass}">${task.count}</span></td>
+                    <td>${(avgPerTraffic * 100).toFixed(1)}%</td>
                     <td><span class="badge ${badgeClass}">${performanceLevel}</span></td>
                 </tr>
             `;
         }).join('');
-
+        
         this.updateElement('taskPerformanceTable', html || '<tr><td colspan="4" class="no-data">No data</td></tr>');
     }
 
     showAuditDetail(outletCode) {
         document.getElementById('modalOutletCode').textContent = outletCode;
-        document.getElementById('modalContent').innerHTML = '<div class="loading">Loading details...</div>';
         document.getElementById('auditDetailModal').style.display = 'block';
+        
+        // Find matching audit record
+        const auditRecord = this.data.audit.find(a => a.outletCode === outletCode);
+        if (!auditRecord) {
+            document.getElementById('modalContent').innerHTML = '<div class="no-data">No data found for this outlet</div>';
+            return;
+        }
+        
+        // Find matching detail records
+        const detailRecords = this.data.auditDetail.rows.filter(row => {
+            // Column B = outlet code, Column A = month, Column C = visit date
+            return row[1] === outletCode;
+        });
+        
+        if (detailRecords.length === 0) {
+            document.getElementById('modalContent').innerHTML = '<div class="no-data">No detail records found</div>';
+            return;
+        }
+        
+        // Render audit detail
+        this.renderAuditDetailModal(auditRecord, detailRecords);
+    }
+    
+    renderAuditDetailModal(auditRecord, detailRecords) {
+        let html = `
+            <div class="mb-4">
+                <h3 class="font-semibold mb-2">Audit Information</h3>
+                <p><strong>AM:</strong> ${this.escapeHtml(auditRecord.amName)}</p>
+                <p><strong>Visit Date:</strong> ${this.escapeHtml(auditRecord.visitDate)}</p>
+                <p><strong>Scoring:</strong> ${this.escapeHtml(auditRecord.scoring)}</p>
+            </div>
+        `;
+        
+        // Group TIDAK entries by code
+        const tidakMap = new Map();
+        
+        detailRecords.forEach(row => {
+            // Columns E-AU contain audit results
+            const headers = this.data.auditDetail.headers;
+            for (let i = 4; i < Math.min(row.length, headers.length); i++) {
+                const value = (row[i] || '').toString().toUpperCase();
+                if (value === 'TIDAK') {
+                    const code = headers[i];
+                    // Find name from INDEX
+                    const indexEntry = this.data.index.find(idx => idx.code === code);
+                    const name = indexEntry ? indexEntry.name : code;
+                    const key = `${code} - ${name}`;
+                    tidakMap.set(key, (tidakMap.get(key) || 0) + 1);
+                }
+            }
+        });
+        
+        if (tidakMap.size > 0) {
+            html += `
+                <div class="mb-4">
+                    <h3 class="font-semibold mb-2">TIDAK Issues (${tidakMap.size} unique)</h3>
+                    <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                        <table class="w-full">
+                            <thead>
+                                <tr>
+                                    <th class="text-left p-2 bg-gray-100">Code - Description</th>
+                                    <th class="text-right p-2 bg-gray-100">Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            // Sort by count descending
+            const sorted = Array.from(tidakMap.entries()).sort((a, b) => b[1] - a[1]);
+            sorted.forEach(([key, count]) => {
+                html += `
+                    <tr>
+                        <td class="p-2 border-b">${this.escapeHtml(key)}</td>
+                        <td class="p-2 border-b text-right"><span class="badge badge-red">${count}</span></td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        } else {
+            html += '<div class="mb-4"><p class="text-green-600">✓ No TIDAK issues found</p></div>';
+        }
+        
+        // Summary: Top 10 issues and full compliance table
+        this.renderAuditSummary(tidakMap);
+        
+        document.getElementById('modalContent').innerHTML = html;
+    }
+    
+    renderAuditSummary(tidakMap) {
+        // Use Analysis sheet data if available
+        if (this.data.auditAnalysis && this.data.auditAnalysis.codes && this.data.auditAnalysis.codes.length > 0) {
+            // Sort by outletTidak count descending
+            const sorted = [...this.data.auditAnalysis.codes]
+                .filter(item => item.outletTidak > 0)
+                .sort((a, b) => b.outletTidak - a.outletTidak);
+            
+            const top10 = sorted.slice(0, 10);
+            
+            let html = `
+                <div class="mt-6">
+                    <h3 class="text-lg font-bold mb-3">📊 Field Audit Detail Summary</h3>
+                    
+                    <h4 class="font-semibold mb-2">Top 10 Issues (TIDAK) - Outlet Results</h4>
+                    <table class="w-full mb-4">
+                        <thead>
+                            <tr class="bg-purple-600 text-white">
+                                <th class="p-2">Rank</th>
+                                <th class="p-2 text-left">Code</th>
+                                <th class="p-2 text-left">Description</th>
+                                <th class="p-2">TIDAK Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            if (top10.length === 0) {
+                html += '<tr><td colspan="4" class="p-4 text-center text-gray-500">No TIDAK issues found</td></tr>';
+            } else {
+                top10.forEach((item, index) => {
+                    html += `
+                        <tr>
+                            <td class="p-2 border-b text-center">${index + 1}</td>
+                            <td class="p-2 border-b">${this.escapeHtml(item.code)}</td>
+                            <td class="p-2 border-b">${this.escapeHtml(item.name)}</td>
+                            <td class="p-2 border-b text-center"><span class="badge badge-red">${item.outletTidak}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            html += `
+                        </tbody>
+                    </table>
+                    
+                    <h4 class="font-semibold mb-2">Overall Compliance</h4>
+                    <p class="text-sm text-gray-600 mb-2">Full breakdown comparing Outlet vs AM results</p>
+                    <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-purple-600 text-white">
+                                    <th class="p-2 text-left" rowspan="2">Code</th>
+                                    <th class="p-2 text-left" rowspan="2">Description</th>
+                                    <th class="p-2 text-center" colspan="3">Outlet Results</th>
+                                    <th class="p-2 text-center" colspan="3">AM Results</th>
+                                </tr>
+                                <tr class="bg-purple-500 text-white">
+                                    <th class="p-2">TIDAK</th>
+                                    <th class="p-2">YES</th>
+                                    <th class="p-2">Total</th>
+                                    <th class="p-2">TIDAK</th>
+                                    <th class="p-2">YES</th>
+                                    <th class="p-2">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            this.data.auditAnalysis.codes.forEach(item => {
+                const outletCompliance = item.outletTotal > 0 ? 
+                    ((item.outletYa / item.outletTotal) * 100).toFixed(1) : 0;
+                const amCompliance = item.amTotal > 0 ? 
+                    ((item.amYa / item.amTotal) * 100).toFixed(1) : 0;
+                
+                html += `
+                    <tr>
+                        <td class="p-2 border-b">${this.escapeHtml(item.code)}</td>
+                        <td class="p-2 border-b">${this.escapeHtml(item.name)}</td>
+                        <td class="p-2 border-b text-center"><span class="badge badge-red">${item.outletTidak}</span></td>
+                        <td class="p-2 border-b text-center"><span class="badge badge-green">${item.outletYa}</span></td>
+                        <td class="p-2 border-b text-center">${item.outletTotal}</td>
+                        <td class="p-2 border-b text-center"><span class="badge badge-red">${item.amTidak}</span></td>
+                        <td class="p-2 border-b text-center"><span class="badge badge-green">${item.amYa}</span></td>
+                        <td class="p-2 border-b text-center">${item.amTotal}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            // Update summary section in the page (outside modal)
+            const summaryDiv = document.getElementById('fieldAuditSummary');
+            if (summaryDiv) {
+                summaryDiv.innerHTML = html;
+            }
+        } else {
+            // Fallback to old method
+            const sorted = Array.from(tidakMap.entries()).sort((a, b) => b[1] - a[1]);
+            const top10 = sorted.slice(0, 10);
+            
+            let html = `
+                <div class="mt-6">
+                    <h3 class="text-lg font-bold mb-3">📊 Field Audit Detail Summary</h3>
+                    <p class="text-gray-600">Loading analysis data...</p>
+                </div>
+            `;
+            
+            const summaryDiv = document.getElementById('fieldAuditSummary');
+            if (summaryDiv) {
+                summaryDiv.innerHTML = html;
+            }
+        }
     }
 
     updateElement(id, content) {
