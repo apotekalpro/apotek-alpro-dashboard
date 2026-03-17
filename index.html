@@ -2510,6 +2510,8 @@
                                             <option value="warehouse">Warehouse</option>
                                             <option value="ppr">PPR</option>
                                             <option value="academy">Academy</option>
+                                            <option value="sgm">SGM</option>
+                                            <option value="powerlife">Powerlife</option>
                                         </select>
                                     </div>
                                     <div>
@@ -2765,6 +2767,271 @@
                     </div>
                 </div>
 
+                <!-- Powerlife Content -->
+                <div id="powerlifeContent" class="tab-content hidden">
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-4">
+                            <i class="fas fa-heartbeat mr-3 text-red-600"></i>
+                            Powerlife Department
+                        </h2>
+                        
+                        <!-- Powerlife Subtabs -->
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <button onclick="showPowerlifeSubtab('executive-dashboard')" 
+                                    class="subtab-button active px-4 py-2">
+                                <i class="fas fa-chart-pie mr-2"></i>
+                                Executive Dashboard
+                            </button>
+                        </div>
+
+                        <!-- Executive Dashboard Subtab -->
+                        <div id="powerlife-executive-dashboard" class="powerlife-subtab-content">
+                            <div class="bg-gradient-to-r from-red-600 via-pink-600 to-purple-600 rounded-xl shadow-2xl p-8 mb-6 text-white transform hover:scale-[1.01] transition-all duration-300">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <h3 class="text-3xl font-bold mb-3 flex items-center">
+                                            <i class="fas fa-heartbeat mr-3 animate-pulse"></i>
+                                            Product Performance Dashboard
+                                        </h3>
+                                        <p class="text-red-100 text-lg mb-2">Track product sales, growth trends, and performance metrics</p>
+                                        <p class="text-sm text-red-200 mt-3 flex items-center">
+                                            <i class="fas fa-database mr-2"></i>
+                                            Data Source: Google Sheets - Rank Item Analysis (Forecasted EOM Data)
+                                        </p>
+                                    </div>
+                                    <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-4">
+                                        <i class="fas fa-chart-line text-4xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Loading State -->
+                            <div id="powerlife-loading" class="text-center py-12">
+                                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+                                <p class="mt-4 text-gray-600">Loading product performance data...</p>
+                            </div>
+
+                            <!-- Error State -->
+                            <div id="powerlife-error" class="hidden">
+                                <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                                    <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                                    <h4 class="text-lg font-semibold text-red-800 mb-2">Failed to Load Data</h4>
+                                    <p class="text-red-600 mb-4">Unable to fetch product performance data from Google Sheets</p>
+                                    <button onclick="loadPowerlifeData()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">
+                                        <i class="fas fa-redo mr-2"></i>Retry
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Main Dashboard Content -->
+                            <div id="powerlife-dashboard" class="hidden">
+                                <!-- Current Month Performance Section Title -->
+                                <div class="mb-6">
+                                    <h3 class="text-2xl font-bold text-gray-800 flex items-center">
+                                        <i class="fas fa-calendar-day text-blue-500 text-2xl mr-3"></i>
+                                        Current Month Performance
+                                    </h3>
+                                </div>
+
+                                <!-- Summary Cards -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                    <div class="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl shadow-lg p-6 border border-green-200 transform hover:scale-105 transition-all duration-300 hover:shadow-2xl">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex-1">
+                                                <p class="text-sm font-medium text-green-700 mb-2">Total Revenue (Forecast)</p>
+                                                <h4 class="text-3xl font-bold text-green-800" id="powerlife-total-revenue">Rp 0</h4>
+                                            </div>
+                                            <div class="bg-green-500 p-4 rounded-xl shadow-lg">
+                                                <i class="fas fa-money-bill-wave text-3xl text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div class="border-t border-green-200 pt-2">
+                                            <p class="text-xs text-green-600">Last month: <span id="powerlife-last-month-revenue" class="font-semibold">Rp 0</span></p>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl shadow-lg p-6 border border-blue-200 transform hover:scale-105 transition-all duration-300 hover:shadow-2xl">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex-1">
+                                                <p class="text-sm font-medium text-blue-700 mb-2">Total Products</p>
+                                                <h4 class="text-3xl font-bold text-blue-800" id="powerlife-total-products">0</h4>
+                                            </div>
+                                            <div class="bg-blue-500 p-4 rounded-xl shadow-lg">
+                                                <i class="fas fa-box text-3xl text-white"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-gradient-to-br from-purple-50 to-pink-100 rounded-xl shadow-lg p-6 border border-purple-200 transform hover:scale-105 transition-all duration-300 hover:shadow-2xl">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex-1">
+                                                <p class="text-sm font-medium text-purple-700 mb-2">Total Qty Sold (Forecast)</p>
+                                                <h4 class="text-3xl font-bold text-purple-800" id="powerlife-total-qty">0</h4>
+                                            </div>
+                                            <div class="bg-purple-500 p-4 rounded-xl shadow-lg">
+                                                <i class="fas fa-shopping-cart text-3xl text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div class="border-t border-purple-200 pt-2">
+                                            <p class="text-xs text-purple-600">Last month: <span id="powerlife-last-month-qty" class="font-semibold">0</span></p>
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-gradient-to-br from-orange-50 to-red-100 rounded-xl shadow-lg p-6 border border-orange-200 transform hover:scale-105 transition-all duration-300 hover:shadow-2xl">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex-1">
+                                                <p class="text-sm font-medium text-orange-700 mb-2">Avg Growth vs Last Month</p>
+                                                <h4 class="text-3xl font-bold text-orange-800" id="powerlife-avg-growth">0%</h4>
+                                            </div>
+                                            <div class="bg-orange-500 p-4 rounded-xl shadow-lg">
+                                                <i class="fas fa-chart-line text-3xl text-white"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Performance Charts Section -->
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                                    <!-- Top 5 Revenue Performance -->
+                                    <div class="bg-gradient-to-br from-yellow-50 to-amber-100 rounded-xl shadow-xl p-6 border border-yellow-200">
+                                        <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                            <i class="fas fa-trophy text-yellow-500 text-2xl mr-3 animate-bounce"></i>
+                                            Top 5 Products by Revenue (This Month)
+                                        </h4>
+                                        <div id="powerlife-top-revenue" class="space-y-3">
+                                            <!-- Will be populated dynamically -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Bottom 5 Revenue Performance -->
+                                    <div class="bg-gradient-to-br from-red-50 to-pink-100 rounded-xl shadow-xl p-6 border border-red-200">
+                                        <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                            <i class="fas fa-exclamation-triangle text-red-500 text-2xl mr-3"></i>
+                                            Bottom 5 Products by Revenue (This Month)
+                                        </h4>
+                                        <div id="powerlife-bottom-revenue" class="space-y-3">
+                                            <!-- Will be populated dynamically -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Top 5 Growth -->
+                                    <div class="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl shadow-xl p-6 border border-green-200">
+                                        <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                            <i class="fas fa-rocket text-green-500 text-2xl mr-3"></i>
+                                            Top 5 Growth vs Last Month
+                                        </h4>
+                                        <div id="powerlife-top-growth" class="space-y-3">
+                                            <!-- Will be populated dynamically -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Bottom 5 Degrowth -->
+                                    <div class="bg-gradient-to-br from-orange-50 to-red-100 rounded-xl shadow-xl p-6 border border-orange-200">
+                                        <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                            <i class="fas fa-arrow-down text-orange-500 text-2xl mr-3"></i>
+                                            Bottom 5 Degrowth vs Last Month
+                                        </h4>
+                                        <div id="powerlife-bottom-growth" class="space-y-3">
+                                            <!-- Will be populated dynamically -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3-Month Performance Section -->
+                                <div class="bg-gradient-to-br from-purple-50 to-indigo-100 rounded-xl shadow-xl p-6 mb-8 border border-purple-200">
+                                    <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                                        <i class="fas fa-chart-line text-purple-500 text-2xl mr-3 animate-pulse"></i>
+                                        Last 2 Months + Current Forecast Performance
+                                    </h3>
+                                </div>
+
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                                    <!-- Top 5 by 3-Month Total Revenue -->
+                                    <div class="bg-gradient-to-br from-cyan-50 to-blue-100 rounded-xl shadow-xl p-6 border border-cyan-200">
+                                        <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                            <i class="fas fa-medal text-cyan-500 text-2xl mr-3"></i>
+                                            Top 5 Products by Total Revenue (Last 2M + Current Forecast)
+                                        </h4>
+                                        <div id="powerlife-top-3month-total" class="space-y-3">
+                                            <!-- Will be populated dynamically -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Bottom 5 by 3-Month Total Revenue -->
+                                    <div class="bg-gradient-to-br from-gray-50 to-slate-100 rounded-xl shadow-xl p-6 border border-gray-300">
+                                        <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                                            <i class="fas fa-chart-bar text-gray-500 text-2xl mr-3"></i>
+                                            Bottom 5 Products by Total Revenue (Last 2M + Current Forecast)
+                                        </h4>
+                                        <div id="powerlife-bottom-3month-total" class="space-y-3">
+                                            <!-- Will be populated dynamically -->
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Revenue by Division -->
+                                <div class="bg-gradient-to-br from-indigo-50 to-purple-100 rounded-xl shadow-xl p-6 mb-8 border border-indigo-200">
+                                    <h4 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                                        <i class="fas fa-chart-pie text-indigo-500 text-2xl mr-3"></i>
+                                        Revenue by Division/Category (Forecasted)
+                                    </h4>
+                                    <div id="powerlife-division-revenue" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <!-- Will be populated dynamically -->
+                                    </div>
+                                </div>
+
+                                <!-- Detailed Products Table -->
+                                <div class="bg-white rounded-xl shadow-2xl p-6 border border-gray-200">
+                                    <div class="flex justify-between items-center mb-6">
+                                        <h4 class="text-xl font-bold text-gray-800 flex items-center">
+                                            <i class="fas fa-table text-blue-500 text-2xl mr-3"></i>
+                                            All Products Performance
+                                        </h4>
+                                        <div class="flex gap-3">
+                                            <input type="text" id="powerlife-search" placeholder="🔍 Search products..." 
+                                                   class="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                                   oninput="filterPowerlifeProducts()">
+                                            <select id="powerlife-division-filter" class="px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                                    onchange="filterPowerlifeProducts()">
+                                                <option value="">All Divisions</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="overflow-x-auto rounded-lg border border-gray-200">
+                                        <table class="min-w-full divide-y divide-gray-200">
+                                            <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                                                <tr>
+                                                    <th onclick="sortPowerlifeTable('itemName')" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider sticky left-0 bg-gray-50 cursor-pointer hover:bg-blue-50 transition-colors duration-200">
+                                                        Product <i class="fas fa-sort ml-1 text-blue-500"></i>
+                                                    </th>
+                                                    <th onclick="sortPowerlifeTable('division')" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-blue-50 transition-colors duration-200">
+                                                        Division <i class="fas fa-sort ml-1 text-blue-500"></i>
+                                                    </th>
+                                                    <th onclick="sortPowerlifeTable('currentMonthQty')" class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-blue-50 transition-colors duration-200">
+                                                        Forecast Qty <i class="fas fa-sort ml-1 text-blue-500"></i>
+                                                    </th>
+                                                    <th onclick="sortPowerlifeTable('currentMonthRevenue')" class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-blue-50 transition-colors duration-200">
+                                                        Forecast Revenue <i class="fas fa-sort ml-1 text-blue-500"></i>
+                                                    </th>
+                                                    <th onclick="sortPowerlifeTable('prevMonthRevenue')" class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-blue-50 transition-colors duration-200">
+                                                        Last Month Revenue <i class="fas fa-sort ml-1 text-blue-500"></i>
+                                                    </th>
+                                                    <th onclick="sortPowerlifeTable('growthPercent')" class="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-blue-50 transition-colors duration-200">
+                                                        Growth % <i class="fas fa-sort ml-1 text-blue-500"></i>
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="powerlife-products-table" class="bg-white divide-y divide-gray-200">
+                                                <!-- Will be populated dynamically -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Admin Configuration Content -->
                 <div id="adminConfigContent" class="tab-content hidden">
                     <div class="mb-4">
@@ -2999,6 +3266,8 @@
                                                 <option value="warehouse">Warehouse</option>
                                                 <option value="ppr">PPR</option>
                                                 <option value="academy">Academy</option>
+                                                <option value="sgm">SGM</option>
+                                                <option value="powerlife">Powerlife</option>
                                             </select>
                                             <select id="userStatusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                                     onchange="filterUsers()">
@@ -3116,6 +3385,7 @@
                                                 <option value="ppr">PPR</option>
                                                 <option value="academy">Academy</option>
                                                 <option value="sgm">SGM</option>
+                                                <option value="powerlife">Powerlife</option>
                                             </select>
                                         </div>
                                         <div>
@@ -3801,13 +4071,14 @@
             { id: 'ppr', name: 'PPR', icon: 'fas fa-sitemap' },
             { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
             { id: 'sgm', name: 'SGM', icon: 'fas fa-store-alt' },
+            { id: 'powerlife', name: 'Powerlife', icon: 'fas fa-heartbeat' },
             { id: 'adminConfig', name: 'Admin Config', icon: 'fas fa-cogs' }
         ];
         
         // Default department access configuration
         let department_accessConfig = {
-            admin: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'adminConfig'],
-            chief: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm'],
+            admin: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife', 'adminConfig'],
+            chief: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife'],
             strategy: ['ppm', 'strategy', 'operations', 'sgm'],
             operations: ['operations', 'warehouseApd', 'sgm'],
             ppm: ['ppm'],
@@ -3817,7 +4088,8 @@
             warehouse: ['warehouseApd'],
             ppr: ['ppr'],
             academy: ['academy'],
-            sgm: ['sgm']
+            sgm: ['sgm'],
+            powerlife: ['powerlife']
         };
         
         // User Management System Variables
@@ -5411,9 +5683,9 @@
             console.log(`⚠️ Using fallback permissions for ${role}`);
             switch (role) {
                 case 'admin':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'adminConfig'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife', 'adminConfig'];
                 case 'chief':
-                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm'];
+                    return ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife'];
                 case 'strategy':
                     return ['ppm', 'strategy', 'operations', 'sgm'];
                 case 'operation':
@@ -5436,6 +5708,8 @@
                     return ['academy'];
                 case 'sgm':
                     return ['sgm'];
+                case 'powerlife':
+                    return ['powerlife'];
                 default:
                     return ['operations'];
             }
@@ -5542,6 +5816,13 @@
                 console.log('🏪 SGM tab opened, initializing Grand Opening Dashboard...');
                 // Show the default subtab (Grand Opening Dashboard)
                 showSGMSubtab('grand-opening-dashboard');
+            }
+            
+            // Initialize Powerlife tab if opened
+            if (tabId === 'powerlife') {
+                console.log('💊 Powerlife tab opened, initializing Executive Dashboard...');
+                // Show the default subtab (Executive Dashboard)
+                showPowerlifeSubtab('executive-dashboard');
             }
             
             // Initialize Strategy tab if opened - auto-load PSH Bull Eye data
@@ -6294,6 +6575,575 @@
         function formatCurrency(amount) {
             if (!amount && amount !== 0) return '0';
             return new Intl.NumberFormat('id-ID').format(Math.round(amount));
+        }
+
+        // ===== POWERLIFE TAB FUNCTIONS =====
+
+        // Powerlife Data Variables
+        let powerlifeData = {
+            products: [],
+            filteredProducts: [],
+            currentMonth: '',
+            lastMonth: '',
+            lastFetchTime: null,
+            sortColumn: 'currentMonthRevenue',
+            sortDirection: 'desc'
+        };
+
+        // Powerlife Subtab Functions
+        function showPowerlifeSubtab(subtabId) {
+            // Hide all Powerlife subtabs
+            document.querySelectorAll('.powerlife-subtab-content').forEach(subtab => {
+                subtab.classList.add('hidden');
+            });
+            
+            // Remove active class from all Powerlife subtab buttons
+            document.querySelectorAll('#powerlifeContent .subtab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected subtab
+            const subtab = document.getElementById(`powerlife-${subtabId}`);
+            if (subtab) {
+                subtab.classList.remove('hidden');
+            }
+            
+            // Add active class to clicked button
+            const button = document.querySelector(`button[onclick*="showPowerlifeSubtab('${subtabId}')"]`);
+            if (button) {
+                button.classList.add('active');
+            }
+            
+            // Load data when executive dashboard is opened
+            if (subtabId === 'executive-dashboard') {
+                loadPowerlifeData();
+            }
+        }
+
+        // Load Powerlife Product Performance Data from Google Sheets
+        async function loadPowerlifeData() {
+            const loadingEl = document.getElementById('powerlife-loading');
+            const errorEl = document.getElementById('powerlife-error');
+            const dashboardEl = document.getElementById('powerlife-dashboard');
+
+            // Show loading state
+            if (loadingEl) loadingEl.classList.remove('hidden');
+            if (errorEl) errorEl.classList.add('hidden');
+            if (dashboardEl) dashboardEl.classList.add('hidden');
+
+            try {
+                console.log('📊 Loading Powerlife product data from Google Sheets...');
+                
+                // Google Sheets URL (make it public and use CSV export)
+                const sheetId = '1bGNbGDT4WDnwAsx58gKGvsG9yYFBmfD-';
+                const gid = '2065577288'; // Rank Item sheet
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+                
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
+                }
+                
+                const csvText = await response.text();
+                console.log('✅ Data fetched successfully, parsing...');
+                
+                // Parse CSV data
+                const rows = csvText.split('\n').map(row => {
+                    // Simple CSV parsing (handle quoted fields)
+                    const result = [];
+                    let current = '';
+                    let inQuotes = false;
+                    
+                    for (let i = 0; i < row.length; i++) {
+                        const char = row[i];
+                        if (char === '"') {
+                            inQuotes = !inQuotes;
+                        } else if (char === ',' && !inQuotes) {
+                            result.push(current.trim());
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+                    result.push(current.trim());
+                    return result;
+                });
+                
+                // Detect current month from row 3 (index 2)
+                const monthRow = rows[2] || [];
+                let currentMonthCol = -1;
+                for (let i = 0; i < monthRow.length; i++) {
+                    if (monthRow[i] && monthRow[i].includes('Current Month')) {
+                        currentMonthCol = i;
+                        powerlifeData.currentMonth = monthRow[i];
+                        break;
+                    }
+                }
+                
+                console.log('📅 Current month column detected:', currentMonthCol, powerlifeData.currentMonth);
+                
+                if (currentMonthCol === -1) {
+                    throw new Error('Could not detect current month column');
+                }
+                
+                // Previous month is 2 columns before current month
+                const prevMonthCol = currentMonthCol - 2;
+                if (prevMonthCol >= 0 && monthRow[prevMonthCol]) {
+                    powerlifeData.lastMonth = monthRow[prevMonthCol];
+                }
+                
+                console.log('📅 Previous month column:', prevMonthCol, powerlifeData.lastMonth);
+                
+                // Parse product data - IMPORTANT: Data starts from row 6 (Excel row 6 = array index 5)
+                // Row 1 (index 0) = Company Revenue
+                // Row 2 (index 1) = Total Revenue  
+                // Row 3 (index 2) = Month headers
+                // Row 4 (index 3) = Column headers (SKU, SKU Description, Division...)
+                // Row 5 (index 4) = Another header row or empty
+                // Row 6 (index 5) = FIRST PRODUCT DATA
+                const products = [];
+                
+                console.log('🔍 Checking first few rows for debugging:');
+                for (let i = 0; i < Math.min(8, rows.length); i++) {
+                    console.log(`Row ${i + 1} (index ${i}):`, rows[i][0], rows[i][1], rows[i][2]);
+                }
+                
+                for (let i = 5; i < rows.length; i++) {
+                    const row = rows[i];
+                    
+                    // Skip empty rows
+                    if (!row[0] || row[0].trim() === '') continue;
+                    
+                    // Skip header rows - be more aggressive in detection
+                    const firstCol = row[0].toLowerCase().trim();
+                    const secondCol = (row[1] || '').toLowerCase().trim();
+                    const thirdCol = (row[2] || '').toLowerCase().trim();
+                    
+                    // Skip if contains "undefined" text
+                    if (firstCol.includes('undefined') || secondCol.includes('undefined') || thirdCol.includes('undefined')) {
+                        console.log(`⏭️ Skipping undefined row ${i + 1}:`, row[0], row[1], row[2]);
+                        continue;
+                    }
+                    
+                    // Skip if it looks like a header
+                    if (firstCol === 'sku' || 
+                        firstCol.includes('item code') ||
+                        firstCol.includes('product') ||
+                        firstCol.includes('column') ||
+                        secondCol === 'sku description' ||
+                        secondCol.includes('description') ||
+                        secondCol.includes('name') ||
+                        thirdCol.includes('division') ||
+                        thirdCol.includes('category')) {
+                        console.log(`⏭️ Skipping header row ${i + 1}:`, row[0], row[1], row[2]);
+                        continue;
+                    }
+                    
+                    // Additional check: SKU/item codes should be numeric or alphanumeric with reasonable length
+                    // Skip if first column is too short and not numeric (likely a header)
+                    if (firstCol.length < 5 && isNaN(firstCol)) {
+                        console.log(`⏭️ Skipping invalid row ${i + 1}:`, row[0]);
+                        continue;
+                    }
+                    
+                    // Skip rows where the item code doesn't match expected pattern (should start with digits)
+                    if (!/^\d/.test(firstCol)) {
+                        console.log(`⏭️ Skipping non-numeric row ${i + 1}:`, row[0]);
+                        continue;
+                    }
+                    
+                    const itemCode = row[0];
+                    const itemName = row[1];
+                    const division = row[2];
+                    
+                    // Skip if essential fields are empty or undefined
+                    if (!itemName || itemName.trim() === '' || itemName.toLowerCase() === 'undefined') {
+                        console.log(`⏭️ Skipping product with empty/undefined name at row ${i + 1}`);
+                        continue;
+                    }
+                    
+                    if (!division || division.trim() === '' || division.toLowerCase() === 'undefined') {
+                        console.log(`⏭️ Skipping product with empty/undefined division at row ${i + 1}`);
+                        continue;
+                    }
+                    
+                    // Current month forecasted data (use BE/Forecast columns instead of UTD)
+                    // Column L = UTD Qty, Column M = Forecast Qty, Column N = UTD Revenue, Column O = Forecast Revenue
+                    const currentMonthForecastQty = parseFloat(row[currentMonthCol + 1]?.replace(/,/g, '') || '0'); // M column (Forecast Qty)
+                    const currentMonthForecastRevenue = parseFloat(row[currentMonthCol + 3]?.replace(/,/g, '') || '0'); // O column (Forecast Revenue)
+                    
+                    // Previous month data (completed month)
+                    const prevMonthQty = parseFloat(row[prevMonthCol]?.replace(/,/g, '') || '0');
+                    const prevMonthRevenue = parseFloat(row[prevMonthCol + 1]?.replace(/,/g, '') || '0'); // Revenue is next col after qty
+                    
+                    // Calculate Last 2 Months + Current Forecast Total
+                    // Each month takes 2 columns (Qty, Revenue)
+                    const month2Col = prevMonthCol - 2; // 1 month before prev month (2 months ago)
+                    
+                    const month2Revenue = month2Col >= 0 ? parseFloat(row[month2Col + 1]?.replace(/,/g, '') || '0') : 0;
+                    // Total = Month-2 + Month-1 (prev) + Current Forecast
+                    const threeMonthTotalRevenue = month2Revenue + prevMonthRevenue + currentMonthForecastRevenue;
+                    const threeMonthAvgRevenue = threeMonthTotalRevenue / 3;
+                    
+                    // Calculate growth using FORECASTED EOM vs Previous Month
+                    let growthPercent = 0;
+                    if (prevMonthRevenue > 0) {
+                        growthPercent = ((currentMonthForecastRevenue - prevMonthRevenue) / prevMonthRevenue) * 100;
+                    } else if (currentMonthForecastRevenue > 0) {
+                        growthPercent = 100;
+                    }
+                    
+                    let growthQtyPercent = 0;
+                    if (prevMonthQty > 0) {
+                        growthQtyPercent = ((currentMonthForecastQty - prevMonthQty) / prevMonthQty) * 100;
+                    } else if (currentMonthForecastQty > 0) {
+                        growthQtyPercent = 100;
+                    }
+                    
+                    products.push({
+                        itemCode,
+                        itemName,
+                        division,
+                        currentMonthQty: currentMonthForecastQty,
+                        currentMonthRevenue: currentMonthForecastRevenue,
+                        prevMonthRevenue,
+                        prevMonthQty,
+                        growthPercent,
+                        growthQtyPercent,
+                        threeMonthTotalRevenue,
+                        threeMonthAvgRevenue
+                    });
+                }
+                
+                powerlifeData.products = products;
+                powerlifeData.filteredProducts = products;
+                powerlifeData.lastFetchTime = new Date();
+                
+                console.log(`✅ Parsed ${products.length} products`);
+                console.log('📦 First 3 products:', products.slice(0, 3));
+                
+                // Render the dashboard
+                renderPowerlifeDashboard();
+                
+                // Hide loading, show dashboard
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (dashboardEl) dashboardEl.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('❌ Error loading Powerlife data:', error);
+                if (loadingEl) loadingEl.classList.add('hidden');
+                if (errorEl) errorEl.classList.remove('hidden');
+            }
+        }
+
+        // Render Powerlife Dashboard
+        function renderPowerlifeDashboard() {
+            const products = powerlifeData.products;
+            
+            // Calculate summary metrics
+            const totalRevenue = products.reduce((sum, p) => sum + p.currentMonthRevenue, 0);
+            const totalQty = products.reduce((sum, p) => sum + p.currentMonthQty, 0);
+            const avgGrowth = products.length > 0 
+                ? products.reduce((sum, p) => sum + p.growthPercent, 0) / products.length 
+                : 0;
+            
+            // Calculate last month totals
+            const lastMonthTotalRevenue = products.reduce((sum, p) => sum + p.prevMonthRevenue, 0);
+            const lastMonthTotalQty = products.reduce((sum, p) => sum + p.prevMonthQty, 0);
+            
+            // Update summary cards
+            document.getElementById('powerlife-total-revenue').textContent = formatCurrency(totalRevenue);
+            document.getElementById('powerlife-total-products').textContent = products.length.toLocaleString();
+            document.getElementById('powerlife-total-qty').textContent = totalQty.toLocaleString('id-ID', {maximumFractionDigits: 1});
+            document.getElementById('powerlife-avg-growth').textContent = avgGrowth.toFixed(1) + '%';
+            
+            // Update last month comparison values
+            document.getElementById('powerlife-last-month-revenue').textContent = formatCurrency(lastMonthTotalRevenue);
+            document.getElementById('powerlife-last-month-qty').textContent = lastMonthTotalQty.toLocaleString('id-ID', {maximumFractionDigits: 1});
+            
+            // Top 5 by revenue
+            const topRevenue = [...products]
+                .filter(p => p.currentMonthRevenue > 0)
+                .sort((a, b) => b.currentMonthRevenue - a.currentMonthRevenue)
+                .slice(0, 5);
+            renderTopBottomList('powerlife-top-revenue', topRevenue, 'revenue', false);
+            
+            // Bottom 5 by revenue
+            const bottomRevenue = [...products]
+                .filter(p => p.currentMonthRevenue > 0)
+                .sort((a, b) => a.currentMonthRevenue - b.currentMonthRevenue)
+                .slice(0, 5);
+            renderTopBottomList('powerlife-bottom-revenue', bottomRevenue, 'revenue', false);
+            
+            // Top 5 growth
+            const topGrowth = [...products]
+                .filter(p => p.prevMonthRevenue > 0)
+                .sort((a, b) => b.growthPercent - a.growthPercent)
+                .slice(0, 5);
+            renderTopBottomList('powerlife-top-growth', topGrowth, 'growth', true);
+            
+            // Bottom 5 degrowth
+            const bottomGrowth = [...products]
+                .filter(p => p.prevMonthRevenue > 0)
+                .sort((a, b) => a.growthPercent - b.growthPercent)
+                .slice(0, 5);
+            renderTopBottomList('powerlife-bottom-growth', bottomGrowth, 'growth', true);
+            
+            // Revenue by division
+            renderDivisionRevenue(products);
+            
+            // Top 5 by 3-month total revenue
+            const top3MonthTotal = [...products]
+                .filter(p => p.threeMonthTotalRevenue > 0)
+                .sort((a, b) => b.threeMonthTotalRevenue - a.threeMonthTotalRevenue)
+                .slice(0, 5);
+            render3MonthList('powerlife-top-3month-total', top3MonthTotal, 'total');
+            
+            // Bottom 5 by 3-month total revenue
+            const bottom3MonthTotal = [...products]
+                .filter(p => p.threeMonthTotalRevenue > 0)
+                .sort((a, b) => a.threeMonthTotalRevenue - b.threeMonthTotalRevenue)
+                .slice(0, 5);
+            render3MonthList('powerlife-bottom-3month-total', bottom3MonthTotal, 'total');
+            
+            // Populate division filter
+            const divisions = [...new Set(products.map(p => p.division).filter(d => d))];
+            const divisionFilter = document.getElementById('powerlife-division-filter');
+            if (divisionFilter) {
+                divisionFilter.innerHTML = '<option value="">All Divisions</option>' +
+                    divisions.map(d => `<option value="${d}">${d}</option>`).join('');
+            }
+            
+            // Render products table with initial sort
+            sortAndRenderPowerlifeTable();
+        }
+
+        // Render top/bottom list
+        function renderTopBottomList(elementId, products, type, isGrowth) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+            
+            if (products.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No data available</p>';
+                return;
+            }
+            
+            container.innerHTML = products.map((product, index) => {
+                const value = isGrowth ? product.growthPercent : product.currentMonthRevenue;
+                const displayValue = isGrowth 
+                    ? `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
+                    : formatCurrency(value);
+                
+                const colorClass = isGrowth
+                    ? (value >= 0 ? 'text-green-600' : 'text-red-600')
+                    : 'text-blue-600';
+                
+                const bgColorClass = isGrowth
+                    ? (value >= 0 ? 'from-green-50 to-emerald-50' : 'from-red-50 to-pink-50')
+                    : 'from-blue-50 to-indigo-50';
+                
+                return `
+                    <div class="flex items-center justify-between p-4 bg-gradient-to-r ${bgColorClass} rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200 transform hover:scale-[1.02]">
+                        <div class="flex items-center flex-1 min-w-0">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm mr-3">
+                                <span class="text-lg font-bold text-gray-600">${index + 1}</span>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="font-semibold text-gray-800 truncate text-sm">${product.itemName}</div>
+                                <div class="text-xs text-gray-500 truncate">${product.itemCode} • ${product.division}</div>
+                            </div>
+                        </div>
+                        <div class="font-bold ${colorClass} text-right ml-2 whitespace-nowrap text-lg">${displayValue}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render 3-month performance list (total or average)
+        function render3MonthList(elementId, products, type) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+            
+            if (products.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm text-center py-4">No data available</p>';
+                return;
+            }
+            
+            container.innerHTML = products.map((product, index) => {
+                const totalValue = product.threeMonthTotalRevenue;
+                const avgValue = product.threeMonthAvgRevenue;
+                const displayValue = formatCurrency(totalValue);
+                const avgDisplay = formatCurrency(avgValue);
+                const bgColorClass = 'from-purple-50 to-indigo-50';
+                
+                return `
+                    <div class="flex items-center justify-between p-4 bg-gradient-to-r ${bgColorClass} rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200 transform hover:scale-[1.02]">
+                        <div class="flex items-center flex-1 min-w-0">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm mr-3">
+                                <span class="text-lg font-bold text-gray-600">${index + 1}</span>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="font-semibold text-gray-800 truncate text-sm">${product.itemName}</div>
+                                <div class="text-xs text-gray-500 truncate">${product.itemCode} • ${product.division}</div>
+                            </div>
+                        </div>
+                        <div class="text-right ml-2 whitespace-nowrap">
+                            <div class="font-bold text-purple-600 text-lg">${displayValue}</div>
+                            <div class="text-xs text-purple-500 font-medium">(Avg: ${avgDisplay})</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render division revenue
+        function renderDivisionRevenue(products) {
+            const container = document.getElementById('powerlife-division-revenue');
+            if (!container) return;
+            
+            // Group by division
+            const byDivision = {};
+            products.forEach(p => {
+                if (!p.division) return;
+                if (!byDivision[p.division]) {
+                    byDivision[p.division] = {
+                        revenue: 0,
+                        qty: 0,
+                        products: 0
+                    };
+                }
+                byDivision[p.division].revenue += p.currentMonthRevenue;
+                byDivision[p.division].qty += p.currentMonthQty;
+                byDivision[p.division].products += 1;
+            });
+            
+            // Sort by revenue
+            const divisions = Object.entries(byDivision)
+                .sort(([,a], [,b]) => b.revenue - a.revenue);
+            
+            if (divisions.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm col-span-full">No division data available</p>';
+                return;
+            }
+            
+            container.innerHTML = divisions.map(([division, data]) => `
+                <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg p-4 border border-indigo-200">
+                    <div class="font-semibold text-gray-800 mb-2 truncate">${division}</div>
+                    <div class="text-2xl font-bold text-indigo-600 mb-1">${formatCurrency(data.revenue)}</div>
+                    <div class="flex justify-between text-xs text-gray-600">
+                        <span>${data.products} products</span>
+                        <span>${data.qty.toLocaleString('id-ID', {maximumFractionDigits: 1})} qty</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Render products table
+        function renderPowerlifeProductsTable(products) {
+            const tbody = document.getElementById('powerlife-products-table');
+            if (!tbody) return;
+            
+            if (products.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No products found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = products.map(product => {
+                const growthClass = product.growthPercent >= 0 ? 'text-green-600' : 'text-red-600';
+                const growthIcon = product.growthPercent >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+                
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap sticky left-0 bg-white">
+                            <div class="font-medium text-gray-800 text-sm">${product.itemName}</div>
+                            <div class="text-xs text-gray-500">${product.itemCode}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${product.division}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-800">${product.currentMonthQty.toLocaleString('id-ID', {maximumFractionDigits: 1})}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-800">${formatCurrency(product.currentMonthRevenue)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-600">${formatCurrency(product.prevMonthRevenue)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-bold ${growthClass}">
+                            <i class="fas ${growthIcon} mr-1"></i>${product.growthPercent > 0 ? '+' : ''}${product.growthPercent.toFixed(1)}%
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Filter products
+        function filterPowerlifeProducts() {
+            console.log('🔍 Filter called');
+            const searchInput = document.getElementById('powerlife-search');
+            const divisionFilter = document.getElementById('powerlife-division-filter');
+            
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const selectedDivision = divisionFilter ? divisionFilter.value : '';
+            
+            console.log('🔍 Search term:', searchTerm);
+            console.log('🔍 Selected division:', selectedDivision);
+            console.log('🔍 Total products:', powerlifeData.products.length);
+            
+            let filtered = [...powerlifeData.products];
+            
+            // Filter by search term
+            if (searchTerm) {
+                filtered = filtered.filter(p => {
+                    const nameMatch = (p.itemName || '').toLowerCase().includes(searchTerm);
+                    const codeMatch = (p.itemCode || '').toLowerCase().includes(searchTerm);
+                    const divMatch = (p.division || '').toLowerCase().includes(searchTerm);
+                    return nameMatch || codeMatch || divMatch;
+                });
+                console.log('🔍 After search filter:', filtered.length, 'products');
+            }
+            
+            // Filter by division
+            if (selectedDivision) {
+                filtered = filtered.filter(p => p.division === selectedDivision);
+                console.log('🔍 After division filter:', filtered.length, 'products');
+            }
+            
+            powerlifeData.filteredProducts = filtered;
+            console.log('🔍 Final filtered products:', filtered.length);
+            sortAndRenderPowerlifeTable();
+        }
+
+        // Sort Powerlife table
+        function sortPowerlifeTable(column) {
+            // Toggle direction if same column, otherwise default to desc
+            if (powerlifeData.sortColumn === column) {
+                powerlifeData.sortDirection = powerlifeData.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                powerlifeData.sortColumn = column;
+                powerlifeData.sortDirection = 'desc';
+            }
+            
+            sortAndRenderPowerlifeTable();
+        }
+
+        // Sort and render table
+        function sortAndRenderPowerlifeTable() {
+            const products = [...powerlifeData.filteredProducts];
+            const column = powerlifeData.sortColumn;
+            const direction = powerlifeData.sortDirection;
+            
+            products.sort((a, b) => {
+                let aVal = a[column];
+                let bVal = b[column];
+                
+                // Handle string comparisons
+                if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+                
+                if (direction === 'asc') {
+                    return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                } else {
+                    return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                }
+            });
+            
+            renderPowerlifeProductsTable(products);
         }
 
         // Operations Subtab Functions
