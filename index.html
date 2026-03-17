@@ -6671,27 +6671,55 @@
                     // Skip header rows - be more aggressive in detection
                     const firstCol = row[0].toLowerCase().trim();
                     const secondCol = (row[1] || '').toLowerCase().trim();
+                    const thirdCol = (row[2] || '').toLowerCase().trim();
+                    
+                    // Skip if contains "undefined" text
+                    if (firstCol.includes('undefined') || secondCol.includes('undefined') || thirdCol.includes('undefined')) {
+                        console.log(`⏭️ Skipping undefined row ${i + 1}:`, row[0], row[1], row[2]);
+                        continue;
+                    }
                     
                     // Skip if it looks like a header
                     if (firstCol === 'sku' || 
                         firstCol.includes('item code') ||
                         firstCol.includes('product') ||
+                        firstCol.includes('column') ||
                         secondCol === 'sku description' ||
                         secondCol.includes('description') ||
-                        secondCol.includes('name')) {
-                        console.log(`⏭️ Skipping header row ${i + 1}:`, row[0], row[1]);
+                        secondCol.includes('name') ||
+                        thirdCol.includes('division') ||
+                        thirdCol.includes('category')) {
+                        console.log(`⏭️ Skipping header row ${i + 1}:`, row[0], row[1], row[2]);
                         continue;
                     }
                     
-                    // Additional check: if first column is not a number/code format, skip
+                    // Additional check: SKU/item codes should be numeric or alphanumeric with reasonable length
+                    // Skip if first column is too short and not numeric (likely a header)
                     if (firstCol.length < 5 && isNaN(firstCol)) {
                         console.log(`⏭️ Skipping invalid row ${i + 1}:`, row[0]);
+                        continue;
+                    }
+                    
+                    // Skip rows where the item code doesn't match expected pattern (should start with digits)
+                    if (!/^\d/.test(firstCol)) {
+                        console.log(`⏭️ Skipping non-numeric row ${i + 1}:`, row[0]);
                         continue;
                     }
                     
                     const itemCode = row[0];
                     const itemName = row[1];
                     const division = row[2];
+                    
+                    // Skip if essential fields are empty or undefined
+                    if (!itemName || itemName.trim() === '' || itemName.toLowerCase() === 'undefined') {
+                        console.log(`⏭️ Skipping product with empty/undefined name at row ${i + 1}`);
+                        continue;
+                    }
+                    
+                    if (!division || division.trim() === '' || division.toLowerCase() === 'undefined') {
+                        console.log(`⏭️ Skipping product with empty/undefined division at row ${i + 1}`);
+                        continue;
+                    }
                     
                     // Current month forecasted data (use BE/Forecast columns instead of UTD)
                     // Column L = UTD Qty, Column M = Forecast Qty, Column N = UTD Revenue, Column O = Forecast Revenue
@@ -6928,28 +6956,38 @@
 
         // Filter products
         function filterPowerlifeProducts() {
+            console.log('🔍 Filter called');
             const searchInput = document.getElementById('powerlife-search');
             const divisionFilter = document.getElementById('powerlife-division-filter');
             
-            const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
             const selectedDivision = divisionFilter ? divisionFilter.value : '';
             
-            let filtered = powerlifeData.products;
+            console.log('🔍 Search term:', searchTerm);
+            console.log('🔍 Selected division:', selectedDivision);
+            console.log('🔍 Total products:', powerlifeData.products.length);
+            
+            let filtered = [...powerlifeData.products];
             
             // Filter by search term
             if (searchTerm) {
-                filtered = filtered.filter(p => 
-                    p.itemName.toLowerCase().includes(searchTerm) ||
-                    p.itemCode.toLowerCase().includes(searchTerm)
-                );
+                filtered = filtered.filter(p => {
+                    const nameMatch = (p.itemName || '').toLowerCase().includes(searchTerm);
+                    const codeMatch = (p.itemCode || '').toLowerCase().includes(searchTerm);
+                    const divMatch = (p.division || '').toLowerCase().includes(searchTerm);
+                    return nameMatch || codeMatch || divMatch;
+                });
+                console.log('🔍 After search filter:', filtered.length, 'products');
             }
             
             // Filter by division
             if (selectedDivision) {
                 filtered = filtered.filter(p => p.division === selectedDivision);
+                console.log('🔍 After division filter:', filtered.length, 'products');
             }
             
             powerlifeData.filteredProducts = filtered;
+            console.log('🔍 Final filtered products:', filtered.length);
             sortAndRenderPowerlifeTable();
         }
 
