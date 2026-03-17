@@ -416,6 +416,11 @@
                                 <i class="fas fa-map-marked-alt mr-2"></i>
                                 Biodata Outlet
                             </button>
+                            <button onclick="showOperationsSubtab('opex-dashboard')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-chart-pie mr-2"></i>
+                                OpEX Dashboard
+                            </button>
                         </div>
                         
                         <!-- Outlet Dashboard Subtab -->
@@ -1120,6 +1125,24 @@
                                 <p class="text-lg font-medium">Loading Biodata Outlet...</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- OpEX Dashboard Subtab -->
+                <div id="opexDashboardSubtab" class="operations-subtab hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-800">OpEX Dashboard</h3>
+                            <p class="text-gray-600">Operational Excellence and Performance Monitoring</p>
+                        </div>
+                        <button onclick="openInNewTab('opex-dashboard.html')" 
+                                class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open in New Tab
+                        </button>
+                    </div>
+                    <div class="iframe-container">
+                        <iframe data-src="opex-dashboard.html" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
                     </div>
                 </div>
 
@@ -7188,12 +7211,20 @@
                 'opps-ed-project': 'oppsEdProjectSubtab',
                 'am-performance-tracker': 'amPerformanceTrackerSubtab',
                 'elite-bm-performance-tracker': 'eliteBmPerformanceTrackerSubtab',
-                'biodata-outlet': 'biodataOutletSubtab'
+                'biodata-outlet': 'biodataOutletSubtab',
+                'opex-dashboard': 'opexDashboardSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
             if (targetSubtab) {
                 targetSubtab.classList.remove('hidden');
+                
+                // Load iframe if it exists and hasn't been loaded yet (for lazy loading)
+                const iframe = targetSubtab.querySelector('iframe.lazy-iframe');
+                if (iframe && !iframe.src && iframe.dataset.src) {
+                    console.log('Loading iframe for:', subtabId);
+                    iframe.src = iframe.dataset.src;
+                }
             }
             
             // Load AM tracker data if AM Performance Tracker is selected

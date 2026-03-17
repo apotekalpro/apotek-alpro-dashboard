@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpEX Live API Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .test-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        .success { color: #10b981; font-weight: bold; }
+        .error { color: #ef4444; font-weight: bold; }
+        .info { color: #3b82f6; font-weight: bold; }
+        pre {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            max-height: 400px;
+        }
+        .table-container {
+            max-height: 500px;
+            overflow: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #f9fafb;
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            border-bottom: 2px solid #d1d5db;
+        }
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        tr:hover {
+            background: #f9fafb;
+        }
+        .loading {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #e5e7eb;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-4xl font-bold text-white mb-6">🔍 OpEX Dashboard - Live API Test</h1>
+        
+        <!-- Configuration -->
+        <div class="test-card">
+            <h2 class="text-2xl font-bold mb-4">📋 Configuration</h2>
+            <div id="configInfo"></div>
+        </div>
+
+        <!-- Test All Sheets -->
+        <div class="test-card">
+            <h2 class="text-2xl font-bold mb-4">🧪 Test All Google Sheets</h2>
+            <button onclick="testAllSheets()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg">
+                Run All Tests
+            </button>
+            <div id="testResults" class="mt-4"></div>
+        </div>
+
+        <!-- Sheet Data Preview -->
+        <div id="dataPreview"></div>
+    </div>
+
+    <script src="opex-config.js"></script>
+    <script>
+        // Display configuration
+        document.getElementById('configInfo').innerHTML = `
+            <div class="space-y-2">
+                <p><span class="font-semibold">Sheet ID:</span> <code class="bg-gray-100 px-2 py-1 rounded">${OPEX_CONFIG.SHEET_ID}</code></p>
+                <p><span class="font-semibold">API Key:</span> <code class="bg-gray-100 px-2 py-1 rounded">${OPEX_CONFIG.API_KEY ? OPEX_CONFIG.API_KEY.substring(0, 10) + '...' : 'NOT SET'}</code></p>
+                <p><span class="font-semibold">Debug Mode:</span> <span class="${OPEX_CONFIG.DEBUG_MODE ? 'success' : 'error'}">${OPEX_CONFIG.DEBUG_MODE ? 'ON' : 'OFF'}</span></p>
+                <p><span class="font-semibold">Sheets to Test:</span> ${Object.keys(OPEX_CONFIG.SHEETS).join(', ')}</p>
+            </div>
+        `;
+
+        async function testSheet(sheetName, range) {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${OPEX_CONFIG.SHEET_ID}/values/${sheetName}!${range}?key=${OPEX_CONFIG.API_KEY}`;
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(url);
+                const duration = Date.now() - startTime;
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    return {
+                        success: false,
+                        sheetName,
+                        error: error.error?.message || `HTTP ${response.status}`,
+                        duration,
+                        url
+                    };
+                }
+                
+                const data = await response.json();
+                const rows = data.values || [];
+                
+                return {
+                    success: true,
+                    sheetName,
+                    rowCount: rows.length,
+                    columnCount: rows[0]?.length || 0,
+                    firstRow: rows[0] || [],
+                    sampleData: rows.slice(0, 10),
+                    duration,
+                    url
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    sheetName,
+                    error: error.message,
+                    duration: Date.now() - startTime,
+                    url
+                };
+            }
+        }
+
+        async function testAllSheets() {
+            const resultsDiv = document.getElementById('testResults');
+            const previewDiv = document.getElementById('dataPreview');
+            
+            resultsDiv.innerHTML = '<div class="loading"></div> Testing all sheets...';
+            previewDiv.innerHTML = '';
+            
+            const tests = [
+                { name: 'Audit', range: 'A1:N100' },
+                { name: 'FieldAudit_Detail', range: 'A1:AU100' },
+                { name: 'INDEX', range: 'A1:B100' },
+                { name: 'STTK_SHRINKAGE', range: 'A1:I100' },
+                { name: 'Shrinkage_Items_Raw', range: 'A1:G100' },
+                { name: 'CCTV_14H', range: 'A1:Q100' }
+            ];
+            
+            const results = await Promise.all(
+                tests.map(test => testSheet(test.name, test.range))
+            );
+            
+            // Display summary
+            let html = '<div class="space-y-4">';
+            
+            results.forEach(result => {
+                if (result.success) {
+                    html += `
+                        <div class="border-l-4 border-green-500 pl-4">
+                            <p class="success">✓ ${result.sheetName}</p>
+                            <p class="text-sm text-gray-600">
+                                ${result.rowCount} rows × ${result.columnCount} columns 
+                                (${result.duration}ms)
+                            </p>
+                            <button onclick="showPreview('${result.sheetName}')" 
+                                    class="mt-2 text-blue-500 hover:text-blue-600 text-sm font-semibold">
+                                View Data →
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="border-l-4 border-red-500 pl-4">
+                            <p class="error">✗ ${result.sheetName}</p>
+                            <p class="text-sm text-red-600">${result.error}</p>
+                            <details class="mt-2">
+                                <summary class="cursor-pointer text-sm text-gray-600">Show URL</summary>
+                                <pre class="text-xs mt-2">${result.url}</pre>
+                            </details>
+                        </div>
+                    `;
+                }
+            });
+            
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+            
+            // Store results for preview
+            window.testResults = results;
+            
+            // Auto-show first successful sheet
+            const firstSuccess = results.find(r => r.success);
+            if (firstSuccess) {
+                showPreview(firstSuccess.sheetName);
+            }
+        }
+
+        function showPreview(sheetName) {
+            const result = window.testResults.find(r => r.sheetName === sheetName);
+            if (!result || !result.success) return;
+            
+            const previewDiv = document.getElementById('dataPreview');
+            
+            let html = `
+                <div class="test-card">
+                    <h2 class="text-2xl font-bold mb-4">📊 ${sheetName} Data Preview</h2>
+                    <p class="text-gray-600 mb-4">Showing first ${result.sampleData.length} rows of ${result.rowCount} total</p>
+                    
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    ${result.firstRow.map((col, i) => `<th>Col ${String.fromCharCode(65 + i)}<br/><small>${col}</small></th>`).join('')}
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            result.sampleData.slice(1).forEach((row, i) => {
+                html += '<tr>';
+                row.forEach(cell => {
+                    html += `<td>${cell || '<em class="text-gray-400">empty</em>'}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <details class="mt-4">
+                        <summary class="cursor-pointer font-semibold text-gray-700">Show Raw JSON</summary>
+                        <pre class="mt-2">${JSON.stringify(result.sampleData, null, 2)}</pre>
+                    </details>
+                </div>
+            `;
+            
+            previewDiv.innerHTML = html;
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                testAllSheets();
+            }, 500);
+        });
+    </script>
+</body>
+</html>
