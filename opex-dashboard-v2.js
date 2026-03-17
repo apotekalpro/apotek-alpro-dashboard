@@ -27,7 +27,21 @@ class OpexDashboardV2 {
         this.sorting = {
             audit: { column: null, direction: 'asc' },
             sttk: { column: null, direction: 'asc' },
-            cctv: { column: null, direction: 'asc' }
+            cctv: { column: null, direction: 'asc' },
+            compliance: { column: null, direction: 'asc' }
+        };
+        
+        // Filtering state
+        this.filters = {
+            sttk: { outlet: '', am: '', month: '' },
+            cctv: { outlet: '', am: '', month: '' }
+        };
+        
+        // Filtered data cache
+        this.filteredData = {
+            sttk: [],
+            cctv: [],
+            compliance: []
         };
     }
 
@@ -345,6 +359,13 @@ class OpexDashboardV2 {
     }
 
     renderAll() {
+        // Initialize filtered data with all data
+        this.filteredData.sttk = [...this.data.sttk];
+        this.filteredData.cctv = [...this.data.cctv];
+        
+        // Populate month filter dropdowns
+        this.populateMonthFilters();
+        
         this.renderAuditSection();
         this.renderSttkSection();
         this.renderShrinkageSection();
@@ -450,7 +471,14 @@ class OpexDashboardV2 {
 
     renderSttkTable() {
         const { currentPage, pageSize } = this.pagination.sttk;
-        const sorted = [...this.data.sttk].sort((a, b) => a.stockLoss - b.stockLoss);
+        
+        // Use filtered data if filters are active, otherwise use all data
+        const dataToRender = this.filteredData.sttk.length > 0 || 
+                            this.filters.sttk.outlet || this.filters.sttk.am || this.filters.sttk.month
+            ? this.filteredData.sttk 
+            : this.data.sttk;
+        
+        const sorted = [...dataToRender].sort((a, b) => a.stockLoss - b.stockLoss);
         
         const startIdx = (currentPage - 1) * pageSize;
         const endIdx = startIdx + pageSize;
@@ -529,7 +557,14 @@ class OpexDashboardV2 {
 
     renderCctvTable() {
         const { currentPage, pageSize } = this.pagination.cctv;
-        const sorted = [...this.data.cctv].sort((a, b) => 
+        
+        // Use filtered data if filters are active, otherwise use all data
+        const dataToRender = this.filteredData.cctv.length > 0 || 
+                            this.filters.cctv.outlet || this.filters.cctv.am || this.filters.cctv.month
+            ? this.filteredData.cctv 
+            : this.data.cctv;
+        
+        const sorted = [...dataToRender].sort((a, b) => 
             this.parseMonth(b.month) - this.parseMonth(a.month)
         );
         
@@ -910,6 +945,238 @@ class OpexDashboardV2 {
             "'": '&#039;'
         };
         return text.toString().replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // ========== FILTERING METHODS ==========
+    
+    applySttkFilters() {
+        const outletFilter = document.getElementById('sttkOutletFilter')?.value.toLowerCase() || '';
+        const amFilter = document.getElementById('sttkAmFilter')?.value.toLowerCase() || '';
+        const monthFilter = document.getElementById('sttkMonthFilter')?.value || '';
+        
+        this.filters.sttk = { outlet: outletFilter, am: amFilter, month: monthFilter };
+        
+        this.filteredData.sttk = this.data.sttk.filter(row => {
+            const matchesOutlet = !outletFilter || (row.storeName && row.storeName.toLowerCase().includes(outletFilter));
+            const matchesAm = !amFilter || (row.am && row.am.toLowerCase().includes(amFilter));
+            const matchesMonth = !monthFilter || row.month === monthFilter;
+            return matchesOutlet && matchesAm && matchesMonth;
+        });
+        
+        this.pagination.sttk.currentPage = 1;
+        this.pagination.sttk.total = this.filteredData.sttk.length;
+        this.renderSttkTable();
+        console.log(`STTK filtered: ${this.filteredData.sttk.length} of ${this.data.sttk.length} records`);
+    }
+    
+    clearSttkFilters() {
+        document.getElementById('sttkOutletFilter').value = '';
+        document.getElementById('sttkAmFilter').value = '';
+        document.getElementById('sttkMonthFilter').value = '';
+        this.filters.sttk = { outlet: '', am: '', month: '' };
+        this.filteredData.sttk = [...this.data.sttk];
+        this.pagination.sttk.currentPage = 1;
+        this.pagination.sttk.total = this.data.sttk.length;
+        this.renderSttkTable();
+    }
+    
+    applyCctvFilters() {
+        const outletFilter = document.getElementById('cctvOutletFilter')?.value.toLowerCase() || '';
+        const amFilter = document.getElementById('cctvAmFilter')?.value.toLowerCase() || '';
+        const monthFilter = document.getElementById('cctvMonthFilter')?.value || '';
+        
+        this.filters.cctv = { outlet: outletFilter, am: amFilter, month: monthFilter };
+        
+        this.filteredData.cctv = this.data.cctv.filter(row => {
+            const matchesOutlet = !outletFilter || (row.outlet && row.outlet.toLowerCase().includes(outletFilter));
+            const matchesAm = !amFilter || (row.am && row.am.toLowerCase().includes(amFilter));
+            const matchesMonth = !monthFilter || row.month === monthFilter;
+            return matchesOutlet && matchesAm && matchesMonth;
+        });
+        
+        this.pagination.cctv.currentPage = 1;
+        this.pagination.cctv.total = this.filteredData.cctv.length;
+        this.renderCctvTable();
+        console.log(`CCTV filtered: ${this.filteredData.cctv.length} of ${this.data.cctv.length} records`);
+    }
+    
+    clearCctvFilters() {
+        document.getElementById('cctvOutletFilter').value = '';
+        document.getElementById('cctvAmFilter').value = '';
+        document.getElementById('cctvMonthFilter').value = '';
+        this.filters.cctv = { outlet: '', am: '', month: '' };
+        this.filteredData.cctv = [...this.data.cctv];
+        this.pagination.cctv.currentPage = 1;
+        this.pagination.cctv.total = this.data.cctv.length;
+        this.renderCctvTable();
+    }
+    
+    populateMonthFilters() {
+        // Populate STTK month filter
+        const sttkMonths = [...new Set(this.data.sttk.map(row => row.month))].sort();
+        const sttkSelect = document.getElementById('sttkMonthFilter');
+        if (sttkSelect) {
+            sttkSelect.innerHTML = '<option value="">All Months</option>' +
+                sttkMonths.map(month => `<option value="${month}">${month}</option>`).join('');
+        }
+        
+        // Populate CCTV month filter
+        const cctvMonths = [...new Set(this.data.cctv.map(row => row.month))].sort();
+        const cctvSelect = document.getElementById('cctvMonthFilter');
+        if (cctvSelect) {
+            cctvSelect.innerHTML = '<option value="">All Months</option>' +
+                cctvMonths.map(month => `<option value="${month}">${month}</option>`).join('');
+        }
+    }
+    
+    // ========== SORTING METHODS ==========
+    
+    sortCctv(column) {
+        const state = this.sorting.cctv;
+        
+        // Toggle direction if same column, otherwise default to ascending
+        if (state.column === column) {
+            state.direction = state.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            state.column = column;
+            state.direction = 'asc';
+        }
+        
+        const dataToSort = this.filteredData.cctv.length > 0 ? this.filteredData.cctv : this.data.cctv;
+        
+        dataToSort.sort((a, b) => {
+            let aVal = a[column];
+            let bVal = b[column];
+            
+            // Handle numeric columns
+            if (['totalTraffic', 'totalTransa', 'totalLostSales', 'totalTitipan', 'totalUpselling', 
+                 'totalTensi', 'totalBundle', 'totalMember', 'totalKosong', 'totalMahal', 
+                 'totalTitipan2', 'totalLainnya'].includes(column)) {
+                aVal = this.parseNumber(aVal);
+                bVal = this.parseNumber(bVal);
+            }
+            
+            // Handle date columns
+            if (['checkDate', 'videoDate'].includes(column)) {
+                aVal = new Date(aVal || '1900-01-01');
+                bVal = new Date(bVal || '1900-01-01');
+            }
+            
+            // Handle month column
+            if (column === 'month') {
+                aVal = this.parseMonth(aVal);
+                bVal = this.parseMonth(bVal);
+            }
+            
+            // Compare
+            if (aVal < bVal) return state.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return state.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        if (this.filteredData.cctv.length > 0) {
+            this.filteredData.cctv = dataToSort;
+        } else {
+            this.data.cctv = dataToSort;
+        }
+        
+        this.renderCctvTable();
+        console.log(`CCTV sorted by ${column} (${state.direction})`);
+    }
+    
+    sortCompliance(column) {
+        const state = this.sorting.compliance;
+        
+        if (state.column === column) {
+            state.direction = state.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            state.column = column;
+            state.direction = 'asc';
+        }
+        
+        // Get compliance data from auditAnalysis
+        if (!this.data.auditAnalysis || !this.data.auditAnalysis.codes) {
+            console.warn('No audit analysis data to sort');
+            return;
+        }
+        
+        // Create array of compliance rows
+        const complianceRows = this.data.auditAnalysis.codes.map(code => {
+            const indexEntry = this.data.index.find(idx => idx.code === code);
+            const description = indexEntry ? indexEntry.name : code;
+            const tidakCount = this.data.auditAnalysis.outletTidak[code] || 0;
+            const yesCount = this.data.auditAnalysis.outletYa[code] || 0;
+            const total = this.data.auditAnalysis.outletTotal[code] || 0;
+            const compliance = total > 0 ? ((yesCount / total) * 100).toFixed(1) : 0;
+            
+            return { code, description, tidakCount, yesCount, total, compliance };
+        });
+        
+        // Sort the array
+        complianceRows.sort((a, b) => {
+            let aVal = a[column];
+            let bVal = b[column];
+            
+            // Handle numeric columns
+            if (['tidakCount', 'yesCount', 'total', 'compliance'].includes(column)) {
+                aVal = parseFloat(aVal) || 0;
+                bVal = parseFloat(bVal) || 0;
+            }
+            
+            if (aVal < bVal) return state.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return state.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        // Store sorted compliance data
+        this.filteredData.compliance = complianceRows;
+        
+        // Re-render the compliance table
+        this.renderComplianceTable();
+        console.log(`Compliance sorted by ${column} (${state.direction})`);
+    }
+    
+    renderComplianceTable() {
+        const rows = this.filteredData.compliance.length > 0 
+            ? this.filteredData.compliance 
+            : this.createComplianceRows();
+        
+        if (!rows || rows.length === 0) {
+            return;
+        }
+        
+        let html = '';
+        rows.forEach(row => {
+            const complianceClass = row.compliance >= 80 ? 'text-green-600' : row.compliance >= 60 ? 'text-yellow-600' : 'text-red-600';
+            html += `
+                <tr>
+                    <td class="font-mono">${this.escapeHtml(row.code)}</td>
+                    <td>${this.escapeHtml(row.description)}</td>
+                    <td class="text-red-600 font-semibold">${row.tidakCount}</td>
+                    <td class="text-green-600 font-semibold">${row.yesCount}</td>
+                    <td class="${complianceClass} font-semibold">${row.compliance}%</td>
+                </tr>
+            `;
+        });
+        
+        this.updateElement('fullDetailTable', html);
+    }
+    
+    createComplianceRows() {
+        if (!this.data.auditAnalysis || !this.data.auditAnalysis.codes) {
+            return [];
+        }
+        
+        return this.data.auditAnalysis.codes.map(code => {
+            const indexEntry = this.data.index.find(idx => idx.code === code);
+            const description = indexEntry ? indexEntry.name : code;
+            const tidakCount = this.data.auditAnalysis.outletTidak[code] || 0;
+            const yesCount = this.data.auditAnalysis.outletYa[code] || 0;
+            const total = this.data.auditAnalysis.outletTotal[code] || 0;
+            const compliance = total > 0 ? ((yesCount / total) * 100).toFixed(1) : 0;
+            
+            return { code, description, tidakCount, yesCount, total, compliance };
+        });
     }
 
     loadSampleData() {
