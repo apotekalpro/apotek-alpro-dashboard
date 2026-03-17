@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpEX Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .dashboard-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 1600px;
+        }
+        
+        .section-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+        
+        .section-header {
+            color: #4f46e5;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #4f46e5;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .data-table thead {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+        }
+        
+        .data-table th {
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .data-table td {
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            background: white;
+        }
+        
+        .data-table tbody tr:hover {
+            background: #f3f4f6;
+        }
+        
+        .leaderboard-top {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .leaderboard-bottom {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        
+        .filter-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 10px;
+        }
+        
+        .filter-input {
+            padding: 0.5rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.3s;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #4f46e5;
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+            border: 2px solid #4f46e5;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-secondary:hover {
+            background: #4f46e5;
+            color: white;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 1400px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+        
+        .close-modal {
+            float: right;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #6b7280;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .close-modal:hover {
+            color: #ef4444;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .badge-green {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge-yellow {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .clickable-row {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .clickable-row:hover {
+            background: #eef2ff !important;
+            transform: scale(1.01);
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .summary-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-top: 0.5rem;
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin-top: 1rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: #9ca3af;
+            font-style: italic;
+        }
+        
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .sortable:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .sort-icon {
+            margin-left: 0.5rem;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">
+                <i class="fas fa-chart-pie mr-3 text-purple-600"></i>
+                OpEX Dashboard
+            </h1>
+            <button onclick="refreshAllData()" class="btn-primary">
+                <i class="fas fa-sync-alt mr-2"></i>
+                Refresh Data
+            </button>
+        </div>
+
+        <!-- Section 1: Field Audit -->
+        <div class="section-card">
+            <h2 class="section-header">
+                <i class="fas fa-clipboard-check mr-2"></i>
+                1. Field Audit
+            </h2>
+            
+            <!-- Filters -->
+            <div class="filter-container">
+                <input type="text" id="auditFilterAM" class="filter-input" placeholder="Filter by AM Name">
+                <input type="text" id="auditFilterOutlet" class="filter-input" placeholder="Filter by Outlet Code">
+                <button onclick="applyAuditFilters()" class="btn-primary">Apply Filters</button>
+                <button onclick="clearAuditFilters()" class="btn-secondary">Clear</button>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="summary-card">
+                    <div class="text-sm opacity-90">Total Audits</div>
+                    <div class="summary-value" id="totalAudits">0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="text-sm opacity-90">Average Score</div>
+                    <div class="summary-value" id="avgScore">0%</div>
+                </div>
+                <div class="summary-card">
+                    <div class="text-sm opacity-90">Outlets Audited</div>
+                    <div class="summary-value" id="outletsAudited">0</div>
+                </div>
+            </div>
+
+            <!-- Leaderboards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <h3 class="font-bold text-green-600 mb-2">
+                        <i class="fas fa-trophy mr-2"></i>Top 5 Performance
+                    </h3>
+                    <table class="data-table">
+                        <thead class="leaderboard-top">
+                            <tr>
+                                <th>Rank</th>
+                                <th>Outlet Code</th>
+                                <th>AM Name</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top5Leaderboard">
+                            <tr><td colspan="4" class="no-data">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <h3 class="font-bold text-red-600 mb-2">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Bottom 5 Performance
+                    </h3>
+                    <table class="data-table">
+                        <thead class="leaderboard-bottom">
+                            <tr>
+                                <th>Rank</th>
+                                <th>Outlet Code</th>
+                                <th>AM Name</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bottom5Leaderboard">
+                            <tr><td colspan="4" class="no-data">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- All Audit Data Table -->
+            <h3 class="font-bold text-gray-800 mb-2 mt-4">
+                <i class="fas fa-table mr-2"></i>All Audit Records
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" onclick="sortTable('audit', 0)">
+                                Outlet Code <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable('audit', 1)">
+                                AM Name <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable('audit', 2)">
+                                Visit Date <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable('audit', 3)">
+                                Scoring <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable('audit', 4)">
+                                Final Score <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditDataTable">
+                        <tr><td colspan="6" class="loading">Loading audit data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Field Audit Detail Summary -->
+            <h3 class="font-bold text-gray-800 mb-2 mt-6">
+                <i class="fas fa-chart-bar mr-2"></i>Field Audit Detail Summary
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <h4 class="font-semibold text-red-600 mb-2">Top 10 Issues (TIDAK)</h4>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Code</th>
+                                <th>Description</th>
+                                <th>Count</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top10Issues">
+                            <tr><td colspan="4" class="no-data">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-green-600 mb-2">Overall Compliance</h4>
+                    <div id="complianceChart" class="chart-container"></div>
+                </div>
+            </div>
+
+            <!-- Full Detail Table -->
+            <h4 class="font-semibold text-gray-800 mb-2">Full Audit Detail Analysis</h4>
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Description</th>
+                            <th>TIDAK Count</th>
+                            <th>YES Count</th>
+                            <th>Compliance %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fullDetailTable">
+                        <tr><td colspan="5" class="loading">Loading detail analysis...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 2: STTK Result -->
+        <div class="section-card">
+            <h2 class="section-header">
+                <i class="fas fa-warehouse mr-2"></i>
+                2. STTK Shrinkage Result
+            </h2>
+            
+            <!-- Filters -->
+            <div class="filter-container">
+                <input type="text" id="sttkFilterAM" class="filter-input" placeholder="Filter by AM Name">
+                <input type="text" id="sttkFilterOutlet" class="filter-input" placeholder="Filter by Outlet">
+                <select id="sttkFilterMonth" class="filter-input">
+                    <option value="">All Months</option>
+                </select>
+                <button onclick="applySttkFilters()" class="btn-primary">Apply Filters</button>
+                <button onclick="clearSttkFilters()" class="btn-secondary">Clear</button>
+            </div>
+
+            <!-- Top 5 Worst Stock Loss -->
+            <h3 class="font-bold text-red-600 mb-2">
+                <i class="fas fa-arrow-down mr-2"></i>Top 5 Worst STTK Stock Loss
+            </h3>
+            <table class="data-table">
+                <thead class="leaderboard-bottom">
+                    <tr>
+                        <th>Rank</th>
+                        <th>Month</th>
+                        <th>Outlet Name</th>
+                        <th>Area Manager</th>
+                        <th>Stock Loss Value</th>
+                    </tr>
+                </thead>
+                <tbody id="worstStockLoss">
+                    <tr><td colspan="5" class="no-data">Loading...</td></tr>
+                </tbody>
+            </table>
+
+            <!-- All STTK Data -->
+            <h3 class="font-bold text-gray-800 mb-2 mt-4">
+                <i class="fas fa-table mr-2"></i>All STTK Shrinkage Records
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" onclick="sortTable('sttk', 0)">
+                                Month <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable('sttk', 1)">
+                                Outlet Name <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable('sttk', 2)">
+                                Area Manager <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable('sttk', 3)">
+                                Stock Loss <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="sttkDataTable">
+                        <tr><td colspan="4" class="loading">Loading STTK data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 3: Top 30 Shrinkage Items -->
+        <div class="section-card">
+            <h2 class="section-header">
+                <i class="fas fa-boxes mr-2"></i>
+                3. Top 30 Shrinkage Items
+            </h2>
+            
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th class="sortable" onclick="sortTable('shrinkage', 1)">
+                                Item Code <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable('shrinkage', 2)">
+                                Item Name <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable('shrinkage', 3)">
+                                Shrinkage Value <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="shrinkageItemsTable">
+                        <tr><td colspan="4" class="loading">Loading shrinkage items...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 4: CCTV Audit Result -->
+        <div class="section-card">
+            <h2 class="section-header">
+                <i class="fas fa-video mr-2"></i>
+                4. CCTV Audit Result (14H Analysis)
+            </h2>
+            
+            <!-- Filters -->
+            <div class="filter-container">
+                <input type="text" id="cctvFilterAM" class="filter-input" placeholder="Filter by AM Name">
+                <input type="text" id="cctvFilterOutlet" class="filter-input" placeholder="Filter by Outlet">
+                <select id="cctvFilterMonth" class="filter-input">
+                    <option value="">All Months</option>
+                </select>
+                <button onclick="applyCctvFilters()" class="btn-primary">Apply Filters</button>
+                <button onclick="clearCctvFilters()" class="btn-secondary">Clear</button>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div class="summary-card">
+                    <div class="text-sm opacity-90">Total Traffic</div>
+                    <div class="summary-value" id="totalTraffic">0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="text-sm opacity-90">Total Loss Sales</div>
+                    <div class="summary-value" id="totalLossSales">0</div>
+                </div>
+                <div class="summary-card">
+                    <div class="text-sm opacity-90">Conversion Rate</div>
+                    <div class="summary-value" id="conversionRate">0%</div>
+                </div>
+                <div class="summary-card">
+                    <div class="text-sm opacity-90">Avg Loss per Outlet</div>
+                    <div class="summary-value" id="avgLoss">0</div>
+                </div>
+            </div>
+
+            <!-- Top 10 Loss Sales Outlets -->
+            <h3 class="font-bold text-red-600 mb-2">
+                <i class="fas fa-chart-line mr-2"></i>Top 10 Loss Sales Outlets
+            </h3>
+            <table class="data-table">
+                <thead class="leaderboard-bottom">
+                    <tr>
+                        <th>Rank</th>
+                        <th>Month</th>
+                        <th>Outlet</th>
+                        <th>AM Name</th>
+                        <th>Loss Sales</th>
+                    </tr>
+                </thead>
+                <tbody id="top10LossSales">
+                    <tr><td colspan="5" class="no-data">Loading...</td></tr>
+                </tbody>
+            </table>
+
+            <!-- All CCTV Data -->
+            <h3 class="font-bold text-gray-800 mb-2 mt-4">
+                <i class="fas fa-table mr-2"></i>All CCTV Audit Records
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th>Check Date</th>
+                            <th>Video Date</th>
+                            <th>Outlet</th>
+                            <th>AM</th>
+                            <th>Traffic</th>
+                            <th>Loss Sales</th>
+                            <th class="bg-green-600">Greeting</th>
+                            <th class="bg-green-600">Offer Help</th>
+                            <th class="bg-green-600">Info Product</th>
+                            <th class="bg-green-600">Offer More</th>
+                            <th class="bg-green-600">Closing</th>
+                            <th class="bg-red-600">No Staff</th>
+                            <th class="bg-red-600">Staff Busy</th>
+                            <th class="bg-red-600">No Stock</th>
+                            <th class="bg-red-600">Others</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cctvDataTable">
+                        <tr><td colspan="16" class="loading">Loading CCTV data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Loss Sales Reason Summary -->
+            <h3 class="font-bold text-gray-800 mb-2 mt-6">
+                <i class="fas fa-chart-pie mr-2"></i>Loss Sales Reason Summary
+            </h3>
+            <div class="filter-container">
+                <select id="lossSalesMonthFilter" class="filter-input">
+                    <option value="">All Months</option>
+                </select>
+                <button onclick="updateLossSalesSummary()" class="btn-primary">Update Summary</button>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Loss Reason</th>
+                        <th>Total Count</th>
+                        <th>Percentage</th>
+                    </tr>
+                </thead>
+                <tbody id="lossSalesReasonTable">
+                    <tr><td colspan="3" class="no-data">Loading...</td></tr>
+                </tbody>
+            </table>
+
+            <!-- Task Performance Summary -->
+            <h3 class="font-bold text-gray-800 mb-2 mt-6">
+                <i class="fas fa-tasks mr-2"></i>Task Performance Summary
+            </h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Total Count</th>
+                        <th>Average per Traffic</th>
+                        <th>Performance Level</th>
+                    </tr>
+                </thead>
+                <tbody id="taskPerformanceTable">
+                    <tr><td colspan="4" class="no-data">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal for Audit Details -->
+    <div id="auditDetailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeAuditDetailModal()">&times;</span>
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">
+                <i class="fas fa-clipboard-list mr-2 text-purple-600"></i>
+                Audit Detail: <span id="modalOutletCode"></span>
+            </h2>
+            <div id="modalContent">
+                <div class="loading">Loading details...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google Sheets Configuration
+        const SHEET_ID = '1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M';
+        const API_KEY = 'YOUR_GOOGLE_SHEETS_API_KEY'; // Replace with your API key
+        
+        // Data storage
+        let auditData = [];
+        let auditDetailData = [];
+        let indexData = [];
+        let sttkData = [];
+        let shrinkageData = [];
+        let cctvData = [];
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllData();
+        });
+        
+        // Load all data from Google Sheets
+        async function loadAllData() {
+            await Promise.all([
+                loadAuditData(),
+                loadAuditDetailData(),
+                loadIndexData(),
+                loadSttkData(),
+                loadShrinkageData(),
+                loadCctvData()
+            ]);
+            
+            renderAllSections();
+        }
+        
+        // Load Audit sheet data
+        async function loadAuditData() {
+            try {
+                const range = 'Audit!A:N';
+                const response = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
+                );
+                const data = await response.json();
+                
+                if (data.values) {
+                    const headers = data.values[0];
+                    auditData = data.values.slice(1)
+                        .filter(row => row[12] && row[12] !== '0.00%') // Column M (index 12) is not 0.00%
+                        .map(row => ({
+                            outletCode: row[10], // K
+                            amName: row[3], // D
+                            visitDate: row[11], // L
+                            month: row[6], // G
+                            scoring: row[12], // M
+                            finalScore: row[13] // N
+                        }));
+                    
+                    // Keep only latest record per outlet
+                    auditData = getLatestRecordPerOutlet(auditData);
+                }
+            } catch (error) {
+                console.error('Error loading audit data:', error);
+                showToast('Error loading audit data. Using sample data.', 'error');
+                loadSampleAuditData();
+            }
+        }
+        
+        // Get latest record per outlet based on month
+        function getLatestRecordPerOutlet(data) {
+            const outletMap = new Map();
+            
+            data.forEach(record => {
+                const outlet = record.outletCode;
+                const currentMonth = parseMonth(record.month);
+                
+                if (!outletMap.has(outlet)) {
+                    outletMap.set(outlet, record);
+                } else {
+                    const existingMonth = parseMonth(outletMap.get(outlet).month);
+                    if (currentMonth > existingMonth) {
+                        outletMap.set(outlet, record);
+                    }
+                }
+            });
+            
+            return Array.from(outletMap.values());
+        }
+        
+        // Parse month string to date for comparison
+        function parseMonth(monthStr) {
+            if (!monthStr) return new Date(0);
+            // Assuming format like "Maret 2026" or "Januari 2026"
+            const monthMap = {
+                'januari': 0, 'februari': 1, 'maret': 2, 'april': 3,
+                'mei': 4, 'juni': 5, 'juli': 6, 'agustus': 7,
+                'september': 8, 'oktober': 9, 'november': 10, 'desember': 11
+            };
+            
+            const parts = monthStr.toLowerCase().split(' ');
+            const month = monthMap[parts[0]] || 0;
+            const year = parseInt(parts[1]) || 2026;
+            
+            return new Date(year, month);
+        }
+        
+        // Load Audit Detail data
+        async function loadAuditDetailData() {
+            try {
+                const range = 'FieldAudit_Detail!A:AU';
+                const response = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
+                );
+                const data = await response.json();
+                
+                if (data.values) {
+                    const headers = data.values[0];
+                    auditDetailData = data.values.slice(1);
+                }
+            } catch (error) {
+                console.error('Error loading audit detail data:', error);
+            }
+        }
+        
+        // Load Index data for code mappings
+        async function loadIndexData() {
+            try {
+                const range = 'INDEX!A:B';
+                const response = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
+                );
+                const data = await response.json();
+                
+                if (data.values) {
+                    indexData = data.values.slice(1).map(row => ({
+                        code: row[0],
+                        name: row[1]
+                    }));
+                }
+            } catch (error) {
+                console.error('Error loading index data:', error);
+            }
+        }
+        
+        // Load STTK Shrinkage data
+        async function loadSttkData() {
+            try {
+                const range = 'STTK_SHRINKAGE!A:G';
+                const response = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
+                );
+                const data = await response.json();
+                
+                if (data.values) {
+                    sttkData = data.values.slice(1)
+                        .map(row => ({
+                            month: row[0], // A
+                            outletName: row[1], // B
+                            areaManager: row[6], // G
+                            stockLoss: parseFloat(row[6]) || 0 // Assuming stock loss value column
+                        }))
+                        .filter(row => row.stockLoss < 0); // Only negative values (losses)
+                }
+            } catch (error) {
+                console.error('Error loading STTK data:', error);
+                loadSampleSttkData();
+            }
+        }
+        
+        // Load Shrinkage Top 30 data
+        async function loadShrinkageData() {
+            try {
+                const range = 'Shrinkage_Top30!A:G';
+                const response = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
+                );
+                const data = await response.json();
+                
+                if (data.values) {
+                    shrinkageData = data.values.slice(1)
+                        .slice(0, 30) // Top 30 only
+                        .map(row => ({
+                            itemCode: row[4], // E
+                            itemName: row[5], // F
+                            value: parseFloat(row[6]) || 0 // G
+                        }));
+                }
+            } catch (error) {
+                console.error('Error loading shrinkage data:', error);
+                loadSampleShrinkageData();
+            }
+        }
+        
+        // Load CCTV 14H data
+        async function loadCctvData() {
+            try {
+                const range = 'CCTV_14H!A:Q';
+                const response = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`
+                );
+                const data = await response.json();
+                
+                if (data.values) {
+                    cctvData = data.values.slice(1)
+                        .filter(row => parseFloat(row[4]) > 0) // E (traffic) > 0
+                        .map(row => ({
+                            month: row[16], // Q
+                            checkDate: row[0], // A
+                            videoDate: row[1], // B
+                            outlet: row[2], // C
+                            am: row[3], // D
+                            totalTraffic: parseFloat(row[4]) || 0, // E
+                            lossSales: parseFloat(row[6]) || 0, // G
+                            greeting: parseFloat(row[7]) || 0, // H
+                            offerHelp: parseFloat(row[8]) || 0, // I
+                            infoProduct: parseFloat(row[9]) || 0, // J
+                            offerMore: parseFloat(row[10]) || 0, // K
+                            closing: parseFloat(row[11]) || 0, // L
+                            noStaff: parseFloat(row[12]) || 0, // M
+                            staffBusy: parseFloat(row[13]) || 0, // N
+                            noStock: parseFloat(row[14]) || 0, // O
+                            others: parseFloat(row[15]) || 0 // P
+                        }));
+                }
+            } catch (error) {
+                console.error('Error loading CCTV data:', error);
+                loadSampleCctvData();
+            }
+        }
+        
+        // Render all sections
+        function renderAllSections() {
+            renderAuditSection();
+            renderSttkSection();
+            renderShrinkageSection();
+            renderCctvSection();
+        }
+        
+        // Render Audit Section
+        function renderAuditSection() {
+            // Summary cards
+            document.getElementById('totalAudits').textContent = auditData.length;
+            const avgScore = auditData.reduce((sum, item) => {
+                const score = parseFloat(item.scoring.replace('%', '')) || 0;
+                return sum + score;
+            }, 0) / auditData.length || 0;
+            document.getElementById('avgScore').textContent = avgScore.toFixed(1) + '%';
+            document.getElementById('outletsAudited').textContent = new Set(auditData.map(a => a.outletCode)).size;
+            
+            // Sort by scoring
+            const sorted = [...auditData].sort((a, b) => {
+                const scoreA = parseFloat(a.scoring.replace('%', '')) || 0;
+                const scoreB = parseFloat(b.scoring.replace('%', '')) || 0;
+                return scoreB - scoreA;
+            });
+            
+            // Top 5
+            const top5 = sorted.slice(0, 5);
+            document.getElementById('top5Leaderboard').innerHTML = top5.map((item, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.outletCode}</td>
+                    <td>${item.amName}</td>
+                    <td><span class="badge badge-green">${item.scoring}</span></td>
+                </tr>
+            `).join('');
+            
+            // Bottom 5
+            const bottom5 = sorted.slice(-5).reverse();
+            document.getElementById('bottom5Leaderboard').innerHTML = bottom5.map((item, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.outletCode}</td>
+                    <td>${item.amName}</td>
+                    <td><span class="badge badge-red">${item.scoring}</span></td>
+                </tr>
+            `).join('');
+            
+            // All audit data
+            document.getElementById('auditDataTable').innerHTML = sorted.map(item => `
+                <tr class="clickable-row" onclick="showAuditDetail('${item.outletCode}', '${item.month}', '${item.visitDate}')">
+                    <td>${item.outletCode}</td>
+                    <td>${item.amName}</td>
+                    <td>${item.visitDate}</td>
+                    <td>${item.scoring}</td>
+                    <td>${item.finalScore}</td>
+                    <td>
+                        <button class="btn-primary text-xs px-3 py-1" onclick="event.stopPropagation(); showAuditDetail('${item.outletCode}', '${item.month}', '${item.visitDate}')">
+                            <i class="fas fa-eye mr-1"></i>View Details
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // Render STTK Section
+        function renderSttkSection() {
+            // Sort by stock loss (most negative first)
+            const sorted = [...sttkData].sort((a, b) => a.stockLoss - b.stockLoss);
+            
+            // Top 5 worst
+            const worst5 = sorted.slice(0, 5);
+            document.getElementById('worstStockLoss').innerHTML = worst5.map((item, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.month}</td>
+                    <td>${item.outletName}</td>
+                    <td>${item.areaManager}</td>
+                    <td><span class="badge badge-red">${item.stockLoss.toFixed(2)}</span></td>
+                </tr>
+            `).join('');
+            
+            // All STTK data
+            document.getElementById('sttkDataTable').innerHTML = sorted.map(item => `
+                <tr>
+                    <td>${item.month}</td>
+                    <td>${item.outletName}</td>
+                    <td>${item.areaManager}</td>
+                    <td><span class="badge ${item.stockLoss < 0 ? 'badge-red' : 'badge-green'}">${item.stockLoss.toFixed(2)}</span></td>
+                </tr>
+            `).join('');
+            
+            // Populate month filter
+            const months = [...new Set(sttkData.map(item => item.month))].sort();
+            document.getElementById('sttkFilterMonth').innerHTML = '<option value="">All Months</option>' +
+                months.map(m => `<option value="${m}">${m}</option>`).join('');
+        }
+        
+        // Render Shrinkage Section
+        function renderShrinkageSection() {
+            document.getElementById('shrinkageItemsTable').innerHTML = shrinkageData.map((item, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.itemCode}</td>
+                    <td>${item.itemName}</td>
+                    <td><span class="badge badge-red">${item.value.toFixed(2)}</span></td>
+                </tr>
+            `).join('');
+        }
+        
+        // Render CCTV Section
+        function renderCctvSection() {
+            // Summary cards
+            const totalTraffic = cctvData.reduce((sum, item) => sum + item.totalTraffic, 0);
+            const totalLossSales = cctvData.reduce((sum, item) => sum + item.lossSales, 0);
+            const conversionRate = totalTraffic > 0 ? ((totalTraffic - totalLossSales) / totalTraffic * 100) : 0;
+            const avgLoss = cctvData.length > 0 ? (totalLossSales / cctvData.length) : 0;
+            
+            document.getElementById('totalTraffic').textContent = totalTraffic.toLocaleString();
+            document.getElementById('totalLossSales').textContent = totalLossSales.toLocaleString();
+            document.getElementById('conversionRate').textContent = conversionRate.toFixed(1) + '%';
+            document.getElementById('avgLoss').textContent = avgLoss.toFixed(0);
+            
+            // Top 10 loss sales
+            const sortedByLoss = [...cctvData].sort((a, b) => b.lossSales - a.lossSales).slice(0, 10);
+            document.getElementById('top10LossSales').innerHTML = sortedByLoss.map((item, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.month}</td>
+                    <td>${item.outlet}</td>
+                    <td>${item.am}</td>
+                    <td><span class="badge badge-red">${item.lossSales}</span></td>
+                </tr>
+            `).join('');
+            
+            // All CCTV data - sorted by latest month first
+            const sortedByMonth = [...cctvData].sort((a, b) => {
+                const dateA = parseMonth(a.month);
+                const dateB = parseMonth(b.month);
+                return dateB - dateA;
+            });
+            
+            document.getElementById('cctvDataTable').innerHTML = sortedByMonth.map(item => `
+                <tr>
+                    <td>${item.month}</td>
+                    <td>${item.checkDate}</td>
+                    <td>${item.videoDate}</td>
+                    <td>${item.outlet}</td>
+                    <td>${item.am}</td>
+                    <td>${item.totalTraffic}</td>
+                    <td><span class="badge badge-red">${item.lossSales}</span></td>
+                    <td class="bg-green-50">${item.greeting}</td>
+                    <td class="bg-green-50">${item.offerHelp}</td>
+                    <td class="bg-green-50">${item.infoProduct}</td>
+                    <td class="bg-green-50">${item.offerMore}</td>
+                    <td class="bg-green-50">${item.closing}</td>
+                    <td class="bg-red-50">${item.noStaff}</td>
+                    <td class="bg-red-50">${item.staffBusy}</td>
+                    <td class="bg-red-50">${item.noStock}</td>
+                    <td class="bg-red-50">${item.others}</td>
+                </tr>
+            `).join('');
+            
+            // Populate month filters
+            const months = [...new Set(cctvData.map(item => item.month))].sort();
+            const monthOptions = '<option value="">All Months</option>' +
+                months.map(m => `<option value="${m}">${m}</option>`).join('');
+            document.getElementById('cctvFilterMonth').innerHTML = monthOptions;
+            document.getElementById('lossSalesMonthFilter').innerHTML = monthOptions;
+            
+            // Render summaries
+            updateLossSalesSummary();
+            updateTaskPerformanceSummary();
+        }
+        
+        // Update Loss Sales Reason Summary
+        function updateLossSalesSummary() {
+            const selectedMonth = document.getElementById('lossSalesMonthFilter').value;
+            const filteredData = selectedMonth ? 
+                cctvData.filter(item => item.month === selectedMonth) : 
+                cctvData;
+            
+            const totalNoStaff = filteredData.reduce((sum, item) => sum + item.noStaff, 0);
+            const totalStaffBusy = filteredData.reduce((sum, item) => sum + item.staffBusy, 0);
+            const totalNoStock = filteredData.reduce((sum, item) => sum + item.noStock, 0);
+            const totalOthers = filteredData.reduce((sum, item) => sum + item.others, 0);
+            
+            const total = totalNoStaff + totalStaffBusy + totalNoStock + totalOthers;
+            
+            const reasons = [
+                { name: 'No Staff Available', count: totalNoStaff },
+                { name: 'Staff Busy', count: totalStaffBusy },
+                { name: 'No Stock', count: totalNoStock },
+                { name: 'Others', count: totalOthers }
+            ].sort((a, b) => b.count - a.count);
+            
+            document.getElementById('lossSalesReasonTable').innerHTML = reasons.map(reason => `
+                <tr>
+                    <td>${reason.name}</td>
+                    <td><span class="badge badge-red">${reason.count}</span></td>
+                    <td>${total > 0 ? ((reason.count / total) * 100).toFixed(1) : 0}%</td>
+                </tr>
+            `).join('');
+        }
+        
+        // Update Task Performance Summary
+        function updateTaskPerformanceSummary() {
+            const totalGreeting = cctvData.reduce((sum, item) => sum + item.greeting, 0);
+            const totalOfferHelp = cctvData.reduce((sum, item) => sum + item.offerHelp, 0);
+            const totalInfoProduct = cctvData.reduce((sum, item) => sum + item.infoProduct, 0);
+            const totalOfferMore = cctvData.reduce((sum, item) => sum + item.offerMore, 0);
+            const totalClosing = cctvData.reduce((sum, item) => sum + item.closing, 0);
+            const totalTraffic = cctvData.reduce((sum, item) => sum + item.totalTraffic, 0);
+            
+            const tasks = [
+                { name: 'Greeting', count: totalGreeting },
+                { name: 'Offer Help', count: totalOfferHelp },
+                { name: 'Info Product', count: totalInfoProduct },
+                { name: 'Offer More', count: totalOfferMore },
+                { name: 'Closing', count: totalClosing }
+            ].sort((a, b) => b.count - a.count);
+            
+            document.getElementById('taskPerformanceTable').innerHTML = tasks.map(task => {
+                const avgPerTraffic = totalTraffic > 0 ? (task.count / totalTraffic) : 0;
+                const performanceLevel = avgPerTraffic > 0.8 ? 'Excellent' : 
+                                       avgPerTraffic > 0.6 ? 'Good' : 
+                                       avgPerTraffic > 0.4 ? 'Average' : 'Needs Improvement';
+                const badgeClass = avgPerTraffic > 0.8 ? 'badge-green' : 
+                                  avgPerTraffic > 0.6 ? 'badge-yellow' : 'badge-red';
+                
+                return `
+                    <tr>
+                        <td>${task.name}</td>
+                        <td><span class="badge badge-green">${task.count}</span></td>
+                        <td>${avgPerTraffic.toFixed(2)}</td>
+                        <td><span class="badge ${badgeClass}">${performanceLevel}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        // Show audit detail modal
+        function showAuditDetail(outletCode, month, visitDate) {
+            document.getElementById('modalOutletCode').textContent = outletCode;
+            
+            // Filter detail data for this outlet
+            // This is a placeholder - implement based on your actual data structure
+            const detailHtml = `
+                <div class="p-4">
+                    <h3 class="font-bold mb-2">Outlet: ${outletCode}</h3>
+                    <p>Month: ${month}</p>
+                    <p>Visit Date: ${visitDate}</p>
+                    <div class="mt-4">
+                        <h4 class="font-semibold mb-2">Detailed Audit Results</h4>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Result Type</th>
+                                    <th>Issues Found</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Hasil Outlet</td>
+                                    <td>Loading...</td>
+                                </tr>
+                                <tr>
+                                    <td>Hasil AM</td>
+                                    <td>Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('modalContent').innerHTML = detailHtml;
+            document.getElementById('auditDetailModal').style.display = 'block';
+        }
+        
+        // Close audit detail modal
+        function closeAuditDetailModal() {
+            document.getElementById('auditDetailModal').style.display = 'none';
+        }
+        
+        // Filter functions
+        function applyAuditFilters() {
+            const amFilter = document.getElementById('auditFilterAM').value.toLowerCase();
+            const outletFilter = document.getElementById('auditFilterOutlet').value.toLowerCase();
+            
+            const filtered = auditData.filter(item => {
+                const matchAM = !amFilter || item.amName.toLowerCase().includes(amFilter);
+                const matchOutlet = !outletFilter || item.outletCode.toLowerCase().includes(outletFilter);
+                return matchAM && matchOutlet;
+            });
+            
+            // Re-render with filtered data
+            // Implementation details...
+        }
+        
+        function clearAuditFilters() {
+            document.getElementById('auditFilterAM').value = '';
+            document.getElementById('auditFilterOutlet').value = '';
+            renderAuditSection();
+        }
+        
+        function applySttkFilters() {
+            // Implementation...
+        }
+        
+        function clearSttkFilters() {
+            document.getElementById('sttkFilterAM').value = '';
+            document.getElementById('sttkFilterOutlet').value = '';
+            document.getElementById('sttkFilterMonth').value = '';
+            renderSttkSection();
+        }
+        
+        function applyCctvFilters() {
+            // Implementation...
+        }
+        
+        function clearCctvFilters() {
+            document.getElementById('cctvFilterAM').value = '';
+            document.getElementById('cctvFilterOutlet').value = '';
+            document.getElementById('cctvFilterMonth').value = '';
+            renderCctvSection();
+        }
+        
+        // Sort table
+        function sortTable(tableType, columnIndex) {
+            // Implementation for sorting tables
+            console.log(`Sorting ${tableType} table by column ${columnIndex}`);
+        }
+        
+        // Refresh all data
+        async function refreshAllData() {
+            showToast('Refreshing data...', 'info');
+            await loadAllData();
+            showToast('Data refreshed successfully!', 'success');
+        }
+        
+        // Toast notification
+        function showToast(message, type = 'info') {
+            console.log(`${type.toUpperCase()}: ${message}`);
+            // Implement actual toast notification UI
+        }
+        
+        // Load sample data for testing
+        function loadSampleAuditData() {
+            auditData = [
+                { outletCode: 'OUT001', amName: 'John Doe', visitDate: '2026-03-15', month: 'Maret 2026', scoring: '95.5%', finalScore: 'A' },
+                { outletCode: 'OUT002', amName: 'Jane Smith', visitDate: '2026-03-14', month: 'Maret 2026', scoring: '88.2%', finalScore: 'B' },
+                { outletCode: 'OUT003', amName: 'Bob Wilson', visitDate: '2026-03-13', month: 'Maret 2026', scoring: '72.1%', finalScore: 'C' }
+            ];
+        }
+        
+        function loadSampleSttkData() {
+            sttkData = [
+                { month: 'March 2026', outletName: 'Outlet A', areaManager: 'Manager 1', stockLoss: -15000 },
+                { month: 'March 2026', outletName: 'Outlet B', areaManager: 'Manager 2', stockLoss: -12000 },
+                { month: 'March 2026', outletName: 'Outlet C', areaManager: 'Manager 3', stockLoss: -8500 }
+            ];
+        }
+        
+        function loadSampleShrinkageData() {
+            shrinkageData = [
+                { itemCode: 'ITEM001', itemName: 'Product 1', value: 5000 },
+                { itemCode: 'ITEM002', itemName: 'Product 2', value: 4500 },
+                { itemCode: 'ITEM003', itemName: 'Product 3', value: 4000 }
+            ];
+        }
+        
+        function loadSampleCctvData() {
+            cctvData = [
+                {
+                    month: 'March 2026', checkDate: '2026-03-15', videoDate: '2026-03-14',
+                    outlet: 'Outlet A', am: 'Manager 1', totalTraffic: 150, lossSales: 30,
+                    greeting: 120, offerHelp: 110, infoProduct: 100, offerMore: 90, closing: 85,
+                    noStaff: 10, staffBusy: 8, noStock: 7, others: 5
+                }
+            ];
+        }
+    </script>
+</body>
+</html>
