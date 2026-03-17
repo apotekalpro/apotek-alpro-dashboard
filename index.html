@@ -2825,10 +2825,18 @@
 
                             <!-- Main Dashboard Content -->
                             <div id="powerlife-dashboard" class="hidden">
+                                <!-- Current Month Performance Section Title -->
+                                <div class="mb-6">
+                                    <h3 class="text-2xl font-bold text-gray-800 flex items-center">
+                                        <i class="fas fa-calendar-day text-blue-500 text-2xl mr-3"></i>
+                                        Current Month Performance
+                                    </h3>
+                                </div>
+
                                 <!-- Summary Cards -->
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                                     <div class="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl shadow-lg p-6 border border-green-200 transform hover:scale-105 transition-all duration-300 hover:shadow-2xl">
-                                        <div class="flex items-center justify-between">
+                                        <div class="flex items-center justify-between mb-3">
                                             <div class="flex-1">
                                                 <p class="text-sm font-medium text-green-700 mb-2">Total Revenue (Forecast)</p>
                                                 <h4 class="text-3xl font-bold text-green-800" id="powerlife-total-revenue">Rp 0</h4>
@@ -2836,6 +2844,9 @@
                                             <div class="bg-green-500 p-4 rounded-xl shadow-lg">
                                                 <i class="fas fa-money-bill-wave text-3xl text-white"></i>
                                             </div>
+                                        </div>
+                                        <div class="border-t border-green-200 pt-2">
+                                            <p class="text-xs text-green-600">Last month: <span id="powerlife-last-month-revenue" class="font-semibold">Rp 0</span></p>
                                         </div>
                                     </div>
 
@@ -2852,7 +2863,7 @@
                                     </div>
 
                                     <div class="bg-gradient-to-br from-purple-50 to-pink-100 rounded-xl shadow-lg p-6 border border-purple-200 transform hover:scale-105 transition-all duration-300 hover:shadow-2xl">
-                                        <div class="flex items-center justify-between">
+                                        <div class="flex items-center justify-between mb-3">
                                             <div class="flex-1">
                                                 <p class="text-sm font-medium text-purple-700 mb-2">Total Qty Sold (Forecast)</p>
                                                 <h4 class="text-3xl font-bold text-purple-800" id="powerlife-total-qty">0</h4>
@@ -2860,6 +2871,9 @@
                                             <div class="bg-purple-500 p-4 rounded-xl shadow-lg">
                                                 <i class="fas fa-shopping-cart text-3xl text-white"></i>
                                             </div>
+                                        </div>
+                                        <div class="border-t border-purple-200 pt-2">
+                                            <p class="text-xs text-purple-600">Last month: <span id="powerlife-last-month-qty" class="font-semibold">0</span></p>
                                         </div>
                                     </div>
 
@@ -6833,11 +6847,19 @@
                 ? products.reduce((sum, p) => sum + p.growthPercent, 0) / products.length 
                 : 0;
             
+            // Calculate last month totals
+            const lastMonthTotalRevenue = products.reduce((sum, p) => sum + p.prevMonthRevenue, 0);
+            const lastMonthTotalQty = products.reduce((sum, p) => sum + p.prevMonthQty, 0);
+            
             // Update summary cards
             document.getElementById('powerlife-total-revenue').textContent = formatCurrency(totalRevenue);
             document.getElementById('powerlife-total-products').textContent = products.length.toLocaleString();
             document.getElementById('powerlife-total-qty').textContent = totalQty.toLocaleString('id-ID', {maximumFractionDigits: 1});
             document.getElementById('powerlife-avg-growth').textContent = avgGrowth.toFixed(1) + '%';
+            
+            // Update last month comparison values
+            document.getElementById('powerlife-last-month-revenue').textContent = formatCurrency(lastMonthTotalRevenue);
+            document.getElementById('powerlife-last-month-qty').textContent = lastMonthTotalQty.toLocaleString('id-ID', {maximumFractionDigits: 1});
             
             // Top 5 by revenue
             const topRevenue = [...products]
