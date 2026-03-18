@@ -970,9 +970,8 @@ const IncentiveCalculator = {
     },
     
     // Calculate AM Rewards
-    // Two-part reward system:
-    // 1. Area Reward: Based on total area performance
-    // 2. Outlet Incentives: Individual outlet-level rewards
+    // Area-level reward only (based on total area performance)
+    // Removed individual outlet incentives - AM reward based solely on area achievement & GP
     calculateAMRewards: function(matchedEmployees) {
         // First, identify all Area Managers from Outlet Mapping
         const amAreas = {};  // Key: AM name, Value: { outlets: [], totalSales, totalGP, totalTarget }
@@ -1046,20 +1045,20 @@ const IncentiveCalculator = {
             
             const emp = amArea.amEmployee;
             
-            // PART 1: AREA REWARD (Region-level)
+            // AM REWARD CALCULATION (Area-level only)
             // Calculate area achievement
             const areaAchievement = amArea.totalTarget > 0 
                 ? (amArea.totalSales / amArea.totalTarget) * 100 
                 : 0;
             
-            // Determine area percentage
+            // Determine area percentage (UPDATED RATES)
             let areaPercentage = 0;
             if (areaAchievement >= 100) {
-                areaPercentage = 0.15;   // 0.15%
+                areaPercentage = 0.3;    // 0.3% (increased from 0.15%)
             } else if (areaAchievement >= 90) {
-                areaPercentage = 0.113;  // 0.113%
+                areaPercentage = 0.226;  // 0.226% (increased from 0.113%)
             } else if (areaAchievement >= 80) {
-                areaPercentage = 0.075;  // 0.075%
+                areaPercentage = 0.15;   // 0.15% (increased from 0.075%)
             }
             
             // Calculate area GP margin (Total GP / Total Revenue)
@@ -1071,31 +1070,8 @@ const IncentiveCalculator = {
             const areaGPAdjustment = this.getGPAdjustment(areaGPMargin);
             const areaReward = amArea.totalSales * (areaPercentage / 100) * areaGPAdjustment;
             
-            // PART 2: OUTLET INCENTIVES (Individual outlet rewards)
-            let outletIncentivesTotal = 0;
-            amArea.outlets.forEach(outlet => {
-                const outletAchievement = outlet.achievement;
-                
-                // Determine outlet percentage
-                let outletPercentage = 0;
-                if (outletAchievement >= 100) {
-                    outletPercentage = 0.15;   // 0.15%
-                } else if (outletAchievement >= 90) {
-                    outletPercentage = 0.113;  // 0.113%
-                } else if (outletAchievement >= 80) {
-                    outletPercentage = 0.075;  // 0.075%
-                }
-                
-                if (outletPercentage > 0) {
-                    // Apply GP adjustment based on outlet's GP margin
-                    const outletGPAdjustment = this.getGPAdjustment(outlet.salesData.gpMargin);
-                    const outletIncentive = outlet.salesData.totalSales * (outletPercentage / 100) * outletGPAdjustment;
-                    outletIncentivesTotal += outletIncentive;
-                }
-            });
-            
-            // Total AM Reward = Area Reward + Outlet Incentives
-            emp.amReward = areaReward + outletIncentivesTotal;
+            // Total AM Reward = Area Reward only (no individual outlet incentives)
+            emp.amReward = areaReward;
             
             // AREA GOAL BULANAN CHECK
             // Compare total area sales vs total area Goal Bulanan
@@ -1117,9 +1093,10 @@ const IncentiveCalculator = {
                     totalSales: amArea.totalSales,
                     totalTarget: amArea.totalTarget,
                     areaAchievement: areaAchievement.toFixed(2) + '%',
+                    areaPercentage: areaPercentage + '%',
                     areaGPMargin: areaGPMargin.toFixed(2) + '%',
+                    areaGPAdjustment: areaGPAdjustment,
                     areaReward: areaReward.toFixed(2),
-                    outletIncentives: outletIncentivesTotal.toFixed(2),
                     totalAMReward: emp.amReward.toFixed(2),
                     areaGoalBulanan: amArea.totalGoalBulanan,
                     areaGoalBulananAchievement: areaGoalBulananAchievement.toFixed(2) + '%',
