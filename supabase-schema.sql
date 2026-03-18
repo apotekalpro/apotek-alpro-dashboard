@@ -68,8 +68,10 @@ CREATE TRIGGER update_department_config_updated_at BEFORE UPDATE ON department_c
 
 -- Insert default department configuration
 INSERT INTO department_config (role, departments) VALUES
-('admin', ARRAY['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig']),
+('admin', ARRAY['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife', 'adminConfig']),
+('chief', ARRAY['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife']),
 ('manager', ARRAY['operations', 'ppm', 'strategy', 'finance']),
+('powerlife', ARRAY['powerlife']),
 ('user', ARRAY['operations']);
 
 -- Row Level Security (RLS) policies for data protection
@@ -86,4 +88,4 @@ CREATE POLICY "Allow all operations for department_config" ON department_config 
 -- Create a default admin user (you'll change this password immediately)
 -- Password: 'admin123' (hashed with bcrypt)
 INSERT INTO users (email, password_hash, name, role, status, department_access) VALUES
-('admin@apotekal.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin', 'active', ARRAY['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig']);
+('admin@apotekal.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin', 'active', ARRAY['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife', 'adminConfig']);
