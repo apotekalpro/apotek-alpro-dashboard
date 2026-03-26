@@ -368,140 +368,256 @@
         
         // Export to CSV function
         function exportToCSV() {
-            console.log('📥 Exporting data to CSV...');
-            
-            // Get current filter values
-            const monthFilter = document.getElementById('monthFilter').value;
-            const outletFilter = document.getElementById('outletFilter').value;
-            
-            // Apply filters if any
-            let dataToExport = processedData;
-            if (monthFilter) {
-                dataToExport = dataToExport.filter(item => item.month === monthFilter);
-            }
-            if (outletFilter) {
-                dataToExport = dataToExport.filter(item => item.outlets.includes(outletFilter));
-            }
-            
-            // CSV Header
-            let csv = 'Rank,Product Name,Normalized Name,Loss Count,Month,Year,Outlets,Outlet Count\n';
-            
-            // CSV Data
-            dataToExport.forEach((item, index) => {
-                const rank = index + 1;
-                const productName = `"${item.originalNames.join(', ').replace(/"/g, '""')}"`;
-                const normalizedName = `"${item.normalizedName.replace(/"/g, '""')}"`;
-                const count = item.count;
-                const month = item.month;
-                const year = getYearForMonth(item.month);
-                const outlets = `"${item.outlets.join(', ').replace(/"/g, '""')}"`;
-                const outletCount = item.outlets.length;
-                
-                csv += `${rank},${productName},${normalizedName},${count},${month},${year},${outlets},${outletCount}\n`;
-            });
-            
-            // Create download
             try {
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                console.log('📥 Starting CSV export...');
+                
+                // Get current filter values
+                const monthFilter = document.getElementById('monthFilter').value;
+                const outletFilter = document.getElementById('outletFilter').value;
+                
+                console.log(`📋 Filters - Month: ${monthFilter || 'All'}, Outlet: ${outletFilter || 'All'}`);
+                
+                // Apply filters if any
+                let dataToExport = processedData;
+                if (monthFilter) {
+                    dataToExport = dataToExport.filter(item => item.month === monthFilter);
+                }
+                if (outletFilter) {
+                    dataToExport = dataToExport.filter(item => item.outlets.includes(outletFilter));
+                }
+                
+                console.log(`📊 Exporting ${dataToExport.length} items`);
+                
+                if (dataToExport.length === 0) {
+                    alert('No data to export. Please adjust your filters.');
+                    return;
+                }
+                
+                // CSV Header
+                let csv = 'Rank,Product Name,Normalized Name,Loss Count,Month,Year,Outlets,Outlet Count\n';
+                
+                // CSV Data
+                dataToExport.forEach((item, index) => {
+                    const rank = index + 1;
+                    const productName = `"${item.originalNames.join(', ').replace(/"/g, '""')}"`;
+                    const normalizedName = `"${item.normalizedName.replace(/"/g, '""')}"`;
+                    const count = item.count;
+                    const month = item.month;
+                    const year = getYearForMonth(item.month);
+                    const outlets = `"${item.outlets.join(', ').replace(/"/g, '""')}"`;
+                    const outletCount = item.outlets.length;
+                    
+                    csv += `${rank},${productName},${normalizedName},${count},${month},${year},${outlets},${outletCount}\n`;
+                });
+                
+                console.log(`✅ CSV data generated (${csv.length} characters)`);
+                
+                // Create download
                 const timestamp = new Date().toISOString().slice(0, 10);
                 const filterSuffix = monthFilter ? `_${monthFilter}` : '';
                 const filename = `loss-sales-tracker${filterSuffix}_${timestamp}.csv`;
                 
-                // Try using download attribute
-                const link = document.createElement('a');
-                if (link.download !== undefined) {
+                // Method 1: Try blob download
+                try {
+                    console.log('🔄 Trying blob download method...');
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
-                    link.setAttribute('href', url);
-                    link.setAttribute('download', filename);
-                    link.style.visibility = 'hidden';
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    
+                    // Force click
+                    link.click();
+                    
+                    // Cleanup after a delay
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                    
+                    console.log(`✅ Export initiated: ${filename}`);
+                    alert(`Export started! Check your downloads folder for: ${filename}`);
+                    return;
+                } catch (e) {
+                    console.warn('⚠️ Blob download failed:', e);
+                }
+                
+                // Method 2: Data URL
+                try {
+                    console.log('🔄 Trying data URL method...');
+                    const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = filename;
+                    link.style.display = 'none';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                    console.log(`✅ Exported ${dataToExport.length} items to ${filename}`);
-                } else {
-                    // Fallback: Open in new window
-                    const url = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-                    window.open(url, '_blank');
-                    console.log(`✅ Opened CSV in new window (${dataToExport.length} items)`);
+                    
+                    console.log(`✅ Data URL export: ${filename}`);
+                    alert(`Export started via data URL! File: ${filename}`);
+                    return;
+                } catch (e) {
+                    console.warn('⚠️ Data URL failed:', e);
                 }
+                
+                // Method 3: Open in new window/tab
+                console.log('🔄 Opening in new window...');
+                const csvWindow = window.open('', '_blank');
+                if (csvWindow) {
+                    csvWindow.document.write('<pre>' + csv + '</pre>');
+                    csvWindow.document.title = filename;
+                    console.log('✅ Opened in new window');
+                    alert('Export opened in new window. Right-click and "Save As" to download.');
+                } else {
+                    // Final fallback: Copy to clipboard
+                    console.log('🔄 Trying clipboard...');
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(csv).then(() => {
+                            alert('Export data copied to clipboard! Paste into a text editor and save as .csv');
+                            console.log('✅ Copied to clipboard');
+                        }).catch(() => {
+                            alert('Unable to export. Please check browser console for data.');
+                            console.log('📄 CSV Data:\n', csv);
+                        });
+                    } else {
+                        alert('Unable to export automatically. Check browser console for data.');
+                        console.log('📄 CSV Data:\n', csv);
+                    }
+                }
+                
             } catch (error) {
                 console.error('❌ Export error:', error);
-                // Final fallback: Show data in alert
-                alert('Download blocked. Opening CSV data in new window...');
-                const url = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-                window.open(url, '_blank');
+                alert(`Export failed: ${error.message}. Check console for details.`);
             }
         }
         
         // Export to Excel (XLSX format)
         function exportToExcel() {
-            console.log('📥 Exporting data to Excel...');
-            
-            // Get current filter values
-            const monthFilter = document.getElementById('monthFilter').value;
-            const outletFilter = document.getElementById('outletFilter').value;
-            
-            // Apply filters if any
-            let dataToExport = processedData;
-            if (monthFilter) {
-                dataToExport = dataToExport.filter(item => item.month === monthFilter);
-            }
-            if (outletFilter) {
-                dataToExport = dataToExport.filter(item => item.outlets.includes(outletFilter));
-            }
-            
-            // Create HTML table for Excel
-            let html = '<table border="1"><thead><tr>';
-            html += '<th>Rank</th><th>Product Name</th><th>Normalized Name</th><th>Loss Count</th><th>Month</th><th>Year</th><th>Outlets</th><th>Outlet Count</th>';
-            html += '</tr></thead><tbody>';
-            
-            dataToExport.forEach((item, index) => {
-                html += '<tr>';
-                html += `<td>${index + 1}</td>`;
-                html += `<td>${item.originalNames.join(', ')}</td>`;
-                html += `<td>${item.normalizedName}</td>`;
-                html += `<td>${item.count}</td>`;
-                html += `<td>${item.month}</td>`;
-                html += `<td>${getYearForMonth(item.month)}</td>`;
-                html += `<td>${item.outlets.join(', ')}</td>`;
-                html += `<td>${item.outlets.length}</td>`;
-                html += '</tr>';
-            });
-            
-            html += '</tbody></table>';
-            
-            // Create download
             try {
-                const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+                console.log('📥 Starting Excel export...');
+                
+                // Get current filter values
+                const monthFilter = document.getElementById('monthFilter').value;
+                const outletFilter = document.getElementById('outletFilter').value;
+                
+                console.log(`📋 Filters - Month: ${monthFilter || 'All'}, Outlet: ${outletFilter || 'All'}`);
+                
+                // Apply filters if any
+                let dataToExport = processedData;
+                if (monthFilter) {
+                    dataToExport = dataToExport.filter(item => item.month === monthFilter);
+                }
+                if (outletFilter) {
+                    dataToExport = dataToExport.filter(item => item.outlets.includes(outletFilter));
+                }
+                
+                console.log(`📊 Exporting ${dataToExport.length} items`);
+                
+                if (dataToExport.length === 0) {
+                    alert('No data to export. Please adjust your filters.');
+                    return;
+                }
+                
+                // Create HTML table for Excel
+                let html = '<html><head><meta charset="utf-8"><title>Loss Sales Tracker</title></head><body>';
+                html += '<table border="1" style="border-collapse: collapse;"><thead><tr>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Rank</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Product Name</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Normalized Name</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Loss Count</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Month</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Year</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Outlets</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Outlet Count</th>';
+                html += '</tr></thead><tbody>';
+                
+                dataToExport.forEach((item, index) => {
+                    html += '<tr>';
+                    html += `<td style="padding: 8px;">${index + 1}</td>`;
+                    html += `<td style="padding: 8px;">${item.originalNames.join(', ')}</td>`;
+                    html += `<td style="padding: 8px;">${item.normalizedName}</td>`;
+                    html += `<td style="padding: 8px;">${item.count}</td>`;
+                    html += `<td style="padding: 8px;">${item.month}</td>`;
+                    html += `<td style="padding: 8px;">${getYearForMonth(item.month)}</td>`;
+                    html += `<td style="padding: 8px;">${item.outlets.join(', ')}</td>`;
+                    html += `<td style="padding: 8px;">${item.outlets.length}</td>`;
+                    html += '</tr>';
+                });
+                
+                html += '</tbody></table></body></html>';
+                
+                console.log(`✅ Excel data generated (${html.length} characters)`);
+                
+                // Create download
                 const timestamp = new Date().toISOString().slice(0, 10);
                 const filterSuffix = monthFilter ? `_${monthFilter}` : '';
                 const filename = `loss-sales-tracker${filterSuffix}_${timestamp}.xls`;
                 
-                // Try using download attribute
-                const link = document.createElement('a');
-                if (link.download !== undefined) {
+                // Method 1: Try blob download
+                try {
+                    console.log('🔄 Trying blob download method...');
+                    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
                     const url = URL.createObjectURL(blob);
-                    link.setAttribute('href', url);
-                    link.setAttribute('download', filename);
-                    link.style.visibility = 'hidden';
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    
+                    // Force click
+                    link.click();
+                    
+                    // Cleanup after a delay
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                    
+                    console.log(`✅ Export initiated: ${filename}`);
+                    alert(`Excel export started! Check your downloads folder for: ${filename}`);
+                    return;
+                } catch (e) {
+                    console.warn('⚠️ Blob download failed:', e);
+                }
+                
+                // Method 2: Data URL
+                try {
+                    console.log('🔄 Trying data URL method...');
+                    const dataUrl = 'data:application/vnd.ms-excel;charset=utf-8,' + encodeURIComponent(html);
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = filename;
+                    link.style.display = 'none';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                    console.log(`✅ Exported ${dataToExport.length} items to ${filename}`);
-                } else {
-                    // Fallback: Open in new window
-                    const url = 'data:application/vnd.ms-excel;charset=utf-8,' + encodeURIComponent(html);
-                    window.open(url, '_blank');
-                    console.log(`✅ Opened Excel in new window (${dataToExport.length} items)`);
+                    
+                    console.log(`✅ Data URL export: ${filename}`);
+                    alert(`Excel export started via data URL! File: ${filename}`);
+                    return;
+                } catch (e) {
+                    console.warn('⚠️ Data URL failed:', e);
                 }
+                
+                // Method 3: Open in new window/tab
+                console.log('🔄 Opening in new window...');
+                const excelWindow = window.open('', '_blank');
+                if (excelWindow) {
+                    excelWindow.document.write(html);
+                    excelWindow.document.title = filename;
+                    console.log('✅ Opened in new window');
+                    alert('Excel data opened in new window. Right-click and "Save As" to download as .xls file.');
+                } else {
+                    alert('Unable to export. Please check browser console.');
+                    console.log('📄 Excel HTML:\n', html);
+                }
+                
             } catch (error) {
                 console.error('❌ Export error:', error);
-                // Final fallback: Show data in new window
-                alert('Download blocked. Opening Excel data in new window...');
-                const url = 'data:application/vnd.ms-excel;charset=utf-8,' + encodeURIComponent(html);
-                window.open(url, '_blank');
+                alert(`Export failed: ${error.message}. Check console for details.`);
             }
         }
 
