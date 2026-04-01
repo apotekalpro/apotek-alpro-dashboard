@@ -2402,7 +2402,7 @@
                     <!-- TikTok Performance Sub-content -->
                     <div id="tiktokPerformanceContent" class="bpt-subcontent hidden">
                         <div class="iframe-container" style="height:calc(100vh - 200px);min-height:700px;">
-                            <iframe id="tiktokPerfIframe" src="" class="iframe-full w-full h-full border-0 rounded-lg" 
+                            <iframe id="tiktokPerfIframe" data-src="tiktok-performance.html" class="iframe-full lazy-iframe w-full h-full border-0 rounded-lg" 
                                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
                         </div>
                     </div>
@@ -6040,18 +6040,10 @@
             const contentEl = document.getElementById(subtabId + 'Content');
             if (contentEl) {
                 contentEl.classList.remove('hidden');
-                // If TikTok Performance — load the iframe once
-                if (subtabId === 'tiktokPerformance') {
-                    const iframe = document.getElementById('tiktokPerfIframe');
-                    if (iframe && !iframe.src) {
-                        iframe.src = 'tiktok-performance.html';
-                    }
-                } else {
-                    // Lazy-load any iframe inside
-                    const iframe = contentEl.querySelector('iframe.lazy-iframe');
-                    if (iframe && !iframe.src && iframe.dataset.src) {
-                        iframe.src = iframe.dataset.src;
-                    }
+                // Lazy-load any iframe inside (including TikTok Performance)
+                const iframe = contentEl.querySelector('iframe.lazy-iframe');
+                if (iframe && iframe.dataset.src && (!iframe.src || iframe.src === window.location.href || iframe.src === window.location.href + '#')) {
+                    iframe.src = iframe.dataset.src;
                 }
             }
 
