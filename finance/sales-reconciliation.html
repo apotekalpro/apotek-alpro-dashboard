@@ -178,7 +178,7 @@
                         <i class="fas fa-calculator mr-3 text-indigo-600"></i>
                         Sales Reconciliation System
                     </h1>
-                    <p class="text-gray-600 mt-2">BCA Statement reconciliation with transaction summary matching</p>
+                    <p class="text-gray-600 mt-2">BCA & BRI Statement reconciliation with transaction summary matching</p>
                 </div>
                 <button onclick="resetAll()" class="btn-secondary">
                     <i class="fas fa-redo mr-2"></i>Reset All
@@ -268,13 +268,59 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- File 6: BRI Statement -->
+                <div class="upload-container">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        6. BRI Statement (Mutasi BRI)
+                        <span class="text-orange-500">*</span>
+                    </label>
+                    <div class="upload-zone" id="upload-zone-6" onclick="document.getElementById('file-6').click()">
+                        <input type="file" id="file-6" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(6, this.files[0])">
+                        <div class="p-4 text-center">
+                            <i class="fas fa-file-excel text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600" id="file-name-6">Click to upload Excel file</p>
+                            <p class="text-xs text-gray-400 mt-1" id="file-status-6"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File 7: BRI MASTER MID -->
+                <div class="upload-container">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        7. BRI MASTER MID Outlet
+                    </label>
+                    <div class="upload-zone" id="upload-zone-7" onclick="document.getElementById('file-7').click()">
+                        <input type="file" id="file-7" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(7, this.files[0])">
+                        <div class="p-4 text-center">
+                            <i class="fas fa-file-excel text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600" id="file-name-7">Click to upload Excel file</p>
+                            <p class="text-xs text-gray-400 mt-1" id="file-status-7"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File 8: Petty Cash Template -->
+                <div class="upload-container">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        8. Petty Cash Template
+                    </label>
+                    <div class="upload-zone" id="upload-zone-8" onclick="document.getElementById('file-8').click()">
+                        <input type="file" id="file-8" accept=".xlsx,.xls" class="hidden" onchange="handleFileUpload(8, this.files[0])">
+                        <div class="p-4 text-center">
+                            <i class="fas fa-file-excel text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600" id="file-name-8">Click to upload Excel file</p>
+                            <p class="text-xs text-gray-400 mt-1" id="file-status-8"></p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Progress Bar -->
             <div class="mt-6">
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-sm font-semibold text-gray-700">Upload Progress</span>
-                    <span class="text-sm text-gray-600" id="upload-progress-text">0/5 files uploaded</span>
+                    <span class="text-sm text-gray-600" id="upload-progress-text">0/8 files uploaded</span>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
@@ -446,12 +492,12 @@
         // Update progress bar
         function updateProgress() {
             const uploadedCount = Object.keys(uploadedFiles).length;
-            const progressPercent = (uploadedCount / 5) * 100;
+            const progressPercent = (uploadedCount / 8) * 100;
             document.getElementById('progress-fill').style.width = `${progressPercent}%`;
-            document.getElementById('upload-progress-text').textContent = `${uploadedCount}/5 files uploaded`;
+            document.getElementById('upload-progress-text').textContent = `${uploadedCount}/8 files uploaded`;
 
-            // Enable process button if BCA statement is uploaded
-            if (uploadedFiles[2]) {
+            // Enable process button if BCA statement OR BRI statement is uploaded
+            if (uploadedFiles[2] || uploadedFiles[6]) {
                 document.getElementById('process-btn').disabled = false;
             }
         }
@@ -1885,7 +1931,7 @@
             currentTab = 'all';
 
             // Reset UI
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= 8; i++) {
                 const zone = document.getElementById(`upload-zone-${i}`);
                 const fileName = document.getElementById(`file-name-${i}`);
                 const fileStatus = document.getElementById(`file-status-${i}`);
@@ -1898,7 +1944,7 @@
             }
 
             document.getElementById('progress-fill').style.width = '0%';
-            document.getElementById('upload-progress-text').textContent = '0/5 files uploaded';
+            document.getElementById('upload-progress-text').textContent = '0/8 files uploaded';
             document.getElementById('process-btn').disabled = true;
             document.getElementById('results-section').classList.add('hidden');
         }
