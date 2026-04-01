@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok Live Performance · BPT</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+<style>
+/* ══════════════════════════════════════════════════════
+   LIGHTER TIKTOK PALETTE — dark bg with brighter surfaces
+   ══════════════════════════════════════════════════════ */
+:root {
+  --bg:        #0f0f17;
+  --bg2:       #181826;
+  --bg3:       #1f1f32;
+  --surface:   #272740;
+  --surface2:  #2e2e4a;
+  --border:    rgba(255,255,255,0.10);
+  --border2:   rgba(255,255,255,0.18);
+  --text:      #f0f0f8;
+  --text2:     #c8c8e0;
+  --muted:     #8888aa;
+  --faint:     #555575;
+  --red:       #fe2c55;
+  --red-soft:  rgba(254,44,85,0.15);
+  --pink:      #ff4081;
+  --cyan:      #25f4ee;
+  --cyan-soft: rgba(37,244,238,0.12);
+  --purple:    #b06aff;
+  --green:     #2dd36f;
+  --orange:    #ff8c42;
+  --gold:      #fbbf24;
+  --silver:    #94a3b8;
+  --bronze:    #d97a4a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;font-size:14px;line-height:1.5}
+
+/* ── HEADER ── */
+.hdr{
+  background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+  border-bottom:2px solid var(--red);
+  padding:14px 24px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:0 4px 24px rgba(254,44,85,.18);
+  position:sticky;top:0;z-index:100;
+}
+.hdr-logo{
+  width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,var(--red) 0%,#ff6080 50%,var(--cyan) 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;
+  box-shadow:0 0 18px rgba(254,44,85,.4);
+}
+.hdr-title h1{font-size:1.15rem;font-weight:800;color:var(--text);line-height:1.2;letter-spacing:-.01em}
+.hdr-title p{font-size:.72rem;color:var(--muted)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.btn-refresh{
+  background:linear-gradient(135deg,var(--red),#ff5070);
+  border:none;border-radius:10px;padding:8px 18px;
+  color:#fff;font-weight:700;font-size:.8rem;
+  cursor:pointer;display:flex;align-items:center;gap:7px;
+  transition:all .25s;box-shadow:0 3px 12px rgba(254,44,85,.3);
+}
+.btn-refresh:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(254,44,85,.45)}
+.sync-ts{font-size:.68rem;color:var(--faint)}
+
+/* ── TABS ── */
+.tabs{
+  display:flex;gap:3px;padding:14px 24px 0;
+  border-bottom:1px solid var(--border);
+  background:var(--bg2);
+  overflow-x:auto;scrollbar-width:none;
+  position:sticky;top:70px;z-index:99;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  padding:9px 20px;border-radius:8px 8px 0 0;
+  border:1px solid transparent;border-bottom:none;
+  background:rgba(255,255,255,.03);
+  color:var(--muted);font-size:.82rem;font-weight:600;
+  cursor:pointer;white-space:nowrap;transition:all .2s;
+}
+.tab:hover{color:var(--text2);background:rgba(255,255,255,.06)}
+.tab.active{
+  background:var(--bg3);color:var(--text);
+  border-color:var(--border);
+  position:relative;
+}
+.tab.active::after{
+  content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--red),var(--cyan));
+}
+.tab i{margin-right:7px}
+
+/* ── MAIN ── */
+.main{padding:24px}
+.sec{display:none}.sec.active{display:block}
+
+/* ── STAT CARDS ── */
+.stat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:14px;margin-bottom:24px;
+}
+.sc{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:16px;padding:18px 16px;
+  transition:all .25s;position:relative;overflow:hidden;
+}
+.sc::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;
+}
+.sc.red::before   {background:var(--red)}
+.sc.cyan::before  {background:var(--cyan)}
+.sc.purple::before{background:var(--purple)}
+.sc.green::before {background:var(--green)}
+.sc.orange::before{background:var(--orange)}
+.sc::after{
+  content:'';position:absolute;inset:0;border-radius:16px;
+  background:radial-gradient(circle at top right,rgba(255,255,255,.03),transparent 60%);
+  pointer-events:none;
+}
+.sc:hover{transform:translateY(-2px);border-color:var(--border2);box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.sc .lbl{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.sc .val{font-size:1.7rem;font-weight:900;margin:6px 0 3px;line-height:1}
+.sc .sub{font-size:.67rem;color:var(--faint)}
+.sc.red    .val{color:var(--red)}
+.sc.cyan   .val{color:var(--cyan)}
+.sc.purple .val{color:var(--purple)}
+.sc.green  .val{color:var(--green)}
+.sc.orange .val{color:var(--orange)}
+
+/* ── DASHBOARD TABLE CARD ── */
+.card{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;margin-bottom:28px;
+}
+.card-hdr{
+  padding:14px 20px;
+  background:linear-gradient(135deg,rgba(254,44,85,.12),rgba(37,244,238,.06));
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.card-hdr h3{font-weight:700;font-size:.95rem}
+.card-hdr .badge{
+  margin-left:auto;font-size:.68rem;
+  background:rgba(255,255,255,.07);color:var(--muted);
+  padding:3px 10px;border-radius:20px;
+}
+.tscroll{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse}
+table.t th{
+  background:rgba(255,255,255,.04);padding:10px 16px;text-align:left;
+  font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
+  border-bottom:1px solid var(--border);white-space:nowrap;font-weight:700;
+}
+table.t td{
+  padding:10px 16px;font-size:.82rem;border-bottom:1px solid rgba(255,255,255,.04);
+  vertical-align:middle;
+}
+table.t tr:last-child td{border-bottom:none}
+table.t tr:hover td{background:rgba(255,255,255,.03)}
+.mbadge{
+  display:inline-block;padding:3px 10px;border-radius:20px;
+  font-size:.7rem;font-weight:700;
+  background:rgba(254,44,85,.12);color:var(--red);border:1px solid rgba(254,44,85,.22);
+}
+.mbadge.cur{background:rgba(37,244,238,.12);color:var(--cyan);border-color:rgba(37,244,238,.22)}
+.adot{
+  width:7px;height:7px;border-radius:50%;background:var(--cyan);
+  display:inline-block;margin-right:5px;animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
+
+/* ── SECTION TITLE ── */
+.sec-title{
+  display:flex;align-items:center;gap:10px;
+  font-size:1.05rem;font-weight:800;
+  margin-bottom:22px;padding-bottom:14px;
+  border-bottom:1px solid var(--border);flex-wrap:wrap;
+}
+.pill{font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:20px}
+.pill.yr{background:rgba(254,44,85,.14);color:var(--red);border:1px solid rgba(254,44,85,.24)}
+.pill.mo{background:rgba(37,244,238,.12);color:var(--cyan);border:1px solid rgba(37,244,238,.22)}
+
+/* ── LEADERBOARD GRID ── */
+.lb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:24px}
+
+/* ── LB SECTION HEADER ── */
+.lb-hdr{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.lb-icon{
+  width:38px;height:38px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;
+}
+.lb-icon.v{background:linear-gradient(135deg,var(--red),#ff6680)}
+.lb-icon.l{background:linear-gradient(135deg,#ff4081,#ff6aa0)}
+.lb-icon.c{background:linear-gradient(135deg,var(--cyan),#0ea5e9)}
+.lb-icon.f{background:linear-gradient(135deg,var(--purple),#7c3aed)}
+.lb-icon.g{background:linear-gradient(135deg,var(--green),#16a34a)}
+.lb-hdr h3{font-size:.95rem;font-weight:800;color:var(--text)}
+.lb-hdr p{font-size:.7rem;color:var(--muted)}
+
+/* ── LB CARD ── */
+.lb-card{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;
+}
+
+/* ── LB ROW ── */
+.lb-row{
+  padding:14px 16px;
+  border-bottom:1px solid rgba(255,255,255,.045);
+  transition:background .15s;
+}
+.lb-row:last-child{border-bottom:none}
+.lb-row:hover{background:rgba(255,255,255,.04)}
+
+/* rank + content header */
+.lb-top{display:flex;align-items:flex-start;gap:12px}
+
+/* rank badges */
+.rnk{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:.88rem;margin-top:1px;
+}
+.r1{background:linear-gradient(135deg,#fbbf24,#d97706);color:#1a1000;box-shadow:0 0 14px rgba(251,191,36,.45)}
+.r2{background:linear-gradient(135deg,#cbd5e1,#94a3b8);color:#1a1a2e}
+.r3{background:linear-gradient(135deg,#d97a4a,#a0522d);color:#fff}
+.r4,.r5{background:rgba(255,255,255,.09);color:var(--muted)}
+
+/* content */
+.lb-info{flex:1;min-width:0}
+.lb-title{font-size:.9rem;font-weight:700;color:var(--text);line-height:1.4;margin-bottom:5px}
+.lb-sku{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:.74rem;color:var(--cyan);font-weight:600;
+  background:var(--cyan-soft);border:1px solid rgba(37,244,238,.18);
+  border-radius:6px;padding:2px 9px;margin-bottom:6px;
+}
+.lb-sku i{font-size:.62rem}
+
+/* detail chips */
+.lb-details{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.chip{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:.68rem;color:var(--text2);
+  background:var(--surface);border:1px solid rgba(255,255,255,.09);
+  border-radius:6px;padding:3px 8px;white-space:nowrap;
+}
+.chip i{font-size:.62rem;color:var(--muted)}
+
+/* month tag */
+.lb-mtag{
+  display:inline-block;font-size:.62rem;font-weight:700;
+  padding:2px 7px;border-radius:10px;margin-top:6px;
+  background:var(--red-soft);color:var(--red);
+  border:1px solid rgba(254,44,85,.2);
+}
+
+/* metric value */
+.lb-metric{text-align:right;flex-shrink:0;min-width:72px;padding-left:8px}
+.lb-metric .mv{font-size:1.18rem;font-weight:900;line-height:1}
+.lb-metric .ms{font-size:.65rem;color:var(--muted);margin-top:2px;white-space:nowrap}
+.lv .mv{color:var(--red)}
+.ll .mv{color:var(--pink)}
+.lc .mv{color:var(--cyan)}
+.lf .mv{color:var(--purple)}
+.lg .mv{color:var(--green)}
+
+/* ── LOADING OVERLAY ── */
+#loadOverlay{
+  position:fixed;inset:0;
+  background:linear-gradient(135deg,rgba(15,15,23,.97),rgba(24,24,38,.97));
+  z-index:9999;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;
+}
+.spinner{
+  width:48px;height:48px;border-radius:50%;
+  border:4px solid rgba(254,44,85,.15);
+  border-top-color:var(--red);animation:spin .85s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.prog-wrap{width:240px;height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+.prog-fill{
+  height:100%;width:0%;
+  background:linear-gradient(90deg,var(--red),var(--cyan));
+  border-radius:3px;transition:width .35s ease;
+}
+.load-txt{color:var(--text2);font-size:.92rem;font-weight:600}
+.load-sub{color:var(--faint);font-size:.73rem}
+
+/* no-data placeholder */
+.nodata{text-align:center;padding:28px;color:var(--faint);font-size:.85rem}
+.nodata i{font-size:1.7rem;margin-bottom:8px;display:block;color:var(--surface2)}
+
+@media(max-width:640px){
+  .main{padding:14px}
+  .lb-grid{grid-template-columns:1fr}
+  .hdr{padding:12px 16px}
+  .tabs{padding:10px 16px 0}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ── LOADING OVERLAY ── -->
+<div id="loadOverlay">
+  <div class="spinner"></div>
+  <p class="load-txt" id="ldTxt">Loading TikTok Live data…</p>
+  <div class="prog-wrap"><div class="prog-fill" id="ldProg"></div></div>
+  <p class="load-sub" id="ldSub">Connecting to data API…</p>
+</div>
+
+<!-- ── HEADER ── -->
+<div class="hdr">
+  <div class="hdr-logo"><i class="fab fa-tiktok" style="color:#fff"></i></div>
+  <div class="hdr-title">
+    <h1>TikTok Live Performance</h1>
+    <p>BPT · Live Content Analytics · Auto-synced from Google Sheets</p>
+  </div>
+  <div class="hdr-right">
+    <button class="btn-refresh" onclick="doRefresh()">
+      <i class="fas fa-sync-alt" id="syncIco"></i>Refresh
+    </button>
+    <span class="sync-ts" id="syncTs"></span>
+  </div>
+</div>
+
+<!-- ── TABS ── -->
+<div class="tabs">
+  <button class="tab active" id="t-ov" onclick="showSec('ov')">
+    <i class="fas fa-chart-pie"></i>Overview
+  </button>
+  <button class="tab" id="t-yr" onclick="showSec('yr')">
+    <i class="fas fa-trophy"></i>Yearly Top 5
+  </button>
+  <button class="tab" id="t-mo" onclick="showSec('mo')">
+    <i class="fas fa-calendar-star"></i>This Month Top 5
+  </button>
+</div>
+
+<!-- ── MAIN CONTENT ── -->
+<div class="main">
+
+  <!-- ══ OVERVIEW TAB ══ -->
+  <div class="sec active" id="s-ov">
+    <div class="stat-grid">
+      <div class="sc red">
+        <div class="lbl">Total Lives</div>
+        <div class="val" id="sv-lives">—</div>
+        <div class="sub">All sessions</div>
+      </div>
+      <div class="sc cyan">
+        <div class="lbl">Total Views</div>
+        <div class="val" id="sv-views">—</div>
+        <div class="sub">Across all months</div>
+      </div>
+      <div class="sc purple">
+        <div class="lbl">Total Likes</div>
+        <div class="val" id="sv-likes">—</div>
+        <div class="sub">Engagement signals</div>
+      </div>
+      <div class="sc green">
+        <div class="lbl">Total GMV</div>
+        <div class="val" id="sv-gmv">—</div>
+        <div class="sub">Revenue generated</div>
+      </div>
+      <div class="sc orange">
+        <div class="lbl">Total Comments</div>
+        <div class="val" id="sv-com">—</div>
+        <div class="sub">All months combined</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hdr">
+        <i class="fas fa-table-cells" style="color:var(--red);font-size:.9rem"></i>
+        <h3>Monthly Performance Summary</h3>
+        <span class="badge" id="dashBadge"></span>
+      </div>
+      <div class="tscroll">
+        <table class="t">
+          <thead><tr>
+            <th>Month</th>
+            <th>Lives</th>
+            <th>Duration</th>
+            <th style="color:var(--red)">Views</th>
+            <th style="color:var(--pink)">Likes</th>
+            <th style="color:var(--cyan)">Comments</th>
+            <th style="color:var(--purple)">New Followers</th>
+            <th style="color:var(--green)">GMV (Rp)</th>
+          </tr></thead>
+          <tbody id="dashBody">
+            <tr><td colspan="8" class="nodata">
+              <i class="fas fa-spinner fa-spin"></i>Loading…
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ YEARLY TOP 5 TAB ══ -->
+  <div class="sec" id="s-yr">
+    <div class="sec-title">
+      <i class="fas fa-trophy" style="color:var(--gold)"></i>
+      Yearly Leaderboards
+      <span class="pill yr">All Months</span>
+    </div>
+    <div class="lb-grid">
+      <div>
+        <div class="lb-hdr">
+          <div class="lb-icon v"><i class="fas fa-eye"></i></div>
+          <div><h3>Top 5 Views</h3><p>Highest viewed live sessions</p></div>
+        </div>
+        <div class="lb-card" id="y-v"></div>
+      </div>
+      <div>
+        <div class="lb-hdr">
+          <div class="lb-icon l"><i class="fas fa-heart"></i></div>
+          <div><h3>Top 5 Likes</h3><p>Most liked live sessions</p></div>
+        </div>
+        <div class="lb-card" id="y-l"></div>
+      </div>
+      <div>
+        <div class="lb-hdr">
+          <div class="lb-icon c"><i class="fas fa-comment"></i></div>
+          <div><h3>Top 5 Comments</h3><p>Most discussed sessions</p></div>
+        </div>
+        <div class="lb-card" id="y-c"></div>
+      </div>
+      <div>
+        <div class="lb-hdr">
+          <div class="lb-icon f"><i class="fas fa-user-plus"></i></div>
+          <div><h3>Top 5 New Followers</h3><p>Sessions with most follower gain</p></div>
+        </div>
+        <div class="lb-card" id="y-f"></div>
+      </div>
+      <div>
+        <div class="lb-hdr">
+          <div class="lb-icon g"><i class="fas fa-coins"></i></div>
+          <div><h3>Top 5 GMV</h3><p>Highest revenue sessions</p></div>
+        </div>
+        <div class="lb-card" id="y-g"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ THIS MONTH TOP 5 TAB ══ -->
+  <div class="sec" id="s-mo">
+    <div class="sec-title">
+      <i class="fas fa-calendar-alt" style="color:var(--cyan)"></i>
+      <span id="moTitle">This Month Leaderboards</span>
+      <span class="pill mo" id="moBadge">—</span>
+    </div>
+    <div class="lb-grid">
+      <div>
+        <div class="lb-hdr">
+          <div class="lb-icon v"><i class="fas fa-eye"></i></div>
+          <div><h3>Top 5 Views</h3><p>This month's most viewed</p></div>
+        </div>
+        <div class="lb-card" id="m-v"></div>
+      </div>
+      <div>
+        <div class="lb-hdr">
+          <div class="lb-icon l"><i class="fas fa-heart"></i></div>
+          <div><h3>Top 5 Likes</h3><p>This month's most liked</p></div>
+        </div>
+        <div class="lb-card" id="m-l"></div>
+      </div>
+      <div>
+        <div class="lb-hdr">
+          <div class="lb-icon c"><i class="fas fa-comment"></i></div>
+          <div><h3>Top 5 Comments</h3><p>This month's most commented</p></div>
+        </div>
+        <div class="lb-card" id="m-c"></div>
+      </div>
+      <div>
+        <div class="lb-hdr">
+          <div class="lb-icon f"><i class="fas fa-user-plus"></i></div>
+          <div><h3>Top 5 New Followers</h3><p>This month's follower gainers</p></div>
+        </div>
+        <div class="lb-card" id="m-f"></div>
+      </div>
+      <div>
+        <div class="lb-hdr">
+          <div class="lb-icon g"><i class="fas fa-coins"></i></div>
+          <div><h3>Top 5 GMV</h3><p>This month's top revenue</p></div>
+        </div>
+        <div class="lb-card" id="m-g"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let _d = null;
+
+// ═══════════════════════════════════════════════════════════
+// FORMAT HELPERS
+// ═══════════════════════════════════════════════════════════
+const fN = n => {
+  if (n === null || n === undefined || n === '') return '—';
+  n = +n;
+  if (isNaN(n)) return '—';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return n.toLocaleString('id-ID');
+};
+const fRp = n => {
+  if (!n || +n === 0) return '—';
+  n = +n;
+  if (n >= 1e9) return 'Rp ' + (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return 'Rp ' + (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return 'Rp ' + (n / 1e3).toFixed(0) + 'K';
+  return 'Rp ' + n.toLocaleString('id-ID');
+};
+const esc = s => String(s || '')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const prog = (p, s) => {
+  document.getElementById('ldProg').style.width = p + '%';
+  if (s) document.getElementById('ldSub').textContent = s;
+};
+const nd = () => '<span style="color:var(--faint)">—</span>';
+
+// ═══════════════════════════════════════════════════════════
+// LOAD DATA
+// ═══════════════════════════════════════════════════════════
+async function loadData(bust = false) {
+  document.getElementById('loadOverlay').style.display = 'flex';
+  prog(10, 'Calling data API…');
+  document.getElementById('ldTxt').textContent = 'Fetching TikTok Live data…';
+  try {
+    prog(30, 'Waiting for Google Sheets response…');
+    const url = '/api/tiktok-data' + (bust ? '?bust=' + Date.now() : '');
+    const res = await fetch(url);
+    prog(75, 'Parsing data…');
+    _d = await res.json();
+    prog(92, 'Rendering dashboard…');
+    render();
+    prog(100, 'Done!');
+    const ts = _d.generated_at ? new Date(_d.generated_at).toLocaleTimeString('id-ID') : '—';
+    document.getElementById('syncTs').textContent = 'Synced: ' + ts;
+  } catch (e) {
+    prog(100, '⚠ Error: ' + e.message);
+    document.getElementById('ldTxt').textContent = 'Failed to load data';
+    console.error(e);
+  }
+  setTimeout(() => document.getElementById('loadOverlay').style.display = 'none', 500);
+}
+
+// ═══════════════════════════════════════════════════════════
+// ROW ACCESSORS
+// ═══════════════════════════════════════════════════════════
+function getNondupRows() {
+  if (!_d || !_d.months) return [];
+  return _d.months.flatMap(m => (m.rows || []).filter(r => !r._dup));
+}
+function getMonthRows() {
+  if (!_d || !_d.months) return [];
+  const cm = _d.current_month;
+  const found = _d.months.find(m => m.month === cm);
+  return found ? (found.rows || []) : [];
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════════
+function render() {
+  if (!_d) return;
+  renderOverview();
+  renderAllLB('y', getNondupRows());
+  renderAllLB('m', getMonthRows());
+
+  const cm = _d.current_month || '';
+  document.getElementById('moBadge').textContent = cm || 'N/A';
+  document.getElementById('moTitle').textContent = (cm || 'Current Month') + ' Leaderboards';
+}
+
+// ── Overview ──────────────────────────────────────────────
+function renderOverview() {
+  const dash = _d.dashboard || [];
+  let tL = 0, tV = 0, tLk = 0, tG = 0, tC = 0;
+  dash.forEach(r => { tL += r.lives || 0; tV += r.views || 0; tLk += r.likes || 0; tG += r.gmv || 0; tC += r.comments || 0; });
+  document.getElementById('sv-lives').textContent = fN(tL);
+  document.getElementById('sv-views').textContent = fN(tV);
+  document.getElementById('sv-likes').textContent = fN(tLk);
+  document.getElementById('sv-gmv').textContent   = fRp(tG);
+  document.getElementById('sv-com').textContent   = fN(tC);
+  document.getElementById('dashBadge').textContent = dash.length + ' months tracked';
+
+  const cm   = _d.current_month || '';
+  const body = document.getElementById('dashBody');
+  if (!dash.length) {
+    body.innerHTML = '<tr><td colspan="8" class="nodata"><i class="fas fa-database"></i>No data</td></tr>';
+    return;
+  }
+  body.innerHTML = dash.map(r => {
+    const cur = r.month === cm;
+    const has = r.lives > 0 || r.views > 0;
+    return `<tr>
+      <td>${cur ? '<span class="adot"></span>' : ''}<span class="mbadge${cur ? ' cur' : ''}">${esc(r.month)}</span></td>
+      <td>${has ? fN(r.lives) : nd()}</td>
+      <td style="color:var(--faint)">${r.duration || nd()}</td>
+      <td style="color:var(--red);font-weight:700">${has ? fN(r.views) : nd()}</td>
+      <td style="color:var(--pink);font-weight:700">${has ? fN(r.likes) : nd()}</td>
+      <td style="color:var(--cyan)">${has ? fN(r.comments) : nd()}</td>
+      <td style="color:var(--purple)">${has ? fN(r.followers) : nd()}</td>
+      <td style="color:var(--green);font-weight:700">${has && r.gmv ? fRp(r.gmv) : nd()}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Leaderboards ──────────────────────────────────────────
+function renderAllLB(pfx, rows) {
+  const cfgs = [
+    { id: pfx + '-v', field: 'views',     cls: 'lv', label: 'views' },
+    { id: pfx + '-l', field: 'likes',     cls: 'll', label: 'likes' },
+    { id: pfx + '-c', field: 'comments',  cls: 'lc', label: 'comments' },
+    { id: pfx + '-f', field: 'followers', cls: 'lf', label: 'new followers' },
+    { id: pfx + '-g', field: 'gmv',       cls: 'lg', label: 'GMV', isGmv: true },
+  ];
+  cfgs.forEach(c => renderLB(c.id, rows, c.field, c.cls, c.label, c.isGmv));
+}
+
+function renderLB(elId, allRows, field, colorCls, label, isGmv) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+
+  const top5 = [...allRows]
+    .filter(r => r[field] > 0)
+    .sort((a, b) => b[field] - a[field])
+    .slice(0, 5);
+
+  if (!top5.length) {
+    el.innerHTML = '<div class="nodata"><i class="fas fa-info-circle"></i>No data available</div>';
+    return;
+  }
+
+  el.innerHTML = top5.map((row, i) => {
+    const rank  = i + 1;
+    const val   = row[field];
+    const disp  = isGmv ? fRp(val) : fN(val);
+
+    /* ── core fields ── */
+    const title  = (row.title  || '').trim();
+    const sku    = (row.sku    || '').trim();
+    const day    = (row.day    || '').trim();
+    const date   = (row.date   || '').trim();
+    const time   = (row.time   || '').trim();
+    const theme  = (row.theme  || '').trim();
+    const dur    = (row.duration || '').trim();
+    const month  = (row.sheet  || '').trim();
+
+    /* Title = col F; fallback to SKU if F blank */
+    const mainTitle = title || sku || '(No title)';
+    /* Show SKU chip only if title exists AND sku is different */
+    const showSku = title && sku && sku.toLowerCase() !== title.toLowerCase();
+
+    /* Detail chips: Day, Date, Time, Theme, Duration */
+    const chips = [];
+    if (day)   chips.push(`<span class="chip"><i class="fas fa-calendar-week"></i>${esc(day)}</span>`);
+    if (date)  chips.push(`<span class="chip"><i class="far fa-calendar"></i>${esc(date)}</span>`);
+    if (time)  chips.push(`<span class="chip"><i class="far fa-clock"></i>${esc(time)}</span>`);
+    if (theme) chips.push(`<span class="chip"><i class="fas fa-tag"></i>${esc(theme)}</span>`);
+    if (dur)   chips.push(`<span class="chip"><i class="fas fa-hourglass-half"></i>${esc(dur)}</span>`);
+
+    /* Secondary metric chips (contextual) */
+    const secChips = [];
+    if (field !== 'views'     && row.views     > 0) secChips.push(`<span class="chip" style="color:var(--red)"><i class="fas fa-eye"></i>${fN(row.views)}</span>`);
+    if (field !== 'likes'     && row.likes     > 0) secChips.push(`<span class="chip" style="color:var(--pink)"><i class="fas fa-heart"></i>${fN(row.likes)}</span>`);
+    if (field !== 'comments'  && row.comments  > 0) secChips.push(`<span class="chip" style="color:var(--cyan)"><i class="fas fa-comment"></i>${fN(row.comments)}</span>`);
+    if (field !== 'followers' && row.followers > 0) secChips.push(`<span class="chip" style="color:var(--purple)"><i class="fas fa-user-plus"></i>${fN(row.followers)}</span>`);
+    if (field !== 'gmv'       && row.gmv       > 0) secChips.push(`<span class="chip" style="color:var(--green)"><i class="fas fa-coins"></i>${fRp(row.gmv)}</span>`);
+
+    return `
+    <div class="lb-row">
+      <div class="lb-top">
+        <div class="rnk r${rank}">${rank}</div>
+        <div class="lb-info">
+          <div class="lb-title">${esc(mainTitle)}</div>
+          ${showSku ? `<div class="lb-sku"><i class="fas fa-box-open"></i>${esc(sku)}</div>` : ''}
+          ${chips.length ? `<div class="lb-details">${chips.join('')}</div>` : ''}
+          ${secChips.length ? `<div class="lb-details" style="margin-top:3px">${secChips.join('')}</div>` : ''}
+          ${month ? `<span class="lb-mtag">${esc(month)}</span>` : ''}
+        </div>
+        <div class="lb-metric ${colorCls}">
+          <div class="mv">${disp}</div>
+          <div class="ms">${label}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════
+function showSec(name) {
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('s-' + name).classList.add('active');
+  document.getElementById('t-' + name).classList.add('active');
+}
+async function doRefresh() {
+  const ico = document.getElementById('syncIco');
+  ico.classList.add('fa-spin');
+  await loadData(true);
+  ico.classList.remove('fa-spin');
+}
+
+// Boot
+window.addEventListener('DOMContentLoaded', () => loadData());
+</script>
+</body>
+</html>

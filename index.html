@@ -197,6 +197,31 @@
         .procurement-subcontent {
             animation: fadeIn 0.3s ease-in;
         }
+
+        /* BPT subtabs */
+        .bpt-subtab {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .bpt-subtab:hover {
+            border-color: #9ca3af !important;
+            color: #374151 !important;
+        }
+        .bpt-subtab.active {
+            border-color: #ea580c !important;
+            color: #ea580c !important;
+        }
+        .bpt-subtab#tiktokPerformanceTab.active {
+            border-color: #010101 !important;
+            color: #010101 !important;
+            background: linear-gradient(90deg, rgba(254,44,85,0.08), rgba(37,244,238,0.08));
+        }
+        .bpt-subtab#tiktokPerformanceTab:hover {
+            color: #FE2C55 !important;
+        }
+        .bpt-subcontent {
+            animation: fadeIn 0.3s ease-in;
+        }
         
         @keyframes fadeIn {
             from {
@@ -2338,22 +2363,48 @@
 
                 <!-- BPT Content -->
                 <div id="bptContent" class="tab-content hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
-                                <i class="fas fa-bullseye mr-3 text-orange-600"></i>
-                                BPT Dashboard
-                            </h2>
-                            <p class="text-gray-600">Business process transformation system</p>
+                    <div class="mb-3">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-1">
+                            <i class="fas fa-bullseye mr-3 text-orange-600"></i>
+                            BPT Dashboard
+                        </h2>
+                        <p class="text-gray-600 mb-3">Business process transformation system</p>
+
+                        <!-- BPT Sub-tabs -->
+                        <div class="border-b border-gray-200 mb-0">
+                            <nav class="flex space-x-6 overflow-x-auto" aria-label="BPT Tabs" id="bptSubTabNav">
+                                <button onclick="showBptSubTab('bptMain')" id="bptMainTab"
+                                        class="bpt-subtab active whitespace-nowrap py-3 px-1 border-b-2 border-orange-500 font-medium text-sm text-orange-600">
+                                    <i class="fas fa-bullseye mr-2"></i>BPT Main
+                                </button>
+                                <button onclick="showBptSubTab('tiktokPerformance')" id="tiktokPerformanceTab"
+                                        class="bpt-subtab whitespace-nowrap py-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    <i class="fab fa-tiktok mr-2"></i>TikTok Performance
+                                </button>
+                            </nav>
                         </div>
-                        <button onclick="openInNewTab('https://apotekalpro.github.io/BPT/login.html')" 
-                                class="btn-primary text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-external-link-alt mr-2"></i>
-                            Open in New Tab
-                        </button>
                     </div>
-                    <div class="iframe-container">
-                        <iframe data-src="https://apotekalpro.github.io/BPT/login.html" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+
+                    <!-- BPT Main Sub-content -->
+                    <div id="bptMainContent" class="bpt-subcontent">
+                        <div class="flex justify-end mb-3">
+                            <button onclick="openInNewTab('https://apotekalpro.github.io/BPT/login.html')" 
+                                    class="btn-primary text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-external-link-alt mr-2"></i>
+                                Open in New Tab
+                            </button>
+                        </div>
+                        <div class="iframe-container">
+                            <iframe data-src="https://apotekalpro.github.io/BPT/login.html" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- TikTok Performance Sub-content -->
+                    <div id="tiktokPerformanceContent" class="bpt-subcontent hidden">
+                        <div class="iframe-container" style="height:calc(100vh - 200px);min-height:700px;">
+                            <iframe id="tiktokPerfIframe" src="" class="iframe-full w-full h-full border-0 rounded-lg" 
+                                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
+                        </div>
                     </div>
                 </div>
 
@@ -5971,6 +6022,49 @@
             if (tab) {
                 tab.classList.add('active', 'border-blue-500', 'text-blue-600');
                 tab.classList.remove('border-transparent', 'text-gray-500');
+            }
+        }
+
+        // BPT Subtab Functions
+        function showBptSubTab(subtabId) {
+            // Hide all BPT sub-contents
+            document.querySelectorAll('.bpt-subcontent').forEach(c => c.classList.add('hidden'));
+
+            // Reset all BPT subtab buttons
+            document.querySelectorAll('.bpt-subtab').forEach(btn => {
+                btn.classList.remove('active', 'border-orange-500', 'text-orange-600', 'border-black', 'text-black');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            // Show selected content
+            const contentEl = document.getElementById(subtabId + 'Content');
+            if (contentEl) {
+                contentEl.classList.remove('hidden');
+                // If TikTok Performance — load the iframe once
+                if (subtabId === 'tiktokPerformance') {
+                    const iframe = document.getElementById('tiktokPerfIframe');
+                    if (iframe && !iframe.src) {
+                        iframe.src = 'tiktok-performance.html';
+                    }
+                } else {
+                    // Lazy-load any iframe inside
+                    const iframe = contentEl.querySelector('iframe.lazy-iframe');
+                    if (iframe && !iframe.src && iframe.dataset.src) {
+                        iframe.src = iframe.dataset.src;
+                    }
+                }
+            }
+
+            // Mark active tab
+            const tabEl = document.getElementById(subtabId + 'Tab');
+            if (tabEl) {
+                tabEl.classList.add('active');
+                tabEl.classList.remove('border-transparent', 'text-gray-500');
+                if (subtabId === 'tiktokPerformance') {
+                    tabEl.classList.add('border-black', 'text-black');
+                } else {
+                    tabEl.classList.add('border-orange-500', 'text-orange-600');
+                }
             }
         }
 
