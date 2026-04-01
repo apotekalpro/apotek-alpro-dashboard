@@ -1479,10 +1479,42 @@
             return hasKeyword && isSmallAmount;
         }
         
+        // Validate store code
+        function validateStoreCode(code, validCodes) {
+            if (!code) return { valid: false, reason: 'EMPTY_CODE' };
+            
+            // Trim and clean
+            const cleaned = code.toString().trim().replace(/[^A-Za-z0-9]/g, '');
+            if (!cleaned) return { valid: false, reason: 'INVALID_CHARS' };
+            
+            // Check against master list (if provided)
+            if (validCodes && validCodes.size > 0) {
+                if (!validCodes.has(cleaned) && !validCodes.has(code)) {
+                    return { valid: false, reason: 'NOT_IN_MASTER' };
+                }
+            }
+            
+            return { valid: true, code: cleaned };
+        }
+        
+        // Validate MID
+        function validateMID(mid, lookupMap, bank) {
+            if (!mid || mid === '') {
+                return { valid: 'NA', reason: 'EMPTY_MID', outletCode: null };
+            }
+            
+            if (lookupMap && lookupMap.has(mid)) {
+                return { valid: 'VALID', outletCode: lookupMap.get(mid) };
+            }
+            
+            return { valid: 'UNKNOWN', reason: 'UNKNOWN_MID', outletCode: null };
+        }
+        
         function aggregateBRIByWeek(briData, lookups, referenceYear = null) {
             const weeklyBRI = new Map();
             const weeklySummary = new Map();
             const pettyCashTransactions = [];
+            const exceptions = [];
             
             console.log('=== Aggregating BRI Totals (All Dates) ===');
             console.log('🔍 DEBUG: BRI has', briData.length - 1, 'rows (excluding header)');
@@ -1498,6 +1530,19 @@
                 const tlbds2 = row[17]?.toString() || ''; // TLBDS2 (Column R, index 17)
                 
                 if (!tglTran || !description) continue;
+                
+                // Track DEBIT transactions as exceptions (bank fees, excluded from sales journal)
+                if (mutasiDebet > 0) {
+                    exceptions.push({
+                        type: 'DEBIT_TRANSACTION',
+                        bank: 'BRI',
+                        date: tglTran,
+                        amount: mutasiDebet,
+                        reason: 'Bank fee/debit transaction excluded per MOM',
+                        details: description.substring(0, 100)
+                    });
+                    continue;
+                }
                 
                 // Only process CREDIT transactions (money coming in)
                 if (mutasiKredit <= 0) continue;
@@ -1519,22 +1564,57 @@
                 }
                 
                 const transactionType = determineBRITransactionType(description);
-                if (!transactionType) continue;
-                
-                // Parse MID and lookup outlet
-                const mid = parseBRIMID(description) || parseBRIMID(tlbds2);
-                let outletCode = null;
-                
-                if (mid && lookups.briMid.has(mid)) {
-                    outletCode = lookups.briMid.get(mid);
+                if (!transactionType) {
+                    exceptions.push({
+                        type: 'UNKNOWN_TRANSACTION_TYPE',
+                        bank: 'BRI',
+                        date: tglTran,
+                        amount: amount,
+                        reason: 'Could not determine transaction type',
+                        details: description.substring(0, 100)
+                    });
+                    continue;
                 }
                 
-                if (!outletCode) {
-                    if (i <= 20) {
-                        console.log(`⚠️ SKIPPED BRI Row ${i}: Type=${transactionType}, Amount=${amount.toFixed(2)}, No outlet found`);
-                        console.log(`   Desc: ${description.substring(0, 100)}`);
-                        if (mid) console.log(`   MID: ${mid}`);
-                    }
+                // Parse MID and validate
+                const mid = parseBRIMID(description) || parseBRIMID(tlbds2);
+                const midValidation = validateMID(mid, lookups.briMid, 'BRI');
+                
+                if (midValidation.valid === 'NA') {
+                    exceptions.push({
+                        type: 'EMPTY_MID',
+                        bank: 'BRI',
+                        date: tglTran,
+                        amount: amount,
+                        reason: 'No MID found in transaction',
+                        details: description.substring(0, 100)
+                    });
+                    continue;
+                } else if (midValidation.valid === 'UNKNOWN') {
+                    exceptions.push({
+                        type: 'UNKNOWN_MID',
+                        bank: 'BRI',
+                        date: tglTran,
+                        amount: amount,
+                        reason: `MID ${mid} not in master list`,
+                        details: description.substring(0, 100)
+                    });
+                    continue;
+                }
+                
+                const outletCode = midValidation.outletCode;
+                
+                // Validate outlet code (basic validation)
+                const storeValidation = validateStoreCode(outletCode, null);
+                if (!storeValidation.valid) {
+                    exceptions.push({
+                        type: 'INVALID_STORE_CODE',
+                        bank: 'BRI',
+                        date: tglTran,
+                        amount: amount,
+                        reason: `Invalid store code: ${storeValidation.reason}`,
+                        details: `Outlet: ${outletCode}, ${description.substring(0, 50)}`
+                    });
                     continue;
                 }
                 
@@ -1590,8 +1670,9 @@
             console.log(`Aggregated ${weeklyBRI.size} BRI totals by payment type`);
             console.log(`Aggregated ${weeklySummary.size} BRI totals by outlet`);
             console.log(`Found ${pettyCashTransactions.length} petty cash transactions`);
+            console.log(`Found ${exceptions.length} exceptions in BRI data`);
             
-            return { weeklyBRI, weeklySummary, pettyCashTransactions };
+            return { weeklyBRI, weeklySummary, pettyCashTransactions, exceptions };
         }
         
         function matchWeeklyData(acmmData, bcaData, briData, pivotMap, lookups) {
@@ -2006,10 +2087,14 @@
                 briOnlyResults = separated.briOnly;
                 combinedResults = separated.combined;
                 
-                // Store petty cash results if BRI data exists
+                // Store petty cash results and exceptions if BRI data exists
                 if (briWeekly && briWeekly.pettyCashTransactions) {
                     pettyCashResults = briWeekly.pettyCashTransactions;
                     console.log(`Found ${pettyCashResults.length} petty cash transactions`);
+                }
+                if (briWeekly && briWeekly.exceptions) {
+                    exceptionsResults = briWeekly.exceptions;
+                    console.log(`Found ${exceptionsResults.length} exceptions in BRI data`);
                 }
                 
                 console.log(`Generated ${cashReconciliationResults.length} CASH results`);
@@ -2309,15 +2394,26 @@
             ];
             XLSX.utils.book_append_sheet(wb, wsUnmatched, 'Unmatched');
             
-            // SHEET 5: EXCEPTIONS (placeholder for now)
+            // SHEET 5: EXCEPTIONS
             const exceptionsData = [
-                ['Type', 'Outlet Code', 'Date', 'Amount', 'Reason', 'Details']
+                ['Type', 'Bank', 'Date', 'Amount', 'Reason', 'Details']
             ];
-            // TODO: Add actual exception data when store/MID validation is implemented
+            
+            // Add actual exception data
+            exceptionsResults.forEach(exc => {
+                exceptionsData.push([
+                    exc.type,
+                    exc.bank,
+                    exc.date ? formatDate(exc.date) : '-',
+                    exc.amount || 0,
+                    exc.reason,
+                    exc.details
+                ]);
+            });
             
             const wsExceptions = XLSX.utils.aoa_to_sheet(exceptionsData);
             wsExceptions['!cols'] = [
-                { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 30 }, { wch: 50 }
+                { wch: 25 }, { wch: 10 }, { wch: 12 }, { wch: 18 }, { wch: 40 }, { wch: 60 }
             ];
             XLSX.utils.book_append_sheet(wb, wsExceptions, 'Exceptions');
             
