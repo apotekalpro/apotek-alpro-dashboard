@@ -405,13 +405,16 @@
             <!-- Export Buttons -->
             <div class="flex flex-wrap gap-2 mb-4">
                 <button onclick="exportResults('all')" class="btn-secondary">
-                    <i class="fas fa-download mr-2"></i>Export All
+                    <i class="fas fa-download mr-2"></i>Export All Reconciliation
                 </button>
                 <button onclick="exportResults('matched')" class="btn-secondary">
                     <i class="fas fa-check mr-2"></i>Export Matched
                 </button>
                 <button onclick="exportResults('unmatched')" class="btn-secondary">
                     <i class="fas fa-times mr-2"></i>Export Unmatched
+                </button>
+                <button onclick="exportJournal()" class="btn-secondary" style="background: #10b981; color: white;">
+                    <i class="fas fa-file-invoice mr-2"></i>Export Journal
                 </button>
             </div>
 
@@ -2324,6 +2327,179 @@
             
             console.log(`Exported ${filename}: ${cashToExport.length} CASH + ${nonCashTotalToExport.length} NON-CASH records`);
         }
+        
+        // Export journal file for accounting
+        function exportJournal() {
+            if (cashReconciliationResults.length === 0 && nonCashTotalReconciliationResults.length === 0) {
+                alert('No data to export. Please run reconciliation first.');
+                return;
+            }
+            
+            const wb = XLSX.utils.book_new();
+            const yearMonth = new Date().toISOString().substring(0, 7).replace('-', '');
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Common journal header columns (20 columns)
+            const journalHeader = [
+                'Posting Date', 'Document Date', 'Document Type', 'Document No.', 'External Document No.',
+                'Account Type', 'Account No.', 'Description', 'Outlet Code', 'Currency Code',
+                'Amount', 'Debit Amount', 'Credit Amount', 'Bal. Account Type', 'Bal. Account No.',
+                'Message to Recipient', 'Payment Method Code', 'Applies-to Doc. Type', 'Applies-to Doc. No.', 'Applied (Yes/No)'
+            ];
+            
+            // SHEET 1: PENJ. TUNAI-BCA (BCA Cash Sales)
+            const bcaCashData = [journalHeader];
+            let bcaCashDocNo = 1;
+            
+            bcaOnlyResults.cash.forEach(row => {
+                if (row.status === 'MATCHED' && row.bcaTotal > 0) {
+                    bcaCashData.push([
+                        today, // Posting Date
+                        today, // Document Date
+                        'Payment', // Document Type
+                        `CASH-BCA-${String(bcaCashDocNo++).padStart(5, '0')}`, // Document No.
+                        row.outletCode, // External Document No.
+                        'G/L Account', // Account Type
+                        '5991', // Account No. (BCA GL Code)
+                        `Cash Sales - ${row.outletCode}`, // Description
+                        row.outletCode, // Outlet Code
+                        'IDR', // Currency Code
+                        row.bcaTotal, // Amount
+                        row.bcaTotal, // Debit Amount
+                        0, // Credit Amount
+                        'G/L Account', // Bal. Account Type
+                        '11201100', // Bal. Account No. (Petty Cash GL)
+                        '', // Message to Recipient
+                        'CASH', // Payment Method Code
+                        '', // Applies-to Doc. Type
+                        '', // Applies-to Doc. No.
+                        'No' // Applied
+                    ]);
+                }
+            });
+            
+            const wsBCACash = XLSX.utils.aoa_to_sheet(bcaCashData);
+            wsBCACash['!cols'] = Array(20).fill({ wch: 15 });
+            XLSX.utils.book_append_sheet(wb, wsBCACash, 'PENJ. TUNAI-BCA');
+            
+            // SHEET 2: PENJ. TUNAI-BRI (BRI Cash Sales - if any)
+            const briCashData = [journalHeader];
+            let briCashDocNo = 1;
+            
+            briOnlyResults.cash.forEach(row => {
+                if (row.status === 'MATCHED' && row.bcaTotal > 0) {
+                    briCashData.push([
+                        today, today, 'Payment',
+                        `CASH-BRI-${String(briCashDocNo++).padStart(5, '0')}`,
+                        row.outletCode, 'G/L Account', '6749',
+                        `Cash Sales - ${row.outletCode}`, row.outletCode, 'IDR',
+                        row.bcaTotal, row.bcaTotal, 0,
+                        'G/L Account', '11201100', '', 'CASH', '', '', 'No'
+                    ]);
+                }
+            });
+            
+            const wsBRICash = XLSX.utils.aoa_to_sheet(briCashData);
+            wsBRICash['!cols'] = Array(20).fill({ wch: 15 });
+            XLSX.utils.book_append_sheet(wb, wsBRICash, 'PENJ. TUNAI-BRI');
+            
+            // SHEET 3: KARTU NON-TUNAI-BCA (BCA Non-Cash)
+            const bcaNonCashData = [journalHeader];
+            let bcaNonCashDocNo = 1;
+            
+            bcaOnlyResults.nonCash.forEach(row => {
+                if (row.status === 'MATCHED' && row.bcaTotal > 0) {
+                    bcaNonCashData.push([
+                        today, today, 'Payment',
+                        `NONCASH-BCA-${String(bcaNonCashDocNo++).padStart(5, '0')}`,
+                        row.outletCode, 'G/L Account', '5991',
+                        `Non-Cash Sales - ${row.outletCode}`, row.outletCode, 'IDR',
+                        row.bcaTotal, row.bcaTotal, 0,
+                        'G/L Account', '11201010', '', 'CARD', '', '', 'No'
+                    ]);
+                }
+            });
+            
+            const wsBCANonCash = XLSX.utils.aoa_to_sheet(bcaNonCashData);
+            wsBCANonCash['!cols'] = Array(20).fill({ wch: 15 });
+            XLSX.utils.book_append_sheet(wb, wsBCANonCash, 'KARTU NON-TUNAI-BCA');
+            
+            // SHEET 4: KARTU NON-TUNAI-BRI (BRI Non-Cash)
+            const briNonCashData = [journalHeader];
+            let briNonCashDocNo = 1;
+            
+            briOnlyResults.nonCash.forEach(row => {
+                if (row.status === 'MATCHED' && row.bcaTotal > 0) {
+                    briNonCashData.push([
+                        today, today, 'Payment',
+                        `NONCASH-BRI-${String(briNonCashDocNo++).padStart(5, '0')}`,
+                        row.outletCode, 'G/L Account', '6749',
+                        `Non-Cash Sales - ${row.outletCode}`, row.outletCode, 'IDR',
+                        row.bcaTotal, row.bcaTotal, 0,
+                        'G/L Account', '11201010', '', 'CARD', '', '', 'No'
+                    ]);
+                }
+            });
+            
+            const wsBRINonCash = XLSX.utils.aoa_to_sheet(briNonCashData);
+            wsBRINonCash['!cols'] = Array(20).fill({ wch: 15 });
+            XLSX.utils.book_append_sheet(wb, wsBRINonCash, 'KARTU NON-TUNAI-BRI');
+            
+            // SHEET 5: PETTY CASH (25 columns - extended format)
+            const pettyCashHeader = [
+                'Posting Date', 'Account Type', 'Account No.', 'Account Name', 'Description',
+                'Transaction Information', 'Gen. Posting Type', 'VAT Bus. Posting Group', 'VAT Prod. Posting Group', 'VAT Amount',
+                'Debit Amount', 'Credit Amount', 'Bal. Account Type', 'Bal. Account No.', 'Currency Code',
+                'External Document No.', 'Outlet Code', 'Sustainability Account No.', 'Total Emission CO2', 'Total Emission CH4',
+                'Total Emission N2O', 'Deferral Code', 'Document Type', 'Document No.', 'Applied (Yes/No)'
+            ];
+            
+            const pettyCashData = [pettyCashHeader];
+            let pettyCashDocNo = 1;
+            
+            pettyCashResults.forEach(txn => {
+                pettyCashData.push([
+                    today, // Posting Date
+                    'G/L Account', // Account Type
+                    '11201100', // Account No. (Petty Cash GL)
+                    'Petty Cash', // Account Name
+                    txn.description.substring(0, 50), // Description
+                    txn.description, // Transaction Information
+                    'Purchase', // Gen. Posting Type
+                    '', // VAT Bus. Posting Group
+                    '', // VAT Prod. Posting Group
+                    0, // VAT Amount
+                    0, // Debit Amount
+                    txn.amount, // Credit Amount
+                    'G/L Account', // Bal. Account Type
+                    '11201100', // Bal. Account No.
+                    'IDR', // Currency Code
+                    `PETTY-${String(pettyCashDocNo++).padStart(5, '0')}`, // External Document No.
+                    '', // Outlet Code (to be filled from template matching)
+                    '', // Sustainability Account No.
+                    0, 0, 0, // Emissions
+                    '', // Deferral Code
+                    'Payment', // Document Type
+                    `PETTY-${String(pettyCashDocNo).padStart(5, '0')}`, // Document No.
+                    'No' // Applied
+                ]);
+            });
+            
+            const wsPettyCash = XLSX.utils.aoa_to_sheet(pettyCashData);
+            wsPettyCash['!cols'] = Array(25).fill({ wch: 15 });
+            XLSX.utils.book_append_sheet(wb, wsPettyCash, 'PETTY CASH');
+            
+            // Export
+            const filename = `JURNAL_${yearMonth}.xlsx`;
+            XLSX.writeFile(wb, filename);
+            
+            console.log(`Exported journal file: ${filename}`);
+            console.log(`  - BCA Cash: ${bcaCashData.length - 1} entries`);
+            console.log(`  - BRI Cash: ${briCashData.length - 1} entries`);
+            console.log(`  - BCA Non-Cash: ${bcaNonCashData.length - 1} entries`);
+            console.log(`  - BRI Non-Cash: ${briNonCashData.length - 1} entries`);
+            console.log(`  - Petty Cash: ${pettyCashData.length - 1} entries`);
+        }
 
         // Reset all data
         function resetAll() {
@@ -2335,6 +2511,11 @@
             cashReconciliationResults = [];
             nonCashReconciliationResults = [];
             nonCashTotalReconciliationResults = [];
+            bcaOnlyResults = { cash: [], nonCash: [] };
+            briOnlyResults = { cash: [], nonCash: [] };
+            combinedResults = { cash: [], nonCash: [] };
+            pettyCashResults = [];
+            exceptionsResults = [];
             reconciliationStatistics = {};
             currentTab = 'all';
 
