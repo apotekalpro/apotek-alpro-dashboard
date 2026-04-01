@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TikTok Live Performance · BPT</title>
 <style>
-/* ══════════════════════════════════════════════════════
-   ROOT — lighter TikTok palette: white/light-grey base
-   ══════════════════════════════════════════════════════ */
 :root {
   --bg:        #f5f6fa;
   --surface:   #ffffff;
@@ -28,283 +25,117 @@
   --card-shad: 0 2px 12px rgba(0,0,0,0.07);
   --card-shad-hover: 0 6px 20px rgba(0,0,0,0.12);
 }
-
 *{box-sizing:border-box;margin:0;padding:0}
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:'Inter','Segoe UI',system-ui,sans-serif;
-  min-height:100vh;
-  font-size:14px;
-}
+body{background:var(--bg);color:var(--text);font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;font-size:14px}
 
-/* ── HEADER ── */
-.hdr{
-  background:linear-gradient(135deg,#fe2c55 0%,#ee1d52 40%,#1a1a2e 100%);
-  padding:13px 20px;
-  display:flex;align-items:center;gap:12px;
-  box-shadow:0 3px 16px rgba(254,44,85,.30);
-  position:sticky;top:0;z-index:100;
-}
-.hdr-logo{
-  width:40px;height:40px;border-radius:11px;
-  background:rgba(255,255,255,.18);
-  display:flex;align-items:center;justify-content:center;
-  font-size:20px;color:#fff;flex-shrink:0;
-  border:1px solid rgba(255,255,255,.25);
-}
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#fe2c55 0%,#ee1d52 40%,#1a1a2e 100%);padding:13px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 3px 16px rgba(254,44,85,.30);position:sticky;top:0;z-index:100}
+.hdr-logo{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0;border:1px solid rgba(255,255,255,.25)}
 .hdr-title h1{font-size:1.05rem;font-weight:800;color:#fff;line-height:1.2}
 .hdr-title p{font-size:.7rem;color:rgba(255,255,255,.70)}
 .hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.btn-refresh{
-  background:rgba(255,255,255,.18);
-  border:1px solid rgba(255,255,255,.30);
-  border-radius:9px;padding:7px 14px;
-  color:#fff;font-weight:700;font-size:.78rem;
-  cursor:pointer;display:flex;align-items:center;gap:6px;
-  transition:all .22s;
-}
+.btn-refresh{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.30);border-radius:9px;padding:7px 14px;color:#fff;font-weight:700;font-size:.78rem;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .22s}
 .btn-refresh:hover{background:rgba(255,255,255,.30);transform:translateY(-1px)}
 .sync-ts{font-size:.67rem;color:rgba(255,255,255,.65)}
 
-/* ── TABS ── */
-.tabs{
-  display:flex;gap:0;padding:0 20px;
-  background:var(--surface);
-  border-bottom:2px solid var(--border);
-  overflow-x:auto;scrollbar-width:none;
-  position:sticky;top:66px;z-index:99;
-  box-shadow:0 2px 8px rgba(0,0,0,.05);
-}
+/* TABS */
+.tabs{display:flex;gap:0;padding:0 20px;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:66px;z-index:99;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 .tabs::-webkit-scrollbar{display:none}
-.tab{
-  padding:12px 18px;
-  border-bottom:3px solid transparent;
-  background:transparent;
-  color:var(--muted);font-size:.82rem;font-weight:600;
-  cursor:pointer;white-space:nowrap;transition:all .18s;
-  margin-bottom:-2px;border:none;
-}
+.tab{padding:12px 18px;border-bottom:3px solid transparent;background:transparent;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .18s;margin-bottom:-2px;border:none}
 .tab:hover{color:var(--text);background:rgba(254,44,85,.04)}
 .tab.active{color:var(--red);border-bottom-color:var(--red);background:rgba(254,44,85,.04)}
 
-/* ── MAIN ── */
+/* MAIN */
 .main{padding:20px}
 .sec{display:none}.sec.active{display:block}
 
-/* ── STAT CARDS ── */
-.stat-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-  gap:12px;margin-bottom:22px;
-}
-.sc{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:13px;padding:16px 14px;
-  transition:all .22s;box-shadow:var(--card-shad);
-  position:relative;overflow:hidden;
-}
-.sc::after{
-  content:'';position:absolute;left:0;top:0;bottom:0;
-  width:4px;border-radius:4px 0 0 4px;
-}
-.sc.red::after   {background:var(--red)}
-.sc.cyan::after  {background:var(--cyan)}
-.sc.purple::after{background:var(--purple)}
-.sc.green::after {background:var(--green)}
-.sc.orange::after{background:var(--orange)}
+/* STAT CARDS */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 14px;transition:all .22s;box-shadow:var(--card-shad);position:relative;overflow:hidden}
+.sc::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:4px 0 0 4px}
+.sc.red::after{background:var(--red)}.sc.cyan::after{background:var(--cyan)}.sc.purple::after{background:var(--purple)}.sc.green::after{background:var(--green)}.sc.orange::after{background:var(--orange)}
 .sc:hover{transform:translateY(-2px);box-shadow:var(--card-shad-hover)}
 .sc .lbl{font-size:.64rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
 .sc .val{font-size:1.6rem;font-weight:900;margin:5px 0 2px;line-height:1}
 .sc .sub{font-size:.65rem;color:var(--faint)}
-.sc.red    .val{color:var(--red)}
-.sc.cyan   .val{color:var(--teal)}
-.sc.purple .val{color:var(--purple)}
-.sc.green  .val{color:var(--green)}
-.sc.orange .val{color:var(--orange)}
+.sc.red .val{color:var(--red)}.sc.cyan .val{color:var(--teal)}.sc.purple .val{color:var(--purple)}.sc.green .val{color:var(--green)}.sc.orange .val{color:var(--orange)}
 .sc-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:2rem;opacity:.06}
 
-/* ── DASHBOARD TABLE ── */
-.card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:13px;overflow:hidden;margin-bottom:24px;
-  box-shadow:var(--card-shad);
-}
-.card-hdr{
-  padding:13px 18px;
-  background:linear-gradient(135deg,rgba(254,44,85,.06),rgba(0,188,212,.04));
-  border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:9px;
-}
+/* CARD / TABLE */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-bottom:24px;box-shadow:var(--card-shad)}
+.card-hdr{padding:13px 18px;background:linear-gradient(135deg,rgba(254,44,85,.06),rgba(0,188,212,.04));border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px}
 .card-hdr h3{font-weight:700;font-size:.9rem;color:var(--text)}
-.badge{
-  margin-left:auto;font-size:.67rem;
-  background:rgba(254,44,85,.08);color:var(--red);
-  padding:3px 9px;border-radius:20px;font-weight:600;
-  border:1px solid rgba(254,44,85,.15);
-}
+.badge{margin-left:auto;font-size:.67rem;background:rgba(254,44,85,.08);color:var(--red);padding:3px 9px;border-radius:20px;font-weight:600;border:1px solid rgba(254,44,85,.15)}
 .tscroll{overflow-x:auto}
 table.t{width:100%;border-collapse:collapse}
-table.t th{
-  background:rgba(0,0,0,.025);padding:9px 14px;text-align:left;
-  font-size:.66rem;color:var(--muted);text-transform:uppercase;
-  letter-spacing:.07em;border-bottom:1px solid var(--border);
-  white-space:nowrap;font-weight:700;
-}
-table.t td{
-  padding:10px 14px;font-size:.81rem;
-  border-bottom:1px solid rgba(0,0,0,.04);
-  vertical-align:middle;color:var(--text);
-}
+table.t th{background:rgba(0,0,0,.025);padding:9px 14px;text-align:left;font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border);white-space:nowrap;font-weight:700}
+table.t td{padding:10px 14px;font-size:.81rem;border-bottom:1px solid rgba(0,0,0,.04);vertical-align:middle;color:var(--text)}
 table.t tr:last-child td{border-bottom:none}
 table.t tr:hover td{background:rgba(254,44,85,.03)}
-.mbadge{
-  display:inline-block;padding:2px 9px;border-radius:20px;
-  font-size:.68rem;font-weight:700;
-  background:rgba(254,44,85,.08);color:var(--red);
-  border:1px solid rgba(254,44,85,.18);
-}
+.mbadge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:.68rem;font-weight:700;background:rgba(254,44,85,.08);color:var(--red);border:1px solid rgba(254,44,85,.18)}
 .mbadge.cur{background:rgba(0,188,212,.1);color:var(--teal);border-color:rgba(0,188,212,.25)}
-.adot{
-  width:7px;height:7px;border-radius:50%;
-  background:var(--green);display:inline-block;
-  margin-right:5px;animation:pulse 2s infinite;
-}
+.adot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:5px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
 
-/* ── SECTION TITLE ── */
-.sec-title{
-  display:flex;align-items:center;gap:10px;
-  font-size:1rem;font-weight:800;color:var(--text);
-  margin-bottom:20px;padding-bottom:12px;
-  border-bottom:2px solid var(--border);flex-wrap:wrap;
-}
+/* SECTION TITLE */
+.sec-title{display:flex;align-items:center;gap:10px;font-size:1rem;font-weight:800;color:var(--text);margin-bottom:20px;padding-bottom:12px;border-bottom:2px solid var(--border);flex-wrap:wrap}
 .pill{font-size:.67rem;font-weight:700;padding:3px 10px;border-radius:20px}
 .pill.yr{background:rgba(254,44,85,.1);color:var(--red);border:1px solid rgba(254,44,85,.2)}
 .pill.mo{background:rgba(0,188,212,.1);color:var(--teal);border:1px solid rgba(0,188,212,.2)}
 
-/* ── LEADERBOARD GRID ── */
+/* LEADERBOARD */
 .lb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px}
-
 .lb-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.lb-icon{
-  width:36px;height:36px;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.1rem;flex-shrink:0;
-}
-.lb-icon.v{background:linear-gradient(135deg,#fe2c55,#ff6b6b)}
-.lb-icon.l{background:linear-gradient(135deg,#ee1d52,#ff4d8d)}
-.lb-icon.c{background:linear-gradient(135deg,#00bcd4,#0097a7)}
-.lb-icon.f{background:linear-gradient(135deg,#7c3aed,#5b21b6)}
-.lb-icon.g{background:linear-gradient(135deg,#16a34a,#15803d)}
+.lb-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.lb-icon.v{background:linear-gradient(135deg,#fe2c55,#ff6b6b)}.lb-icon.l{background:linear-gradient(135deg,#ee1d52,#ff4d8d)}.lb-icon.c{background:linear-gradient(135deg,#00bcd4,#0097a7)}.lb-icon.f{background:linear-gradient(135deg,#7c3aed,#5b21b6)}.lb-icon.g{background:linear-gradient(135deg,#16a34a,#15803d)}
 .lb-hdr-text h3{font-size:.9rem;font-weight:800;color:var(--text)}
 .lb-hdr-text p{font-size:.68rem;color:var(--muted);margin-top:1px}
-
-/* ── LEADERBOARD CARD ── */
-.lb-card{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:13px;overflow:hidden;box-shadow:var(--card-shad);
-}
-
-/* ── LEADERBOARD ROW ── */
-.lb-row{
-  display:flex;align-items:flex-start;gap:11px;
-  padding:14px 15px;border-bottom:1px solid rgba(0,0,0,.05);
-  transition:background .15s;
-}
+.lb-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;overflow:hidden;box-shadow:var(--card-shad)}
+.lb-row{display:flex;align-items:flex-start;gap:11px;padding:14px 15px;border-bottom:1px solid rgba(0,0,0,.05);transition:background .15s}
 .lb-row:last-child{border-bottom:none}
 .lb-row:hover{background:rgba(254,44,85,.025)}
-
-/* rank badges */
-.rnk{
-  width:32px;height:32px;min-width:32px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-weight:900;font-size:.84rem;flex-shrink:0;margin-top:2px;
-}
+.rnk{width:32px;height:32px;min-width:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.84rem;flex-shrink:0;margin-top:2px}
 .r1{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;box-shadow:0 3px 10px rgba(245,158,11,.35)}
 .r2{background:linear-gradient(135deg,#94a3b8,#64748b);color:#fff}
 .r3{background:linear-gradient(135deg,#cd7f32,#92400e);color:#fff}
 .r4,.r5{background:rgba(0,0,0,.06);color:var(--muted)}
-
-/* content */
 .lb-info{flex:1;min-width:0}
-.lb-title{
-  font-size:.86rem;font-weight:700;color:var(--text);
-  line-height:1.4;margin-bottom:4px;word-break:break-word;
-}
-.lb-sku{
-  display:inline-flex;align-items:center;gap:4px;
-  font-size:.72rem;color:var(--teal);font-weight:700;
-  background:rgba(0,188,212,.08);border:1px solid rgba(0,188,212,.2);
-  border-radius:6px;padding:2px 7px;margin-bottom:5px;
-}
+.lb-title{font-size:.86rem;font-weight:700;color:var(--text);line-height:1.4;margin-bottom:4px;word-break:break-word}
+.lb-sku{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;color:var(--teal);font-weight:700;background:rgba(0,188,212,.08);border:1px solid rgba(0,188,212,.2);border-radius:6px;padding:2px 7px;margin-bottom:5px}
 .lb-details{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
-.chip{
-  display:inline-flex;align-items:center;gap:3px;
-  font-size:.67rem;color:var(--muted);
-  background:rgba(0,0,0,.04);border:1px solid var(--border);
-  border-radius:5px;padding:2px 7px;white-space:nowrap;
-}
-.chip.day-c  {color:var(--purple);background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.15)}
-.chip.time-c {color:var(--teal);background:rgba(0,188,212,.06);border-color:rgba(0,188,212,.15)}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:.67rem;color:var(--muted);background:rgba(0,0,0,.04);border:1px solid var(--border);border-radius:5px;padding:2px 7px;white-space:nowrap}
+.chip.day-c{color:var(--purple);background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.15)}
+.chip.time-c{color:var(--teal);background:rgba(0,188,212,.06);border-color:rgba(0,188,212,.15)}
 .chip.theme-c{color:var(--orange);background:rgba(234,88,12,.06);border-color:rgba(234,88,12,.15)}
-.chip.dur-c  {color:var(--silver);background:rgba(100,116,139,.06);border-color:rgba(100,116,139,.15)}
-.lb-month-tag{
-  display:inline-block;font-size:.62rem;font-weight:700;
-  padding:1px 7px;border-radius:10px;margin-top:4px;
-  background:rgba(254,44,85,.07);color:var(--red);
-  border:1px solid rgba(254,44,85,.15);
-}
-
-/* metric */
+.chip.dur-c{color:var(--silver);background:rgba(100,116,139,.06);border-color:rgba(100,116,139,.15)}
+.lb-month-tag{display:inline-block;font-size:.62rem;font-weight:700;padding:1px 7px;border-radius:10px;margin-top:4px;background:rgba(254,44,85,.07);color:var(--red);border:1px solid rgba(254,44,85,.15)}
 .lb-metric{text-align:right;flex-shrink:0;min-width:78px;padding-top:2px}
 .lb-metric .mv{font-size:1.1rem;font-weight:900;line-height:1}
 .lb-metric .ms{font-size:.63rem;color:var(--muted);margin-top:3px}
-.lv .mv{color:var(--red)}
-.ll .mv{color:var(--pink)}
-.lc .mv{color:var(--teal)}
-.lf .mv{color:var(--purple)}
-.lg .mv{color:var(--green)}
+.lv .mv{color:var(--red)}.ll .mv{color:var(--pink)}.lc .mv{color:var(--teal)}.lf .mv{color:var(--purple)}.lg .mv{color:var(--green)}
 
-/* ── LOADING ── */
-#loadOverlay{
-  position:fixed;inset:0;background:rgba(245,246,250,.95);
-  z-index:9999;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:14px;
-}
-.spinner{
-  width:44px;height:44px;border-radius:50%;
-  border:4px solid rgba(254,44,85,.15);
-  border-top-color:var(--red);
-  animation:spin .85s linear infinite;
-}
+/* LOADING */
+#loadOverlay{position:fixed;inset:0;background:rgba(245,246,250,.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.spinner{width:44px;height:44px;border-radius:50%;border:4px solid rgba(254,44,85,.15);border-top-color:var(--red);animation:spin .85s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .prog-wrap{width:220px;height:5px;background:rgba(0,0,0,.08);border-radius:3px;overflow:hidden}
-.prog-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--red),var(--cyan));border-radius:3px;transition:width .3s}
+.prog-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--red),var(--cyan));border-radius:3px;transition:width .4s}
 .load-txt{color:var(--text);font-size:.88rem;font-weight:600}
 .load-sub{color:var(--muted);font-size:.72rem}
-
 .nodata{text-align:center;padding:30px;color:var(--faint);font-size:.83rem}
 .nodata-icon{font-size:1.6rem;margin-bottom:8px}
-
-@media(max-width:640px){
-  .main{padding:12px}
-  .lb-grid{grid-template-columns:1fr}
-  .stat-grid{grid-template-columns:repeat(2,1fr)}
-}
+@media(max-width:640px){.main{padding:12px}.lb-grid{grid-template-columns:1fr}.stat-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
 
-<!-- Loading Overlay -->
 <div id="loadOverlay">
   <div class="spinner"></div>
   <p class="load-txt" id="ldTxt">Loading TikTok Live data…</p>
   <div class="prog-wrap"><div class="prog-fill" id="ldProg"></div></div>
-  <p class="load-sub" id="ldSub">Connecting to data API…</p>
+  <p class="load-sub" id="ldSub">Connecting to Google Sheets…</p>
 </div>
 
-<!-- Header -->
 <div class="hdr">
   <div class="hdr-logo">&#9654;</div>
   <div class="hdr-title">
@@ -312,450 +143,519 @@ table.t tr:hover td{background:rgba(254,44,85,.03)}
     <p>BPT · Live Content Analytics · Auto-synced from Google Sheets</p>
   </div>
   <div class="hdr-right">
-    <button class="btn-refresh" onclick="doRefresh()">
-      <span id="syncIco">&#8635;</span> Refresh
-    </button>
+    <button class="btn-refresh" onclick="doRefresh()"><span id="syncIco">&#8635;</span> Refresh</button>
     <span class="sync-ts" id="syncTs"></span>
   </div>
 </div>
 
-<!-- Tabs -->
 <div class="tabs">
   <button class="tab active" id="t-ov" onclick="showSec('ov')">&#128200; Overview</button>
   <button class="tab" id="t-yr" onclick="showSec('yr')">&#127942; Yearly Top 5</button>
   <button class="tab" id="t-mo" onclick="showSec('mo')">&#128197; This Month Top 5</button>
 </div>
 
-<!-- Main -->
 <div class="main">
 
-  <!-- ══ OVERVIEW ══ -->
+  <!-- OVERVIEW -->
   <div class="sec active" id="s-ov">
     <div class="stat-grid">
-      <div class="sc red">
-        <div class="lbl">Total Lives</div>
-        <div class="val" id="sv-lives">—</div>
-        <div class="sub">All recorded sessions</div>
-        <div class="sc-icon">&#127909;</div>
-      </div>
-      <div class="sc cyan">
-        <div class="lbl">Total Views</div>
-        <div class="val" id="sv-views">—</div>
-        <div class="sub">Across all months</div>
-        <div class="sc-icon">&#128065;</div>
-      </div>
-      <div class="sc purple">
-        <div class="lbl">Total Likes</div>
-        <div class="val" id="sv-likes">—</div>
-        <div class="sub">Engagement signals</div>
-        <div class="sc-icon">&#10084;</div>
-      </div>
-      <div class="sc green">
-        <div class="lbl">Total GMV</div>
-        <div class="val" id="sv-gmv">—</div>
-        <div class="sub">Revenue generated</div>
-        <div class="sc-icon">&#128176;</div>
-      </div>
-      <div class="sc orange">
-        <div class="lbl">Total Comments</div>
-        <div class="val" id="sv-com">—</div>
-        <div class="sub">All months combined</div>
-        <div class="sc-icon">&#128172;</div>
-      </div>
+      <div class="sc red"><div class="lbl">Total Lives</div><div class="val" id="sv-lives">—</div><div class="sub">All recorded sessions</div><div class="sc-icon">&#127909;</div></div>
+      <div class="sc cyan"><div class="lbl">Total Views</div><div class="val" id="sv-views">—</div><div class="sub">Across all months</div><div class="sc-icon">&#128065;</div></div>
+      <div class="sc purple"><div class="lbl">Total Likes</div><div class="val" id="sv-likes">—</div><div class="sub">Engagement signals</div><div class="sc-icon">&#10084;</div></div>
+      <div class="sc green"><div class="lbl">Total GMV</div><div class="val" id="sv-gmv">—</div><div class="sub">Revenue generated</div><div class="sc-icon">&#128176;</div></div>
+      <div class="sc orange"><div class="lbl">Total Comments</div><div class="val" id="sv-com">—</div><div class="sub">All months combined</div><div class="sc-icon">&#128172;</div></div>
     </div>
-
     <div class="card">
-      <div class="card-hdr">
-        <span style="color:var(--red);font-size:1rem">&#128203;</span>
-        <h3>Monthly Performance Summary</h3>
-        <span class="badge" id="dashBadge"></span>
-      </div>
+      <div class="card-hdr"><span style="color:var(--red);font-size:1rem">&#128203;</span><h3>Monthly Performance Summary</h3><span class="badge" id="dashBadge"></span></div>
       <div class="tscroll">
         <table class="t">
           <thead><tr>
-            <th>Month</th>
-            <th>Lives</th>
-            <th>Duration</th>
+            <th>Month</th><th>Lives</th><th>Duration</th>
             <th style="color:var(--red)">&#128065; Views</th>
             <th style="color:var(--pink)">&#10084; Likes</th>
             <th style="color:var(--teal)">&#128172; Comments</th>
             <th style="color:var(--purple)">&#43; New Followers</th>
             <th style="color:var(--green)">&#128176; GMV (Rp)</th>
           </tr></thead>
-          <tbody id="dashBody">
-            <tr><td colspan="8" class="nodata">
-              <div class="nodata-icon">&#8987;</div>Loading…
-            </td></tr>
-          </tbody>
+          <tbody id="dashBody"><tr><td colspan="8" class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</td></tr></tbody>
         </table>
       </div>
     </div>
-  </div><!-- /s-ov -->
+  </div>
 
-  <!-- ══ YEARLY TOP 5 ══ -->
+  <!-- YEARLY TOP 5 -->
   <div class="sec" id="s-yr">
-    <div class="sec-title">
-      <span style="font-size:1.1rem">&#127942;</span>
-      Yearly Leaderboards
-      <span class="pill yr">All Months · 2026</span>
-    </div>
+    <div class="sec-title"><span style="font-size:1.1rem">&#127942;</span>Yearly Leaderboards<span class="pill yr">All Months · 2026</span></div>
     <div class="lb-grid">
-
-      <div class="lb-sec">
-        <div class="lb-hdr">
-          <div class="lb-icon v" style="color:#fff">&#128065;</div>
-          <div class="lb-hdr-text"><h3>Top 5 Views</h3><p>Highest viewed live sessions</p></div>
-        </div>
-        <div class="lb-card" id="y-v"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
-      </div>
-
-      <div class="lb-sec">
-        <div class="lb-hdr">
-          <div class="lb-icon l" style="color:#fff">&#10084;</div>
-          <div class="lb-hdr-text"><h3>Top 5 Likes</h3><p>Most liked live sessions</p></div>
-        </div>
-        <div class="lb-card" id="y-l"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
-      </div>
-
-      <div class="lb-sec">
-        <div class="lb-hdr">
-          <div class="lb-icon c" style="color:#fff">&#128172;</div>
-          <div class="lb-hdr-text"><h3>Top 5 Comments</h3><p>Most discussed sessions</p></div>
-        </div>
-        <div class="lb-card" id="y-c"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
-      </div>
-
-      <div class="lb-sec">
-        <div class="lb-hdr">
-          <div class="lb-icon f" style="color:#fff">&#43;</div>
-          <div class="lb-hdr-text"><h3>Top 5 New Followers</h3><p>Sessions with most follower gain</p></div>
-        </div>
-        <div class="lb-card" id="y-f"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
-      </div>
-
-      <div class="lb-sec">
-        <div class="lb-hdr">
-          <div class="lb-icon g" style="color:#fff">&#128176;</div>
-          <div class="lb-hdr-text"><h3>Top 5 GMV</h3><p>Highest revenue sessions</p></div>
-        </div>
-        <div class="lb-card" id="y-g"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
-      </div>
-
+      <div class="lb-sec"><div class="lb-hdr"><div class="lb-icon v" style="color:#fff">&#128065;</div><div class="lb-hdr-text"><h3>Top 5 Views</h3><p>Highest viewed live sessions</p></div></div><div class="lb-card" id="y-v"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div></div>
+      <div class="lb-sec"><div class="lb-hdr"><div class="lb-icon l" style="color:#fff">&#10084;</div><div class="lb-hdr-text"><h3>Top 5 Likes</h3><p>Most liked live sessions</p></div></div><div class="lb-card" id="y-l"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div></div>
+      <div class="lb-sec"><div class="lb-hdr"><div class="lb-icon c" style="color:#fff">&#128172;</div><div class="lb-hdr-text"><h3>Top 5 Comments</h3><p>Most discussed sessions</p></div></div><div class="lb-card" id="y-c"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div></div>
+      <div class="lb-sec"><div class="lb-hdr"><div class="lb-icon f" style="color:#fff">&#43;</div><div class="lb-hdr-text"><h3>Top 5 New Followers</h3><p>Sessions with most follower gain</p></div></div><div class="lb-card" id="y-f"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div></div>
+      <div class="lb-sec"><div class="lb-hdr"><div class="lb-icon g" style="color:#fff">&#128176;</div><div class="lb-hdr-text"><h3>Top 5 GMV</h3><p>Highest revenue sessions</p></div></div><div class="lb-card" id="y-g"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div></div>
     </div>
-  </div><!-- /s-yr -->
+  </div>
 
-  <!-- ══ THIS MONTH TOP 5 ══ -->
+  <!-- THIS MONTH TOP 5 -->
   <div class="sec" id="s-mo">
-    <div class="sec-title">
-      <span style="font-size:1.1rem;color:var(--teal)">&#128197;</span>
-      <span id="moTitle">This Month Leaderboards</span>
-      <span class="pill mo" id="moBadge">—</span>
-    </div>
+    <div class="sec-title"><span style="font-size:1.1rem;color:var(--teal)">&#128197;</span><span id="moTitle">This Month Leaderboards</span><span class="pill mo" id="moBadge">—</span></div>
     <div class="lb-grid">
-
-      <div class="lb-sec">
-        <div class="lb-hdr">
-          <div class="lb-icon v" style="color:#fff">&#128065;</div>
-          <div class="lb-hdr-text"><h3>Top 5 Views</h3><p>This month's most viewed</p></div>
-        </div>
-        <div class="lb-card" id="m-v"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
-      </div>
-
-      <div class="lb-sec">
-        <div class="lb-hdr">
-          <div class="lb-icon l" style="color:#fff">&#10084;</div>
-          <div class="lb-hdr-text"><h3>Top 5 Likes</h3><p>This month's most liked</p></div>
-        </div>
-        <div class="lb-card" id="m-l"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
-      </div>
-
-      <div class="lb-sec">
-        <div class="lb-hdr">
-          <div class="lb-icon c" style="color:#fff">&#128172;</div>
-          <div class="lb-hdr-text"><h3>Top 5 Comments</h3><p>This month's most commented</p></div>
-        </div>
-        <div class="lb-card" id="m-c"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
-      </div>
-
-      <div class="lb-sec">
-        <div class="lb-hdr">
-          <div class="lb-icon f" style="color:#fff">&#43;</div>
-          <div class="lb-hdr-text"><h3>Top 5 New Followers</h3><p>This month's follower gainers</p></div>
-        </div>
-        <div class="lb-card" id="m-f"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
-      </div>
-
-      <div class="lb-sec">
-        <div class="lb-hdr">
-          <div class="lb-icon g" style="color:#fff">&#128176;</div>
-          <div class="lb-hdr-text"><h3>Top 5 GMV</h3><p>This month's top revenue</p></div>
-        </div>
-        <div class="lb-card" id="m-g"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
-      </div>
-
+      <div class="lb-sec"><div class="lb-hdr"><div class="lb-icon v" style="color:#fff">&#128065;</div><div class="lb-hdr-text"><h3>Top 5 Views</h3><p>This month's most viewed</p></div></div><div class="lb-card" id="m-v"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div></div>
+      <div class="lb-sec"><div class="lb-hdr"><div class="lb-icon l" style="color:#fff">&#10084;</div><div class="lb-hdr-text"><h3>Top 5 Likes</h3><p>This month's most liked</p></div></div><div class="lb-card" id="m-l"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div></div>
+      <div class="lb-sec"><div class="lb-hdr"><div class="lb-icon c" style="color:#fff">&#128172;</div><div class="lb-hdr-text"><h3>Top 5 Comments</h3><p>This month's most commented</p></div></div><div class="lb-card" id="m-c"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div></div>
+      <div class="lb-sec"><div class="lb-hdr"><div class="lb-icon f" style="color:#fff">&#43;</div><div class="lb-hdr-text"><h3>Top 5 New Followers</h3><p>This month's follower gainers</p></div></div><div class="lb-card" id="m-f"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div></div>
+      <div class="lb-sec"><div class="lb-hdr"><div class="lb-icon g" style="color:#fff">&#128176;</div><div class="lb-hdr-text"><h3>Top 5 GMV</h3><p>This month's top revenue</p></div></div><div class="lb-card" id="m-g"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div></div>
     </div>
-  </div><!-- /s-mo -->
+  </div>
 
 </div><!-- /main -->
 
 <script>
-// ═══════════════════════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════════════════════
-var _d = null;
+// ═══════════════════════════════════════════════
+// CONFIG — Google Sheets ID
+// ═══════════════════════════════════════════════
+var SHEET_ID = '1VE4yznBlIAfLUP50tkF6IAOlNbFm2vhyPs0Jv5aJ-6U';
 
-// ═══════════════════════════════════════════════════════════
-//  FORMAT HELPERS
-// ═══════════════════════════════════════════════════════════
-function fN(n) {
-  if (n === null || n === undefined || n === '') return '—';
-  n = Number(n);
-  if (isNaN(n)) return '—';
-  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-  return n.toLocaleString('id-ID');
-}
-function fRp(n) {
-  if (!n || Number(n) === 0) return '—';
-  n = Number(n);
-  if (n >= 1e6) return 'Rp ' + (n / 1e6).toFixed(2) + 'M';
-  if (n >= 1e3) return 'Rp ' + Math.round(n / 1e3) + 'K';
-  return 'Rp ' + n.toLocaleString('id-ID');
-}
-function esc(s) {
-  return String(s || '')
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function setProgress(p, s) {
-  document.getElementById('ldProg').style.width = p + '%';
-  if (s) document.getElementById('ldSub').textContent = s;
-}
-function nd() { return '<span style="color:var(--faint)">—</span>'; }
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+var _dashboard  = [];   // parsed Dashboard rows
+var _months     = [];   // [{month, rows:[]}]
+var _currentMonth = '';
+var _activeSheets = [];
 
-// ═══════════════════════════════════════════════════════════
-//  LOAD
-// ═══════════════════════════════════════════════════════════
-function loadData(bust) {
-  bust = bust || false;
-  document.getElementById('loadOverlay').style.display = 'flex';
-  setProgress(10, 'Calling data API…');
-  document.getElementById('ldTxt').textContent = 'Fetching TikTok Live data…';
-
-  var url = '/api/tiktok-data' + (bust ? '?bust=' + Date.now() : '');
-  setProgress(30, 'Waiting for Google Sheets…');
+// ═══════════════════════════════════════════════
+// GVIZ FETCH — uses fetch() with CORS (Google allows it)
+// Response format: /*O_o*/\ngoogle.visualization.Query.setResponse({...});
+// We strip the wrapper and parse the JSON directly.
+// ═══════════════════════════════════════════════
+function fetchGviz(sheetName, callback) {
+  var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+    + '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent(sheetName);
+  console.log('[TikTok] fetchGviz → ' + sheetName + ' URL=' + url);
 
   fetch(url)
     .then(function(res) {
-      setProgress(70, 'Parsing response…');
-      return res.json();
+      console.log('[TikTok] fetchGviz ← ' + sheetName + ' status=' + res.status + ' ok=' + res.ok);
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' for sheet=' + sheetName);
+      return res.text();
     })
-    .then(function(data) {
-      setProgress(90, 'Rendering dashboard…');
-      _d = data;
-      console.log('[TikTok] Data loaded. Months:', (_d.months||[]).length,
-        'Current month:', _d.current_month);
-      render();
-      setProgress(100, 'Done!');
-      var ts = _d.generated_at ? new Date(_d.generated_at) : new Date();
-      document.getElementById('syncTs').textContent =
-        'Synced ' + ts.toLocaleTimeString('id-ID');
-      setTimeout(function() {
-        document.getElementById('loadOverlay').style.display = 'none';
-      }, 400);
+    .then(function(text) {
+      console.log('[TikTok] fetchGviz text len=' + text.length + ' for ' + sheetName + ' preview=' + text.substring(0,60).replace(/\n/g,' '));
+      // Strip the /*O_o*/ prefix and google.visualization.Query.setResponse( ... );
+      var start = text.indexOf('{');
+      var end   = text.lastIndexOf('}');
+      if (start === -1 || end === -1) throw new Error('Unexpected gviz response for sheet=' + sheetName + ', text=' + text.substring(0,100));
+      var json = JSON.parse(text.substring(start, end + 1));
+      var rowCount = (json.table && json.table.rows) ? json.table.rows.length : 0;
+      console.log('[TikTok] fetchGviz parsed OK for ' + sheetName + ', rows=' + rowCount);
+      callback(null, json);
     })
     .catch(function(err) {
-      console.error('[TikTok] Load error:', err);
-      setProgress(100, 'Error: ' + err.message);
-      document.getElementById('ldTxt').textContent = 'Failed to load data';
-      setTimeout(function() {
-        document.getElementById('loadOverlay').style.display = 'none';
-      }, 2000);
+      console.error('[TikTok] fetchGviz ERROR for ' + sheetName + ':', err.message || err);
+      callback(err, null);
     });
 }
 
-// ═══════════════════════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════════════════════
-function render() {
-  if (!_d) return;
-  renderOverview();
-
-  var nondupRows = getNondupRows();
-  var moRows     = getMonthRows();
-  console.log('[TikTok] Nondup rows:', nondupRows.length, 'Month rows:', moRows.length);
-
-  renderAllLB('y', nondupRows);
-  renderAllLB('m', moRows);
-
-  var cm = _d.current_month || '';
-  document.getElementById('moBadge').textContent = cm || 'N/A';
-  document.getElementById('moTitle').textContent = (cm || 'Current Month') + ' Leaderboards';
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function cellVal(cells, idx) {
+  if (idx < cells.length && cells[idx] && cells[idx].v !== undefined && cells[idx].v !== null)
+    return cells[idx].v;
+  return null;
 }
-
-function getNondupRows() {
-  if (!_d || !_d.months) return [];
-  var out = [];
-  for (var i = 0; i < _d.months.length; i++) {
-    var rows = _d.months[i].rows || [];
-    for (var j = 0; j < rows.length; j++) {
-      if (!rows[j]._dup) out.push(rows[j]);
+function cellFmt(cells, idx) {
+  // Prefer formatted string ('f'), then raw value
+  if (idx < cells.length && cells[idx]) {
+    if (cells[idx].f !== undefined && cells[idx].f !== null) return String(cells[idx].f);
+    if (cells[idx].v !== undefined && cells[idx].v !== null) return cells[idx].v;
+  }
+  return null;
+}
+function pNum(v) {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === 'number') return v;
+  var s = String(v).replace(/[,\s Rp]/g, '');
+  return parseFloat(s) || 0;
+}
+function pGmv(v) {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === 'number') return v;
+  var s = String(v).replace(/[^\d.]/g, '');
+  return parseFloat(s) || 0;
+}
+function fmtDur(rawVal, fmtVal) {
+  // Prefer pre-formatted gviz string (already correct for > 24h)
+  if (fmtVal !== null && fmtVal !== undefined) {
+    var fs = String(fmtVal).trim();
+    if (/^\d+:\d{2}(:\d{2})?$/.test(fs)) return fs;
+  }
+  if (!rawVal) return '';
+  var s = String(rawVal);
+  if (s.indexOf('Date(') === 0) {
+    var m = s.match(/Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)/);
+    if (m) {
+      // Compute extra days from gviz epoch Dec 30 1899
+      var yr = +m[1], mo = +m[2], day = +m[3], h = +m[4], mi = +m[5], sc = +m[6];
+      // Days since epoch: use a simple calculation
+      // epoch = Dec 30 1899. Count days from that.
+      var epochMs = new Date(1899, 11, 30).getTime(); // month is 0-based in JS
+      var dateMs  = new Date(yr, mo, day).getTime();  // gviz month is also 0-based
+      var extraDays = Math.round((dateMs - epochMs) / 86400000);
+      var totalH = extraDays * 24 + h;
+      return totalH + ':' + pad2(mi) + ':' + pad2(sc);
     }
+  }
+  return s;
+}
+function fmtTime(v) {
+  if (!v) return '';
+  var s = String(v);
+  var m = s.match(/(\d+:\d+)(?::\d+)?\s*(AM|PM)?/i);
+  if (m) return m[1] + (m[2] ? ' ' + m[2].toUpperCase() : '');
+  return s;
+}
+function pad2(n) { return n < 10 ? '0' + n : String(n); }
+function fN(n) {
+  if (n === null || n === undefined || n === '') return '—';
+  n = +n; if (isNaN(n)) return '—';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+  return n.toLocaleString('id-ID');
+}
+function fRp(n) {
+  if (!n || +n === 0) return '—';
+  n = +n;
+  if (n >= 1e6) return 'Rp '+(n/1e6).toFixed(2)+'M';
+  if (n >= 1e3) return 'Rp '+Math.round(n/1e3)+'K';
+  return 'Rp '+n.toLocaleString('id-ID');
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function nd() { return '<span style="color:var(--faint)">—</span>'; }
+function setP(p,s){ document.getElementById('ldProg').style.width=p+'%'; if(s)document.getElementById('ldSub').textContent=s; }
+
+// ═══════════════════════════════════════════════
+// PARSE DASHBOARD SHEET
+// ═══════════════════════════════════════════════
+function parseDashboard(gviz) {
+  var out = [];
+  if (!gviz || !gviz.table) return out;
+  var rows = gviz.table.rows || [];
+  for (var i = 0; i < rows.length; i++) {
+    var cells = rows[i].c || [];
+    var month = cellVal(cells, 0);
+    if (!month || !/\d{4}/.test(String(month))) continue;
+    out.push({
+      month:     String(month).trim(),
+      lives:     Math.round(pNum(cellVal(cells, 1))),
+      duration:  fmtDur(cellVal(cells, 2), cellFmt(cells, 2)),
+      views:     Math.round(pNum(cellVal(cells, 3))),
+      likes:     Math.round(pNum(cellVal(cells, 4))),
+      comments:  Math.round(pNum(cellVal(cells, 5))),
+      followers: Math.round(pNum(cellVal(cells, 6))),
+      gmv:       pGmv(cellVal(cells, 7)),
+    });
   }
   return out;
 }
 
+// ═══════════════════════════════════════════════
+// PARSE MONTHLY SHEET (with merged-cell carry-forward)
+// ═══════════════════════════════════════════════
+function parseMonthSheet(gviz, sheetName) {
+  var out = [];
+  if (!gviz || !gviz.table) return out;
+  var rows = gviz.table.rows || [];
+
+  // Carry-forward state for merged cells
+  var lastDay='', lastDate='', lastTitle='', lastTheme='';
+
+  for (var i = 0; i < rows.length; i++) {
+    var cells = rows[i].c || [];
+
+    // Update carry-forward when cell has a value
+    var dayRaw   = cellVal(cells, 0);
+    var dateRaw  = cellVal(cells, 1);
+    var titleRaw = cellVal(cells, 5);
+    var themeRaw = cellVal(cells, 4);
+    if (dayRaw   !== null) lastDay   = String(dayRaw).trim();
+    if (dateRaw  !== null) lastDate  = String(dateRaw).trim();
+    if (titleRaw !== null) lastTitle = String(titleRaw).trim();
+    if (themeRaw !== null) lastTheme = String(themeRaw).trim();
+
+    var views     = pNum(cellVal(cells, 9));
+    var likes     = pNum(cellVal(cells, 10));
+    var comments  = pNum(cellVal(cells, 11));
+    var followers = pNum(cellVal(cells, 12));
+    var gmv       = pGmv(cellVal(cells, 14));
+
+    if (views === 0 && likes === 0 && comments === 0 && gmv === 0) continue;
+
+    var sku      = String(cellVal(cells, 7) || '').trim();
+    var duration = fmtDur(cellVal(cells, 8), cellFmt(cells, 8));
+    var timeStr  = fmtTime(cellVal(cells, 2));
+    var platform = String(cellVal(cells, 3) || 'TikTok').trim();
+
+    out.push({
+      sheet:     sheetName,
+      day:       lastDay,
+      date:      lastDate,
+      time:      timeStr,
+      platform:  platform,
+      theme:     lastTheme,
+      title:     lastTitle,
+      sku:       sku,
+      duration:  duration,
+      views:     Math.round(views),
+      likes:     Math.round(likes),
+      comments:  Math.round(comments),
+      followers: Math.round(followers),
+      gmv:       gmv,
+    });
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════
+// LOAD SEQUENCE
+// ═══════════════════════════════════════════════
+function loadData(bust) {
+  document.getElementById('loadOverlay').style.display = 'flex';
+  setP(5, 'Fetching Dashboard sheet…');
+  document.getElementById('ldTxt').textContent = 'Loading TikTok Live data…';
+
+  // Step 1: fetch Dashboard
+  fetchGviz('Dashboard', function(err, gviz) {
+    if (err) { return showError('Dashboard fetch failed: ' + (err.message||err)); }
+    var rawRows = gviz && gviz.table ? gviz.table.rows.length : 0;
+    console.log('[TikTok] Dashboard loaded, rows:', rawRows);
+    setP(20, 'Parsing Dashboard…');
+    _dashboard = parseDashboard(gviz);
+    console.log('[TikTok] Dashboard parsed:', _dashboard.length, 'months. Active months detected:');
+
+    // Determine active sheets (lives > 0 or views > 0)
+    _activeSheets = [];
+    for (var i = 0; i < _dashboard.length; i++) {
+      var dm = _dashboard[i];
+      console.log('[TikTok]   month='+dm.month+' lives='+dm.lives+' views='+dm.views);
+      if (dm.lives > 0 || dm.views > 0) {
+        _activeSheets.push(dm.month);
+      }
+    }
+    console.log('[TikTok] Active sheets:', JSON.stringify(_activeSheets));
+    if (_activeSheets.length === 0) { _activeSheets = ['Februari 2026', 'Maret 2026']; console.log('[TikTok] Defaulting to:', JSON.stringify(_activeSheets)); }
+
+    // Detect current month
+    var today  = new Date();
+    var idMap  = {0:'Januari',1:'Februari',2:'Maret',3:'April',4:'Mei',5:'Juni',
+                  6:'Juli',7:'Agustus',8:'September',9:'Oktober',10:'November',11:'Desember'};
+    var enMap  = {0:'January',1:'February',2:'March',3:'April',4:'May',5:'June',
+                  6:'July',7:'August',8:'September',9:'October',10:'November',11:'December'};
+    var yr     = today.getFullYear();
+    var mo     = today.getMonth();
+    var candidates = [idMap[mo]+' '+yr, enMap[mo]+' '+yr];
+    _currentMonth = '';
+    for (var j = 0; j < candidates.length; j++) {
+      for (var k = 0; k < _activeSheets.length; k++) {
+        if (_activeSheets[k] === candidates[j]) { _currentMonth = _activeSheets[k]; break; }
+      }
+      if (_currentMonth) break;
+    }
+    if (!_currentMonth && _activeSheets.length) _currentMonth = _activeSheets[_activeSheets.length - 1];
+
+    // Step 2: fetch each active month sheet sequentially
+    _months = [];
+    var seenFingerprints = {};
+    var idx = 0;
+    function fetchNext() {
+      if (idx >= _activeSheets.length) { onAllLoaded(); return; }
+      var sname = _activeSheets[idx];
+      var pct = 20 + Math.round((idx / _activeSheets.length) * 65);
+      setP(pct, 'Loading ' + sname + '…');
+      idx++;
+      fetchGviz(sname, function(err2, gviz2) {
+        if (err2) console.error('[TikTok] Failed to load', sname, err2.message);
+        else console.log('[TikTok] Loaded', sname, 'rows:', gviz2 && gviz2.table ? gviz2.table.rows.length : 0);
+        var rows = err2 ? [] : parseMonthSheet(gviz2, sname);
+        console.log('[TikTok] Parsed', sname, ':', rows.length, 'valid rows (non-zero engagement)');
+        // De-duplicate: if first row fingerprint seen before, mark as dup
+        var fp = rows.length ? (rows[0].date + String(rows[0].views)) : '__empty__';
+        var isDup = fp !== '__empty__' && seenFingerprints[fp];
+        if (isDup) {
+          var relabeled = [];
+          for (var r = 0; r < rows.length; r++) {
+            var copy = {}; for (var k in rows[r]) copy[k] = rows[r][k];
+            copy.sheet = sname; copy._dup = true; relabeled.push(copy);
+          }
+          _months.push({month: sname, rows: relabeled});
+        } else {
+          seenFingerprints[fp] = true;
+          _months.push({month: sname, rows: rows});
+        }
+        fetchNext();
+      });
+    }
+    fetchNext();
+  });
+}
+
+function onAllLoaded() {
+  console.log('[TikTok] onAllLoaded. months loaded:', _months.length, 'currentMonth:', _currentMonth);
+  for (var _i = 0; _i < _months.length; _i++) {
+    var _m = _months[_i];
+    var _nd = 0; for (var _j=0;_j<_m.rows.length;_j++){if(!_m.rows[_j]._dup)_nd++;}
+    console.log('[TikTok]   '+_m.month+': '+_m.rows.length+' rows ('+_nd+' non-dup)');
+  }
+  var _allRows = getNondupRows();
+  var _moRows  = getMonthRows();
+  console.log('[TikTok] All non-dup rows:', _allRows.length, '| Month rows:', _moRows.length);
+  console.log('[TikTok] Sample top-likes:', _allRows.slice().sort(function(a,b){return b.likes-a.likes;}).slice(0,2).map(function(r){return r.likes+'L title='+r.title.substring(0,30);}));
+  setP(90, 'Rendering dashboard…');
+  render();
+  console.log('[TikTok] render() complete');
+  setP(100, 'Done!');
+  document.getElementById('syncTs').textContent = 'Synced ' + new Date().toLocaleTimeString('id-ID');
+  setTimeout(function() { document.getElementById('loadOverlay').style.display = 'none'; }, 400);
+}
+
+function showError(msg) {
+  setP(100, '⚠ ' + msg);
+  document.getElementById('ldTxt').textContent = 'Failed to load data';
+  console.error('[TikTok]', msg);
+  setTimeout(function() { document.getElementById('loadOverlay').style.display = 'none'; }, 3000);
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+function render() {
+  renderOverview();
+  renderAllLB('y', getNondupRows());
+  renderAllLB('m', getMonthRows());
+  document.getElementById('moBadge').textContent  = _currentMonth || 'N/A';
+  document.getElementById('moTitle').textContent  = (_currentMonth || 'Current Month') + ' Leaderboards';
+}
+
+function getNondupRows() {
+  var out = [];
+  for (var i = 0; i < _months.length; i++) {
+    var rows = _months[i].rows || [];
+    for (var j = 0; j < rows.length; j++) { if (!rows[j]._dup) out.push(rows[j]); }
+  }
+  return out;
+}
 function getMonthRows() {
-  if (!_d || !_d.months) return [];
-  var cm = _d.current_month;
-  for (var i = 0; i < _d.months.length; i++) {
-    if (_d.months[i].month === cm) return _d.months[i].rows || [];
+  for (var i = 0; i < _months.length; i++) {
+    if (_months[i].month === _currentMonth) return _months[i].rows || [];
   }
   return [];
 }
 
-// ── Overview ──
 function renderOverview() {
-  var dash = _d.dashboard || [];
-  var tL=0, tV=0, tLk=0, tG=0, tC=0;
-  for (var i=0; i<dash.length; i++) {
-    tL  += dash[i].lives    || 0;
-    tV  += dash[i].views    || 0;
-    tLk += dash[i].likes    || 0;
-    tG  += dash[i].gmv      || 0;
-    tC  += dash[i].comments || 0;
-  }
-  document.getElementById('sv-lives').textContent = fN(tL);
-  document.getElementById('sv-views').textContent = fN(tV);
-  document.getElementById('sv-likes').textContent = fN(tLk);
-  document.getElementById('sv-gmv').textContent   = fRp(tG);
-  document.getElementById('sv-com').textContent   = fN(tC);
-  document.getElementById('dashBadge').textContent = dash.length + ' months tracked';
+  var tL=0,tV=0,tLk=0,tG=0,tC=0;
+  for (var i=0;i<_dashboard.length;i++){tL+=_dashboard[i].lives||0;tV+=_dashboard[i].views||0;tLk+=_dashboard[i].likes||0;tG+=_dashboard[i].gmv||0;tC+=_dashboard[i].comments||0}
+  document.getElementById('sv-lives').textContent=fN(tL);
+  document.getElementById('sv-views').textContent=fN(tV);
+  document.getElementById('sv-likes').textContent=fN(tLk);
+  document.getElementById('sv-gmv').textContent=fRp(tG);
+  document.getElementById('sv-com').textContent=fN(tC);
+  document.getElementById('dashBadge').textContent=_dashboard.length+' months tracked';
 
-  var cm   = _d.current_month || '';
-  var body = document.getElementById('dashBody');
-  if (!dash.length) {
-    body.innerHTML = '<tr><td colspan="8" class="nodata"><div class="nodata-icon">&#128209;</div>No data</td></tr>';
-    return;
+  var body=document.getElementById('dashBody');
+  if (!_dashboard.length){body.innerHTML='<tr><td colspan="8" class="nodata"><div class="nodata-icon">&#128209;</div>No data</td></tr>';return}
+  var html='';
+  for (var i=0;i<_dashboard.length;i++){
+    var r=_dashboard[i];
+    var cur=r.month===_currentMonth;
+    var has=r.lives>0||r.views>0;
+    html+='<tr>'
+      +'<td>'+(cur?'<span class="adot"></span>':'')+'<span class="mbadge'+(cur?' cur':'')+'">'+esc(r.month)+'</span></td>'
+      +'<td>'+(has?fN(r.lives):nd())+'</td>'
+      +'<td style="color:var(--muted)">'+(r.duration||nd())+'</td>'
+      +'<td style="color:var(--red);font-weight:700">'+(has?fN(r.views):nd())+'</td>'
+      +'<td style="color:var(--pink);font-weight:700">'+(has?fN(r.likes):nd())+'</td>'
+      +'<td style="color:var(--teal)">'+(has?fN(r.comments):nd())+'</td>'
+      +'<td style="color:var(--purple)">'+(has?fN(r.followers):nd())+'</td>'
+      +'<td style="color:var(--green);font-weight:700">'+(has&&r.gmv?fRp(r.gmv):nd())+'</td>'
+      +'</tr>';
   }
-  var html = '';
-  for (var i=0; i<dash.length; i++) {
-    var r   = dash[i];
-    var cur = r.month === cm;
-    var has = r.lives > 0 || r.views > 0;
-    html += '<tr>'
-      + '<td>' + (cur ? '<span class="adot"></span>' : '') + '<span class="mbadge' + (cur?' cur':'') + '">' + esc(r.month) + '</span></td>'
-      + '<td>' + (has ? fN(r.lives)    : nd()) + '</td>'
-      + '<td style="color:var(--muted)">' + (r.duration || nd()) + '</td>'
-      + '<td style="color:var(--red);font-weight:700">'    + (has ? fN(r.views)    : nd()) + '</td>'
-      + '<td style="color:var(--pink);font-weight:700">'   + (has ? fN(r.likes)    : nd()) + '</td>'
-      + '<td style="color:var(--teal)">'   + (has ? fN(r.comments)  : nd()) + '</td>'
-      + '<td style="color:var(--purple)">' + (has ? fN(r.followers) : nd()) + '</td>'
-      + '<td style="color:var(--green);font-weight:700">'  + (has && r.gmv ? fRp(r.gmv) : nd()) + '</td>'
-      + '</tr>';
-  }
-  body.innerHTML = html;
+  body.innerHTML=html;
 }
 
-// ── Leaderboards ──
 function renderAllLB(pfx, rows) {
-  var cfgs = [
-    {id:pfx+'-v', field:'views',     cls:'lv', label:'views',         isGmv:false},
-    {id:pfx+'-l', field:'likes',     cls:'ll', label:'likes',         isGmv:false},
-    {id:pfx+'-c', field:'comments',  cls:'lc', label:'comments',      isGmv:false},
-    {id:pfx+'-f', field:'followers', cls:'lf', label:'new followers',  isGmv:false},
-    {id:pfx+'-g', field:'gmv',       cls:'lg', label:'GMV (Rp)',       isGmv:true},
+  var cfgs=[
+    {id:pfx+'-v',field:'views',    cls:'lv',label:'views',       isGmv:false},
+    {id:pfx+'-l',field:'likes',    cls:'ll',label:'likes',       isGmv:false},
+    {id:pfx+'-c',field:'comments', cls:'lc',label:'comments',    isGmv:false},
+    {id:pfx+'-f',field:'followers',cls:'lf',label:'new followers',isGmv:false},
+    {id:pfx+'-g',field:'gmv',      cls:'lg',label:'GMV (Rp)',    isGmv:true},
   ];
-  for (var i=0; i<cfgs.length; i++) {
-    renderLB(cfgs[i].id, rows, cfgs[i].field, cfgs[i].cls, cfgs[i].label, cfgs[i].isGmv);
-  }
+  for (var i=0;i<cfgs.length;i++) renderLB(cfgs[i].id,rows,cfgs[i].field,cfgs[i].cls,cfgs[i].label,cfgs[i].isGmv);
 }
 
 function renderLB(elId, allRows, field, colorCls, label, isGmv) {
-  var el = document.getElementById(elId);
-  if (!el) { console.warn('[TikTok] Element not found:', elId); return; }
-
-  // Filter rows with positive values, sort descending, take top 5
-  var filtered = [];
-  for (var i=0; i<allRows.length; i++) {
-    var v = Number(allRows[i][field]) || 0;
-    if (v > 0) filtered.push(allRows[i]);
+  var el=document.getElementById(elId);
+  if (!el) { console.error('[TikTok] renderLB: element not found: '+elId); return; }
+  var filtered=[];
+  for (var i=0;i<allRows.length;i++){ if ((+allRows[i][field]||0)>0) filtered.push(allRows[i]); }
+  filtered.sort(function(a,b){return (+b[field]||0)-(+a[field]||0);});
+  var top5=filtered.slice(0,5);
+  console.log('[TikTok] renderLB '+elId+': total='+allRows.length+' filtered('+field+'>0)='+filtered.length+' top5='+top5.length);
+  if (!top5.length){el.innerHTML='<div class="nodata"><div class="nodata-icon">&#8505;</div>No data available</div>';return}
+  var html='';
+  for (var i=0;i<top5.length;i++){
+    var row=top5[i], rank=i+1;
+    var val=+row[field]||0, disp=isGmv?fRp(val):fN(val);
+    var title=String(row.title||'').trim();
+    var sku=String(row.sku||'').trim();
+    var day=String(row.day||'').trim();
+    var date=String(row.date||'').trim();
+    var time=String(row.time||'').trim();
+    var theme=String(row.theme||'').trim();
+    var dur=String(row.duration||'').trim();
+    var month=String(row.sheet||'').trim();
+    var mainTitle=title||sku||'(No title)';
+    var showSku=title&&sku&&sku!==title;
+    var chips='';
+    if (day)   chips+='<span class="chip day-c">&#128197; '+esc(day)+'</span>';
+    if (date)  chips+='<span class="chip">'+esc(date)+'</span>';
+    if (time)  chips+='<span class="chip time-c">&#128336; '+esc(time)+'</span>';
+    if (theme) chips+='<span class="chip theme-c">&#127991; '+esc(theme)+'</span>';
+    if (dur)   chips+='<span class="chip dur-c">&#9200; '+esc(dur)+'</span>';
+    html+='<div class="lb-row">'
+      +'<div class="rnk r'+rank+'">'+rank+'</div>'
+      +'<div class="lb-info">'
+        +'<div class="lb-title">'+esc(mainTitle)+'</div>'
+        +(showSku?'<div class="lb-sku">&#128230; '+esc(sku)+'</div>':'')
+        +(chips?'<div class="lb-details">'+chips+'</div>':'')
+        +(month?'<span class="lb-month-tag">'+esc(month)+'</span>':'')
+      +'</div>'
+      +'<div class="lb-metric '+colorCls+'">'
+        +'<div class="mv">'+disp+'</div>'
+        +'<div class="ms">'+label+'</div>'
+      +'</div>'
+      +'</div>';
   }
-  filtered.sort(function(a,b) { return (Number(b[field])||0) - (Number(a[field])||0); });
-  var top5 = filtered.slice(0, 5);
-
-  console.log('[TikTok] LB', elId, '- rows with', field, '> 0:', filtered.length, '-> top5:', top5.length);
-
-  if (!top5.length) {
-    el.innerHTML = '<div class="nodata"><div class="nodata-icon">&#8505;</div>No data available</div>';
-    return;
-  }
-
-  var html = '';
-  for (var i=0; i<top5.length; i++) {
-    var row  = top5[i];
-    var rank = i + 1;
-    var val  = Number(row[field]) || 0;
-    var disp = isGmv ? fRp(val) : fN(val);
-
-    var title  = String(row.title   || '').trim();
-    var sku    = String(row.sku     || '').trim();
-    var day    = String(row.day     || '').trim();
-    var date   = String(row.date    || '').trim();
-    var time   = String(row.time    || '').trim();
-    var theme  = String(row.theme   || '').trim();
-    var dur    = String(row.duration|| '').trim();
-    var month  = String(row.sheet   || '').trim();
-
-    // Main display: col F (title); fallback to SKU
-    var mainTitle = title || sku || '(No title)';
-    // Show SKU only when separate from title
-    var showSku = title && sku && sku !== title;
-
-    // Detail chips
-    var chips = '';
-    if (day)   chips += '<span class="chip day-c">&#128197; ' + esc(day)   + '</span>';
-    if (date)  chips += '<span class="chip">'                 + esc(date)  + '</span>';
-    if (time)  chips += '<span class="chip time-c">&#128336; '+ esc(time)  + '</span>';
-    if (theme) chips += '<span class="chip theme-c">&#127991; '+esc(theme) + '</span>';
-    if (dur)   chips += '<span class="chip dur-c">&#9200; '   + esc(dur)   + '</span>';
-
-    html +=
-      '<div class="lb-row">'
-      + '<div class="rnk r' + rank + '">' + rank + '</div>'
-      + '<div class="lb-info">'
-        + '<div class="lb-title">' + esc(mainTitle) + '</div>'
-        + (showSku ? '<div class="lb-sku">&#128230; ' + esc(sku) + '</div>' : '')
-        + (chips   ? '<div class="lb-details">' + chips + '</div>' : '')
-        + (month   ? '<span class="lb-month-tag">' + esc(month) + '</span>' : '')
-      + '</div>'
-      + '<div class="lb-metric ' + colorCls + '">'
-        + '<div class="mv">' + disp + '</div>'
-        + '<div class="ms">' + label + '</div>'
-      + '</div>'
-      + '</div>';
-  }
-  el.innerHTML = html;
+  el.innerHTML=html;
 }
 
-// ── UI helpers ──
-function showSec(name) {
-  var secs = document.querySelectorAll('.sec');
-  var tabs = document.querySelectorAll('.tab');
-  for (var i=0; i<secs.length; i++) secs[i].classList.remove('active');
-  for (var i=0; i<tabs.length; i++) tabs[i].classList.remove('active');
-  document.getElementById('s-' + name).classList.add('active');
-  document.getElementById('t-' + name).classList.add('active');
+function showSec(name){
+  var ss=document.querySelectorAll('.sec'),tb=document.querySelectorAll('.tab');
+  for(var i=0;i<ss.length;i++)ss[i].classList.remove('active');
+  for(var i=0;i<tb.length;i++)tb[i].classList.remove('active');
+  document.getElementById('s-'+name).classList.add('active');
+  document.getElementById('t-'+name).classList.add('active');
 }
-
-function doRefresh() {
-  document.getElementById('syncIco').textContent = '…';
+function doRefresh(){
+  document.getElementById('syncIco').textContent='…';
+  _dashboard=[];_months=[];_activeSheets=[];
   loadData(true);
-  setTimeout(function() { document.getElementById('syncIco').textContent = '↻'; }, 2000);
+  setTimeout(function(){document.getElementById('syncIco').textContent='↻';},3000);
 }
 
-// Boot
-document.addEventListener('DOMContentLoaded', function() { loadData(false); });
+document.addEventListener('DOMContentLoaded', function(){ loadData(false); });
 </script>
 </body>
 </html>
