@@ -35,6 +35,17 @@ def cv(cells, idx):
         return cells[idx]['v']
     return None
 
+def cvf(cells, idx):
+    """Return formatted cell string ('f') if present, else raw value."""
+    if idx < len(cells) and cells[idx]:
+        f = cells[idx].get('f')
+        if f is not None:
+            return str(f)
+        v = cells[idx].get('v')
+        if v is not None:
+            return v
+    return None
+
 def pnum(v):
     if v is None: return 0
     if isinstance(v, (int, float)): return float(v)
@@ -47,14 +58,36 @@ def pgmv(v):
     try: return float(re.sub(r'[^\d.]', '', str(v).replace(',', '')))
     except: return 0
 
-def fmt_dur(v):
-    """Convert gviz Date(...) duration string → H:MM:SS"""
+def fmt_dur(v, formatted=None):
+    """
+    Convert gviz duration to H:MM:SS string.
+    gviz encodes durations > 24h as a Date() where the date portion
+    counts extra days from the epoch Dec 30, 1899.
+    e.g. Date(1900,0,1,7,0,0) = 2 extra days + 7 h = 55:00:00
+    
+    If the gviz formatted string ('f') is provided and looks correct, use it.
+    """
+    # Prefer the pre-formatted value from gviz ('f' field) — it's already correct
+    if formatted is not None:
+        s = str(formatted).strip()
+        if re.match(r'\d+:\d{2}:\d{2}', s):
+            return s
     if v is None: return ''
     if isinstance(v, str) and v.startswith('Date('):
         m = re.match(r'Date\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)', v)
         if m:
-            _, _, _, h, mi, s = [int(x) for x in m.groups()]
-            return f'{h}:{mi:02d}:{s:02d}'
+            yr, mo, day, h, mi, s = [int(x) for x in m.groups()]
+            # Compute delta days from gviz epoch (Dec 30, 1899)
+            from datetime import date as _date
+            try:
+                # gviz months are 0-based
+                d = _date(yr, mo + 1, day)
+                epoch = _date(1899, 12, 30)
+                extra_days = (d - epoch).days
+                total_h = extra_days * 24 + h
+                return f'{total_h}:{mi:02d}:{s:02d}'
+            except Exception:
+                return f'{h}:{mi:02d}:{s:02d}'
     return str(v)
 
 def fmt_time(v):
@@ -80,7 +113,7 @@ def parse_dashboard(gviz):
         out.append({
             'month':     str(month).strip(),
             'lives':     int(pnum(cv(cells, 1))),
-            'duration':  fmt_dur(cv(cells, 2)),
+            'duration':  fmt_dur(cv(cells, 2), cvf(cells, 2)),
             'views':     int(pnum(cv(cells, 3))),
             'likes':     int(pnum(cv(cells, 4))),
             'comments':  int(pnum(cv(cells, 5))),
@@ -139,7 +172,7 @@ def parse_month_sheet(gviz, sheet_name):
             continue
 
         sku      = str(cv(cells, 7) or '').strip()
-        duration = fmt_dur(cv(cells, 8))
+        duration = fmt_dur(cv(cells, 8), cvf(cells, 8))
         time_str = fmt_time(str(cv(cells, 2) or ''))
         platform = str(cv(cells, 3) or 'Tiktok').strip()
 
