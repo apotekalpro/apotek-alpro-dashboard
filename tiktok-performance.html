@@ -4,15 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TikTok Live Performance · BPT</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
 <style>
 /* ══════════════════════════════════════════════════════
    ROOT — lighter TikTok palette: white/light-grey base
    ══════════════════════════════════════════════════════ */
 :root {
   --bg:        #f5f6fa;
-  --bg2:       #ffffff;
-  --bg3:       #f9f9fc;
   --surface:   #ffffff;
   --border:    rgba(0,0,0,0.08);
   --border2:   rgba(0,0,0,0.14);
@@ -28,7 +25,6 @@
   --orange:    #ea580c;
   --gold:      #d97706;
   --silver:    #64748b;
-  --bronze:    #92400e;
   --card-shad: 0 2px 12px rgba(0,0,0,0.07);
   --card-shad-hover: 0 6px 20px rgba(0,0,0,0.12);
 }
@@ -45,78 +41,72 @@ body{
 /* ── HEADER ── */
 .hdr{
   background:linear-gradient(135deg,#fe2c55 0%,#ee1d52 40%,#1a1a2e 100%);
-  padding:14px 22px;
-  display:flex;align-items:center;gap:14px;
+  padding:13px 20px;
+  display:flex;align-items:center;gap:12px;
   box-shadow:0 3px 16px rgba(254,44,85,.30);
   position:sticky;top:0;z-index:100;
 }
 .hdr-logo{
-  width:42px;height:42px;border-radius:12px;
-  background:rgba(255,255,255,.20);
+  width:40px;height:40px;border-radius:11px;
+  background:rgba(255,255,255,.18);
   display:flex;align-items:center;justify-content:center;
   font-size:20px;color:#fff;flex-shrink:0;
   border:1px solid rgba(255,255,255,.25);
 }
-.hdr-title h1{font-size:1.1rem;font-weight:800;color:#fff;line-height:1.2}
-.hdr-title p{font-size:.72rem;color:rgba(255,255,255,.72)}
+.hdr-title h1{font-size:1.05rem;font-weight:800;color:#fff;line-height:1.2}
+.hdr-title p{font-size:.7rem;color:rgba(255,255,255,.70)}
 .hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .btn-refresh{
   background:rgba(255,255,255,.18);
   border:1px solid rgba(255,255,255,.30);
-  border-radius:9px;padding:7px 15px;
-  color:#fff;font-weight:700;font-size:.8rem;
+  border-radius:9px;padding:7px 14px;
+  color:#fff;font-weight:700;font-size:.78rem;
   cursor:pointer;display:flex;align-items:center;gap:6px;
-  transition:all .22s;backdrop-filter:blur(6px);
+  transition:all .22s;
 }
 .btn-refresh:hover{background:rgba(255,255,255,.30);transform:translateY(-1px)}
-.sync-ts{font-size:.68rem;color:rgba(255,255,255,.65)}
+.sync-ts{font-size:.67rem;color:rgba(255,255,255,.65)}
 
 /* ── TABS ── */
 .tabs{
-  display:flex;gap:0;padding:0 22px;
-  background:var(--bg2);
+  display:flex;gap:0;padding:0 20px;
+  background:var(--surface);
   border-bottom:2px solid var(--border);
   overflow-x:auto;scrollbar-width:none;
-  position:sticky;top:70px;z-index:99;
+  position:sticky;top:66px;z-index:99;
   box-shadow:0 2px 8px rgba(0,0,0,.05);
 }
 .tabs::-webkit-scrollbar{display:none}
 .tab{
-  padding:12px 20px;
+  padding:12px 18px;
   border-bottom:3px solid transparent;
   background:transparent;
   color:var(--muted);font-size:.82rem;font-weight:600;
   cursor:pointer;white-space:nowrap;transition:all .18s;
-  margin-bottom:-2px;
+  margin-bottom:-2px;border:none;
 }
 .tab:hover{color:var(--text);background:rgba(254,44,85,.04)}
-.tab.active{
-  color:var(--red);
-  border-bottom-color:var(--red);
-  background:rgba(254,44,85,.04);
-}
-.tab i{margin-right:7px}
+.tab.active{color:var(--red);border-bottom-color:var(--red);background:rgba(254,44,85,.04)}
 
 /* ── MAIN ── */
-.main{padding:22px}
+.main{padding:20px}
 .sec{display:none}.sec.active{display:block}
 
 /* ── STAT CARDS ── */
 .stat-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(155px,1fr));
-  gap:14px;margin-bottom:24px;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;margin-bottom:22px;
 }
 .sc{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:14px;padding:18px 16px;
-  transition:all .22s;
-  box-shadow:var(--card-shad);
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:13px;padding:16px 14px;
+  transition:all .22s;box-shadow:var(--card-shad);
   position:relative;overflow:hidden;
 }
 .sc::after{
-  content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:4px 0 0 4px;
+  content:'';position:absolute;left:0;top:0;bottom:0;
+  width:4px;border-radius:4px 0 0 4px;
 }
 .sc.red::after   {background:var(--red)}
 .sc.cyan::after  {background:var(--cyan)}
@@ -124,113 +114,102 @@ body{
 .sc.green::after {background:var(--green)}
 .sc.orange::after{background:var(--orange)}
 .sc:hover{transform:translateY(-2px);box-shadow:var(--card-shad-hover)}
-.sc .lbl{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
-.sc .val{font-size:1.65rem;font-weight:900;margin:6px 0 3px;line-height:1}
-.sc .sub{font-size:.67rem;color:var(--faint)}
+.sc .lbl{font-size:.64rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.sc .val{font-size:1.6rem;font-weight:900;margin:5px 0 2px;line-height:1}
+.sc .sub{font-size:.65rem;color:var(--faint)}
 .sc.red    .val{color:var(--red)}
 .sc.cyan   .val{color:var(--teal)}
 .sc.purple .val{color:var(--purple)}
 .sc.green  .val{color:var(--green)}
 .sc.orange .val{color:var(--orange)}
-.sc .sc-icon{
-  position:absolute;right:14px;top:50%;transform:translateY(-50%);
-  font-size:2rem;opacity:.07;
-}
+.sc-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:2rem;opacity:.06}
 
 /* ── DASHBOARD TABLE ── */
 .card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:14px;overflow:hidden;
-  margin-bottom:26px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:13px;overflow:hidden;margin-bottom:24px;
   box-shadow:var(--card-shad);
 }
 .card-hdr{
-  padding:14px 20px;
+  padding:13px 18px;
   background:linear-gradient(135deg,rgba(254,44,85,.06),rgba(0,188,212,.04));
   border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:10px;
+  display:flex;align-items:center;gap:9px;
 }
-.card-hdr h3{font-weight:700;font-size:.92rem;color:var(--text)}
-.card-hdr .badge{
-  margin-left:auto;font-size:.68rem;
+.card-hdr h3{font-weight:700;font-size:.9rem;color:var(--text)}
+.badge{
+  margin-left:auto;font-size:.67rem;
   background:rgba(254,44,85,.08);color:var(--red);
-  padding:3px 10px;border-radius:20px;font-weight:600;
+  padding:3px 9px;border-radius:20px;font-weight:600;
   border:1px solid rgba(254,44,85,.15);
 }
 .tscroll{overflow-x:auto}
 table.t{width:100%;border-collapse:collapse}
 table.t th{
-  background:rgba(0,0,0,.025);padding:10px 16px;text-align:left;
-  font-size:.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;
-  border-bottom:1px solid var(--border);white-space:nowrap;font-weight:700;
+  background:rgba(0,0,0,.025);padding:9px 14px;text-align:left;
+  font-size:.66rem;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.07em;border-bottom:1px solid var(--border);
+  white-space:nowrap;font-weight:700;
 }
 table.t td{
-  padding:11px 16px;font-size:.82rem;
+  padding:10px 14px;font-size:.81rem;
   border-bottom:1px solid rgba(0,0,0,.04);
   vertical-align:middle;color:var(--text);
 }
 table.t tr:last-child td{border-bottom:none}
 table.t tr:hover td{background:rgba(254,44,85,.03)}
 .mbadge{
-  display:inline-block;padding:3px 10px;border-radius:20px;
-  font-size:.7rem;font-weight:700;
+  display:inline-block;padding:2px 9px;border-radius:20px;
+  font-size:.68rem;font-weight:700;
   background:rgba(254,44,85,.08);color:var(--red);
   border:1px solid rgba(254,44,85,.18);
 }
-.mbadge.cur{
-  background:rgba(0,188,212,.1);color:var(--teal);
-  border-color:rgba(0,188,212,.25);
-}
+.mbadge.cur{background:rgba(0,188,212,.1);color:var(--teal);border-color:rgba(0,188,212,.25)}
 .adot{
   width:7px;height:7px;border-radius:50%;
   background:var(--green);display:inline-block;
-  margin-right:6px;animation:pulse 2s infinite;
+  margin-right:5px;animation:pulse 2s infinite;
 }
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.4)}}
 
 /* ── SECTION TITLE ── */
 .sec-title{
   display:flex;align-items:center;gap:10px;
-  font-size:1.05rem;font-weight:800;color:var(--text);
-  margin-bottom:22px;padding-bottom:14px;
+  font-size:1rem;font-weight:800;color:var(--text);
+  margin-bottom:20px;padding-bottom:12px;
   border-bottom:2px solid var(--border);flex-wrap:wrap;
 }
-.pill{font-size:.68rem;font-weight:700;padding:3px 11px;border-radius:20px}
+.pill{font-size:.67rem;font-weight:700;padding:3px 10px;border-radius:20px}
 .pill.yr{background:rgba(254,44,85,.1);color:var(--red);border:1px solid rgba(254,44,85,.2)}
 .pill.mo{background:rgba(0,188,212,.1);color:var(--teal);border:1px solid rgba(0,188,212,.2)}
 
 /* ── LEADERBOARD GRID ── */
-.lb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:22px}
+.lb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px}
 
-.lb-sec{}
-.lb-hdr{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.lb-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .lb-icon{
-  width:38px;height:38px;border-radius:11px;
+  width:36px;height:36px;border-radius:10px;
   display:flex;align-items:center;justify-content:center;
-  font-size:1rem;flex-shrink:0;color:#fff;
+  font-size:1.1rem;flex-shrink:0;
 }
 .lb-icon.v{background:linear-gradient(135deg,#fe2c55,#ff6b6b)}
 .lb-icon.l{background:linear-gradient(135deg,#ee1d52,#ff4d8d)}
 .lb-icon.c{background:linear-gradient(135deg,#00bcd4,#0097a7)}
 .lb-icon.f{background:linear-gradient(135deg,#7c3aed,#5b21b6)}
 .lb-icon.g{background:linear-gradient(135deg,#16a34a,#15803d)}
-.lb-hdr-text h3{font-size:.92rem;font-weight:800;color:var(--text)}
-.lb-hdr-text p{font-size:.7rem;color:var(--muted);margin-top:1px}
+.lb-hdr-text h3{font-size:.9rem;font-weight:800;color:var(--text)}
+.lb-hdr-text p{font-size:.68rem;color:var(--muted);margin-top:1px}
 
 /* ── LEADERBOARD CARD ── */
 .lb-card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:14px;overflow:hidden;
-  box-shadow:var(--card-shad);
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:13px;overflow:hidden;box-shadow:var(--card-shad);
 }
 
 /* ── LEADERBOARD ROW ── */
 .lb-row{
-  display:flex;align-items:flex-start;gap:12px;
-  padding:15px 17px;
-  border-bottom:1px solid rgba(0,0,0,.05);
+  display:flex;align-items:flex-start;gap:11px;
+  padding:14px 15px;border-bottom:1px solid rgba(0,0,0,.05);
   transition:background .15s;
 }
 .lb-row:last-child{border-bottom:none}
@@ -238,108 +217,79 @@ table.t tr:hover td{background:rgba(254,44,85,.03)}
 
 /* rank badges */
 .rnk{
-  width:34px;height:34px;min-width:34px;border-radius:50%;
+  width:32px;height:32px;min-width:32px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
-  font-weight:900;font-size:.88rem;flex-shrink:0;margin-top:2px;
+  font-weight:900;font-size:.84rem;flex-shrink:0;margin-top:2px;
 }
-.r1{
-  background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;
-  box-shadow:0 3px 10px rgba(245,158,11,.35);
-}
+.r1{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;box-shadow:0 3px 10px rgba(245,158,11,.35)}
 .r2{background:linear-gradient(135deg,#94a3b8,#64748b);color:#fff}
 .r3{background:linear-gradient(135deg,#cd7f32,#92400e);color:#fff}
 .r4,.r5{background:rgba(0,0,0,.06);color:var(--muted)}
 
-/* content block */
+/* content */
 .lb-info{flex:1;min-width:0}
-
 .lb-title{
-  font-size:.88rem;font-weight:700;
-  color:var(--text);line-height:1.4;
-  margin-bottom:4px;
-  /* gracefully wrap long titles */
-  word-break:break-word;
+  font-size:.86rem;font-weight:700;color:var(--text);
+  line-height:1.4;margin-bottom:4px;word-break:break-word;
 }
 .lb-sku{
-  display:inline-flex;align-items:center;gap:5px;
-  font-size:.73rem;color:var(--teal);
-  font-weight:700;margin-bottom:6px;
-  background:rgba(0,188,212,.08);
-  border:1px solid rgba(0,188,212,.2);
-  border-radius:6px;padding:2px 8px;
-}
-.lb-sku i{font-size:.65rem}
-
-/* detail chips row */
-.lb-details{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
-.chip{
   display:inline-flex;align-items:center;gap:4px;
-  font-size:.68rem;color:var(--muted);
-  background:rgba(0,0,0,.04);
-  border:1px solid var(--border);
-  border-radius:6px;padding:2px 8px;
-  white-space:nowrap;
+  font-size:.72rem;color:var(--teal);font-weight:700;
+  background:rgba(0,188,212,.08);border:1px solid rgba(0,188,212,.2);
+  border-radius:6px;padding:2px 7px;margin-bottom:5px;
 }
-.chip i{font-size:.6rem;color:var(--faint)}
-.chip.day-chip{color:var(--purple);background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.15)}
-.chip.time-chip{color:var(--teal);background:rgba(0,188,212,.06);border-color:rgba(0,188,212,.15)}
-.chip.theme-chip{color:var(--orange);background:rgba(234,88,12,.06);border-color:rgba(234,88,12,.15)}
-.chip.dur-chip{color:var(--silver);background:rgba(100,116,139,.06);border-color:rgba(100,116,139,.15)}
-
+.lb-details{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.chip{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:.67rem;color:var(--muted);
+  background:rgba(0,0,0,.04);border:1px solid var(--border);
+  border-radius:5px;padding:2px 7px;white-space:nowrap;
+}
+.chip.day-c  {color:var(--purple);background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.15)}
+.chip.time-c {color:var(--teal);background:rgba(0,188,212,.06);border-color:rgba(0,188,212,.15)}
+.chip.theme-c{color:var(--orange);background:rgba(234,88,12,.06);border-color:rgba(234,88,12,.15)}
+.chip.dur-c  {color:var(--silver);background:rgba(100,116,139,.06);border-color:rgba(100,116,139,.15)}
 .lb-month-tag{
-  display:inline-block;font-size:.63rem;font-weight:700;
-  padding:1px 8px;border-radius:10px;margin-top:5px;
+  display:inline-block;font-size:.62rem;font-weight:700;
+  padding:1px 7px;border-radius:10px;margin-top:4px;
   background:rgba(254,44,85,.07);color:var(--red);
   border:1px solid rgba(254,44,85,.15);
 }
 
-/* metric value */
-.lb-metric{
-  text-align:right;flex-shrink:0;min-width:80px;
-  padding-top:2px;
-}
-.lb-metric .mv{font-size:1.15rem;font-weight:900;line-height:1}
-.lb-metric .ms{font-size:.65rem;color:var(--muted);margin-top:3px}
+/* metric */
+.lb-metric{text-align:right;flex-shrink:0;min-width:78px;padding-top:2px}
+.lb-metric .mv{font-size:1.1rem;font-weight:900;line-height:1}
+.lb-metric .ms{font-size:.63rem;color:var(--muted);margin-top:3px}
 .lv .mv{color:var(--red)}
 .ll .mv{color:var(--pink)}
 .lc .mv{color:var(--teal)}
 .lf .mv{color:var(--purple)}
 .lg .mv{color:var(--green)}
 
-/* ── LOADING overlay ── */
+/* ── LOADING ── */
 #loadOverlay{
-  position:fixed;inset:0;
-  background:rgba(245,246,250,.94);
+  position:fixed;inset:0;background:rgba(245,246,250,.95);
   z-index:9999;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:16px;
-  backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;gap:14px;
 }
 .spinner{
-  width:46px;height:46px;border-radius:50%;
+  width:44px;height:44px;border-radius:50%;
   border:4px solid rgba(254,44,85,.15);
   border-top-color:var(--red);
   animation:spin .85s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 .prog-wrap{width:220px;height:5px;background:rgba(0,0,0,.08);border-radius:3px;overflow:hidden}
-.prog-fill{
-  height:100%;width:0%;
-  background:linear-gradient(90deg,var(--red),var(--cyan));
-  border-radius:3px;transition:width .3s;
-}
-.load-txt{color:var(--text);font-size:.9rem;font-weight:600}
-.load-sub{color:var(--muted);font-size:.73rem}
+.prog-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--red),var(--cyan));border-radius:3px;transition:width .3s}
+.load-txt{color:var(--text);font-size:.88rem;font-weight:600}
+.load-sub{color:var(--muted);font-size:.72rem}
 
-.nodata{
-  text-align:center;padding:32px;
-  color:var(--faint);font-size:.85rem;
-}
-.nodata i{font-size:1.8rem;margin-bottom:10px;display:block;color:rgba(0,0,0,.12)}
+.nodata{text-align:center;padding:30px;color:var(--faint);font-size:.83rem}
+.nodata-icon{font-size:1.6rem;margin-bottom:8px}
 
 @media(max-width:640px){
-  .main{padding:14px}
+  .main{padding:12px}
   .lb-grid{grid-template-columns:1fr}
-  .lb-row{padding:12px 13px}
   .stat-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
@@ -356,14 +306,14 @@ table.t tr:hover td{background:rgba(254,44,85,.03)}
 
 <!-- Header -->
 <div class="hdr">
-  <div class="hdr-logo"><i class="fab fa-tiktok"></i></div>
+  <div class="hdr-logo">&#9654;</div>
   <div class="hdr-title">
     <h1>TikTok Live Performance</h1>
     <p>BPT · Live Content Analytics · Auto-synced from Google Sheets</p>
   </div>
   <div class="hdr-right">
     <button class="btn-refresh" onclick="doRefresh()">
-      <i class="fas fa-sync-alt" id="syncIco"></i> Refresh
+      <span id="syncIco">&#8635;</span> Refresh
     </button>
     <span class="sync-ts" id="syncTs"></span>
   </div>
@@ -371,18 +321,12 @@ table.t tr:hover td{background:rgba(254,44,85,.03)}
 
 <!-- Tabs -->
 <div class="tabs">
-  <button class="tab active" id="t-ov"  onclick="showSec('ov')">
-    <i class="fas fa-chart-pie"></i>Overview
-  </button>
-  <button class="tab" id="t-yr" onclick="showSec('yr')">
-    <i class="fas fa-trophy"></i>Yearly Top 5
-  </button>
-  <button class="tab" id="t-mo" onclick="showSec('mo')">
-    <i class="fas fa-calendar-star"></i>This Month Top 5
-  </button>
+  <button class="tab active" id="t-ov" onclick="showSec('ov')">&#128200; Overview</button>
+  <button class="tab" id="t-yr" onclick="showSec('yr')">&#127942; Yearly Top 5</button>
+  <button class="tab" id="t-mo" onclick="showSec('mo')">&#128197; This Month Top 5</button>
 </div>
 
-<!-- Main content -->
+<!-- Main -->
 <div class="main">
 
   <!-- ══ OVERVIEW ══ -->
@@ -392,37 +336,37 @@ table.t tr:hover td{background:rgba(254,44,85,.03)}
         <div class="lbl">Total Lives</div>
         <div class="val" id="sv-lives">—</div>
         <div class="sub">All recorded sessions</div>
-        <i class="fas fa-video sc-icon"></i>
+        <div class="sc-icon">&#127909;</div>
       </div>
       <div class="sc cyan">
         <div class="lbl">Total Views</div>
         <div class="val" id="sv-views">—</div>
         <div class="sub">Across all months</div>
-        <i class="fas fa-eye sc-icon"></i>
+        <div class="sc-icon">&#128065;</div>
       </div>
       <div class="sc purple">
         <div class="lbl">Total Likes</div>
         <div class="val" id="sv-likes">—</div>
         <div class="sub">Engagement signals</div>
-        <i class="fas fa-heart sc-icon"></i>
+        <div class="sc-icon">&#10084;</div>
       </div>
       <div class="sc green">
         <div class="lbl">Total GMV</div>
         <div class="val" id="sv-gmv">—</div>
         <div class="sub">Revenue generated</div>
-        <i class="fas fa-coins sc-icon"></i>
+        <div class="sc-icon">&#128176;</div>
       </div>
       <div class="sc orange">
         <div class="lbl">Total Comments</div>
         <div class="val" id="sv-com">—</div>
         <div class="sub">All months combined</div>
-        <i class="fas fa-comment sc-icon"></i>
+        <div class="sc-icon">&#128172;</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-hdr">
-        <i class="fas fa-table-cells" style="color:var(--red);font-size:.95rem"></i>
+        <span style="color:var(--red);font-size:1rem">&#128203;</span>
         <h3>Monthly Performance Summary</h3>
         <span class="badge" id="dashBadge"></span>
       </div>
@@ -432,15 +376,15 @@ table.t tr:hover td{background:rgba(254,44,85,.03)}
             <th>Month</th>
             <th>Lives</th>
             <th>Duration</th>
-            <th style="color:var(--red)">👁 Views</th>
-            <th style="color:var(--pink)">❤️ Likes</th>
-            <th style="color:var(--teal)">💬 Comments</th>
-            <th style="color:var(--purple)">➕ New Followers</th>
-            <th style="color:var(--green)">💰 GMV (Rp)</th>
+            <th style="color:var(--red)">&#128065; Views</th>
+            <th style="color:var(--pink)">&#10084; Likes</th>
+            <th style="color:var(--teal)">&#128172; Comments</th>
+            <th style="color:var(--purple)">&#43; New Followers</th>
+            <th style="color:var(--green)">&#128176; GMV (Rp)</th>
           </tr></thead>
           <tbody id="dashBody">
             <tr><td colspan="8" class="nodata">
-              <i class="fas fa-spinner fa-spin"></i> Loading…
+              <div class="nodata-icon">&#8987;</div>Loading…
             </td></tr>
           </tbody>
         </table>
@@ -451,7 +395,7 @@ table.t tr:hover td{background:rgba(254,44,85,.03)}
   <!-- ══ YEARLY TOP 5 ══ -->
   <div class="sec" id="s-yr">
     <div class="sec-title">
-      <i class="fas fa-trophy" style="color:var(--gold)"></i>
+      <span style="font-size:1.1rem">&#127942;</span>
       Yearly Leaderboards
       <span class="pill yr">All Months · 2026</span>
     </div>
@@ -459,57 +403,42 @@ table.t tr:hover td{background:rgba(254,44,85,.03)}
 
       <div class="lb-sec">
         <div class="lb-hdr">
-          <div class="lb-icon v"><i class="fas fa-eye"></i></div>
-          <div class="lb-hdr-text">
-            <h3>Top 5 Views</h3>
-            <p>Highest viewed live sessions</p>
-          </div>
+          <div class="lb-icon v" style="color:#fff">&#128065;</div>
+          <div class="lb-hdr-text"><h3>Top 5 Views</h3><p>Highest viewed live sessions</p></div>
         </div>
-        <div class="lb-card" id="y-v"></div>
+        <div class="lb-card" id="y-v"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
       </div>
 
       <div class="lb-sec">
         <div class="lb-hdr">
-          <div class="lb-icon l"><i class="fas fa-heart"></i></div>
-          <div class="lb-hdr-text">
-            <h3>Top 5 Likes</h3>
-            <p>Most liked live sessions</p>
-          </div>
+          <div class="lb-icon l" style="color:#fff">&#10084;</div>
+          <div class="lb-hdr-text"><h3>Top 5 Likes</h3><p>Most liked live sessions</p></div>
         </div>
-        <div class="lb-card" id="y-l"></div>
+        <div class="lb-card" id="y-l"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
       </div>
 
       <div class="lb-sec">
         <div class="lb-hdr">
-          <div class="lb-icon c"><i class="fas fa-comment"></i></div>
-          <div class="lb-hdr-text">
-            <h3>Top 5 Comments</h3>
-            <p>Most discussed sessions</p>
-          </div>
+          <div class="lb-icon c" style="color:#fff">&#128172;</div>
+          <div class="lb-hdr-text"><h3>Top 5 Comments</h3><p>Most discussed sessions</p></div>
         </div>
-        <div class="lb-card" id="y-c"></div>
+        <div class="lb-card" id="y-c"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
       </div>
 
       <div class="lb-sec">
         <div class="lb-hdr">
-          <div class="lb-icon f"><i class="fas fa-user-plus"></i></div>
-          <div class="lb-hdr-text">
-            <h3>Top 5 New Followers</h3>
-            <p>Sessions with most follower gain</p>
-          </div>
+          <div class="lb-icon f" style="color:#fff">&#43;</div>
+          <div class="lb-hdr-text"><h3>Top 5 New Followers</h3><p>Sessions with most follower gain</p></div>
         </div>
-        <div class="lb-card" id="y-f"></div>
+        <div class="lb-card" id="y-f"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
       </div>
 
       <div class="lb-sec">
         <div class="lb-hdr">
-          <div class="lb-icon g"><i class="fas fa-coins"></i></div>
-          <div class="lb-hdr-text">
-            <h3>Top 5 GMV</h3>
-            <p>Highest revenue sessions</p>
-          </div>
+          <div class="lb-icon g" style="color:#fff">&#128176;</div>
+          <div class="lb-hdr-text"><h3>Top 5 GMV</h3><p>Highest revenue sessions</p></div>
         </div>
-        <div class="lb-card" id="y-g"></div>
+        <div class="lb-card" id="y-g"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
       </div>
 
     </div>
@@ -518,7 +447,7 @@ table.t tr:hover td{background:rgba(254,44,85,.03)}
   <!-- ══ THIS MONTH TOP 5 ══ -->
   <div class="sec" id="s-mo">
     <div class="sec-title">
-      <i class="fas fa-calendar-alt" style="color:var(--teal)"></i>
+      <span style="font-size:1.1rem;color:var(--teal)">&#128197;</span>
       <span id="moTitle">This Month Leaderboards</span>
       <span class="pill mo" id="moBadge">—</span>
     </div>
@@ -526,57 +455,42 @@ table.t tr:hover td{background:rgba(254,44,85,.03)}
 
       <div class="lb-sec">
         <div class="lb-hdr">
-          <div class="lb-icon v"><i class="fas fa-eye"></i></div>
-          <div class="lb-hdr-text">
-            <h3>Top 5 Views</h3>
-            <p>This month's most viewed</p>
-          </div>
+          <div class="lb-icon v" style="color:#fff">&#128065;</div>
+          <div class="lb-hdr-text"><h3>Top 5 Views</h3><p>This month's most viewed</p></div>
         </div>
-        <div class="lb-card" id="m-v"></div>
+        <div class="lb-card" id="m-v"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
       </div>
 
       <div class="lb-sec">
         <div class="lb-hdr">
-          <div class="lb-icon l"><i class="fas fa-heart"></i></div>
-          <div class="lb-hdr-text">
-            <h3>Top 5 Likes</h3>
-            <p>This month's most liked</p>
-          </div>
+          <div class="lb-icon l" style="color:#fff">&#10084;</div>
+          <div class="lb-hdr-text"><h3>Top 5 Likes</h3><p>This month's most liked</p></div>
         </div>
-        <div class="lb-card" id="m-l"></div>
+        <div class="lb-card" id="m-l"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
       </div>
 
       <div class="lb-sec">
         <div class="lb-hdr">
-          <div class="lb-icon c"><i class="fas fa-comment"></i></div>
-          <div class="lb-hdr-text">
-            <h3>Top 5 Comments</h3>
-            <p>This month's most commented</p>
-          </div>
+          <div class="lb-icon c" style="color:#fff">&#128172;</div>
+          <div class="lb-hdr-text"><h3>Top 5 Comments</h3><p>This month's most commented</p></div>
         </div>
-        <div class="lb-card" id="m-c"></div>
+        <div class="lb-card" id="m-c"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
       </div>
 
       <div class="lb-sec">
         <div class="lb-hdr">
-          <div class="lb-icon f"><i class="fas fa-user-plus"></i></div>
-          <div class="lb-hdr-text">
-            <h3>Top 5 New Followers</h3>
-            <p>This month's follower gainers</p>
-          </div>
+          <div class="lb-icon f" style="color:#fff">&#43;</div>
+          <div class="lb-hdr-text"><h3>Top 5 New Followers</h3><p>This month's follower gainers</p></div>
         </div>
-        <div class="lb-card" id="m-f"></div>
+        <div class="lb-card" id="m-f"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
       </div>
 
       <div class="lb-sec">
         <div class="lb-hdr">
-          <div class="lb-icon g"><i class="fas fa-coins"></i></div>
-          <div class="lb-hdr-text">
-            <h3>Top 5 GMV</h3>
-            <p>This month's top revenue</p>
-          </div>
+          <div class="lb-icon g" style="color:#fff">&#128176;</div>
+          <div class="lb-hdr-text"><h3>Top 5 GMV</h3><p>This month's top revenue</p></div>
         </div>
-        <div class="lb-card" id="m-g"></div>
+        <div class="lb-card" id="m-g"><div class="nodata"><div class="nodata-icon">&#8987;</div>Loading…</div></div>
       </div>
 
     </div>
@@ -588,99 +502,129 @@ table.t tr:hover td{background:rgba(254,44,85,.03)}
 // ═══════════════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════════════
-let _d = null;
+var _d = null;
 
 // ═══════════════════════════════════════════════════════════
 //  FORMAT HELPERS
 // ═══════════════════════════════════════════════════════════
-const fN = n => {
+function fN(n) {
   if (n === null || n === undefined || n === '') return '—';
-  n = +n;
+  n = Number(n);
   if (isNaN(n)) return '—';
   if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
   if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
   return n.toLocaleString('id-ID');
-};
-const fRp = n => {
-  if (!n || n === 0) return '—';
-  n = +n;
+}
+function fRp(n) {
+  if (!n || Number(n) === 0) return '—';
+  n = Number(n);
   if (n >= 1e6) return 'Rp ' + (n / 1e6).toFixed(2) + 'M';
-  if (n >= 1e3) return 'Rp ' + (n / 1e3).toFixed(0) + 'K';
+  if (n >= 1e3) return 'Rp ' + Math.round(n / 1e3) + 'K';
   return 'Rp ' + n.toLocaleString('id-ID');
-};
-const esc = s => String(s || '')
-  .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const prog = (p, s) => {
+}
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function setProgress(p, s) {
   document.getElementById('ldProg').style.width = p + '%';
   if (s) document.getElementById('ldSub').textContent = s;
-};
-const nd = () => '<span style="color:var(--faint)">—</span>';
+}
+function nd() { return '<span style="color:var(--faint)">—</span>'; }
 
 // ═══════════════════════════════════════════════════════════
 //  LOAD
 // ═══════════════════════════════════════════════════════════
-async function loadData(bust = false) {
+function loadData(bust) {
+  bust = bust || false;
   document.getElementById('loadOverlay').style.display = 'flex';
-  prog(10, 'Calling data API…');
+  setProgress(10, 'Calling data API…');
   document.getElementById('ldTxt').textContent = 'Fetching TikTok Live data…';
-  try {
-    prog(30, 'Waiting for Google Sheets response…');
-    const url = '/api/tiktok-data' + (bust ? '?bust=' + Date.now() : '');
-    const res = await fetch(url);
-    prog(75, 'Parsing data…');
-    _d = await res.json();
-    prog(92, 'Rendering dashboard…');
-    render();
-    prog(100, 'Done!');
-    const ts = _d.generated_at ? new Date(_d.generated_at) : new Date();
-    document.getElementById('syncTs').textContent =
-      'Synced ' + ts.toLocaleTimeString('id-ID');
-  } catch (e) {
-    prog(100, '⚠ Error: ' + e.message);
-    document.getElementById('ldTxt').textContent = 'Failed to load data';
-    console.error(e);
-  }
-  setTimeout(() => document.getElementById('loadOverlay').style.display = 'none', 500);
+
+  var url = '/api/tiktok-data' + (bust ? '?bust=' + Date.now() : '');
+  setProgress(30, 'Waiting for Google Sheets…');
+
+  fetch(url)
+    .then(function(res) {
+      setProgress(70, 'Parsing response…');
+      return res.json();
+    })
+    .then(function(data) {
+      setProgress(90, 'Rendering dashboard…');
+      _d = data;
+      console.log('[TikTok] Data loaded. Months:', (_d.months||[]).length,
+        'Current month:', _d.current_month);
+      render();
+      setProgress(100, 'Done!');
+      var ts = _d.generated_at ? new Date(_d.generated_at) : new Date();
+      document.getElementById('syncTs').textContent =
+        'Synced ' + ts.toLocaleTimeString('id-ID');
+      setTimeout(function() {
+        document.getElementById('loadOverlay').style.display = 'none';
+      }, 400);
+    })
+    .catch(function(err) {
+      console.error('[TikTok] Load error:', err);
+      setProgress(100, 'Error: ' + err.message);
+      document.getElementById('ldTxt').textContent = 'Failed to load data';
+      setTimeout(function() {
+        document.getElementById('loadOverlay').style.display = 'none';
+      }, 2000);
+    });
 }
 
 // ═══════════════════════════════════════════════════════════
-//  RENDER ALL
+//  RENDER
 // ═══════════════════════════════════════════════════════════
 function render() {
   if (!_d) return;
   renderOverview();
-  renderAllLB('yr', getNondupRows());
-  renderAllLB('mo', getMonthRows());
-  const cm = _d.current_month || '';
+
+  var nondupRows = getNondupRows();
+  var moRows     = getMonthRows();
+  console.log('[TikTok] Nondup rows:', nondupRows.length, 'Month rows:', moRows.length);
+
+  renderAllLB('y', nondupRows);
+  renderAllLB('m', moRows);
+
+  var cm = _d.current_month || '';
   document.getElementById('moBadge').textContent = cm || 'N/A';
   document.getElementById('moTitle').textContent = (cm || 'Current Month') + ' Leaderboards';
 }
 
-// Non-duplicate rows for yearly LB
 function getNondupRows() {
   if (!_d || !_d.months) return [];
-  return _d.months.flatMap(m => (m.rows || []).filter(r => !r._dup));
-}
-// Current month rows
-function getMonthRows() {
-  if (!_d || !_d.months) return [];
-  const cm = _d.current_month;
-  const found = _d.months.find(m => m.month === cm);
-  return found ? (found.rows || []) : [];
+  var out = [];
+  for (var i = 0; i < _d.months.length; i++) {
+    var rows = _d.months[i].rows || [];
+    for (var j = 0; j < rows.length; j++) {
+      if (!rows[j]._dup) out.push(rows[j]);
+    }
+  }
+  return out;
 }
 
-// ── Overview ──────────────────────────────────────────────
+function getMonthRows() {
+  if (!_d || !_d.months) return [];
+  var cm = _d.current_month;
+  for (var i = 0; i < _d.months.length; i++) {
+    if (_d.months[i].month === cm) return _d.months[i].rows || [];
+  }
+  return [];
+}
+
+// ── Overview ──
 function renderOverview() {
-  const dash = _d.dashboard || [];
-  let tL = 0, tV = 0, tLk = 0, tG = 0, tC = 0;
-  dash.forEach(r => {
-    tL  += r.lives    || 0;
-    tV  += r.views    || 0;
-    tLk += r.likes    || 0;
-    tG  += r.gmv      || 0;
-    tC  += r.comments || 0;
-  });
+  var dash = _d.dashboard || [];
+  var tL=0, tV=0, tLk=0, tG=0, tC=0;
+  for (var i=0; i<dash.length; i++) {
+    tL  += dash[i].lives    || 0;
+    tV  += dash[i].views    || 0;
+    tLk += dash[i].likes    || 0;
+    tG  += dash[i].gmv      || 0;
+    tC  += dash[i].comments || 0;
+  }
   document.getElementById('sv-lives').textContent = fN(tL);
   document.getElementById('sv-views').textContent = fN(tV);
   document.getElementById('sv-likes').textContent = fN(tLk);
@@ -688,121 +632,130 @@ function renderOverview() {
   document.getElementById('sv-com').textContent   = fN(tC);
   document.getElementById('dashBadge').textContent = dash.length + ' months tracked';
 
-  const cm   = _d.current_month || '';
-  const body = document.getElementById('dashBody');
+  var cm   = _d.current_month || '';
+  var body = document.getElementById('dashBody');
   if (!dash.length) {
-    body.innerHTML = '<tr><td colspan="8" class="nodata"><i class="fas fa-database"></i>No data</td></tr>';
+    body.innerHTML = '<tr><td colspan="8" class="nodata"><div class="nodata-icon">&#128209;</div>No data</td></tr>';
     return;
   }
-  body.innerHTML = dash.map(r => {
-    const cur = r.month === cm;
-    const has = r.lives > 0 || r.views > 0;
-    return `<tr>
-      <td>
-        ${cur ? '<span class="adot"></span>' : ''}
-        <span class="mbadge${cur ? ' cur' : ''}">${esc(r.month)}</span>
-      </td>
-      <td>${has ? fN(r.lives) : nd()}</td>
-      <td style="color:var(--muted)">${r.duration || nd()}</td>
-      <td style="color:var(--red);font-weight:700">${has ? fN(r.views) : nd()}</td>
-      <td style="color:var(--pink);font-weight:700">${has ? fN(r.likes) : nd()}</td>
-      <td style="color:var(--teal)">${has ? fN(r.comments) : nd()}</td>
-      <td style="color:var(--purple)">${has ? fN(r.followers) : nd()}</td>
-      <td style="color:var(--green);font-weight:700">${has && r.gmv ? fRp(r.gmv) : nd()}</td>
-    </tr>`;
-  }).join('');
+  var html = '';
+  for (var i=0; i<dash.length; i++) {
+    var r   = dash[i];
+    var cur = r.month === cm;
+    var has = r.lives > 0 || r.views > 0;
+    html += '<tr>'
+      + '<td>' + (cur ? '<span class="adot"></span>' : '') + '<span class="mbadge' + (cur?' cur':'') + '">' + esc(r.month) + '</span></td>'
+      + '<td>' + (has ? fN(r.lives)    : nd()) + '</td>'
+      + '<td style="color:var(--muted)">' + (r.duration || nd()) + '</td>'
+      + '<td style="color:var(--red);font-weight:700">'    + (has ? fN(r.views)    : nd()) + '</td>'
+      + '<td style="color:var(--pink);font-weight:700">'   + (has ? fN(r.likes)    : nd()) + '</td>'
+      + '<td style="color:var(--teal)">'   + (has ? fN(r.comments)  : nd()) + '</td>'
+      + '<td style="color:var(--purple)">' + (has ? fN(r.followers) : nd()) + '</td>'
+      + '<td style="color:var(--green);font-weight:700">'  + (has && r.gmv ? fRp(r.gmv) : nd()) + '</td>'
+      + '</tr>';
+  }
+  body.innerHTML = html;
 }
 
-// ── Leaderboards ──────────────────────────────────────────
+// ── Leaderboards ──
 function renderAllLB(pfx, rows) {
-  const cfgs = [
-    {id: pfx+'-v', field:'views',     cls:'lv', label:'views'},
-    {id: pfx+'-l', field:'likes',     cls:'ll', label:'likes'},
-    {id: pfx+'-c', field:'comments',  cls:'lc', label:'comments'},
-    {id: pfx+'-f', field:'followers', cls:'lf', label:'new followers'},
-    {id: pfx+'-g', field:'gmv',       cls:'lg', label:'GMV', isGmv:true},
+  var cfgs = [
+    {id:pfx+'-v', field:'views',     cls:'lv', label:'views',         isGmv:false},
+    {id:pfx+'-l', field:'likes',     cls:'ll', label:'likes',         isGmv:false},
+    {id:pfx+'-c', field:'comments',  cls:'lc', label:'comments',      isGmv:false},
+    {id:pfx+'-f', field:'followers', cls:'lf', label:'new followers',  isGmv:false},
+    {id:pfx+'-g', field:'gmv',       cls:'lg', label:'GMV (Rp)',       isGmv:true},
   ];
-  cfgs.forEach(c => renderLB(c.id, rows, c.field, c.cls, c.label, c.isGmv));
+  for (var i=0; i<cfgs.length; i++) {
+    renderLB(cfgs[i].id, rows, cfgs[i].field, cfgs[i].cls, cfgs[i].label, cfgs[i].isGmv);
+  }
 }
 
 function renderLB(elId, allRows, field, colorCls, label, isGmv) {
-  const el = document.getElementById(elId);
-  if (!el) return;
+  var el = document.getElementById(elId);
+  if (!el) { console.warn('[TikTok] Element not found:', elId); return; }
 
-  const top5 = [...allRows]
-    .filter(r => r[field] > 0)
-    .sort((a, b) => b[field] - a[field])
-    .slice(0, 5);
+  // Filter rows with positive values, sort descending, take top 5
+  var filtered = [];
+  for (var i=0; i<allRows.length; i++) {
+    var v = Number(allRows[i][field]) || 0;
+    if (v > 0) filtered.push(allRows[i]);
+  }
+  filtered.sort(function(a,b) { return (Number(b[field])||0) - (Number(a[field])||0); });
+  var top5 = filtered.slice(0, 5);
+
+  console.log('[TikTok] LB', elId, '- rows with', field, '> 0:', filtered.length, '-> top5:', top5.length);
 
   if (!top5.length) {
-    el.innerHTML = '<div class="nodata"><i class="fas fa-info-circle"></i>No data available</div>';
+    el.innerHTML = '<div class="nodata"><div class="nodata-icon">&#8505;</div>No data available</div>';
     return;
   }
 
-  el.innerHTML = top5.map((row, i) => {
-    const rank  = i + 1;
-    const val   = row[field];
-    const disp  = isGmv ? fRp(val) : fN(val);
+  var html = '';
+  for (var i=0; i<top5.length; i++) {
+    var row  = top5[i];
+    var rank = i + 1;
+    var val  = Number(row[field]) || 0;
+    var disp = isGmv ? fRp(val) : fN(val);
 
-    // Content fields — title is col F (carry-forwarded), SKU is col H
-    const title  = (row.title   || '').trim();
-    const sku    = (row.sku     || '').trim();
-    const day    = (row.day     || '').trim();
-    const date   = (row.date    || '').trim();
-    const time   = (row.time    || '').trim();
-    const theme  = (row.theme   || '').trim();
-    const dur    = (row.duration|| '').trim();
-    const month  = (row.sheet   || '').trim();
+    var title  = String(row.title   || '').trim();
+    var sku    = String(row.sku     || '').trim();
+    var day    = String(row.day     || '').trim();
+    var date   = String(row.date    || '').trim();
+    var time   = String(row.time    || '').trim();
+    var theme  = String(row.theme   || '').trim();
+    var dur    = String(row.duration|| '').trim();
+    var month  = String(row.sheet   || '').trim();
 
-    // Main display: prefer col F title; fallback to SKU
-    const mainTitle = title || sku || '(No title)';
-    // Show SKU chip only when there's a separate title
-    const showSku = title && sku && sku !== title;
+    // Main display: col F (title); fallback to SKU
+    var mainTitle = title || sku || '(No title)';
+    // Show SKU only when separate from title
+    var showSku = title && sku && sku !== title;
 
-    // Build detail chips
-    const chips = [];
-    if (day)   chips.push(`<span class="chip day-chip"><i class="far fa-calendar-week"></i>${esc(day)}</span>`);
-    if (date)  chips.push(`<span class="chip"><i class="far fa-calendar-alt"></i>${esc(date)}</span>`);
-    if (time)  chips.push(`<span class="chip time-chip"><i class="far fa-clock"></i>${esc(time)}</span>`);
-    if (theme) chips.push(`<span class="chip theme-chip"><i class="fas fa-tag"></i>${esc(theme)}</span>`);
-    if (dur)   chips.push(`<span class="chip dur-chip"><i class="fas fa-hourglass-half"></i>${esc(dur)}</span>`);
+    // Detail chips
+    var chips = '';
+    if (day)   chips += '<span class="chip day-c">&#128197; ' + esc(day)   + '</span>';
+    if (date)  chips += '<span class="chip">'                 + esc(date)  + '</span>';
+    if (time)  chips += '<span class="chip time-c">&#128336; '+ esc(time)  + '</span>';
+    if (theme) chips += '<span class="chip theme-c">&#127991; '+esc(theme) + '</span>';
+    if (dur)   chips += '<span class="chip dur-c">&#9200; '   + esc(dur)   + '</span>';
 
-    return `
-    <div class="lb-row">
-      <div class="rnk r${rank}">${rank}</div>
-      <div class="lb-info">
-        <div class="lb-title">${esc(mainTitle)}</div>
-        ${showSku ? `<div class="lb-sku"><i class="fas fa-box-open"></i>${esc(sku)}</div>` : ''}
-        ${chips.length ? `<div class="lb-details">${chips.join('')}</div>` : ''}
-        ${month ? `<span class="lb-month-tag">${esc(month)}</span>` : ''}
-      </div>
-      <div class="lb-metric ${colorCls}">
-        <div class="mv">${disp}</div>
-        <div class="ms">${label}</div>
-      </div>
-    </div>`;
-  }).join('');
+    html +=
+      '<div class="lb-row">'
+      + '<div class="rnk r' + rank + '">' + rank + '</div>'
+      + '<div class="lb-info">'
+        + '<div class="lb-title">' + esc(mainTitle) + '</div>'
+        + (showSku ? '<div class="lb-sku">&#128230; ' + esc(sku) + '</div>' : '')
+        + (chips   ? '<div class="lb-details">' + chips + '</div>' : '')
+        + (month   ? '<span class="lb-month-tag">' + esc(month) + '</span>' : '')
+      + '</div>'
+      + '<div class="lb-metric ' + colorCls + '">'
+        + '<div class="mv">' + disp + '</div>'
+        + '<div class="ms">' + label + '</div>'
+      + '</div>'
+      + '</div>';
+  }
+  el.innerHTML = html;
 }
 
-// ═══════════════════════════════════════════════════════════
-//  UI HELPERS
-// ═══════════════════════════════════════════════════════════
+// ── UI helpers ──
 function showSec(name) {
-  document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  var secs = document.querySelectorAll('.sec');
+  var tabs = document.querySelectorAll('.tab');
+  for (var i=0; i<secs.length; i++) secs[i].classList.remove('active');
+  for (var i=0; i<tabs.length; i++) tabs[i].classList.remove('active');
   document.getElementById('s-' + name).classList.add('active');
   document.getElementById('t-' + name).classList.add('active');
 }
 
-async function doRefresh() {
-  const ico = document.getElementById('syncIco');
-  ico.classList.add('fa-spin');
-  await loadData(true);
-  ico.classList.remove('fa-spin');
+function doRefresh() {
+  document.getElementById('syncIco').textContent = '…';
+  loadData(true);
+  setTimeout(function() { document.getElementById('syncIco').textContent = '↻'; }, 2000);
 }
 
 // Boot
-window.addEventListener('DOMContentLoaded', () => loadData());
+document.addEventListener('DOMContentLoaded', function() { loadData(false); });
 </script>
 </body>
 </html>
