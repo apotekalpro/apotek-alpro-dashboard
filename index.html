@@ -1857,7 +1857,7 @@
                                     <div class="content-card p-4">
                                         <div class="flex items-center justify-between">
                                             <div>
-                                                <p class="text-sm text-gray-600">Current Forecast</p>
+                                                <p class="text-sm text-gray-600">Latest Month Revenue</p>
                                                 <p class="text-lg font-bold text-green-600" id="pshCurrentForecast">Rp 0</p>
                                             </div>
                                             <i class="fas fa-chart-line text-3xl text-purple-600 opacity-50"></i>
@@ -1938,11 +1938,14 @@
                                                     <th onclick="sortPSHTable('month3PSH')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-orange-100 cursor-pointer hover:bg-orange-200">
                                                         Month 3<br><span class="text-xs font-normal">PSH</span> <i class="fas fa-sort ml-1"></i>
                                                     </th>
-                                                    <th onclick="sortPSHTable('currentForecast')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-100 cursor-pointer hover:bg-purple-200">
-                                                        Current Forecast<br><span class="text-xs font-normal">This Month</span> <i class="fas fa-sort ml-1"></i>
+                                                    <th onclick="sortPSHTable('latestRevenue')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-100 cursor-pointer hover:bg-purple-200">
+                                                        Latest Month<br><span class="text-xs font-normal">Revenue</span> <i class="fas fa-sort ml-1"></i>
                                                     </th>
-                                                    <th onclick="sortPSHTable('growthVsBaseline')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-100 cursor-pointer hover:bg-purple-200">
-                                                        Growth vs Baseline <i class="fas fa-sort ml-1"></i>
+                                                    <th onclick="sortPSHTable('latestTrano')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-100 cursor-pointer hover:bg-purple-200">
+                                                        Latest Month<br><span class="text-xs font-normal">Trano</span> <i class="fas fa-sort ml-1"></i>
+                                                    </th>
+                                                    <th onclick="sortPSHTable('latestPSH')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-100 cursor-pointer hover:bg-purple-200">
+                                                        Latest Month<br><span class="text-xs font-normal">PSH</span> <i class="fas fa-sort ml-1"></i>
                                                     </th>
                                                 </tr>
                                             </thead>
@@ -13405,18 +13408,13 @@ Ready for deployment! 🚀
                 document.getElementById('pshDataLoading').classList.remove('hidden');
                 document.getElementById('pshDataError').classList.add('hidden');
                 
-                // Fetch both PSH Project data and AM Performance Tracker data in parallel
-                const [pshData, amData] = await Promise.all([
-                    fetchPSHProjectData(),
-                    fetchAMForecastData()
-                ]);
+                // Fetch PSH Project data (includes latest month from columns T, U, V)
+                const pshData = await fetchPSHProjectData();
                 
                 pshProjectData = pshData;
-                pshAMForecastData = amData;
                 pshFilteredData = [...pshProjectData];
                 
                 console.log('✅ PSH Data loaded:', pshProjectData.length, 'outlets');
-                console.log('✅ AM Forecast data loaded:', pshAMForecastData.length, 'outlets');
                 
                 updatePSHSummaryCards();
                 displayPSHTable();
@@ -13488,6 +13486,11 @@ Ready for deployment! 🚀
                     const month3Trano = parseInt(values[17]?.replace(/,/g, '')) || 0;
                     const month3PSH = parseFloat(values[18]?.replace(/,/g, '')) || 0;
                     
+                    // Parse Latest Month data (columns T, U, V = indices 19, 20, 21)
+                    const latestRevenue = parseFloat(values[19]?.replace(/,/g, '')) || 0;
+                    const latestTrano = parseInt(values[20]?.replace(/,/g, '')) || 0;
+                    const latestPSH = parseFloat(values[21]?.replace(/,/g, '')) || 0;
+                    
                     const record = {
                         outletCode,
                         outletName: outletName || outletCode,
@@ -13511,7 +13514,11 @@ Ready for deployment! 🚀
                             trano: month3Trano,
                             psh: month3PSH
                         },
-                        currentForecast: 0 // Will be filled from AM data
+                        latestMonth: {
+                            revenue: latestRevenue,
+                            trano: latestTrano,
+                            psh: latestPSH
+                        }
                     };
                     
                     data.push(record);
@@ -13577,22 +13584,14 @@ Ready for deployment! 🚀
                 return;
             }
             
-            // Merge current forecast data into PSH data
-            pshProjectData.forEach(outlet => {
-                const forecastData = pshAMForecastData.find(am => am.outletCode === outlet.outletCode);
-                if (forecastData) {
-                    outlet.currentForecast = forecastData.forecast;
-                }
-            });
-            
             const totalOutlets = pshProjectData.length;
             const totalBaseline = pshProjectData.reduce((sum, o) => sum + o.baseline.revenue, 0);
-            const totalForecast = pshProjectData.reduce((sum, o) => sum + o.currentForecast, 0);
-            const overallGrowth = totalBaseline > 0 ? ((totalForecast - totalBaseline) / totalBaseline * 100) : 0;
+            const totalLatest = pshProjectData.reduce((sum, o) => sum + o.latestMonth.revenue, 0);
+            const overallGrowth = totalBaseline > 0 ? ((totalLatest - totalBaseline) / totalBaseline * 100) : 0;
             
             document.getElementById('pshTotalOutlets').textContent = totalOutlets;
             document.getElementById('pshBaselineRevenue').textContent = formatCurrency(totalBaseline);
-            document.getElementById('pshCurrentForecast').textContent = formatCurrency(totalForecast);
+            document.getElementById('pshCurrentForecast').textContent = formatCurrency(totalLatest);
             
             const growthElement = document.getElementById('pshOverallGrowth');
             growthElement.textContent = `${overallGrowth >= 0 ? '+' : ''}${overallGrowth.toFixed(1)}%`;
@@ -13607,7 +13606,7 @@ Ready for deployment! 🚀
             if (!pshFilteredData || pshFilteredData.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="15" class="px-6 py-4 text-center text-gray-500">
+                        <td colspan="16" class="px-6 py-4 text-center text-gray-500">
                             No outlet data available
                         </td>
                     </tr>
@@ -13618,12 +13617,6 @@ Ready for deployment! 🚀
             let html = '';
             
             pshFilteredData.forEach((outlet, index) => {
-                const currentForecast = outlet.currentForecast || 0;
-                const baselineRevenue = outlet.baseline.revenue || 0;
-                const growthVsBaseline = baselineRevenue > 0 
-                    ? ((currentForecast - baselineRevenue) / baselineRevenue * 100) 
-                    : 0;
-                
                 // Determine which is the latest month with data
                 const latestMonth = outlet.month3.revenue > 0 ? 3 : 
                                    outlet.month2.revenue > 0 ? 2 : 
@@ -13727,16 +13720,28 @@ Ready for deployment! 🚀
                             ` : '<span class="text-gray-400">-</span>'}
                         </td>
                         
-                        <!-- Current Forecast -->
+                        <!-- Latest Month -->
                         <td class="px-4 py-3 text-center bg-purple-50">
-                            ${currentForecast > 0 ? `
-                                <div class="font-bold text-purple-700">${formatCurrencyShort(currentForecast)}</div>
-                            ` : '<span class="text-gray-400">N/A</span>'}
+                            ${outlet.latestMonth.revenue > 0 ? `
+                                <div class="font-semibold text-gray-800">${formatCurrencyShort(outlet.latestMonth.revenue)}</div>
+                                <div class="text-xs ${getGrowthColorClass(outlet.latestMonth.revenue, outlet.baseline.revenue)}">
+                                    ${formatGrowth(outlet.latestMonth.revenue, outlet.baseline.revenue)}
+                                </div>
+                            ` : '<span class="text-gray-400">-</span>'}
                         </td>
                         <td class="px-4 py-3 text-center bg-purple-50">
-                            ${currentForecast > 0 ? `
-                                <div class="font-bold ${growthVsBaseline >= 0 ? 'text-green-600' : 'text-red-600'}">
-                                    ${growthVsBaseline >= 0 ? '+' : ''}${growthVsBaseline.toFixed(1)}%
+                            ${outlet.latestMonth.trano > 0 ? `
+                                <div class="text-gray-700">${outlet.latestMonth.trano.toLocaleString()}</div>
+                                <div class="text-xs ${getGrowthColorClass(outlet.latestMonth.trano, outlet.baseline.trano)}">
+                                    ${formatGrowth(outlet.latestMonth.trano, outlet.baseline.trano)}
+                                </div>
+                            ` : '<span class="text-gray-400">-</span>'}
+                        </td>
+                        <td class="px-4 py-3 text-center bg-purple-50">
+                            ${outlet.latestMonth.psh !== 0 ? `
+                                <div class="text-gray-700">${formatNumber(outlet.latestMonth.psh)}</div>
+                                <div class="text-xs ${getPSHGrowthColorClass(outlet.latestMonth.psh, outlet.baseline.psh)}">
+                                    ${formatPSHGrowth(outlet.latestMonth.psh, outlet.baseline.psh)}
                                 </div>
                             ` : '<span class="text-gray-400">-</span>'}
                         </td>
@@ -13836,15 +13841,17 @@ Ready for deployment! 🚀
                         aVal = a.month3.psh;
                         bVal = b.month3.psh;
                         break;
-                    case 'currentForecast':
-                        aVal = a.currentForecast || 0;
-                        bVal = b.currentForecast || 0;
+                    case 'latestRevenue':
+                        aVal = a.latestMonth.revenue;
+                        bVal = b.latestMonth.revenue;
                         break;
-                    case 'growthVsBaseline':
-                        const aBaseline = a.baseline.revenue || 0;
-                        const bBaseline = b.baseline.revenue || 0;
-                        aVal = aBaseline > 0 ? ((a.currentForecast - aBaseline) / aBaseline * 100) : 0;
-                        bVal = bBaseline > 0 ? ((b.currentForecast - bBaseline) / bBaseline * 100) : 0;
+                    case 'latestTrano':
+                        aVal = a.latestMonth.trano;
+                        bVal = b.latestMonth.trano;
+                        break;
+                    case 'latestPSH':
+                        aVal = a.latestMonth.psh;
+                        bVal = b.latestMonth.psh;
                         break;
                     default:
                         return 0;
