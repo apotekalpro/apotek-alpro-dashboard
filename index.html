@@ -219,6 +219,14 @@
         .bpt-subtab#tiktokPerformanceTab:hover {
             color: #FE2C55 !important;
         }
+        .bpt-subtab#instagramPerformanceTab.active {
+            border-color: #E1306C !important;
+            color: #E1306C !important;
+            background: linear-gradient(90deg, rgba(131,58,180,0.07), rgba(225,48,108,0.07));
+        }
+        .bpt-subtab#instagramPerformanceTab:hover {
+            color: #833AB4 !important;
+        }
         .bpt-subcontent {
             animation: fadeIn 0.3s ease-in;
         }
@@ -2388,6 +2396,10 @@
                                         class="bpt-subtab whitespace-nowrap py-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
                                     <i class="fas fa-home mr-2"></i>KOS Seeding
                                 </button>
+                                <button onclick="showBptSubTab('instagramPerformance')" id="instagramPerformanceTab"
+                                        class="bpt-subtab whitespace-nowrap py-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    <i class="fab fa-instagram mr-2"></i>Instagram Performance
+                                </button>
                             </nav>
                         </div>
                     </div>
@@ -2424,6 +2436,22 @@
                         </div>
                         <div class="iframe-container" style="height:calc(100vh - 200px);min-height:750px;">
                             <iframe id="kosSeedingIframe" data-src="kos-seeding.html"
+                                    class="iframe-full lazy-iframe w-full h-full border-0 rounded-lg"
+                                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Instagram Performance Sub-content -->
+                    <div id="instagramPerformanceContent" class="bpt-subcontent hidden">
+                        <div class="flex justify-end mb-3">
+                            <button onclick="openInNewTab('instagram-performance.html')"
+                                    class="px-4 py-2 rounded-lg text-sm font-semibold text-white flex items-center gap-2"
+                                    style="background:linear-gradient(135deg,#833AB4,#E1306C,#F77737)">
+                                <i class="fas fa-external-link-alt"></i>Open in New Tab
+                            </button>
+                        </div>
+                        <div class="iframe-container" style="height:calc(100vh - 200px);min-height:750px;">
+                            <iframe id="instagramPerfIframe" data-src="instagram-performance.html"
                                     class="iframe-full lazy-iframe w-full h-full border-0 rounded-lg"
                                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
                         </div>
@@ -6076,8 +6104,8 @@
                 tabEl.classList.remove('border-transparent', 'text-gray-500');
                 if (subtabId === 'tiktokPerformance') {
                     tabEl.classList.add('border-black', 'text-black');
-                } else if (subtabId === 'kosSeeding') {
-                    tabEl.classList.add('border-orange-500', 'text-orange-600');
+                } else if (subtabId === 'instagramPerformance') {
+                    tabEl.classList.add('border-pink-500', 'text-pink-600');
                 } else {
                     tabEl.classList.add('border-orange-500', 'text-orange-600');
                 }
