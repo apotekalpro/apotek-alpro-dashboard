@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instagram Performance · BPT</title>
+<style>
+:root {
+  --bg:        #f5f6fa;
+  --surface:   #ffffff;
+  --border:    rgba(0,0,0,0.08);
+  --text:      #1a1a2e;
+  --muted:     #6b6b8a;
+  --faint:     #aaaabc;
+  --ig1:       #E1306C;
+  --ig2:       #833AB4;
+  --ig3:       #F77737;
+  --ig4:       #FCAF45;
+  --ig5:       #405DE6;
+  --teal:      #009faf;
+  --cyan:      #00bcd4;
+  --purple:    #7c3aed;
+  --green:     #16a34a;
+  --orange:    #ea580c;
+  --gold:      #d97706;
+  --silver:    #64748b;
+  --card-shad: 0 2px 12px rgba(0,0,0,0.07);
+  --card-shad-hover: 0 6px 24px rgba(0,0,0,0.13);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter','Segoe UI',system-ui,sans-serif;min-height:100vh;font-size:14px}
+
+/* ── HEADER ──────────────────────────────────────── */
+.hdr{background:linear-gradient(135deg,#833AB4 0%,#E1306C 50%,#F77737 100%);padding:13px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 3px 18px rgba(225,48,108,.38);position:sticky;top:0;z-index:100}
+.hdr-logo{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0;border:1px solid rgba(255,255,255,.25)}
+.hdr-title h1{font-size:1.05rem;font-weight:800;color:#fff;line-height:1.2}
+.hdr-title p{font-size:.7rem;color:rgba(255,255,255,.75)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.btn-refresh{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.30);border-radius:9px;padding:7px 14px;color:#fff;font-weight:700;font-size:.78rem;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .22s}
+.btn-refresh:hover{background:rgba(255,255,255,.28);transform:translateY(-1px)}
+.sync-ts{font-size:.66rem;color:rgba(255,255,255,.68)}
+
+/* ── TABS ────────────────────────────────────────── */
+.tabs{display:flex;padding:0 16px;background:var(--surface);border-bottom:2px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:66px;z-index:99;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:12px 16px;border-bottom:3px solid transparent;background:transparent;color:var(--muted);font-size:.82rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .18s;margin-bottom:-2px;border:none;flex-shrink:0}
+.tab:hover{color:var(--text);background:rgba(225,48,108,.04)}
+.tab.active{color:var(--ig1);border-bottom-color:var(--ig1);background:rgba(225,48,108,.04)}
+.tab.overview-tab{font-weight:800}
+.tab.overview-tab.active{color:var(--ig2);border-bottom-color:var(--ig2);background:rgba(131,58,180,.05)}
+
+/* ── MAIN ────────────────────────────────────────── */
+.main{padding:20px;max-width:1440px;margin:0 auto}
+.sec{display:none}.sec.active{display:block}
+
+/* ── SEC TITLE ───────────────────────────────────── */
+.sec-title{display:flex;align-items:center;gap:10px;font-size:1rem;font-weight:800;color:var(--text);margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid var(--border);flex-wrap:wrap}
+.pill{font-size:.67rem;font-weight:700;padding:3px 10px;border-radius:20px}
+.pill.ig{background:linear-gradient(90deg,rgba(131,58,180,.1),rgba(225,48,108,.1));color:var(--ig1);border:1px solid rgba(225,48,108,.2)}
+.pill.mo{background:rgba(0,188,212,.1);color:var(--teal);border:1px solid rgba(0,188,212,.2)}
+.pill.yr{background:rgba(131,58,180,.1);color:var(--ig2);border:1px solid rgba(131,58,180,.25)}
+.pill.future{background:rgba(100,116,139,.1);color:var(--silver);border:1px solid rgba(100,116,139,.2)}
+
+/* ── STAT CARDS ──────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:22px}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:16px 14px;transition:all .22s;box-shadow:var(--card-shad);position:relative;overflow:hidden}
+.sc::after{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:4px 0 0 4px}
+.sc.c1::after{background:var(--ig1)}.sc.c2::after{background:var(--ig2)}.sc.c3::after{background:var(--ig3)}.sc.c4::after{background:var(--ig4)}.sc.c5::after{background:var(--ig5)}.sc.c6::after{background:var(--green)}.sc.c7::after{background:var(--teal)}.sc.c8::after{background:var(--orange)}.sc.c9::after{background:var(--purple)}
+.sc:hover{transform:translateY(-2px);box-shadow:var(--card-shad-hover)}
+.sc .lbl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600}
+.sc .val{font-size:1.5rem;font-weight:900;margin:5px 0 2px;line-height:1}
+.sc .sub{font-size:.63rem;color:var(--faint)}
+.sc.c1 .val{color:var(--ig1)}.sc.c2 .val{color:var(--ig2)}.sc.c3 .val{color:var(--ig3)}.sc.c4 .val{color:var(--ig4)}.sc.c5 .val{color:var(--ig5)}.sc.c6 .val{color:var(--green)}.sc.c7 .val{color:var(--teal)}.sc.c8 .val{color:var(--orange)}.sc.c9 .val{color:var(--purple)}
+.sc-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:2rem;opacity:.06}
+
+/* ── OVERVIEW: MONTH SUMMARY TABLE ───────────────── */
+.ov-section{margin-bottom:28px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-bottom:24px;box-shadow:var(--card-shad)}
+.card-hdr{padding:13px 18px;background:linear-gradient(135deg,rgba(225,48,108,.06),rgba(131,58,180,.04));border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.card-hdr h3{font-weight:700;font-size:.9rem;color:var(--text)}
+.badge{margin-left:auto;font-size:.67rem;background:rgba(225,48,108,.08);color:var(--ig1);padding:3px 9px;border-radius:20px;font-weight:600;border:1px solid rgba(225,48,108,.15)}
+.badge.purple{background:rgba(131,58,180,.08);color:var(--ig2);border-color:rgba(131,58,180,.2)}
+.tscroll{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse}
+table.t th{background:rgba(0,0,0,.025);padding:9px 14px;text-align:left;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border);white-space:nowrap;font-weight:700}
+table.t th.num{text-align:right}
+table.t td{padding:10px 14px;font-size:.81rem;border-bottom:1px solid rgba(0,0,0,.04);vertical-align:middle}
+table.t td.num{text-align:right;font-weight:600;color:var(--text)}
+table.t td.num-hi{text-align:right;font-weight:800;color:var(--ig1)}
+table.t tr:last-child td{border-bottom:none}
+table.t tr:hover td{background:rgba(225,48,108,.022)}
+table.t tr.total-row td{background:linear-gradient(90deg,rgba(131,58,180,.06),rgba(225,48,108,.04));font-weight:800;border-top:2px solid var(--border)}
+
+/* Month bar in overview table */
+.mo-label{display:flex;align-items:center;gap:8px}
+.mo-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.mo-name{font-weight:700;font-size:.85rem}
+.mo-status{font-size:.65rem;padding:2px 7px;border-radius:10px;font-weight:700}
+.mo-status.live{background:rgba(22,163,74,.1);color:var(--green);border:1px solid rgba(22,163,74,.2)}
+.mo-status.partial{background:rgba(247,119,55,.1);color:var(--orange);border:1px solid rgba(247,119,55,.2)}
+.mo-status.pending{background:rgba(100,116,139,.1);color:var(--silver);border:1px solid rgba(100,116,139,.2)}
+
+/* Mini goal chips in overview */
+.goal-mini{display:flex;flex-wrap:wrap;gap:4px}
+.gm{display:inline-flex;align-items:center;gap:3px;font-size:.63rem;font-weight:700;padding:2px 6px;border-radius:8px;white-space:nowrap}
+.gm.br{background:rgba(225,48,108,.08);color:var(--ig1);border:1px solid rgba(225,48,108,.18)}
+.gm.se{background:rgba(131,58,180,.08);color:var(--ig2);border:1px solid rgba(131,58,180,.18)}
+.gm.en{background:rgba(247,119,55,.09);color:var(--orange);border:1px solid rgba(247,119,55,.2)}
+.gm.aw{background:rgba(64,93,230,.08);color:var(--ig5);border:1px solid rgba(64,93,230,.18)}
+.gm.ot{background:rgba(100,116,139,.08);color:var(--silver);border:1px solid rgba(100,116,139,.18)}
+
+/* ── GOAL DISTRIBUTION ───────────────────────────── */
+.goal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin-bottom:22px}
+.gc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 12px;text-align:center;transition:all .22s;box-shadow:var(--card-shad);position:relative;overflow:hidden}
+.gc:hover{transform:translateY(-2px);box-shadow:var(--card-shad-hover)}
+.gc .g-icon{font-size:1.4rem;margin-bottom:6px}
+.gc .g-name{font-size:.68rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.gc .g-count{font-size:1.5rem;font-weight:900;line-height:1;margin-bottom:2px}
+.gc .g-pct{font-size:.65rem;color:var(--faint);font-weight:600}
+.gc.gbranding{border-top:3px solid var(--ig1)}.gc.gbranding .g-count{color:var(--ig1)}
+.gc.gseeding{border-top:3px solid var(--ig2)}.gc.gseeding .g-count{color:var(--ig2)}
+.gc.gengagement{border-top:3px solid var(--ig3)}.gc.gengagement .g-count{color:var(--ig3)}
+.gc.gawareness{border-top:3px solid var(--ig5)}.gc.gawareness .g-count{color:var(--ig5)}
+.gc.gother{border-top:3px solid var(--silver)}.gc.gother .g-count{color:var(--silver)}
+
+/* ── LEADERBOARD ─────────────────────────────────── */
+.lb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px;margin-bottom:24px}
+.lb-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.lb-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.lb-icon.lv{background:linear-gradient(135deg,#E1306C,#F77737)}
+.lb-icon.ll{background:linear-gradient(135deg,#833AB4,#E1306C)}
+.lb-icon.le{background:linear-gradient(135deg,#405DE6,#833AB4)}
+.lb-hdr-text h3{font-size:.9rem;font-weight:800;color:var(--text)}
+.lb-hdr-text p{font-size:.68rem;color:var(--muted);margin-top:1px}
+.lb-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;overflow:hidden;box-shadow:var(--card-shad)}
+.lb-row{display:flex;align-items:flex-start;gap:11px;padding:14px 15px;border-bottom:1px solid rgba(0,0,0,.05);transition:background .15s}
+.lb-row:last-child{border-bottom:none}
+.lb-row:hover{background:rgba(225,48,108,.022)}
+.rnk{width:32px;height:32px;min-width:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.84rem;flex-shrink:0;margin-top:2px}
+.r1{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;box-shadow:0 3px 10px rgba(245,158,11,.35)}
+.r2{background:linear-gradient(135deg,#94a3b8,#64748b);color:#fff}
+.r3{background:linear-gradient(135deg,#cd7f32,#92400e);color:#fff}
+.r4,.r5{background:rgba(0,0,0,.06);color:var(--muted)}
+.lb-info{flex:1;min-width:0}
+.lb-title{font-size:.86rem;font-weight:700;color:var(--text);line-height:1.4;margin-bottom:5px;word-break:break-word}
+.lb-details{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.lb-month-tag{display:inline-block;font-size:.62rem;font-weight:700;padding:1px 7px;border-radius:10px;background:rgba(131,58,180,.08);color:var(--ig2);border:1px solid rgba(131,58,180,.2)}
+.lb-metric{text-align:right;flex-shrink:0;min-width:82px;padding-top:2px}
+.lb-metric .mv{font-size:1.15rem;font-weight:900;line-height:1}
+.lb-metric .ms{font-size:.63rem;color:var(--muted);margin-top:3px}
+.lv-m .mv{color:var(--ig1)}
+.ll-m .mv{color:var(--ig2)}
+.le-m .mv{color:var(--ig5)}
+
+/* ── CHIPS ───────────────────────────────────────── */
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:.67rem;background:rgba(0,0,0,.04);border:1px solid var(--border);border-radius:5px;padding:2px 7px;white-space:nowrap;color:var(--muted)}
+.chip.goal-branding{color:var(--ig1);background:rgba(225,48,108,.07);border-color:rgba(225,48,108,.2)}
+.chip.goal-seeding{color:var(--ig2);background:rgba(131,58,180,.07);border-color:rgba(131,58,180,.2)}
+.chip.goal-engagement{color:var(--ig3);background:rgba(247,119,55,.08);border-color:rgba(247,119,55,.2)}
+.chip.goal-awareness{color:var(--ig5);background:rgba(64,93,230,.07);border-color:rgba(64,93,230,.2)}
+.chip.day-c{color:var(--purple);background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.15)}
+.chip.date-c{color:var(--teal);background:rgba(0,188,212,.06);border-color:rgba(0,188,212,.15)}
+.chip.month-c{color:var(--ig2);background:rgba(131,58,180,.07);border-color:rgba(131,58,180,.2)}
+
+/* ── ER BAR ──────────────────────────────────────── */
+.er-bar-wrap{display:flex;align-items:center;gap:8px}
+.er-bar{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--ig1),var(--ig2));flex-shrink:0}
+.er-val{font-size:.78rem;font-weight:700;color:var(--ig2);white-space:nowrap}
+
+/* ── MONTHLY SPARKLINE BARS ──────────────────────── */
+.bar-wrap{display:flex;align-items:flex-end;gap:3px;height:32px;margin-top:6px}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
+.bar-seg{width:100%;border-radius:2px 2px 0 0;min-height:2px;transition:height .4s}
+.bar-lbl{font-size:.52rem;color:var(--faint);white-space:nowrap}
+
+/* ── LOADING ─────────────────────────────────────── */
+#loadOverlay{position:fixed;inset:0;background:rgba(245,246,250,.96);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.spinner{width:44px;height:44px;border-radius:50%;border:4px solid rgba(225,48,108,.15);border-top-color:var(--ig1);animation:spin .85s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.prog-wrap{width:220px;height:5px;background:rgba(0,0,0,.08);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--ig1),var(--ig2));border-radius:3px;transition:width .35s}
+.load-txt{color:var(--text);font-size:.88rem;font-weight:600}
+.load-sub{color:var(--muted);font-size:.72rem}
+
+/* ── PLACEHOLDER ─────────────────────────────────── */
+.coming-soon{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:64px 20px;gap:14px}
+.coming-soon .cs-icon{font-size:2.8rem;opacity:.35}
+.coming-soon h3{font-size:1.05rem;font-weight:700;color:var(--muted)}
+.coming-soon p{font-size:.8rem;color:var(--faint);max-width:300px;text-align:center}
+.num-plain{font-weight:600;color:var(--text)}
+
+/* ── FOLLOWER HERO BANNER ────────────────────────── */
+#followerBanner{
+  background:linear-gradient(135deg,#833AB4 0%,#E1306C 50%,#F77737 100%);
+  padding:18px 24px;
+  display:flex;align-items:center;gap:0;
+  flex-wrap:wrap;
+  border-bottom:1px solid rgba(255,255,255,.12);
+}
+.fb-platform{display:flex;align-items:center;gap:14px;padding:10px 24px;flex:1;min-width:160px;position:relative}
+.fb-platform+.fb-platform::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);height:52px;width:1px;background:rgba(255,255,255,.18)}
+.fb-ico{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.fb-body{flex:1}
+.fb-platform-name{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.72);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.fb-count{font-size:2rem;font-weight:900;color:#fff;line-height:1;letter-spacing:-.02em}
+.fb-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
+.fb-growth{font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:20px;display:flex;align-items:center;gap:4px}
+.fb-growth.up{background:rgba(34,197,94,.25);color:#86efac;border:1px solid rgba(34,197,94,.35)}
+.fb-growth.down{background:rgba(239,68,68,.22);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+.fb-growth.flat{background:rgba(255,255,255,.12);color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.18)}
+.fb-date{font-size:.65rem;color:rgba(255,255,255,.55)}
+.fb-divider-v{width:1px;background:rgba(255,255,255,.15);align-self:stretch;margin:0 4px}
+.fb-target-wrap{display:flex;flex-direction:column;align-items:flex-end;padding:10px 20px 10px 24px;gap:6px;flex-shrink:0}
+.fb-target-lbl{font-size:.65rem;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.07em}
+.fb-progress-bar-outer{width:180px;height:8px;background:rgba(255,255,255,.18);border-radius:4px;overflow:hidden}
+.fb-progress-bar-inner{height:100%;border-radius:4px;background:linear-gradient(90deg,#fff,rgba(255,255,255,.7));transition:width .6s ease}
+.fb-progress-text{font-size:.7rem;font-weight:800;color:#fff}
+
+/* ── RESPONSIVE ──────────────────────────────────── */
+@media(max-width:700px){
+  .main{padding:12px}
+  .lb-grid{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .goal-grid{grid-template-columns:repeat(2,1fr)}
+  #followerBanner{padding:14px 16px}
+  .fb-count{font-size:1.6rem}
+  .fb-target-wrap{display:none}
+}
+@media(max-width:420px){
+  .stat-grid{grid-template-columns:1fr}
+  .fb-platform{padding:8px 14px;min-width:130px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadOverlay">
+  <div class="spinner"></div>
+  <p class="load-txt">Memuat Instagram Performance…</p>
+  <div class="prog-wrap"><div class="prog-fill" id="ldProg"></div></div>
+  <p class="load-sub" id="ldSub">Menghubungkan ke Google Sheets…</p>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-logo">📸</div>
+  <div class="hdr-title">
+    <h1>Instagram Performance</h1>
+    <p>BPT · Content Analytics · Auto-synced from Google Sheets</p>
+  </div>
+  <div class="hdr-right">
+    <button class="btn-refresh" onclick="doRefresh()">&#8635; Refresh</button>
+    <span class="sync-ts" id="syncTs"></span>
+  </div>
+</div>
+
+<!-- FOLLOWER HERO BANNER -->
+<div id="followerBanner">
+  <div class="fb-platform">
+    <div class="fb-ico">📸</div>
+    <div class="fb-body">
+      <div class="fb-platform-name">Instagram</div>
+      <div class="fb-count" id="fb-ig">—</div>
+      <div class="fb-meta">
+        <span class="fb-growth flat" id="fb-ig-growth">—</span>
+        <span class="fb-date" id="fb-ig-date"></span>
+      </div>
+    </div>
+  </div>
+  <div class="fb-platform">
+    <div class="fb-ico">🎵</div>
+    <div class="fb-body">
+      <div class="fb-platform-name">TikTok</div>
+      <div class="fb-count" id="fb-tt">—</div>
+      <div class="fb-meta">
+        <span class="fb-growth flat" id="fb-tt-growth">—</span>
+        <span class="fb-date" id="fb-tt-date"></span>
+      </div>
+    </div>
+  </div>
+  <div class="fb-platform">
+    <div class="fb-ico">👥</div>
+    <div class="fb-body">
+      <div class="fb-platform-name">Facebook</div>
+      <div class="fb-count" id="fb-fb">—</div>
+      <div class="fb-meta">
+        <span class="fb-growth flat" id="fb-fb-growth">—</span>
+        <span class="fb-date" id="fb-fb-date"></span>
+      </div>
+    </div>
+  </div>
+  <div class="fb-target-wrap">
+    <div class="fb-target-lbl">IG Target Progress</div>
+    <div class="fb-progress-bar-outer"><div class="fb-progress-bar-inner" id="fb-progbar" style="width:0%"></div></div>
+    <div class="fb-progress-text" id="fb-progtxt">—</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs" id="tabBar"></div>
+
+<!-- CONTENT -->
+<div class="main" id="mainContent"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════════
+const SHEET_ID = '16wYhLLLDNq6d8Tc9inWcz_0yig1XkV-AuHBxyd01AzM';
+
+const MONTHS = [
+  { key:'feb2026', label:'Februari 2026', short:'Feb',  sheet:'Februari 2026', active:true  },
+  { key:'mar2026', label:'Maret 2026',    short:'Mar',  sheet:'Maret 2026',    active:true  },
+  { key:'apr2026', label:'April 2026',    short:'Apr',  sheet:'April 2026',    active:true  },
+  { key:'mei2026', label:'Mei 2026',      short:'Mei',  sheet:'Mei 2026',      active:false },
+  { key:'jun2026', label:'Juni 2026',     short:'Jun',  sheet:'Juni 2026',     active:false },
+  { key:'jul2026', label:'Juli 2026',     short:'Jul',  sheet:'Juli 2026',     active:false },
+  { key:'ags2026', label:'Agustus 2026',  short:'Ags',  sheet:'Agustus 2026',  active:false },
+  { key:'sep2026', label:'September 2026',short:'Sep',  sheet:'September 2026',active:false },
+  { key:'okt2026', label:'Oktober 2026',  short:'Okt',  sheet:'Oktober 2026',  active:false },
+  { key:'nov2026', label:'November 2026', short:'Nov',  sheet:'November 2026', active:false },
+  { key:'des2026', label:'Desember 2026', short:'Des',  sheet:'Desember 2026', active:false },
+];
+
+const GOAL_CFG = {
+  Branding:   { icon:'🏷️', cls:'gbranding',      gm:'br' },
+  Seeding:    { icon:'🌱', cls:'gseeding',        gm:'se' },
+  Engagement: { icon:'💬', cls:'gengagement',     gm:'en' },
+  Awareness:  { icon:'📣', cls:'gawareness',      gm:'aw' },
+};
+const GOAL_ORDER = ['Branding','Seeding','Engagement','Awareness'];
+
+const MO_COLORS = ['#E1306C','#833AB4','#F77737','#405DE6','#009faf','#16a34a','#d97706','#ea580c','#7c3aed','#00bcd4','#64748b'];
+
+const cache = {};        // key → posts[]
+let currentTab = 'overview';
+let followerData = null; // { ig, tt, fb, igGrowth, ttGrowth, fbGrowth, date, igTarget }
+
+// ═══════════════════════════════════════════════════════════
+//  PARSE / FETCH
+// ═══════════════════════════════════════════════════════════
+function csvToRows(csv) {
+  const rows = []; let inQ = false, cur = '', cells = [];
+  for (let i = 0; i < csv.length; i++) {
+    const c = csv[i];
+    if (c === '"') { inQ = !inQ; continue; }
+    if (c === ',' && !inQ) { cells.push(cur); cur = ''; continue; }
+    if (c === '\n' && !inQ) { cells.push(cur); rows.push(cells); cells = []; cur = ''; continue; }
+    cur += c;
+  }
+  if (cur || cells.length) { cells.push(cur); rows.push(cells); }
+  return rows;
+}
+
+function pNum(v) { if (!v) return 0; return parseFloat(v.toString().trim().replace(/,/g,'').replace(/%/g,'')) || 0; }
+function pPct(v) { if (!v) return 0; return parseFloat(v.toString().trim().replace(/%/g,'')) || 0; }
+
+// ── FOLLOWER DATA ────────────────────────────────────────────
+function currentMonthFollowerSheet() {
+  // Returns the follower sheet name for the current real month
+  const MONTH_NAMES = [
+    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  const now = new Date();
+  const m = MONTH_NAMES[now.getMonth() + 1]; // +1 because getMonth() is 0-based
+  const y = now.getFullYear();
+  return `${m} ${y} Follower`;
+}
+
+async function fetchFollowerData() {
+  const sheetName = currentMonthFollowerSheet();
+  try {
+    const csv = await fetchSheet(sheetName);
+    const rows = csvToRows(csv);
+
+    // Row 0 (Row 1 in sheet) = starting numbers: C=ig_start, D=tt_start, E=fb_start
+    const igTarget = pNum(rows[0]?.[2]); // col C row 1 = target/starting
+
+    // Find last data row where col C (index 2) has a real follower number
+    // Data starts at row 2 (index 2), col A = date, C = ig, D = tt, E = fb
+    // Growth cols: H=igGrowth (index 7), I=ttGrowth (index 8), J=fbGrowth (index 9)
+    let lastRow = null;
+    let prevIg = igTarget;
+    for (let i = 2; i < rows.length; i++) {
+      const row = rows[i];
+      const igVal = pNum(row[2]);
+      if (igVal > 0) {
+        lastRow = {
+          date:     (row[0]||'').trim(),
+          ig:       igVal,
+          tt:       pNum(row[3]),
+          fb:       pNum(row[4]),
+          // Daily growth = difference from previous row
+          igGrowth: i > 2 ? igVal - (pNum(rows[i-1]?.[2]) || prevIg) : igVal - igTarget,
+          ttGrowth: i > 2 ? pNum(row[3]) - pNum(rows[i-1]?.[3]) : 0,
+          fbGrowth: i > 2 ? pNum(row[4]) - pNum(rows[i-1]?.[4]) : 0,
+        };
+        prevIg = igVal;
+      }
+    }
+
+    // Row 0 col G (index 6) can be target or growth total; col C row 1 = starting
+    // igTarget here = the "starting" number displayed in row 1; 
+    // Use a fixed target from config if you want, but for now use 100000
+    const IG_FOLLOWER_TARGET = 100000;
+
+    return lastRow ? { ...lastRow, igTarget: IG_FOLLOWER_TARGET, sheetName } : null;
+  } catch(e) {
+    console.warn('Follower fetch failed:', e.message);
+    return null;
+  }
+}
+
+function renderFollowerBanner(data) {
+  if (!data) return;
+  followerData = data;
+
+  const fmtF = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : n.toLocaleString('id-ID');
+  const growthBadge = (g, id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (g > 0) {
+      el.className = 'fb-growth up';
+      el.innerHTML = `▲ +${g.toLocaleString('id-ID')}`;
+    } else if (g < 0) {
+      el.className = 'fb-growth down';
+      el.innerHTML = `▼ ${g.toLocaleString('id-ID')}`;
+    } else {
+      el.className = 'fb-growth flat';
+      el.innerHTML = `● Sama`;
+    }
+  };
+
+  document.getElementById('fb-ig').textContent = data.ig.toLocaleString('id-ID');
+  document.getElementById('fb-tt').textContent = data.tt.toLocaleString('id-ID');
+  document.getElementById('fb-fb').textContent = data.fb.toLocaleString('id-ID');
+  growthBadge(data.igGrowth, 'fb-ig-growth');
+  growthBadge(data.ttGrowth, 'fb-tt-growth');
+  growthBadge(data.fbGrowth, 'fb-fb-growth');
+
+  const dateLabel = data.date ? `per ${data.date}` : '';
+  ['fb-ig-date','fb-tt-date','fb-fb-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = dateLabel;
+  });
+
+  // Progress bar
+  const pct = Math.min((data.ig / data.igTarget) * 100, 100);
+  const progBar = document.getElementById('fb-progbar');
+  const progTxt = document.getElementById('fb-progtxt');
+  if (progBar) progBar.style.width = pct.toFixed(1) + '%';
+  if (progTxt) progTxt.textContent = `${pct.toFixed(1)}% dari target ${(data.igTarget/1000).toFixed(0)}K`;
+}
+
+async function fetchSheet(name) {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.text();
+}
+
+function parsePosts(csv, monthLabel) {
+  return csvToRows(csv)
+    .filter(row => row.length >= 10 && (row[9]||'').trim() === 'Publish')
+    .map(row => ({
+      month:          monthLabel,
+      day:            (row[1]||'').trim(),
+      date:           (row[2]||'').trim(),
+      content_theme:  (row[5]||'').trim(),
+      goal:           (row[8]||'').trim(),
+      view:           pNum(row[11]),
+      like:           pNum(row[12]),
+      repost:         pNum(row[13]),
+      comment:        pNum(row[14]),
+      share:          pNum(row[15]),
+      save:           pNum(row[16]),
+      engagement:     pNum(row[17]),
+      engagement_rate: pPct(row[18]),
+    }));
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════════
+function fmt(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if (n >= 1000)    return (n/1000).toFixed(1)+'K';
+  return Math.round(n).toLocaleString('id-ID');
+}
+function fmtFull(n) { return Math.round(n).toLocaleString('id-ID'); }
+
+function goalChipCls(g) {
+  return {Branding:'goal-branding',Seeding:'goal-seeding',Engagement:'goal-engagement',Awareness:'goal-awareness'}[g]||'';
+}
+function rnkCls(i) { return ['r1','r2','r3','r4','r5'][i]||'r5'; }
+
+function statsFor(posts) {
+  return {
+    total:      posts.length,
+    view:       posts.reduce((s,p)=>s+p.view,0),
+    like:       posts.reduce((s,p)=>s+p.like,0),
+    repost:     posts.reduce((s,p)=>s+p.repost,0),
+    comment:    posts.reduce((s,p)=>s+p.comment,0),
+    share:      posts.reduce((s,p)=>s+p.share,0),
+    save:       posts.reduce((s,p)=>s+p.save,0),
+    engagement: posts.reduce((s,p)=>s+p.engagement,0),
+    avgER: (()=>{
+      const valid = posts.filter(p=>p.engagement_rate>0);
+      return valid.length ? valid.reduce((s,p)=>s+p.engagement_rate,0)/valid.length : 0;
+    })(),
+  };
+}
+
+function goalMap(posts) {
+  const m = {};
+  for (const p of posts) m[p.goal||(p.goal||'Lainnya')] = (m[p.goal]||0)+1;
+  return m;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LEADERBOARD ROW (shared for both overview & per-month)
+// ═══════════════════════════════════════════════════════════
+function lbRow(p, i, metricVal, metricLbl, metricCls, showMonth) {
+  const monthTag = showMonth ? `<span class="lb-month-tag">📅 ${p.month}</span>` : '';
+  return `<div class="lb-row">
+    <div class="rnk ${rnkCls(i)}">${i+1}</div>
+    <div class="lb-info">
+      <div class="lb-title">${p.content_theme||'(no theme)'}</div>
+      <div class="lb-details">
+        <span class="chip day-c">${p.day}</span>
+        <span class="chip date-c">${p.date}</span>
+        <span class="chip ${goalChipCls(p.goal)}">${p.goal||'-'}</span>
+        ${monthTag}
+      </div>
+    </div>
+    <div class="lb-metric ${metricCls}">
+      <div class="mv">${metricVal}</div>
+      <div class="ms">${metricLbl}</div>
+    </div>
+  </div>`;
+}
+
+function lbSection(allPosts, showMonth) {
+  const top5V  = [...allPosts].sort((a,b)=>b.view-a.view).slice(0,5);
+  const top5L  = [...allPosts].sort((a,b)=>b.like-a.like).slice(0,5);
+  const top5ER = [...allPosts].sort((a,b)=>b.engagement_rate-a.engagement_rate).slice(0,5);
+  return `<div class="lb-grid">
+    <div>
+      <div class="lb-hdr">
+        <div class="lb-icon lv">👁️</div>
+        <div class="lb-hdr-text"><h3>Top 5 Views</h3><p>Post dengan tayangan terbanyak</p></div>
+      </div>
+      <div class="lb-card">${top5V.map((p,i)=>lbRow(p,i,fmtFull(p.view),'views','lv-m',showMonth)).join('')}</div>
+    </div>
+    <div>
+      <div class="lb-hdr">
+        <div class="lb-icon ll">❤️</div>
+        <div class="lb-hdr-text"><h3>Top 5 Likes</h3><p>Post dengan likes terbanyak</p></div>
+      </div>
+      <div class="lb-card">${top5L.map((p,i)=>lbRow(p,i,fmtFull(p.like),'likes','ll-m',showMonth)).join('')}</div>
+    </div>
+    <div>
+      <div class="lb-hdr">
+        <div class="lb-icon le">📈</div>
+        <div class="lb-hdr-text"><h3>Top 5 Engagement Rate</h3><p>Post dengan ER tertinggi</p></div>
+      </div>
+      <div class="lb-card">${top5ER.map((p,i)=>lbRow(p,i,p.engagement_rate.toFixed(2)+'%','eng. rate','le-m',showMonth)).join('')}</div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BUILD OVERVIEW SECTION
+// ═══════════════════════════════════════════════════════════
+function buildOverview() {
+  // Collect all posts across loaded months
+  const allPosts = MONTHS.flatMap(m => cache[m.key] || []);
+  const activeData = MONTHS.filter(m => (cache[m.key]||[]).length > 0);
+
+  // Year-wide totals
+  const yr = statsFor(allPosts);
+
+  // ── YEAR KPIs ──────────────────────────────────────────
+  const yearKPI = `
+  <div class="sec-title">📊 Year-to-Date Summary <span class="pill yr">2026</span></div>
+  <div class="stat-grid">
+    <div class="sc c1"><span class="sc-icon">📝</span><div class="lbl">Total Post</div><div class="val">${yr.total}</div><div class="sub">Dari ${activeData.length} bulan aktif</div></div>
+    <div class="sc c2"><span class="sc-icon">👁️</span><div class="lbl">Total Views</div><div class="val">${fmt(yr.view)}</div><div class="sub">${fmtFull(yr.view)} views</div></div>
+    <div class="sc c3"><span class="sc-icon">❤️</span><div class="lbl">Total Like</div><div class="val">${fmt(yr.like)}</div><div class="sub">${fmtFull(yr.like)} likes</div></div>
+    <div class="sc c4"><span class="sc-icon">🔁</span><div class="lbl">Total Repost</div><div class="val">${fmt(yr.repost)}</div><div class="sub">${fmtFull(yr.repost)} repost</div></div>
+    <div class="sc c5"><span class="sc-icon">💬</span><div class="lbl">Total Komentar</div><div class="val">${fmt(yr.comment)}</div><div class="sub">${fmtFull(yr.comment)} komentar</div></div>
+    <div class="sc c6"><span class="sc-icon">↗️</span><div class="lbl">Total Share</div><div class="val">${fmt(yr.share)}</div><div class="sub">${fmtFull(yr.share)} share</div></div>
+    <div class="sc c7"><span class="sc-icon">🔖</span><div class="lbl">Total Save</div><div class="val">${fmt(yr.save)}</div><div class="sub">${fmtFull(yr.save)} save</div></div>
+    <div class="sc c8"><span class="sc-icon">📊</span><div class="lbl">Total Engagement</div><div class="val">${fmt(yr.engagement)}</div><div class="sub">${fmtFull(yr.engagement)} total</div></div>
+    <div class="sc c9"><span class="sc-icon">📈</span><div class="lbl">Avg Eng. Rate</div><div class="val">${yr.avgER.toFixed(2)}%</div><div class="sub">Rata-rata per post</div></div>
+  </div>`;
+
+  // ── MONTHLY BREAKDOWN TABLE ────────────────────────────
+  const maxView = Math.max(1, ...MONTHS.map(m => statsFor(cache[m.key]||[]).view));
+
+  const rows = MONTHS.map((m, idx) => {
+    const posts = cache[m.key] || [];
+    const s     = statsFor(posts);
+    const gm    = goalMap(posts);
+    const color = MO_COLORS[idx % MO_COLORS.length];
+
+    let statusLabel, statusCls;
+    if (posts.length > 0 && s.view > 0) { statusLabel = 'Live'; statusCls = 'live'; }
+    else if (posts.length > 0)           { statusLabel = 'Partial'; statusCls = 'partial'; }
+    else                                  { statusLabel = 'Pending'; statusCls = 'pending'; }
+
+    // Mini goal breakdown
+    const goalMinis = GOAL_ORDER
+      .filter(g => gm[g])
+      .map(g => `<span class="gm ${GOAL_CFG[g]?.gm||'ot'}">${GOAL_CFG[g]?.icon||'📌'} ${gm[g]}</span>`)
+      .join('');
+    const otherGoals = Object.keys(gm).filter(g=>!GOAL_ORDER.includes(g));
+    const otherSum   = otherGoals.reduce((s,g)=>s+gm[g],0);
+    const otherMini  = otherSum > 0 ? `<span class="gm ot">📌 ${otherSum}</span>` : '';
+
+    // View bar width
+    const barW = s.view > 0 ? Math.max(4, Math.round((s.view / maxView) * 120)) : 0;
+
+    return `<tr>
+      <td>
+        <div class="mo-label">
+          <div class="mo-dot" style="background:${color}"></div>
+          <div>
+            <div class="mo-name">${m.label}</div>
+            <span class="mo-status ${statusCls}">${statusLabel}</span>
+          </div>
+        </div>
+      </td>
+      <td class="${s.total>0?'num-hi':'num'}">${s.total||'—'}</td>
+      <td class="num">
+        ${s.view > 0 ? `<div style="display:flex;align-items:center;gap:8px">
+          <div style="height:6px;width:${barW}px;border-radius:3px;background:linear-gradient(90deg,${color},${color}99);flex-shrink:0"></div>
+          <span>${fmt(s.view)}</span>
+        </div>` : '—'}
+      </td>
+      <td class="num">${s.like > 0 ? fmtFull(s.like) : '—'}</td>
+      <td class="num">${s.repost > 0 ? fmtFull(s.repost) : '—'}</td>
+      <td class="num">${s.comment > 0 ? fmtFull(s.comment) : '—'}</td>
+      <td class="num">${s.share > 0 ? fmtFull(s.share) : '—'}</td>
+      <td class="num">${s.save > 0 ? fmtFull(s.save) : '—'}</td>
+      <td class="num">${s.engagement > 0 ? fmt(s.engagement) : '—'}</td>
+      <td class="num">${s.avgER > 0 ? s.avgER.toFixed(2)+'%' : '—'}</td>
+      <td>
+        <div class="goal-mini">
+          ${goalMinis}${otherMini}
+          ${!goalMinis && !otherMini ? '<span style="color:var(--faint);font-size:.7rem">—</span>' : ''}
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  // Totals row
+  const totalGoals = GOAL_ORDER
+    .map(g => {
+      const cnt = MONTHS.reduce((s,m)=>{
+        const gm_ = goalMap(cache[m.key]||[]);
+        return s + (gm_[g]||0);
+      },0);
+      return cnt > 0 ? `<span class="gm ${GOAL_CFG[g]?.gm||'ot'}">${GOAL_CFG[g]?.icon||'📌'} ${cnt}</span>` : '';
+    }).filter(Boolean).join('');
+
+  const totalsRow = `<tr class="total-row">
+    <td><strong>🗓 Total 2026</strong></td>
+    <td class="num-hi"><strong>${yr.total}</strong></td>
+    <td class="num"><strong>${fmt(yr.view)}</strong></td>
+    <td class="num"><strong>${fmtFull(yr.like)}</strong></td>
+    <td class="num"><strong>${fmtFull(yr.repost)}</strong></td>
+    <td class="num"><strong>${fmtFull(yr.comment)}</strong></td>
+    <td class="num"><strong>${fmtFull(yr.share)}</strong></td>
+    <td class="num"><strong>${fmtFull(yr.save)}</strong></td>
+    <td class="num"><strong>${fmt(yr.engagement)}</strong></td>
+    <td class="num"><strong>${yr.avgER.toFixed(2)}%</strong></td>
+    <td><div class="goal-mini">${totalGoals}</div></td>
+  </tr>`;
+
+  const monthTable = `
+  <div class="sec-title">📅 Performa Bulanan — 2026</div>
+  <div class="card">
+    <div class="card-hdr">
+      <h3>📊 Ringkasan Per Bulan</h3>
+      <span class="badge purple">${activeData.length} bulan aktif</span>
+    </div>
+    <div class="tscroll">
+      <table class="t">
+        <thead>
+          <tr>
+            <th>Bulan</th>
+            <th class="num">Post</th>
+            <th class="num">Views</th>
+            <th class="num">Like</th>
+            <th class="num">Repost</th>
+            <th class="num">Komentar</th>
+            <th class="num">Share</th>
+            <th class="num">Save</th>
+            <th class="num">Engagement</th>
+            <th class="num">Avg ER</th>
+            <th>Goal Mix</th>
+          </tr>
+        </thead>
+        <tbody>${rows.join('')}${totalsRow}</tbody>
+      </table>
+    </div>
+  </div>`;
+
+  // ── YEAR GOAL DISTRIBUTION ─────────────────────────────
+  const yrGoalMap = goalMap(allPosts);
+  const sortedGoals = [...GOAL_ORDER.filter(g=>yrGoalMap[g]), ...Object.keys(yrGoalMap).filter(g=>!GOAL_ORDER.includes(g))];
+  const goalDistHTML = yr.total > 0 ? `
+  <div class="sec-title">🎯 Distribusi Goal — Keseluruhan 2026</div>
+  <div class="goal-grid">
+    ${sortedGoals.map(g => {
+      const cfg = GOAL_CFG[g] || { icon:'📌', cls:'gother' };
+      const cnt = yrGoalMap[g] || 0;
+      const pct = ((cnt/yr.total)*100).toFixed(1);
+      return `<div class="gc ${cfg.cls}">
+        <div class="g-icon">${cfg.icon}</div>
+        <div class="g-name">${g}</div>
+        <div class="g-count">${cnt}</div>
+        <div class="g-pct">${pct}% dari total</div>
+      </div>`;
+    }).join('')}
+  </div>` : '';
+
+  // ── YEAR LEADERBOARD ───────────────────────────────────
+  const lbHTML = allPosts.length > 0 ? `
+  <div class="sec-title">🏆 Leaderboard Top 5 — Sepanjang 2026 <span class="pill yr">All Months</span></div>
+  ${lbSection(allPosts, true)}` : '';
+
+  return yearKPI + monthTable + goalDistHTML + lbHTML;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BUILD MONTH SECTION
+// ═══════════════════════════════════════════════════════════
+function buildMonthSection(posts, monthLabel) {
+  if (!posts || posts.length === 0) {
+    return `<div class="coming-soon">
+      <div class="cs-icon">📅</div>
+      <h3>Belum ada data untuk ${monthLabel}</h3>
+      <p>Data akan muncul setelah postingan di-publish dan diinput ke Google Sheets.</p>
+    </div>`;
+  }
+
+  const s      = statsFor(posts);
+  const gm     = goalMap(posts);
+  const sorted = [...GOAL_ORDER.filter(g=>gm[g]), ...Object.keys(gm).filter(g=>!GOAL_ORDER.includes(g))];
+
+  const statsHTML = `
+  <div class="stat-grid">
+    <div class="sc c1"><span class="sc-icon">📝</span><div class="lbl">Total Post</div><div class="val">${s.total}</div><div class="sub">Status Publish</div></div>
+    <div class="sc c2"><span class="sc-icon">👁️</span><div class="lbl">Total Views</div><div class="val">${fmt(s.view)}</div><div class="sub">${fmtFull(s.view)}</div></div>
+    <div class="sc c3"><span class="sc-icon">❤️</span><div class="lbl">Total Like</div><div class="val">${fmt(s.like)}</div><div class="sub">${fmtFull(s.like)}</div></div>
+    <div class="sc c4"><span class="sc-icon">🔁</span><div class="lbl">Total Repost</div><div class="val">${fmt(s.repost)}</div><div class="sub">${fmtFull(s.repost)}</div></div>
+    <div class="sc c5"><span class="sc-icon">💬</span><div class="lbl">Total Komentar</div><div class="val">${fmt(s.comment)}</div><div class="sub">${fmtFull(s.comment)}</div></div>
+    <div class="sc c6"><span class="sc-icon">↗️</span><div class="lbl">Total Share</div><div class="val">${fmt(s.share)}</div><div class="sub">${fmtFull(s.share)}</div></div>
+    <div class="sc c7"><span class="sc-icon">🔖</span><div class="lbl">Total Save</div><div class="val">${fmt(s.save)}</div><div class="sub">${fmtFull(s.save)}</div></div>
+    <div class="sc c8"><span class="sc-icon">📊</span><div class="lbl">Total Engagement</div><div class="val">${fmt(s.engagement)}</div><div class="sub">${fmtFull(s.engagement)}</div></div>
+    <div class="sc c9"><span class="sc-icon">📈</span><div class="lbl">Avg Eng. Rate</div><div class="val">${s.avgER.toFixed(2)}%</div><div class="sub">Rata-rata per post</div></div>
+  </div>`;
+
+  const goalHTML = `
+  <div class="sec-title">🎯 Distribusi Goal Konten</div>
+  <div class="goal-grid">
+    ${sorted.map(g => {
+      const cfg = GOAL_CFG[g] || { icon:'📌', cls:'gother' };
+      const cnt = gm[g]; const pct = ((cnt/s.total)*100).toFixed(1);
+      return `<div class="gc ${cfg.cls}">
+        <div class="g-icon">${cfg.icon}</div>
+        <div class="g-name">${g}</div>
+        <div class="g-count">${cnt}</div>
+        <div class="g-pct">${pct}% dari total</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  const lbHTML = `
+  <div class="sec-title">🏆 Leaderboard — Top 5 Post Bulan Ini</div>
+  ${lbSection(posts, false)}`;
+
+  // Full table
+  const tableHTML = `
+  <div class="sec-title">📋 Semua Post Publish — ${monthLabel}</div>
+  <div class="card">
+    <div class="card-hdr"><h3>📋 Detail Semua Post</h3><span class="badge">${s.total} post</span></div>
+    <div class="tscroll">
+      <table class="t">
+        <thead><tr>
+          <th>#</th><th>Hari</th><th>Tanggal</th><th>Content Theme</th><th>Goal</th>
+          <th class="num">Views</th><th class="num">Like</th><th class="num">Repost</th>
+          <th class="num">Komentar</th><th class="num">Share</th><th class="num">Save</th>
+          <th class="num">Engagement</th><th>Eng. Rate</th>
+        </tr></thead>
+        <tbody>
+          ${posts.map((p,i) => {
+            const ew = Math.min(p.engagement_rate * 6, 90);
+            return `<tr>
+              <td>${i+1}</td>
+              <td><span class="chip day-c">${p.day}</span></td>
+              <td><span class="chip date-c" style="white-space:nowrap">${p.date}</span></td>
+              <td style="max-width:220px;font-size:.79rem">${p.content_theme||'-'}</td>
+              <td><span class="chip ${goalChipCls(p.goal)}">${p.goal||'-'}</span></td>
+              <td class="num">${fmtFull(p.view)}</td>
+              <td class="num">${fmtFull(p.like)}</td>
+              <td class="num">${fmtFull(p.repost)}</td>
+              <td class="num">${fmtFull(p.comment)}</td>
+              <td class="num">${fmtFull(p.share)}</td>
+              <td class="num">${fmtFull(p.save)}</td>
+              <td class="num">${fmtFull(p.engagement)}</td>
+              <td><div class="er-bar-wrap"><div class="er-bar" style="width:${ew}px"></div><span class="er-val">${p.engagement_rate.toFixed(2)}%</span></div></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+
+  return statsHTML + goalHTML + lbHTML + tableHTML;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TABS + SECTIONS SCAFFOLD
+// ═══════════════════════════════════════════════════════════
+function buildScaffold() {
+  // Tabs
+  const tabBar = document.getElementById('tabBar');
+  tabBar.innerHTML =
+    `<button class="tab overview-tab active" onclick="switchTab('overview')">📊 Overview</button>` +
+    MONTHS.map(m =>
+      `<button class="tab" onclick="switchTab('${m.key}')">${m.label}</button>`
+    ).join('');
+
+  // Sections
+  const main = document.getElementById('mainContent');
+  main.innerHTML =
+    `<div class="sec active" id="sec-overview"><div id="content-overview"></div></div>` +
+    MONTHS.map(m =>
+      `<div class="sec" id="sec-${m.key}">
+        <div class="sec-title">📸 ${m.label} <span class="pill ig">Instagram</span> ${m.active?'<span class="pill mo">Live Data</span>':'<span class="pill future">Belum Tersedia</span>'}</div>
+        <div id="content-${m.key}"><div class="coming-soon"><div class="cs-icon">⏳</div><h3>Memuat…</h3></div></div>
+      </div>`
+    ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SWITCH TAB
+// ═══════════════════════════════════════════════════════════
+async function switchTab(key) {
+  currentTab = key;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  // Find and activate the right button
+  const allTabs = document.querySelectorAll('.tab');
+  allTabs.forEach(t => {
+    const isOverview  = key === 'overview' && t.classList.contains('overview-tab');
+    const isMonth     = t.textContent === MONTHS.find(m => m.key === key)?.label;
+    if (isOverview || isMonth) t.classList.add('active');
+  });
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+  const sec = document.getElementById(`sec-${key}`);
+  if (sec) sec.classList.add('active');
+
+  if (key === 'overview') {
+    document.getElementById('content-overview').innerHTML = buildOverview();
+    return;
+  }
+
+  const month = MONTHS.find(m => m.key === key);
+  if (!month) return;
+  const el = document.getElementById(`content-${key}`);
+  if (!el) return;
+
+  if (cache[key] !== undefined) {
+    el.innerHTML = buildMonthSection(cache[key], month.label); return;
+  }
+  if (!month.active) {
+    el.innerHTML = `<div class="coming-soon"><div class="cs-icon">📅</div><h3>Belum ada data untuk ${month.label}</h3><p>Data muncul setelah postingan diinput ke Google Sheets.</p></div>`;
+    cache[key] = []; return;
+  }
+
+  el.innerHTML = `<div class="coming-soon"><div class="cs-icon">⏳</div><h3>Memuat ${month.label}…</h3></div>`;
+  try {
+    const csv = await fetchSheet(month.sheet);
+    cache[key] = parsePosts(csv, month.label);
+    el.innerHTML = buildMonthSection(cache[key], month.label);
+  } catch(e) {
+    el.innerHTML = `<div class="coming-soon"><div class="cs-icon">⚠️</div><h3>Gagal memuat data</h3><p>${e.message}</p></div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  REFRESH
+// ═══════════════════════════════════════════════════════════
+async function doRefresh() {
+  // Always refresh follower banner
+  const fd = await fetchFollowerData();
+  renderFollowerBanner(fd);
+
+  if (currentTab === 'overview') {
+    const active = MONTHS.filter(m => m.active);
+    for (const m of active) {
+      try {
+        const csv = await fetchSheet(m.sheet);
+        cache[m.key] = parsePosts(csv, m.label);
+      } catch(e) {}
+    }
+    document.getElementById('content-overview').innerHTML = buildOverview();
+  } else {
+    delete cache[currentTab];
+    await switchTab(currentTab);
+  }
+  document.getElementById('syncTs').textContent = 'Diperbarui: ' + new Date().toLocaleTimeString('id-ID');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+async function init() {
+  buildScaffold();
+  const prog = document.getElementById('ldProg');
+  const sub  = document.getElementById('ldSub');
+
+  // Step 1: Follower data
+  sub.textContent = 'Memuat data follower…';
+  prog.style.width = '10%';
+  const fd = await fetchFollowerData();
+  renderFollowerBanner(fd);
+  prog.style.width = '20%';
+
+  // Step 2: Content posts per month
+  const active = MONTHS.filter(m => m.active);
+  for (let i = 0; i < active.length; i++) {
+    const m = active[i];
+    sub.textContent = `Memuat ${m.label}…`;
+    prog.style.width = Math.round(20 + ((i + 0.5) / active.length) * 78) + '%';
+    try {
+      const csv = await fetchSheet(m.sheet);
+      cache[m.key] = parsePosts(csv, m.label);
+    } catch(e) {
+      cache[m.key] = [];
+    }
+    prog.style.width = Math.round(20 + ((i + 1) / active.length) * 78) + '%';
+  }
+
+  document.getElementById('content-overview').innerHTML = buildOverview();
+  document.getElementById('syncTs').textContent = 'Diperbarui: ' + new Date().toLocaleTimeString('id-ID');
+  document.getElementById('loadOverlay').style.display = 'none';
+}
+
+init();
+</script>
+</body>
+</html>
