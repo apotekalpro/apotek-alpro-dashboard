@@ -10,9 +10,6 @@
   :root {
     --primary: #f97316;
     --primary-dark: #ea580c;
-    --gold: #f59e0b;
-    --silver: #94a3b8;
-    --bronze: #b45309;
   }
   body { background: #f8fafc; font-family: 'Inter', sans-serif; }
 
@@ -39,7 +36,7 @@
     flex-shrink: 0;
   }
 
-  /* Leaderboard */
+  /* ── Leaderboard ── */
   .lb-card {
     background: #fff;
     border-radius: 14px;
@@ -56,34 +53,50 @@
     font-size: 1rem;
     display: flex; align-items: center; gap: 10px;
   }
+  /* 3-column grid for 3 weeks */
+  .lb-weeks-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+  }
+  @media (max-width: 900px) {
+    .lb-weeks-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 580px) {
+    .lb-weeks-grid { grid-template-columns: 1fr; }
+  }
+  .lb-week-col {
+    border-right: 1px solid #f1f5f9;
+  }
+  .lb-week-col:last-child { border-right: none; }
+
   .lb-week-header {
     background: #fff7ed;
-    padding: 10px 14px;
+    padding: 9px 12px;
     color: #92400e;
     font-weight: 700;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     border-bottom: 1px solid #fed7aa;
-    display: flex; align-items: center; gap: 8px;
-    border-top: none;
+    display: flex; align-items: center; gap: 6px;
   }
   .rank-badge {
-    width: 32px; height: 32px;
+    width: 26px; height: 26px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-weight: 800;
-    font-size: 0.9rem;
+    font-size: 0.78rem;
     flex-shrink: 0;
   }
-  .rank-1 { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 2px 8px rgba(245,158,11,0.5); }
+  .rank-1 { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 2px 6px rgba(245,158,11,0.4); }
   .rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: #fff; }
   .rank-3 { background: linear-gradient(135deg, #d97706, #b45309); color: #fff; }
   .rank-4, .rank-5 { background: #f1f5f9; color: #475569; }
 
   .lb-row {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
     border-bottom: 1px solid #f8fafc;
     transition: background 0.15s;
   }
@@ -92,17 +105,17 @@
   .lb-row.rank-1-row { background: linear-gradient(90deg, #fffbeb, #fff); }
 
   .metric-pill {
-    display: flex; align-items: center; gap: 4px;
-    padding: 2px 8px;
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 1px 6px;
     border-radius: 999px;
-    font-size: 0.72rem;
+    font-size: 0.67rem;
     font-weight: 600;
     white-space: nowrap;
   }
-  .metric-views  { background: #dbeafe; color: #1d4ed8; }
-  .metric-likes  { background: #fce7f3; color: #be185d; }
+  .metric-views    { background: #dbeafe; color: #1d4ed8; }
+  .metric-likes    { background: #fce7f3; color: #be185d; }
   .metric-comments { background: #d1fae5; color: #065f46; }
-  .metric-shares { background: #ede9fe; color: #5b21b6; }
+  .metric-shares   { background: #ede9fe; color: #5b21b6; }
 
   .loading-spinner {
     display: inline-block; width: 16px; height: 16px;
@@ -134,9 +147,9 @@
   .tiktok-link {
     color: var(--primary);
     text-decoration: none;
-    font-size: 0.78rem;
-    display: inline-flex; align-items: center; gap: 4px;
-    max-width: 200px;
+    font-size: 0.72rem;
+    display: inline-flex; align-items: center; gap: 3px;
+    max-width: 160px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -167,9 +180,7 @@
     color: #1e293b;
     display: flex; align-items: center; gap: 8px;
   }
-  .section-sub {
-    font-size: 0.78rem; color: #94a3b8; font-weight: 400;
-  }
+  .section-sub { font-size: 0.78rem; color: #94a3b8; font-weight: 400; }
 </style>
 </head>
 <body>
@@ -186,7 +197,7 @@
     </div>
     <div class="flex items-center gap-3">
       <span id="lastUpdated" class="text-xs text-gray-400"></span>
-      <button class="refresh-btn" onclick="loadAllData(true)">
+      <button class="refresh-btn" onclick="loadAllData()">
         <i class="fas fa-sync-alt" id="refreshIcon"></i> Refresh
       </button>
     </div>
@@ -202,7 +213,7 @@
       </div>
     </div>
     <div class="overflow-x-auto">
-      <table class="summary-table w-full min-w-[700px]">
+      <table class="summary-table w-full min-w-[640px]">
         <thead>
           <tr>
             <th class="text-left">Month</th>
@@ -220,10 +231,10 @@
           <tr style="background:#fff7ed;">
             <td style="font-weight:800;color:#92400e;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;">TOTAL</td>
             <td id="ftPosts"    style="text-align:right;font-weight:800;color:#1e293b;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
-            <td id="ftViews"    style="text-align:right;font-weight:800;color:#1d4ed8;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
-            <td id="ftLikes"    style="text-align:right;font-weight:800;color:#be185d;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
+            <td id="ftViews"   style="text-align:right;font-weight:800;color:#1d4ed8;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
+            <td id="ftLikes"   style="text-align:right;font-weight:800;color:#be185d;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
             <td id="ftComments" style="text-align:right;font-weight:800;color:#065f46;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
-            <td id="ftShares"   style="text-align:right;font-weight:800;color:#5b21b6;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
+            <td id="ftShares"  style="text-align:right;font-weight:800;color:#5b21b6;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
           </tr>
         </tfoot>
       </table>
@@ -255,7 +266,7 @@
     <div class="section-title mb-3">
       <i class="fas fa-trophy text-yellow-500"></i>
       Dashboard 2 – Monthly Leaderboard
-      <span class="section-sub">Top 5 posts per week, ranked by combined weekly score (views+likes+comments+shares)</span>
+      <span class="section-sub">Top 5 posts per week, ranked by combined score (views+likes+comments+shares)</span>
     </div>
     <div id="leaderboardContainer">
       <div class="lb-card">
@@ -264,181 +275,123 @@
     </div>
   </div>
 
-<style>
-/* ── Leaderboard grid: 3 week-columns side by side ── */
-.lb-weeks-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0;
-}
-@media (max-width: 900px) {
-  .lb-weeks-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 600px) {
-  .lb-weeks-grid {
-    grid-template-columns: 1fr;
-  }
-}
-.lb-week-col {
-  border-right: 1px solid #f1f5f9;
-}
-.lb-week-col:last-child {
-  border-right: none;
-}
-</style>
-
-</div>
+</div><!-- /wrapper -->
 
 <script>
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 // CONFIG
-// ═══════════════════════════════════════════════════════
-const SHEET_ID = '1klstE9eWYuCJ67jzU0X_hgDTYQGz2M6E56qTN-KmWVA';
+// ═══════════════════════════════════════════════════════════════════════
+var SHEET_ID = '1klstE9eWYuCJ67jzU0X_hgDTYQGz2M6E56qTN-KmWVA';
 
-// All possible Indonesian month names in calendar order.
-// The code auto-discovers which sheets actually exist.
-const MONTH_ORDER = [
+// All possible month names in calendar order.
+var MONTH_ORDER = [
   'Januari','Februari','Maret','April','Mei','Juni',
   'Juli','Agustus','September','Oktober','November','Desember'
 ];
 
-// ── Column indices (0-based) ─────────────────────────────────────────────────
+// ── Column indices (0-based) ────────────────────────────────────────────
 // A(0)=Timestamp  B(1)=Nama KOS
 // Week 1:  C(2)=link  D(3)=views  E(4)=likes  F(5)=comments  G(6)=shares
 // Week 2:  H(7)=link  I(8)=views  J(9)=likes  K(10)=comments L(11)=shares
 // Week 3:  M(12)=link N(13)=views O(14)=likes P(15)=comments Q(16)=shares
-// R(17) = screenshot upload  S(18) = CODE column (NOT weekly posting data)
-// ─────────────────────────────────────────────────────────────────────────────
-const WEEKS = [
+// R(17) = screenshot upload  S(18) = CODE  (NOT weekly posting data)
+// ────────────────────────────────────────────────────────────────────────
+var WEEKS = [
   { label:'Week 1', linkCol:2,  viewCol:3,  likeCol:4,  cmtCol:5,  shrCol:6  },
   { label:'Week 2', linkCol:7,  viewCol:8,  likeCol:9,  cmtCol:10, shrCol:11 },
-  { label:'Week 3', linkCol:12, viewCol:13, likeCol:14, cmtCol:15, shrCol:16 },
+  { label:'Week 3', linkCol:12, viewCol:13, likeCol:14, cmtCol:15, shrCol:16 }
 ];
 
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 // HELPERS
-// ═══════════════════════════════════════════════════════
-function num(v) {
-  if (v === null || v === undefined || v === '') return 0;
-  // Indonesian locale uses period as thousands separator (e.g. 159.278 = 159278)
-  // and comma as decimal separator. Strip both then parse as integer.
-  // We must NOT use parseFloat on the raw string because '69.144' would
-  // be read as 69.144 (decimal) instead of 69,144 (sixty-nine thousand).
-  const s = String(v).trim()
-    .replace(/\./g, '')   // remove ALL periods (thousands sep)
-    .replace(/,/g, '')    // remove commas
-    .replace(/[^0-9\-]/g, '');  // strip any remaining non-numeric
-  const n = parseInt(s, 10);
+// ═══════════════════════════════════════════════════════════════════════
+
+// Extract numeric value from a gviz cell.
+// gviz returns .v as a proper JS number (float) — no locale parsing needed.
+function gvizNum(cell) {
+  if (!cell || cell.v === null || cell.v === undefined) return 0;
+  var n = typeof cell.v === 'number' ? cell.v : parseFloat(String(cell.v).replace(/[^0-9.\-]/g, ''));
   return isNaN(n) ? 0 : n;
 }
+function gvizStr(cell) {
+  if (!cell || cell.v === null || cell.v === undefined) return '';
+  return String(cell.v).trim();
+}
+
 function fmt(n) {
   n = Math.round(n);
-  if (n >= 1_000_000) return (n/1_000_000).toFixed(1).replace(/\.0$/,'') + 'M';
-  if (n >= 1_000)     return (n/1_000).toFixed(1).replace(/\.0$/,'') + 'K';
+  if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1000)    return (n/1000).toFixed(1).replace(/\.0$/, '') + 'K';
   return n.toLocaleString('id-ID');
 }
 function fmtFull(n) { return Math.round(n).toLocaleString('id-ID'); }
 
-// ═══════════════════════════════════════════════════════
-// FETCH (server-side proxy → direct fallback)
-// ═══════════════════════════════════════════════════════
-async function fetchSheet(sheetName) {
-  // Primary: local server proxy (no CORS issue, returns 404 for missing sheets)
-  try {
-    const resp = await fetch(`/api/kos-seeding-csv?sheet=${encodeURIComponent(sheetName)}`, {
-      cache: 'no-store'
-    });
-    if (resp.status === 404) return null;   // sheet does not exist
-    if (resp.ok) {
-      const text = await resp.text();
-      if (text && !text.trim().startsWith('<!') && !text.trim().startsWith('{')) {
-        return parseCSV(text);
+// ═══════════════════════════════════════════════════════════════════════
+// FETCH ONE SHEET via gviz/tq JSON
+// Same approach as tiktok-performance.html — works on GitHub Pages (CORS OK)
+// Returns a Promise that resolves to the gviz JSON object, or null if the
+// sheet does not exist (detected by checking column labels).
+// ═══════════════════════════════════════════════════════════════════════
+function fetchGviz(sheetName) {
+  var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
+    + '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent(sheetName);
+
+  return fetch(url)
+    .then(function(res) {
+      if (!res.ok) return null;
+      return res.text();
+    })
+    .then(function(text) {
+      if (!text) return null;
+      // Strip the JSONP wrapper:  /*O_o*/\ngoogle.visualization.Query.setResponse({...});
+      var start = text.indexOf('{');
+      var end   = text.lastIndexOf('}');
+      if (start === -1 || end === -1) return null;
+      var json;
+      try { json = JSON.parse(text.substring(start, end + 1)); } catch(e) { return null; }
+
+      // ── KEY CHECK ─────────────────────────────────────────────────────
+      // Google returns the FIRST sheet when the requested sheet doesn't
+      // exist. Detect this by verifying column[3] label mentions the
+      // sheet name (every KOS Seeding sheet has column headers like
+      // "Total Views Postingan 23 Februari").
+      var cols = (json.table && json.table.cols) ? json.table.cols : [];
+      var col3Label = cols.length > 3 ? (cols[3].label || '').toLowerCase() : '';
+      if (col3Label.indexOf(sheetName.toLowerCase()) === -1) {
+        // Column header doesn't mention this month → sheet doesn't exist
+        return null;
       }
-    }
-  } catch(e) { /* proxy unavailable */ }
-
-  // Fallback: direct (works if CORS allows; Google returns first sheet for missing names)
-  try {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-    const resp = await fetch(url, { cache: 'no-store' });
-    if (!resp.ok) return null;
-    const text = await resp.text();
-    if (!text || text.trim().startsWith('<!')) return null;
-    // Validate that the returned CSV actually belongs to the requested sheet
-    // (Google returns first sheet for non-existent sheet names)
-    const firstLine = text.split('\n')[0].toLowerCase();
-    if (!firstLine.includes(sheetName.toLowerCase())) return null;
-    return parseCSV(text);
-  } catch(e) { /* CORS blocked */ }
-
-  return null;
+      return json;
+    })
+    .catch(function() { return null; });
 }
 
-// ═══════════════════════════════════════════════════════
-// CSV PARSER (RFC 4180 compliant)
-// ═══════════════════════════════════════════════════════
-function parseCSV(text) {
-  const results = [];
-  let row = [], cell = '', inQ = false;
+// ═══════════════════════════════════════════════════════════════════════
+// PARSE ONE MONTH's gviz data
+// ═══════════════════════════════════════════════════════════════════════
+function parseGvizMonth(json, sheetName) {
+  var rows = (json && json.table && json.table.rows) ? json.table.rows : [];
+  if (!rows.length) return null;
 
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (c === '"') {
-      if (inQ && text[i+1] === '"') { cell += '"'; i++; }
-      else inQ = !inQ;
-    } else if (c === ',' && !inQ) {
-      row.push(cell.trim()); cell = '';
-    } else if ((c === '\n' || (c === '\r' && text[i+1] === '\n')) && !inQ) {
-      if (c === '\r') i++;
-      row.push(cell.trim()); cell = '';
-      if (row.some(x => x !== '')) results.push(row);
-      row = [];
-    } else if (c !== '\r') {
-      cell += c;
-    }
-  }
-  if (cell || row.length) {
-    row.push(cell.trim());
-    if (row.some(x => x !== '')) results.push(row);
-  }
-  return results;
-}
+  var totalPosts = 0, totalViews = 0, totalLikes = 0, totalComments = 0, totalShares = 0;
+  var weeklyEntries = [];
 
-// ═══════════════════════════════════════════════════════
-// PARSE ONE MONTH SHEET
-// Returns: { totalPosts, totalViews, totalLikes, totalComments, totalShares,
-//            weeklyEntries: [ { weekLabel, weekIdx, name, link, views, likes, comments, shares, score } ] }
-// ═══════════════════════════════════════════════════════
-function parseMonthData(rows) {
-  if (!rows || rows.length < 2) return null;
-
-  // Skip header row. Data rows have a date timestamp in col 0 (DD/MM/YYYY)
-  const dataRows = rows.slice(1).filter(r =>
-    r[0] && /\d{1,2}\/\d{1,2}\/\d{4}/.test(r[0])
-  );
-
-  if (dataRows.length === 0) return null;
-
-  let totalPosts = 0, totalViews = 0, totalLikes = 0, totalComments = 0, totalShares = 0;
-
-  // weeklyEntries: one entry per (person × week) that has data
-  const weeklyEntries = [];
-
-  for (const r of dataRows) {
-    const name = (r[1] || '').trim();
+  for (var ri = 0; ri < rows.length; ri++) {
+    var cells = rows[ri].c || [];
+    var name = gvizStr(cells[1]);
     if (!name) continue;
+    // Skip header-like rows
+    if (name.toLowerCase() === 'nama kos' || name.toLowerCase() === 'timestamp') continue;
 
-    for (const wk of WEEKS) {
-      const link    = (r[wk.linkCol] || '').trim();
-      const views   = num(r[wk.viewCol]);
-      const likes   = num(r[wk.likeCol]);
-      const comments = num(r[wk.cmtCol]);
-      const shares  = num(r[wk.shrCol]);
+    for (var wi = 0; wi < WEEKS.length; wi++) {
+      var wk = WEEKS[wi];
+      var link     = gvizStr(cells[wk.linkCol]);
+      var views    = gvizNum(cells[wk.viewCol]);
+      var likes    = gvizNum(cells[wk.likeCol]);
+      var comments = gvizNum(cells[wk.cmtCol]);
+      var shares   = gvizNum(cells[wk.shrCol]);
 
-      // A post counts if the link or any numeric metric is present
-      const hasData = link !== '' || views > 0 || likes > 0 || comments > 0 || shares > 0;
+      var hasData = link !== '' || views > 0 || likes > 0 || comments > 0 || shares > 0;
       if (!hasData) continue;
 
       totalPosts++;
@@ -449,67 +402,51 @@ function parseMonthData(rows) {
 
       weeklyEntries.push({
         weekLabel: wk.label,
-        weekIdx:   WEEKS.indexOf(wk),
-        name,
-        link,
-        views,
-        likes,
-        comments,
-        shares,
-        score: views + likes + comments + shares,
+        weekIdx:   wi,
+        name:      name,
+        link:      link,
+        views:     views,
+        likes:     likes,
+        comments:  comments,
+        shares:    shares,
+        score:     views + likes + comments + shares
       });
     }
   }
 
-  return { totalPosts, totalViews, totalLikes, totalComments, totalShares, weeklyEntries };
+  return { totalPosts: totalPosts, totalViews: totalViews, totalLikes: totalLikes,
+           totalComments: totalComments, totalShares: totalShares, weeklyEntries: weeklyEntries };
 }
 
-// ═══════════════════════════════════════════════════════
-// DISCOVER SHEETS
-// 1. Ask the server for the authoritative list of existing sheets
-//    (/api/kos-seeding-sheets probes all 12 months server-side, returning only
-//    those whose CSV actually contains that month's name).
-// 2. If the server returns an empty list or errors, fall back to parallel
-//    probing from the client (10 of the 12 will get fast 404s from cache).
-// ═══════════════════════════════════════════════════════
-async function discoverSheets() {
-  // Ask the server for its authoritative list.
-  // The server probes each month and caches results for KOS_CACHE_TTL seconds.
-  let knownSheets = null;
-  try {
-    const r = await fetch('/api/kos-seeding-sheets', { cache: 'no-store' });
-    if (r.ok) {
-      const j = await r.json();
-      if (j.sheets && j.sheets.length > 0) knownSheets = j.sheets;
-    }
-  } catch(e) { /* proxy unavailable */ }
-
-  // Use the server list if available; otherwise probe all months client-side
-  const toCheck = knownSheets || MONTH_ORDER;
-
-  // Fetch in parallel
-  const results = await Promise.all(
-    toCheck.map(async name => {
-      const rows = await fetchSheet(name);
-      if (!rows) return null;
-      const data = parseMonthData(rows);
+// ═══════════════════════════════════════════════════════════════════════
+// DISCOVER SHEETS — probe all 12 months in parallel
+// ═══════════════════════════════════════════════════════════════════════
+function discoverSheets() {
+  var promises = MONTH_ORDER.map(function(name) {
+    return fetchGviz(name).then(function(json) {
+      if (!json) return null;
+      var data = parseGvizMonth(json, name);
       if (!data) return null;
-      return { name, data };
-    })
-  );
+      return { name: name, data: data };
+    });
+  });
 
-  // Filter nulls and sort by calendar order
-  const found = results.filter(Boolean);
-  found.sort((a, b) => MONTH_ORDER.indexOf(a.name) - MONTH_ORDER.indexOf(b.name));
-  return found;
+  return Promise.all(promises).then(function(results) {
+    var found = results.filter(function(r) { return r !== null; });
+    // Sort by calendar order
+    found.sort(function(a, b) {
+      return MONTH_ORDER.indexOf(a.name) - MONTH_ORDER.indexOf(b.name);
+    });
+    return found;
+  });
 }
 
-// ═══════════════════════════════════════════════════════
-// DASHBOARD 1: MONTHLY SUMMARY TABLE
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+// DASHBOARD 1: BUILD MONTHLY SUMMARY TABLE
+// ═══════════════════════════════════════════════════════════════════════
 function buildSummaryTable(months) {
-  const tbody = document.getElementById('summaryTableBody');
-  const tfoot = document.getElementById('summaryTableFoot');
+  var tbody = document.getElementById('summaryTableBody');
+  var tfoot = document.getElementById('summaryTableFoot');
 
   if (!months.length) {
     tbody.innerHTML = '<tr><td colspan="6" class="no-data-msg">No data found.</td></tr>';
@@ -517,24 +454,26 @@ function buildSummaryTable(months) {
     return;
   }
 
-  let gPosts = 0, gViews = 0, gLikes = 0, gCmt = 0, gShr = 0;
-
-  tbody.innerHTML = months.map(m => {
-    const d = m.data;
+  var gPosts = 0, gViews = 0, gLikes = 0, gCmt = 0, gShr = 0;
+  var html = '';
+  for (var i = 0; i < months.length; i++) {
+    var m = months[i];
+    var d = m.data;
     gPosts += d.totalPosts;
     gViews += d.totalViews;
     gLikes += d.totalLikes;
     gCmt   += d.totalComments;
     gShr   += d.totalShares;
-    return `<tr>
-      <td class="font-semibold text-orange-700">${m.name}</td>
-      <td class="text-right font-mono">${fmtFull(d.totalPosts)}</td>
-      <td class="text-right font-mono text-blue-700">${fmtFull(d.totalViews)}</td>
-      <td class="text-right font-mono text-pink-700">${fmtFull(d.totalLikes)}</td>
-      <td class="text-right font-mono text-green-700">${fmtFull(d.totalComments)}</td>
-      <td class="text-right font-mono text-purple-700">${fmtFull(d.totalShares)}</td>
-    </tr>`;
-  }).join('');
+    html += '<tr>'
+      + '<td class="font-semibold text-orange-700">' + m.name + '</td>'
+      + '<td class="text-right font-mono">' + fmtFull(d.totalPosts) + '</td>'
+      + '<td class="text-right font-mono text-blue-700">' + fmtFull(d.totalViews) + '</td>'
+      + '<td class="text-right font-mono text-pink-700">' + fmtFull(d.totalLikes) + '</td>'
+      + '<td class="text-right font-mono text-green-700">' + fmtFull(d.totalComments) + '</td>'
+      + '<td class="text-right font-mono text-purple-700">' + fmtFull(d.totalShares) + '</td>'
+      + '</tr>';
+  }
+  tbody.innerHTML = html;
 
   document.getElementById('ftPosts').textContent    = fmtFull(gPosts);
   document.getElementById('ftViews').textContent    = fmtFull(gViews);
@@ -549,139 +488,135 @@ function buildSummaryTable(months) {
   document.getElementById('grandShares').textContent   = fmt(gShr);
 
   document.getElementById('summaryStatus').textContent =
-    `${months.length} month${months.length > 1 ? 's' : ''} loaded`;
+    months.length + ' month' + (months.length > 1 ? 's' : '') + ' loaded';
 }
 
-// ═══════════════════════════════════════════════════════
-// DASHBOARD 2: LEADERBOARD
-// Per spec:
-//   • For each week (W1/W2/W3), sum the week's numbers per person,
-//     rank them, show top 5 with:
-//       – Name & team (col B)
-//       – Link (col C / H / M for week 1/2/3)
-//       – That week's views, likes, comments, shares
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
+// DASHBOARD 2: BUILD LEADERBOARDS (per month, per week, top 5)
+// ═══════════════════════════════════════════════════════════════════════
 function buildLeaderboards(months) {
-  const container = document.getElementById('leaderboardContainer');
+  var container = document.getElementById('leaderboardContainer');
   if (!months.length) {
     container.innerHTML = '<div class="lb-card"><div class="lb-month-header">No data available</div></div>';
     return;
   }
-  container.innerHTML = months.map(m => buildMonthLeaderboard(m)).join('');
+  var html = '';
+  for (var i = 0; i < months.length; i++) {
+    html += buildMonthLeaderboard(months[i]);
+  }
+  container.innerHTML = html;
 }
 
 function buildMonthLeaderboard(month) {
-  const { name, data } = month;
-  const { weeklyEntries } = data;
+  var name = month.name;
+  var data = month.data;
+  var entries = data.weeklyEntries;
 
-  if (!weeklyEntries.length) {
-    return `<div class="lb-card">
-      <div class="lb-month-header"><i class="fas fa-trophy"></i> ${name}</div>
-      <div class="no-data-msg" style="padding:20px;">No posting data for this month.</div>
-    </div>`;
+  if (!entries.length) {
+    return '<div class="lb-card">'
+      + '<div class="lb-month-header"><i class="fas fa-trophy"></i> ' + name + '</div>'
+      + '<div class="no-data-msg" style="padding:20px;">No posting data for this month.</div>'
+      + '</div>';
   }
 
-  // Group entries by week
-  const byWeek = {};
-  for (const e of weeklyEntries) {
+  // Group by week index
+  var byWeek = {};
+  for (var i = 0; i < entries.length; i++) {
+    var e = entries[i];
     if (!byWeek[e.weekIdx]) byWeek[e.weekIdx] = [];
     byWeek[e.weekIdx].push(e);
   }
 
-  // Build one column per week — displayed side by side
-  const weekColumns = WEEKS.map((wk, wi) => {
-    const entries = byWeek[wi] || [];
-    if (!entries.length) {
-      return `<div class="lb-week-col">
-        <div class="lb-week-header">
-          <i class="fas fa-calendar-week text-orange-400"></i>
-          ${wk.label}
-          <span class="text-gray-400 font-normal" style="font-size:0.72rem;">0 posts</span>
-        </div>
-        <div class="no-data-msg" style="padding:16px 12px;">No posts this week</div>
-      </div>`;
+  // Build each week column
+  var colsHtml = '';
+  for (var wi = 0; wi < WEEKS.length; wi++) {
+    var wk = WEEKS[wi];
+    var wkEntries = byWeek[wi] || [];
+
+    var headerHtml = '<div class="lb-week-header">'
+      + '<i class="fas fa-calendar-week text-orange-400"></i>'
+      + ' ' + wk.label
+      + ' <span class="text-gray-400 font-normal" style="font-size:0.7rem;">'
+      + wkEntries.length + ' post' + (wkEntries.length !== 1 ? 's' : '')
+      + '</span></div>';
+
+    if (!wkEntries.length) {
+      colsHtml += '<div class="lb-week-col">' + headerHtml
+        + '<div class="no-data-msg" style="padding:14px 10px;font-size:0.78rem;">No posts this week</div>'
+        + '</div>';
+      continue;
     }
 
-    // Aggregate per name (multiple submissions → sum)
-    const nameMap = {};
-    for (const e of entries) {
-      if (!nameMap[e.name]) {
-        nameMap[e.name] = { name: e.name, link: e.link, views: 0, likes: 0, comments: 0, shares: 0, score: 0, _bestScore: 0 };
+    // Aggregate per person (multiple submissions → sum)
+    var nameMap = {};
+    for (var j = 0; j < wkEntries.length; j++) {
+      var entry = wkEntries[j];
+      if (!nameMap[entry.name]) {
+        nameMap[entry.name] = { name: entry.name, link: entry.link,
+          views: 0, likes: 0, comments: 0, shares: 0, score: 0, _best: 0 };
       }
-      const agg = nameMap[e.name];
-      agg.views    += e.views;
-      agg.likes    += e.likes;
-      agg.comments += e.comments;
-      agg.shares   += e.shares;
-      agg.score    += e.score;
-      if (e.score > agg._bestScore) { agg.link = e.link; agg._bestScore = e.score; }
+      var agg = nameMap[entry.name];
+      agg.views    += entry.views;
+      agg.likes    += entry.likes;
+      agg.comments += entry.comments;
+      agg.shares   += entry.shares;
+      agg.score    += entry.score;
+      if (entry.score > agg._best) { agg.link = entry.link; agg._best = entry.score; }
     }
 
-    // Sort by score desc, take top 5
-    const top5 = Object.values(nameMap)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
+    // Sort by score desc, top 5
+    var top5 = Object.values(nameMap).sort(function(a,b){ return b.score - a.score; }).slice(0, 5);
+    var medals = ['🥇','🥈','🥉','',''];
+    var rankClasses = ['rank-1','rank-2','rank-3','rank-4','rank-4'];
+    var rowClasses  = ['rank-1-row','','','',''];
 
-    const rankRows = top5.map((p, i) => {
-      const rank = i + 1;
-      const rankClass = rank <= 3 ? `rank-${rank}` : 'rank-4';
-      const rowClass  = rank === 1 ? 'rank-1-row' : '';
-      const medal     = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
+    var rowsHtml = '';
+    for (var k = 0; k < top5.length; k++) {
+      var p = top5[k];
+      var shortLink = p.link
+        ? p.link.replace(/^https?:\/\/(www\.)?/,'').replace(/\?.*/,'').substring(0, 26)
+        : '';
+      var linkHtml = p.link
+        ? '<a href="' + p.link + '" target="_blank" rel="noopener" class="tiktok-link">'
+          + '<i class="fab fa-tiktok" style="font-size:0.6rem;flex-shrink:0;"></i>'
+          + '<span>' + shortLink + '</span></a>'
+        : '<span class="text-gray-400 italic" style="font-size:0.7rem;">No link</span>';
 
-      const shortLink = p.link
-        ? p.link.replace(/^https?:\/\/(www\.)?/,'').replace(/\?.*/,'').substring(0, 28)
-        : null;
-      const linkHtml = shortLink
-        ? `<a href="${p.link}" target="_blank" rel="noopener noreferrer" class="tiktok-link" style="max-width:100%;">
-             <i class="fab fa-tiktok" style="font-size:0.65rem;flex-shrink:0;"></i>
-             <span style="overflow:hidden;text-overflow:ellipsis;">${shortLink}</span>
-           </a>`
-        : `<span class="text-gray-400 text-xs italic">No link</span>`;
+      rowsHtml += '<div class="lb-row ' + rowClasses[k] + '">'
+        + '<div class="rank-badge ' + rankClasses[k] + '">' + (medals[k] || (k+1)) + '</div>'
+        + '<div class="flex-1 min-w-0">'
+        +   '<div class="font-semibold text-gray-800 truncate" style="font-size:0.74rem;" title="' + p.name + '">' + p.name + '</div>'
+        +   '<div style="margin:2px 0;">' + linkHtml + '</div>'
+        +   '<div class="flex flex-wrap gap-1">'
+        +     '<span class="metric-pill metric-views"><i class="fas fa-eye" style="font-size:0.55rem;"></i>' + fmt(p.views) + '</span>'
+        +     '<span class="metric-pill metric-likes"><i class="fas fa-heart" style="font-size:0.55rem;"></i>' + fmt(p.likes) + '</span>'
+        +     '<span class="metric-pill metric-comments"><i class="fas fa-comment" style="font-size:0.55rem;"></i>' + fmt(p.comments) + '</span>'
+        +     '<span class="metric-pill metric-shares"><i class="fas fa-share" style="font-size:0.55rem;"></i>' + fmt(p.shares) + '</span>'
+        +   '</div>'
+        + '</div>'
+        + '</div>';
+    }
 
-      return `<div class="lb-row ${rowClass}" style="padding:8px 10px;gap:8px;">
-        <div class="rank-badge ${rankClass}" style="width:26px;height:26px;font-size:0.78rem;flex-shrink:0;">${medal || rank}</div>
-        <div class="flex-1 min-w-0">
-          <div class="font-semibold text-gray-800 truncate" style="font-size:0.75rem;" title="${p.name}">${p.name}</div>
-          <div style="margin-top:2px;">${linkHtml}</div>
-          <div class="flex flex-wrap gap-1" style="margin-top:3px;">
-            <span class="metric-pill metric-views" style="font-size:0.65rem;"><i class="fas fa-eye" style="font-size:0.55rem;"></i>${fmt(p.views)}</span>
-            <span class="metric-pill metric-likes" style="font-size:0.65rem;"><i class="fas fa-heart" style="font-size:0.55rem;"></i>${fmt(p.likes)}</span>
-            <span class="metric-pill metric-comments" style="font-size:0.65rem;"><i class="fas fa-comment" style="font-size:0.55rem;"></i>${fmt(p.comments)}</span>
-            <span class="metric-pill metric-shares" style="font-size:0.65rem;"><i class="fas fa-share" style="font-size:0.55rem;"></i>${fmt(p.shares)}</span>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
+    colsHtml += '<div class="lb-week-col">' + headerHtml + rowsHtml + '</div>';
+  }
 
-    return `<div class="lb-week-col">
-      <div class="lb-week-header">
-        <i class="fas fa-calendar-week text-orange-400"></i>
-        ${wk.label}
-        <span class="text-gray-400 font-normal" style="font-size:0.72rem;">${entries.length} post${entries.length !== 1 ? 's' : ''}</span>
-      </div>
-      ${rankRows}
-    </div>`;
-  }).join('');
-
-  const activeWeeks = WEEKS.filter((_, wi) => byWeek[wi] && byWeek[wi].length > 0).length;
-
-  return `<div class="lb-card">
-    <div class="lb-month-header">
-      <i class="fas fa-trophy"></i>
-      ${name} Leaderboard
-      <span style="font-size:0.75rem;font-weight:400;margin-left:auto;opacity:0.9;">${data.weeklyEntries.length} entries · ${activeWeeks} week${activeWeeks !== 1 ? 's' : ''}</span>
-    </div>
-    <div class="lb-weeks-grid">
-      ${weekColumns}
-    </div>
-  </div>`;
+  var activeWeeks = Object.keys(byWeek).length;
+  return '<div class="lb-card">'
+    + '<div class="lb-month-header">'
+    +   '<i class="fas fa-trophy"></i> ' + name + ' Leaderboard'
+    +   '<span style="font-size:0.75rem;font-weight:400;margin-left:auto;opacity:0.9;">'
+    +     data.weeklyEntries.length + ' entries · ' + activeWeeks + ' week' + (activeWeeks !== 1 ? 's' : '')
+    +   '</span>'
+    + '</div>'
+    + '<div class="lb-weeks-grid">' + colsHtml + '</div>'
+    + '</div>';
 }
 
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════
 // MAIN LOAD
-// ═══════════════════════════════════════════════════════
-async function loadAllData(bustCache = false) {
-  const ico = document.getElementById('refreshIcon');
+// ═══════════════════════════════════════════════════════════════════════
+function loadAllData() {
+  var ico = document.getElementById('refreshIcon');
   ico.classList.add('fa-spin');
   document.getElementById('summaryStatus').textContent = 'Loading…';
   document.getElementById('summaryTableBody').innerHTML =
@@ -689,23 +624,20 @@ async function loadAllData(bustCache = false) {
   document.getElementById('leaderboardContainer').innerHTML =
     '<div class="lb-card"><div class="lb-month-header"><span class="loading-spinner"></span>&nbsp;Loading leaderboards…</div></div>';
 
-  // If bust cache, clear any server-side cache via query param
-  if (bustCache) {
-    try { await fetch('/api/kos-seeding-sheets?bust=1', { cache: 'no-store' }); } catch(e) {}
-  }
-
-  try {
-    const months = await discoverSheets();
-    buildSummaryTable(months);
-    buildLeaderboards(months);
-    document.getElementById('lastUpdated').textContent =
-      'Last updated: ' + new Date().toLocaleString('id-ID', { hour12: false });
-  } catch(e) {
-    document.getElementById('summaryStatus').textContent = 'Error loading data';
-    console.error('KOS Seeding load error:', e);
-  } finally {
-    ico.classList.remove('fa-spin');
-  }
+  discoverSheets()
+    .then(function(months) {
+      buildSummaryTable(months);
+      buildLeaderboards(months);
+      document.getElementById('lastUpdated').textContent =
+        'Last updated: ' + new Date().toLocaleString('id-ID', { hour12: false });
+    })
+    .catch(function(e) {
+      document.getElementById('summaryStatus').textContent = 'Error loading data';
+      console.error('KOS Seeding load error:', e);
+    })
+    .finally(function() {
+      ico.classList.remove('fa-spin');
+    });
 }
 
 // Auto-load on page ready
