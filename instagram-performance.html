@@ -189,15 +189,46 @@ table.t tr.total-row td{background:linear-gradient(90deg,rgba(131,58,180,.06),rg
 .coming-soon p{font-size:.8rem;color:var(--faint);max-width:300px;text-align:center}
 .num-plain{font-weight:600;color:var(--text)}
 
+/* ── FOLLOWER HERO BANNER ────────────────────────── */
+#followerBanner{
+  background:linear-gradient(135deg,#833AB4 0%,#E1306C 50%,#F77737 100%);
+  padding:18px 24px;
+  display:flex;align-items:center;gap:0;
+  flex-wrap:wrap;
+  border-bottom:1px solid rgba(255,255,255,.12);
+}
+.fb-platform{display:flex;align-items:center;gap:14px;padding:10px 24px;flex:1;min-width:160px;position:relative}
+.fb-platform+.fb-platform::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);height:52px;width:1px;background:rgba(255,255,255,.18)}
+.fb-ico{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.fb-body{flex:1}
+.fb-platform-name{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.72);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.fb-count{font-size:2rem;font-weight:900;color:#fff;line-height:1;letter-spacing:-.02em}
+.fb-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
+.fb-growth{font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:20px;display:flex;align-items:center;gap:4px}
+.fb-growth.up{background:rgba(34,197,94,.25);color:#86efac;border:1px solid rgba(34,197,94,.35)}
+.fb-growth.down{background:rgba(239,68,68,.22);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+.fb-growth.flat{background:rgba(255,255,255,.12);color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.18)}
+.fb-date{font-size:.65rem;color:rgba(255,255,255,.55)}
+.fb-divider-v{width:1px;background:rgba(255,255,255,.15);align-self:stretch;margin:0 4px}
+.fb-target-wrap{display:flex;flex-direction:column;align-items:flex-end;padding:10px 20px 10px 24px;gap:6px;flex-shrink:0}
+.fb-target-lbl{font-size:.65rem;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.07em}
+.fb-progress-bar-outer{width:180px;height:8px;background:rgba(255,255,255,.18);border-radius:4px;overflow:hidden}
+.fb-progress-bar-inner{height:100%;border-radius:4px;background:linear-gradient(90deg,#fff,rgba(255,255,255,.7));transition:width .6s ease}
+.fb-progress-text{font-size:.7rem;font-weight:800;color:#fff}
+
 /* ── RESPONSIVE ──────────────────────────────────── */
 @media(max-width:700px){
   .main{padding:12px}
   .lb-grid{grid-template-columns:1fr}
   .stat-grid{grid-template-columns:repeat(2,1fr)}
   .goal-grid{grid-template-columns:repeat(2,1fr)}
+  #followerBanner{padding:14px 16px}
+  .fb-count{font-size:1.6rem}
+  .fb-target-wrap{display:none}
 }
 @media(max-width:420px){
   .stat-grid{grid-template-columns:1fr}
+  .fb-platform{padding:8px 14px;min-width:130px}
 }
 </style>
 </head>
@@ -221,6 +252,48 @@ table.t tr.total-row td{background:linear-gradient(90deg,rgba(131,58,180,.06),rg
   <div class="hdr-right">
     <button class="btn-refresh" onclick="doRefresh()">&#8635; Refresh</button>
     <span class="sync-ts" id="syncTs"></span>
+  </div>
+</div>
+
+<!-- FOLLOWER HERO BANNER -->
+<div id="followerBanner">
+  <div class="fb-platform">
+    <div class="fb-ico">📸</div>
+    <div class="fb-body">
+      <div class="fb-platform-name">Instagram</div>
+      <div class="fb-count" id="fb-ig">—</div>
+      <div class="fb-meta">
+        <span class="fb-growth flat" id="fb-ig-growth">—</span>
+        <span class="fb-date" id="fb-ig-date"></span>
+      </div>
+    </div>
+  </div>
+  <div class="fb-platform">
+    <div class="fb-ico">🎵</div>
+    <div class="fb-body">
+      <div class="fb-platform-name">TikTok</div>
+      <div class="fb-count" id="fb-tt">—</div>
+      <div class="fb-meta">
+        <span class="fb-growth flat" id="fb-tt-growth">—</span>
+        <span class="fb-date" id="fb-tt-date"></span>
+      </div>
+    </div>
+  </div>
+  <div class="fb-platform">
+    <div class="fb-ico">👥</div>
+    <div class="fb-body">
+      <div class="fb-platform-name">Facebook</div>
+      <div class="fb-count" id="fb-fb">—</div>
+      <div class="fb-meta">
+        <span class="fb-growth flat" id="fb-fb-growth">—</span>
+        <span class="fb-date" id="fb-fb-date"></span>
+      </div>
+    </div>
+  </div>
+  <div class="fb-target-wrap">
+    <div class="fb-target-lbl">IG Target Progress</div>
+    <div class="fb-progress-bar-outer"><div class="fb-progress-bar-inner" id="fb-progbar" style="width:0%"></div></div>
+    <div class="fb-progress-text" id="fb-progtxt">—</div>
   </div>
 </div>
 
@@ -262,6 +335,7 @@ const MO_COLORS = ['#E1306C','#833AB4','#F77737','#405DE6','#009faf','#16a34a','
 
 const cache = {};        // key → posts[]
 let currentTab = 'overview';
+let followerData = null; // { ig, tt, fb, igGrowth, ttGrowth, fbGrowth, date, igTarget }
 
 // ═══════════════════════════════════════════════════════════
 //  PARSE / FETCH
@@ -281,6 +355,104 @@ function csvToRows(csv) {
 
 function pNum(v) { if (!v) return 0; return parseFloat(v.toString().trim().replace(/,/g,'').replace(/%/g,'')) || 0; }
 function pPct(v) { if (!v) return 0; return parseFloat(v.toString().trim().replace(/%/g,'')) || 0; }
+
+// ── FOLLOWER DATA ────────────────────────────────────────────
+function currentMonthFollowerSheet() {
+  // Returns the follower sheet name for the current real month
+  const MONTH_NAMES = [
+    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  const now = new Date();
+  const m = MONTH_NAMES[now.getMonth() + 1]; // +1 because getMonth() is 0-based
+  const y = now.getFullYear();
+  return `${m} ${y} Follower`;
+}
+
+async function fetchFollowerData() {
+  const sheetName = currentMonthFollowerSheet();
+  try {
+    const csv = await fetchSheet(sheetName);
+    const rows = csvToRows(csv);
+
+    // Row 0 (Row 1 in sheet) = starting numbers: C=ig_start, D=tt_start, E=fb_start
+    const igTarget = pNum(rows[0]?.[2]); // col C row 1 = target/starting
+
+    // Find last data row where col C (index 2) has a real follower number
+    // Data starts at row 2 (index 2), col A = date, C = ig, D = tt, E = fb
+    // Growth cols: H=igGrowth (index 7), I=ttGrowth (index 8), J=fbGrowth (index 9)
+    let lastRow = null;
+    let prevIg = igTarget;
+    for (let i = 2; i < rows.length; i++) {
+      const row = rows[i];
+      const igVal = pNum(row[2]);
+      if (igVal > 0) {
+        lastRow = {
+          date:     (row[0]||'').trim(),
+          ig:       igVal,
+          tt:       pNum(row[3]),
+          fb:       pNum(row[4]),
+          // Daily growth = difference from previous row
+          igGrowth: i > 2 ? igVal - (pNum(rows[i-1]?.[2]) || prevIg) : igVal - igTarget,
+          ttGrowth: i > 2 ? pNum(row[3]) - pNum(rows[i-1]?.[3]) : 0,
+          fbGrowth: i > 2 ? pNum(row[4]) - pNum(rows[i-1]?.[4]) : 0,
+        };
+        prevIg = igVal;
+      }
+    }
+
+    // Row 0 col G (index 6) can be target or growth total; col C row 1 = starting
+    // igTarget here = the "starting" number displayed in row 1; 
+    // Use a fixed target from config if you want, but for now use 100000
+    const IG_FOLLOWER_TARGET = 100000;
+
+    return lastRow ? { ...lastRow, igTarget: IG_FOLLOWER_TARGET, sheetName } : null;
+  } catch(e) {
+    console.warn('Follower fetch failed:', e.message);
+    return null;
+  }
+}
+
+function renderFollowerBanner(data) {
+  if (!data) return;
+  followerData = data;
+
+  const fmtF = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : n.toLocaleString('id-ID');
+  const growthBadge = (g, id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (g > 0) {
+      el.className = 'fb-growth up';
+      el.innerHTML = `▲ +${g.toLocaleString('id-ID')}`;
+    } else if (g < 0) {
+      el.className = 'fb-growth down';
+      el.innerHTML = `▼ ${g.toLocaleString('id-ID')}`;
+    } else {
+      el.className = 'fb-growth flat';
+      el.innerHTML = `● Sama`;
+    }
+  };
+
+  document.getElementById('fb-ig').textContent = data.ig.toLocaleString('id-ID');
+  document.getElementById('fb-tt').textContent = data.tt.toLocaleString('id-ID');
+  document.getElementById('fb-fb').textContent = data.fb.toLocaleString('id-ID');
+  growthBadge(data.igGrowth, 'fb-ig-growth');
+  growthBadge(data.ttGrowth, 'fb-tt-growth');
+  growthBadge(data.fbGrowth, 'fb-fb-growth');
+
+  const dateLabel = data.date ? `per ${data.date}` : '';
+  ['fb-ig-date','fb-tt-date','fb-fb-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = dateLabel;
+  });
+
+  // Progress bar
+  const pct = Math.min((data.ig / data.igTarget) * 100, 100);
+  const progBar = document.getElementById('fb-progbar');
+  const progTxt = document.getElementById('fb-progtxt');
+  if (progBar) progBar.style.width = pct.toFixed(1) + '%';
+  if (progTxt) progTxt.textContent = `${pct.toFixed(1)}% dari target ${(data.igTarget/1000).toFixed(0)}K`;
+}
 
 async function fetchSheet(name) {
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}`;
@@ -725,8 +897,11 @@ async function switchTab(key) {
 //  REFRESH
 // ═══════════════════════════════════════════════════════════
 async function doRefresh() {
+  // Always refresh follower banner
+  const fd = await fetchFollowerData();
+  renderFollowerBanner(fd);
+
   if (currentTab === 'overview') {
-    // Re-fetch all active months
     const active = MONTHS.filter(m => m.active);
     for (const m of active) {
       try {
@@ -749,22 +924,29 @@ async function init() {
   buildScaffold();
   const prog = document.getElementById('ldProg');
   const sub  = document.getElementById('ldSub');
-  const active = MONTHS.filter(m => m.active);
 
+  // Step 1: Follower data
+  sub.textContent = 'Memuat data follower…';
+  prog.style.width = '10%';
+  const fd = await fetchFollowerData();
+  renderFollowerBanner(fd);
+  prog.style.width = '20%';
+
+  // Step 2: Content posts per month
+  const active = MONTHS.filter(m => m.active);
   for (let i = 0; i < active.length; i++) {
     const m = active[i];
     sub.textContent = `Memuat ${m.label}…`;
-    prog.style.width = Math.round(((i + 0.5) / active.length) * 100) + '%';
+    prog.style.width = Math.round(20 + ((i + 0.5) / active.length) * 78) + '%';
     try {
       const csv = await fetchSheet(m.sheet);
       cache[m.key] = parsePosts(csv, m.label);
     } catch(e) {
       cache[m.key] = [];
     }
-    prog.style.width = Math.round(((i + 1) / active.length) * 100) + '%';
+    prog.style.width = Math.round(20 + ((i + 1) / active.length) * 78) + '%';
   }
 
-  // Render overview (default)
   document.getElementById('content-overview').innerHTML = buildOverview();
   document.getElementById('syncTs').textContent = 'Diperbarui: ' + new Date().toLocaleTimeString('id-ID');
   document.getElementById('loadOverlay').style.display = 'none';
