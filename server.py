@@ -250,6 +250,122 @@ def build_tiktok_data(bust=False):
     return data
 
 # ── HTTP Handler ──────────────────────────────────────────────────────────
+KOS_SHEET_ID = '1klstE9eWYuCJ67jzU0X_hgDTYQGz2M6E56qTN-KmWVA'
+KOS_CACHE = {}   # sheet_name → {'data': csv_text, 'ts': timestamp}
+KOS_CACHE_TTL = 180  # 3 min
+
+# Use the gviz/tq JSON endpoint to list actual sheet names
+KOS_SHEETS_CACHE = {'names': None, 'ts': 0}
+
+MONTH_NAMES = [
+    'Januari','Februari','Maret','April','Mei','Juni',
+    'Juli','Agustus','September','Oktober','November','Desember'
+]
+
+def fetch_kos_sheet_names():
+    """Return the list of month sheet names that actually exist in the spreadsheet.
+
+    Strategy 1: Try the gviz/tq JSON endpoint (sheet=<month>) for each month and
+    check which ones return valid CSV for that month.  Results are cached for
+    KOS_CACHE_TTL seconds.  Because we also maintain a per-sheet cache in
+    KOS_CACHE, subsequent individual CSV requests are served from cache.
+
+    Strategy 2 (legacy / slow): Fetch the spreadsheet HTML page and parse sheet
+    names from the embedded JSON.  This is unreliable because Google often blocks
+    server-side requests.
+    """
+    now = time.time()
+    if KOS_SHEETS_CACHE['names'] is not None and (now - KOS_SHEETS_CACHE['ts']) < KOS_CACHE_TTL:
+        return KOS_SHEETS_CACHE['names']
+
+    # ── Strategy 1: try HTML parsing (fast, but Google may block) ────────────
+    url = f'https://docs.google.com/spreadsheets/d/{KOS_SHEET_ID}/edit'
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            html = r.read().decode('utf-8')
+        names_raw = re.findall(r'"name"\s*:\s*"([^"]+)"', html)
+        found = []
+        seen = set()
+        for n in names_raw:
+            if n in MONTH_NAMES and n not in seen:
+                found.append(n)
+                seen.add(n)
+        if found:
+            KOS_SHEETS_CACHE['names'] = found
+            KOS_SHEETS_CACHE['ts'] = now
+            print(f'  [KOS] Sheet names via HTML: {found}', file=sys.stderr)
+            return found
+    except Exception as ex:
+        print(f'  [KOS] HTML sheet name fetch failed: {ex}', file=sys.stderr)
+
+    # ── Strategy 2: probe each month by fetching its CSV ─────────────────────
+    # (uses the same fetch_kos_csv logic, so results land in KOS_CACHE too)
+    print('  [KOS] Probing month sheets via CSV…', file=sys.stderr)
+    found = []
+    for m in MONTH_NAMES:
+        csv_text = fetch_kos_csv(m)   # returns None for non-existent sheets
+        if csv_text is not None:
+            found.append(m)
+
+    KOS_SHEETS_CACHE['names'] = found
+    KOS_SHEETS_CACHE['ts'] = now
+    print(f'  [KOS] Sheet names via probe: {found}', file=sys.stderr)
+    return found
+
+def fetch_kos_csv(sheet_name, bust_cache=False):
+    """Fetch CSV from Google Sheets for KOS Seeding dashboard (server-side, no CORS).
+
+    Returns the CSV text if the sheet exists and contains data, or None if:
+    - The sheet name does not exist in the spreadsheet
+    - The response is HTML (error page)
+    - The response CSV does not mention this month in its header (Google returns
+      the first sheet when a requested sheet name does not exist)
+    """
+    now = time.time()
+    if not bust_cache:
+        cached = KOS_CACHE.get(sheet_name)
+        if cached and (now - cached['ts']) < KOS_CACHE_TTL:
+            # None cached means the sheet was confirmed absent
+            return cached['data']
+
+    url = (f'https://docs.google.com/spreadsheets/d/{KOS_SHEET_ID}'
+           f'/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(sheet_name)}')
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            text = r.read().decode('utf-8')
+
+        # Reject HTML error pages or empty responses
+        stripped = text.strip()
+        if stripped.startswith('<!') or stripped == '':
+            KOS_CACHE[sheet_name] = {'data': None, 'ts': now}
+            return None
+
+        # ── KEY CHECK ──────────────────────────────────────────────────────────
+        # Google Sheets returns the FIRST sheet's CSV when the requested sheet
+        # does NOT exist.  We detect this by verifying the header row of the
+        # returned CSV contains the requested month name (every real KOS Seeding
+        # sheet has column headers that include the month name, e.g. "Februari",
+        # "Maret", etc.).
+        first_line = text.split('\n')[0].lower()
+        sheet_lower = sheet_name.lower()
+        if sheet_lower not in first_line:
+            print(f'  [KOS] "{sheet_name}" not found in header → sheet does not exist',
+                  file=sys.stderr)
+            # Cache the negative result so we don't keep hitting Google
+            KOS_CACHE[sheet_name] = {'data': None, 'ts': now}
+            return None
+
+        KOS_CACHE[sheet_name] = {'data': text, 'ts': now}
+        print(f'  [KOS] "{sheet_name}" fetched OK ({len(text)} bytes)', file=sys.stderr)
+        return text
+
+    except Exception as ex:
+        print(f'  [KOS] fetch "{sheet_name}": {ex}', file=sys.stderr)
+        return None
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
@@ -268,6 +384,51 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 err = json.dumps({'error': str(e)}).encode()
                 self.wfile.write(err)
+
+        elif self.path == '/favicon.ico':
+            self.send_response(204)
+            self.end_headers()
+
+        elif self.path.startswith('/api/kos-seeding-sheets'):
+            # Returns JSON list of real sheet names that exist in the spreadsheet.
+            # Pass ?bust=1 to force-refresh the sheet-names cache.
+            parsed_path = urllib.parse.urlparse(self.path)
+            bust = 'bust' in urllib.parse.parse_qs(parsed_path.query)
+            if bust:
+                KOS_SHEETS_CACHE['names'] = None
+                KOS_SHEETS_CACHE['ts'] = 0
+                # Also clear CSV cache for all months so stale entries are evicted
+                KOS_CACHE.clear()
+            names = fetch_kos_sheet_names()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({'sheets': names or []}).encode('utf-8'))
+
+        elif self.path.startswith('/api/kos-seeding-csv'):
+            # Extract ?sheet=SheetName&bust=1 from query string
+            parsed_path = urllib.parse.urlparse(self.path)
+            qs = urllib.parse.parse_qs(parsed_path.query)
+            sheet_name = qs.get('sheet', [''])[0].strip()
+            bust_cache = 'bust' in qs
+            if not sheet_name:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{"error":"Missing sheet parameter"}')
+                return
+            csv_text = fetch_kos_csv(sheet_name, bust_cache=bust_cache)
+            if csv_text is None:
+                self.send_response(404)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{"error":"Sheet not found"}')
+                return
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/csv; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(csv_text.encode('utf-8'))
+
         else:
             super().do_GET()
 
@@ -276,8 +437,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         sys.stdout.flush()
 
 if __name__ == '__main__':
-    port = 8000
+    port = int(os.environ.get('PORT', 8080))
     os.chdir('/home/user/webapp')
+    socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(('', port), Handler) as httpd:
         print(f'Server running at http://localhost:{port}')
         sys.stdout.flush()

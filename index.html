@@ -2381,6 +2381,10 @@
                                         class="bpt-subtab whitespace-nowrap py-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
                                     <i class="fab fa-tiktok mr-2"></i>TikTok Performance
                                 </button>
+                                <button onclick="showBptSubTab('kosSeeding')" id="kosSeedingTab"
+                                        class="bpt-subtab whitespace-nowrap py-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    <i class="fas fa-home mr-2"></i>KOS Seeding
+                                </button>
                             </nav>
                         </div>
                     </div>
@@ -2403,6 +2407,21 @@
                     <div id="tiktokPerformanceContent" class="bpt-subcontent hidden">
                         <div class="iframe-container" style="height:calc(100vh - 200px);min-height:700px;">
                             <iframe id="tiktokPerfIframe" data-src="tiktok-performance.html" class="iframe-full lazy-iframe w-full h-full border-0 rounded-lg" 
+                                    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- KOS Seeding Sub-content -->
+                    <div id="kosSeedingContent" class="bpt-subcontent hidden">
+                        <div class="flex justify-end mb-3">
+                            <button onclick="openInNewTab('kos-seeding.html')"
+                                    class="btn-primary text-white px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-external-link-alt mr-2"></i>Open in New Tab
+                            </button>
+                        </div>
+                        <div class="iframe-container" style="height:calc(100vh - 200px);min-height:750px;">
+                            <iframe id="kosSeedingIframe" data-src="kos-seeding.html"
+                                    class="iframe-full lazy-iframe w-full h-full border-0 rounded-lg"
                                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
                         </div>
                     </div>
@@ -6054,6 +6073,8 @@
                 tabEl.classList.remove('border-transparent', 'text-gray-500');
                 if (subtabId === 'tiktokPerformance') {
                     tabEl.classList.add('border-black', 'text-black');
+                } else if (subtabId === 'kosSeeding') {
+                    tabEl.classList.add('border-orange-500', 'text-orange-600');
                 } else {
                     tabEl.classList.add('border-orange-500', 'text-orange-600');
                 }
