@@ -2538,6 +2538,12 @@
                                     Warehouse Pareto Dashboard
                                 </h3>
                                 <p class="text-xs text-gray-500 mt-1" id="wpdLastUpdated">Loading data...</p>
+                                <p class="text-xs mt-1">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium" style="background:#fef3c7;color:#92400e;">
+                                        <i class="fas fa-filter" style="font-size:9px;"></i>
+                                        Excluding: Inactive &amp; Discontinue items (col J)
+                                    </span>
+                                </p>
                             </div>
                             <button onclick="loadWarehouseParetoData()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg transition">
                                 <i class="fas fa-sync-alt" id="wpdRefreshIcon"></i> Refresh Data
@@ -6401,10 +6407,17 @@
                 document.getElementById('wpdLastUpdated').textContent = `Data as of: ${lastUpdated}`;
 
                 // Headers at row 9 (index 8), data starts at row 10 (index 9)
-                const dataRows = rows.slice(9).filter(r => r.length > 33 && r[0].trim() !== '');
+                // J=9 (Item Status) — exclude Inactive and Discontinue
+                const WPD_EXCLUDED_STATUSES = ['inactive', 'discontinue'];
+                const dataRows = rows.slice(9).filter(r => {
+                    if (r.length <= 33 || r[0].trim() === '') return false;
+                    const status = (r[9] || '').trim().toLowerCase();
+                    return !WPD_EXCLUDED_STATUSES.includes(status);
+                });
 
                 // Column indices (0-based):
-                // F=5 (Div/Category), N=13 (Item Grade), R=17 (System Reorder Qty = Reorder Point)
+                // F=5 (Div/Category), J=9 (Item Status — filtered above)
+                // N=13 (Item Grade), R=17 (System Reorder Qty = Reorder Point)
                 // U=20 (Qty on Hand), V=21 (Qty on Order)
                 // AG=32 (Closing Cost = Inventory Rp), AH=33 (Qty on Inventory)
 
