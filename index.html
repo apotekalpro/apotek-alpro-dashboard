@@ -2551,7 +2551,7 @@
                         </div>
 
                         <!-- Total Stock Summary Card -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                             <!-- Card 1: Inventory Value (indigo) -->
                             <div class="rounded-xl p-5 text-white shadow-lg" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);">
                                 <div class="flex items-center justify-between mb-2">
@@ -2585,6 +2585,17 @@
                                 <p class="text-2xl font-bold text-white" id="wpdTotalQty">—</p>
                                 <p style="color:rgba(252,211,77,0.85);" class="text-xs mt-1">AH Column — Qty on Inventory</p>
                             </div>
+                            <!-- Card 4: High Stock Alert (rose) -->
+                            <div class="rounded-xl p-5 text-white shadow-lg" style="background: linear-gradient(135deg, #e11d48 0%, #9f1239 100%);">    
+                                <div class="flex items-center justify-between mb-2">
+                                    <p style="color:rgba(254,205,211,0.9);" class="text-xs font-medium uppercase tracking-wide">High Stock Alert (MOI &gt; 3 Months)</p>
+                                    <span style="background:rgba(255,255,255,0.15);border-radius:9999px;padding:6px 8px;">
+                                        <i class="fas fa-arrow-up" style="color:#fecdd3;font-size:14px;"></i>
+                                    </span>
+                                </div>
+                                <p class="text-2xl font-bold text-white" id="wpdHighStockCount">&mdash;</p>
+                                <p style="color:rgba(253,164,175,0.85);" class="text-xs mt-1">SKUs where (U+V) &gt; 3 &times; Reorder Point</p>
+                            </div>
                         </div>
 
                         <!-- Loading Spinner -->
@@ -2600,6 +2611,48 @@
 
                         <!-- Main Dashboard Grid -->
                         <div id="wpdDashboardGrid" class="hidden">
+
+                            <!-- High Stock Alert Detail Table -->
+                            <div class="bg-white rounded-xl shadow border border-rose-200 mb-6 overflow-hidden">
+                                <div class="px-5 py-3 border-b border-rose-100 flex items-center justify-between" style="background:linear-gradient(90deg,#fff1f2 0%,#ffffff 100%);">    
+                                    <div>
+                                        <h4 class="font-semibold text-rose-800 flex items-center text-sm">
+                                            <i class="fas fa-arrow-circle-up mr-2 text-rose-500"></i>
+                                            High Stock SKU Detail &mdash; MOI &gt; 3 Months
+                                        </h4>
+                                        <p class="text-rose-500 text-xs mt-0.5">Items where (U + V) &gt; 3 &times; Reorder Point. Excludes Inactive &amp; Discontinue.</p>
+                                    </div>
+                                    <span class="text-xs font-bold px-3 py-1 rounded-full text-white" style="background:#e11d48;" id="wpdHighStockBadge">0 SKUs</span>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full text-sm">
+                                        <thead>
+                                            <tr class="text-gray-600 text-xs uppercase tracking-wider" style="background:#fef2f2;">
+                                                <th class="text-left px-4 py-3 font-semibold">Item Code</th>
+                                                <th class="text-left px-4 py-3 font-semibold">Item Name</th>
+                                                <th class="text-left px-4 py-3 font-semibold">Category</th>
+                                                <th class="text-center px-4 py-3 font-semibold">Grade</th>
+                                                <th class="text-right px-4 py-3 font-semibold">Qty on Hand (U)</th>
+                                                <th class="text-right px-4 py-3 font-semibold">Reorder Point (R)</th>
+                                                <th class="text-right px-4 py-3 font-semibold">MOI (x months)</th>
+                                                <th class="text-right px-4 py-3 font-semibold">Closing Stock Value (Rp)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="wpdHighStockBody" class="divide-y divide-gray-100">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style="background:#fef2f2;" class="font-bold text-rose-900 border-t-2 border-rose-200 text-xs">
+                                                <td class="px-4 py-3" colspan="4">TOTAL HIGH STOCK</td>
+                                                <td class="px-4 py-3 text-right" id="wpdHSTotalQty">&mdash;</td>
+                                                <td class="px-4 py-3 text-right">&mdash;</td>
+                                                <td class="px-4 py-3 text-right">&mdash;</td>
+                                                <td class="px-4 py-3 text-right" id="wpdHSTotalRp">&mdash;</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
                             <!-- Inventory by Category Table -->
                             <div class="bg-white rounded-xl shadow border border-gray-100 mb-6 overflow-hidden">
                                 <div class="bg-indigo-50 px-5 py-3 border-b border-indigo-100">
@@ -6425,19 +6478,36 @@
                 const catData = {}; // category -> { rp, qty, skuCount, lowStock: {AA,A,B,C}, oos: {AA,A,B,C} }
                 const globalLS = {AA:0, A:0, B:0, C:0};
                 const globalOOS = {AA:0, A:0, B:0, C:0};
+                const highStockItems = []; // SKUs where (U+V) > 3 × R
 
                 for (const row of dataRows) {
-                    const cat = (row[5] || '').trim();
-                    const grade = (row[13] || '').trim();
-                    const R = wpdParseNum(row[17]);
-                    const U = wpdParseNum(row[20]);
-                    const V = wpdParseNum(row[21]);
-                    const ag = wpdParseNum(row[32]);
-                    const ah = wpdParseNum(row[33]);
+                    const itemCode = (row[2] || '').trim();  // C
+                    const itemName = (row[3] || '').trim();  // D
+                    const cat      = (row[5] || '').trim();  // F
+                    const grade    = (row[13] || '').trim(); // N
+                    const R  = wpdParseNum(row[17]); // R = System Reorder Qty (Reorder Point)
+                    const U  = wpdParseNum(row[20]); // U = Qty on Hand
+                    const V  = wpdParseNum(row[21]); // V = Qty on Order
+                    const ag = wpdParseNum(row[32]); // AG = Closing Cost
+                    const ah = wpdParseNum(row[33]); // AH = Qty on Inventory
 
                     totalRp  += ag;
                     totalQty += ah;
                     totalSKUs++;
+
+                    // High Stock: (U+V) > 3 × R (MOI > 3 months), only when R > 0
+                    if (R > 0 && (U + V) > 3 * R) {
+                        highStockItems.push({
+                            code: itemCode,
+                            name: itemName,
+                            cat,
+                            grade,
+                            U,
+                            R,
+                            moi: R > 0 ? (U + V) / R : 0,
+                            ag
+                        });
+                    }
 
                     if (!cat) continue;
                     if (!catData[cat]) {
@@ -6466,6 +6536,12 @@
                 document.getElementById('wpdTotalQty').textContent = wpdFormatQty(totalQty);
                 document.getElementById('wpdCategoryTotalRp').textContent = wpdFormatRpFull(totalRp);
                 document.getElementById('wpdCategoryTotalQty').textContent = wpdFormatQty(totalQty);
+
+                // High Stock card
+                document.getElementById('wpdHighStockCount').textContent = highStockItems.length.toLocaleString('id-ID');
+
+                // Build High Stock detail table (sorted by MOI descending)
+                wpdBuildHighStockTable(highStockItems);
 
                 // Sort categories by inventory value descending
                 const sortedCats = Object.keys(catData).sort((a,b) => catData[b].rp - catData[a].rp);
@@ -6519,6 +6595,61 @@
                 document.getElementById('wpdErrorText').textContent = 'Error processing data: ' + err.message;
             }
             document.getElementById('wpdRefreshIcon').classList.remove('fa-spin');
+        }
+
+        function wpdBuildHighStockTable(items) {
+            const body = document.getElementById('wpdHighStockBody');
+            body.innerHTML = '';
+            const badge = document.getElementById('wpdHighStockBadge');
+            badge.textContent = items.length + ' SKUs';
+
+            if (items.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="8" class="px-4 py-8 text-center text-gray-400 text-sm"><i class="fas fa-check-circle mr-2 text-green-400"></i>No high-stock items found</td>`;
+                body.appendChild(tr);
+                document.getElementById('wpdHSTotalQty').textContent = '0';
+                document.getElementById('wpdHSTotalRp').textContent = 'Rp 0';
+                return;
+            }
+
+            // Sort by MOI descending (highest overstock first)
+            const sorted = [...items].sort((a, b) => b.moi - a.moi);
+
+            const gradeStyle = {
+                AA: 'background:#ede9fe;color:#5b21b6;',
+                A:  'background:#dbeafe;color:#1e40af;',
+                B:  'background:#dcfce7;color:#166534;',
+                C:  'background:#ffedd5;color:#9a3412;'
+            };
+
+            let totalQtyHS = 0, totalRpHS = 0;
+
+            sorted.forEach((item, idx) => {
+                const grp = wpdGetGradeGroup(item.grade);
+                const gradeBadge = grp && gradeStyle[grp]
+                    ? `<span class="px-2 py-0.5 rounded-full text-xs font-bold" style="${gradeStyle[grp]}">${item.grade}</span>`
+                    : `<span class="text-xs text-gray-400">${item.grade || '—'}</span>`;
+                const shortCat = item.cat.includes(' - ') ? item.cat.split(' - ').slice(1).join(' - ') : item.cat;
+                const moiColor = item.moi >= 6 ? '#b91c1c' : item.moi >= 4 ? '#d97706' : '#e11d48';
+                const rowBg = idx % 2 === 0 ? '#ffffff' : '#fff5f5';
+                totalQtyHS += item.U;
+                totalRpHS  += item.ag;
+                const tr = document.createElement('tr');
+                tr.style.background = rowBg;
+                tr.innerHTML = `
+                    <td class="px-4 py-2.5 text-xs font-mono text-gray-700 font-medium">${item.code}</td>
+                    <td class="px-4 py-2.5 text-xs text-gray-800">${item.name}</td>
+                    <td class="px-4 py-2.5 text-xs text-gray-600">${shortCat}</td>
+                    <td class="px-4 py-2.5 text-center">${gradeBadge}</td>
+                    <td class="px-4 py-2.5 text-right text-xs text-gray-700">${wpdFormatQty(item.U)}</td>
+                    <td class="px-4 py-2.5 text-right text-xs text-gray-700">${wpdFormatQty(item.R)}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-bold" style="color:${moiColor};">${item.moi.toFixed(1)}x</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-mono text-gray-700">${wpdFormatRpFull(item.ag)}</td>`;
+                body.appendChild(tr);
+            });
+
+            document.getElementById('wpdHSTotalQty').textContent = wpdFormatQty(totalQtyHS);
+            document.getElementById('wpdHSTotalRp').textContent  = wpdFormatRpFull(totalRpHS);
         }
 
         function wpdBuildStatusTable(bodyId, totalPrefix, sortedCats, catData, field, globalTotals) {
