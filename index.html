@@ -17,6 +17,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- SheetJS Library for Excel Processing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Chart.js for Warehouse Pareto Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -2488,6 +2490,12 @@
                                     <i class="fas fa-chart-bar mr-2"></i>
                                     Procurement Performance Dashboard
                                 </button>
+                                <button onclick="showProcurementSubTab('warehousePareto')" 
+                                        id="warehouseParetoTab"
+                                        class="procurement-subtab whitespace-nowrap py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    <i class="fas fa-warehouse mr-2"></i>
+                                    Warehouse Pareto Dashboard
+                                </button>
                             </nav>
                         </div>
                     </div>
@@ -2517,6 +2525,182 @@
                     <div id="performanceDashboardContent" class="procurement-subcontent hidden">
                         <div class="iframe-container">
                             <iframe data-src="https://procurementanalys.github.io/sales-budget/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Warehouse Pareto Dashboard Sub-content -->
+                    <div id="warehouseParetoContent" class="procurement-subcontent hidden">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                                    <i class="fas fa-warehouse mr-2 text-indigo-600"></i>
+                                    Warehouse Pareto Dashboard
+                                </h3>
+                                <p class="text-xs text-gray-500 mt-1" id="wpdLastUpdated">Loading data...</p>
+                            </div>
+                            <button onclick="loadWarehouseParetoData()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg transition">
+                                <i class="fas fa-sync-alt" id="wpdRefreshIcon"></i> Refresh Data
+                            </button>
+                        </div>
+
+                        <!-- Total Stock Summary Card -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-xl p-5 text-white shadow-lg col-span-1 md:col-span-1">
+                                <p class="text-indigo-200 text-xs font-medium uppercase tracking-wide mb-1">Total Stock on Hand (Inventory Value)</p>
+                                <p class="text-2xl font-bold" id="wpdTotalStockRp">—</p>
+                                <p class="text-indigo-300 text-xs mt-1">AG Column — Closing Cost</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-xl p-5 text-white shadow-lg">
+                                <p class="text-emerald-200 text-xs font-medium uppercase tracking-wide mb-1">Total SKUs</p>
+                                <p class="text-2xl font-bold" id="wpdTotalSKUs">—</p>
+                                <p class="text-emerald-300 text-xs mt-1">All items in warehouse</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-amber-500 to-amber-700 rounded-xl p-5 text-white shadow-lg">
+                                <p class="text-amber-200 text-xs font-medium uppercase tracking-wide mb-1">Total Qty on Inventory</p>
+                                <p class="text-2xl font-bold" id="wpdTotalQty">—</p>
+                                <p class="text-amber-300 text-xs mt-1">AH Column — Qty on Inventory</p>
+                            </div>
+                        </div>
+
+                        <!-- Loading Spinner -->
+                        <div id="wpdLoadingSpinner" class="flex flex-col items-center justify-center py-16 hidden">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                            <p class="text-gray-500 text-sm">Loading warehouse data from Google Sheets...</p>
+                        </div>
+
+                        <!-- Error Message -->
+                        <div id="wpdErrorMsg" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                            <p class="text-red-700 text-sm"><i class="fas fa-exclamation-triangle mr-2"></i><span id="wpdErrorText"></span></p>
+                        </div>
+
+                        <!-- Main Dashboard Grid -->
+                        <div id="wpdDashboardGrid" class="hidden">
+                            <!-- Inventory by Category Table -->
+                            <div class="bg-white rounded-xl shadow border border-gray-100 mb-6 overflow-hidden">
+                                <div class="bg-indigo-50 px-5 py-3 border-b border-indigo-100">
+                                    <h4 class="font-semibold text-indigo-800 flex items-center text-sm">
+                                        <i class="fas fa-boxes mr-2"></i>Inventory by Category (Division)
+                                    </h4>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full text-sm">
+                                        <thead>
+                                            <tr class="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
+                                                <th class="text-left px-4 py-3 font-semibold">Category (Division)</th>
+                                                <th class="text-right px-4 py-3 font-semibold">Inventory Value (Rp)</th>
+                                                <th class="text-right px-4 py-3 font-semibold">Qty on Inventory</th>
+                                                <th class="text-right px-4 py-3 font-semibold">% of Total Value</th>
+                                                <th class="px-4 py-3 font-semibold">Pareto Bar</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="wpdCategoryTableBody" class="divide-y divide-gray-100">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr class="bg-indigo-50 font-bold text-indigo-900 border-t-2 border-indigo-200">
+                                                <td class="px-4 py-3 text-sm">TOTAL</td>
+                                                <td class="px-4 py-3 text-right text-sm" id="wpdCategoryTotalRp">—</td>
+                                                <td class="px-4 py-3 text-right text-sm" id="wpdCategoryTotalQty">—</td>
+                                                <td class="px-4 py-3 text-right text-sm">100%</td>
+                                                <td class="px-4 py-3"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Two-column layout for Low Stock and OOS tables -->
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+                                <!-- Low Stock Table -->
+                                <div class="bg-white rounded-xl shadow border border-amber-100 overflow-hidden">
+                                    <div class="bg-amber-50 px-5 py-3 border-b border-amber-100">
+                                        <h4 class="font-semibold text-amber-800 flex items-center text-sm">
+                                            <i class="fas fa-exclamation-triangle mr-2 text-amber-500"></i>
+                                            Low Stock Count by Category &amp; Item Grade
+                                        </h4>
+                                        <p class="text-amber-600 text-xs mt-0.5">SKUs where (U+V) &lt; 50% of Reorder Point (R)</p>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full text-sm" id="wpdLowStockTable">
+                                            <thead>
+                                                <tr class="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
+                                                    <th class="text-left px-3 py-2 font-semibold sticky left-0 bg-gray-50">Category</th>
+                                                    <th class="text-center px-3 py-2 font-semibold text-purple-700">AA</th>
+                                                    <th class="text-center px-3 py-2 font-semibold text-blue-700">A</th>
+                                                    <th class="text-center px-3 py-2 font-semibold text-green-700">B</th>
+                                                    <th class="text-center px-3 py-2 font-semibold text-orange-700">C</th>
+                                                    <th class="text-center px-3 py-2 font-semibold text-gray-700">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="wpdLowStockBody" class="divide-y divide-gray-100">
+                                            </tbody>
+                                            <tfoot>
+                                                <tr class="bg-amber-50 font-bold text-amber-900 border-t-2 border-amber-200 text-xs">
+                                                    <td class="px-3 py-2">TOTAL</td>
+                                                    <td class="px-3 py-2 text-center" id="wpdLSTotal_AA">—</td>
+                                                    <td class="px-3 py-2 text-center" id="wpdLSTotal_A">—</td>
+                                                    <td class="px-3 py-2 text-center" id="wpdLSTotal_B">—</td>
+                                                    <td class="px-3 py-2 text-center" id="wpdLSTotal_C">—</td>
+                                                    <td class="px-3 py-2 text-center" id="wpdLSTotal_All">—</td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- OOS Table -->
+                                <div class="bg-white rounded-xl shadow border border-red-100 overflow-hidden">
+                                    <div class="bg-red-50 px-5 py-3 border-b border-red-100">
+                                        <h4 class="font-semibold text-red-800 flex items-center text-sm">
+                                            <i class="fas fa-times-circle mr-2 text-red-500"></i>
+                                            Out of Stock (OOS) Count by Category &amp; Item Grade
+                                        </h4>
+                                        <p class="text-red-600 text-xs mt-0.5">SKUs where (U+V) ≤ 0</p>
+                                    </div>
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full text-sm" id="wpdOOSTable">
+                                            <thead>
+                                                <tr class="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
+                                                    <th class="text-left px-3 py-2 font-semibold sticky left-0 bg-gray-50">Category</th>
+                                                    <th class="text-center px-3 py-2 font-semibold text-purple-700">AA</th>
+                                                    <th class="text-center px-3 py-2 font-semibold text-blue-700">A</th>
+                                                    <th class="text-center px-3 py-2 font-semibold text-green-700">B</th>
+                                                    <th class="text-center px-3 py-2 font-semibold text-orange-700">C</th>
+                                                    <th class="text-center px-3 py-2 font-semibold text-gray-700">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="wpdOOSBody" class="divide-y divide-gray-100">
+                                            </tbody>
+                                            <tfoot>
+                                                <tr class="bg-red-50 font-bold text-red-900 border-t-2 border-red-200 text-xs">
+                                                    <td class="px-3 py-2">TOTAL</td>
+                                                    <td class="px-3 py-2 text-center" id="wpdOOSTotal_AA">—</td>
+                                                    <td class="px-3 py-2 text-center" id="wpdOOSTotal_A">—</td>
+                                                    <td class="px-3 py-2 text-center" id="wpdOOSTotal_B">—</td>
+                                                    <td class="px-3 py-2 text-center" id="wpdOOSTotal_C">—</td>
+                                                    <td class="px-3 py-2 text-center" id="wpdOOSTotal_All">—</td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Chart Row -->
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+                                <div class="bg-white rounded-xl shadow border border-gray-100 p-5">
+                                    <h4 class="font-semibold text-gray-700 text-sm mb-3 flex items-center">
+                                        <i class="fas fa-chart-pie mr-2 text-indigo-500"></i>Inventory Value by Category
+                                    </h4>
+                                    <canvas id="wpdCategoryPieChart" height="260"></canvas>
+                                </div>
+                                <div class="bg-white rounded-xl shadow border border-gray-100 p-5">
+                                    <h4 class="font-semibold text-gray-700 text-sm mb-3 flex items-center">
+                                        <i class="fas fa-chart-bar mr-2 text-amber-500"></i>Low Stock &amp; OOS by Grade
+                                    </h4>
+                                    <canvas id="wpdGradeBarChart" height="260"></canvas>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -6073,6 +6257,326 @@
                 tab.classList.add('active', 'border-blue-500', 'text-blue-600');
                 tab.classList.remove('border-transparent', 'text-gray-500');
             }
+
+            // Auto-load Warehouse Pareto Dashboard when tab is activated
+            if (subtabId === 'warehousePareto' && !window._wpdLoaded) {
+                loadWarehouseParetoData();
+            }
+        }
+
+        // =====================================================================
+        // WAREHOUSE PARETO DASHBOARD
+        // =====================================================================
+        window._wpdLoaded = false;
+        window._wpdCharts = {};
+
+        const WPD_SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1Ugwz970wMUVirLsl6K-7qOLoFqZWq-fr/export?format=csv';
+
+        const WPD_CATEGORIES_ORDER = [
+            '10 - PERSONAL CARE',
+            '20 - HEALTH SUPPLEMENT',
+            '23 - HEALTH SUPPLEMENT-CONSIGNMENT',
+            '30 - MEDICAL EQUIPMENT',
+            '40 - OTC',
+            '50 - ETHICAL',
+            '60 - MUM & BABY',
+            '70 - GENERAL MERCHANDISE',
+            '90 - NON MERCHANDISE - WITH INVENTORY',
+            '91 - NON MERCHANDISE - WITHOUT INVENTORY'
+        ];
+
+        const WPD_CAT_COLORS = [
+            '#6366f1','#22c55e','#f59e0b','#ef4444','#3b82f6',
+            '#a855f7','#ec4899','#14b8a6','#f97316','#64748b'
+        ];
+
+        const WPD_GRADE_GROUPS = ['AA', 'A', 'B', 'C'];
+
+        function wpdGetGradeGroup(grade) {
+            if (!grade) return null;
+            if (grade.startsWith('AA')) return 'AA';
+            if (grade.startsWith('A'))  return 'A';
+            if (grade.startsWith('B'))  return 'B';
+            if (grade.startsWith('C'))  return 'C';
+            return null;
+        }
+
+        function wpdParseNum(str) {
+            if (!str) return 0;
+            const n = parseFloat(str.replace(/,/g, ''));
+            return isNaN(n) ? 0 : n;
+        }
+
+        function wpdFormatRp(val) {
+            if (val >= 1e9) return 'Rp ' + (val/1e9).toFixed(2) + 'B';
+            if (val >= 1e6) return 'Rp ' + (val/1e6).toFixed(2) + 'M';
+            return 'Rp ' + val.toLocaleString('id-ID', {maximumFractionDigits: 0});
+        }
+
+        function wpdFormatRpFull(val) {
+            return 'Rp ' + val.toLocaleString('id-ID', {maximumFractionDigits: 0});
+        }
+
+        function wpdFormatQty(val) {
+            return val.toLocaleString('id-ID', {maximumFractionDigits: 2});
+        }
+
+        async function loadWarehouseParetoData() {
+            // Show spinner
+            document.getElementById('wpdLoadingSpinner').classList.remove('hidden');
+            document.getElementById('wpdDashboardGrid').classList.add('hidden');
+            document.getElementById('wpdErrorMsg').classList.add('hidden');
+            const refreshIcon = document.getElementById('wpdRefreshIcon');
+            refreshIcon.classList.add('fa-spin');
+
+            try {
+                // Use a CORS proxy approach via fetch with no-cors or direct
+                const response = await fetch(WPD_SHEET_CSV);
+                if (!response.ok) throw new Error('Failed to fetch sheet data');
+                const text = await response.text();
+                wpdProcessData(text);
+            } catch(e) {
+                // Try alternate approach
+                try {
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(WPD_SHEET_CSV)}`;
+                    const r2 = await fetch(proxyUrl);
+                    const j2 = await r2.json();
+                    wpdProcessData(j2.contents);
+                } catch(e2) {
+                    document.getElementById('wpdLoadingSpinner').classList.add('hidden');
+                    document.getElementById('wpdErrorMsg').classList.remove('hidden');
+                    document.getElementById('wpdErrorText').textContent = 'Unable to load data: ' + e2.message + '. Please check your network connection.';
+                    refreshIcon.classList.remove('fa-spin');
+                }
+            }
+        }
+
+        function wpdParseCSV(text) {
+            const rows = [];
+            const lines = text.split(/\r?\n/);
+            for (const line of lines) {
+                const row = [];
+                let cur = '', inQ = false;
+                for (let i = 0; i < line.length; i++) {
+                    const c = line[i];
+                    if (c === '"') {
+                        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+                        else inQ = !inQ;
+                    } else if (c === ',' && !inQ) {
+                        row.push(cur); cur = '';
+                    } else {
+                        cur += c;
+                    }
+                }
+                row.push(cur);
+                rows.push(row);
+            }
+            return rows;
+        }
+
+        function wpdProcessData(text) {
+            try {
+                const rows = wpdParseCSV(text);
+
+                // B7 = row index 6, col index 1 → last updated date
+                const lastUpdated = (rows[6] && rows[6][1]) ? rows[6][1].trim() : 'Unknown';
+                document.getElementById('wpdLastUpdated').textContent = `Data as of: ${lastUpdated}`;
+
+                // Headers at row 9 (index 8), data starts at row 10 (index 9)
+                const dataRows = rows.slice(9).filter(r => r.length > 33 && r[0].trim() !== '');
+
+                // Column indices (0-based):
+                // F=5 (Div/Category), N=13 (Item Grade), R=17 (System Reorder Qty = Reorder Point)
+                // U=20 (Qty on Hand), V=21 (Qty on Order)
+                // AG=32 (Closing Cost = Inventory Rp), AH=33 (Qty on Inventory)
+
+                let totalRp = 0, totalQty = 0, totalSKUs = 0;
+                const catData = {}; // category -> { rp, qty, skuCount, lowStock: {AA,A,B,C}, oos: {AA,A,B,C} }
+                const globalLS = {AA:0, A:0, B:0, C:0};
+                const globalOOS = {AA:0, A:0, B:0, C:0};
+
+                for (const row of dataRows) {
+                    const cat = (row[5] || '').trim();
+                    const grade = (row[13] || '').trim();
+                    const R = wpdParseNum(row[17]);
+                    const U = wpdParseNum(row[20]);
+                    const V = wpdParseNum(row[21]);
+                    const ag = wpdParseNum(row[32]);
+                    const ah = wpdParseNum(row[33]);
+
+                    totalRp  += ag;
+                    totalQty += ah;
+                    totalSKUs++;
+
+                    if (!cat) continue;
+                    if (!catData[cat]) {
+                        catData[cat] = { rp: 0, qty: 0, skuCount: 0, lowStock: {AA:0,A:0,B:0,C:0}, oos: {AA:0,A:0,B:0,C:0} };
+                    }
+                    catData[cat].rp += ag;
+                    catData[cat].qty += ah;
+                    catData[cat].skuCount++;
+
+                    const grp = wpdGetGradeGroup(grade);
+                    if (grp) {
+                        const UV = U + V;
+                        if (UV <= 0) {
+                            catData[cat].oos[grp]++;
+                            globalOOS[grp]++;
+                        } else if (R > 0 && UV < 0.5 * R) {
+                            catData[cat].lowStock[grp]++;
+                            globalLS[grp]++;
+                        }
+                    }
+                }
+
+                // Update summary cards
+                document.getElementById('wpdTotalStockRp').textContent = wpdFormatRp(totalRp);
+                document.getElementById('wpdTotalSKUs').textContent = totalSKUs.toLocaleString('id-ID');
+                document.getElementById('wpdTotalQty').textContent = wpdFormatQty(totalQty);
+                document.getElementById('wpdCategoryTotalRp').textContent = wpdFormatRpFull(totalRp);
+                document.getElementById('wpdCategoryTotalQty').textContent = wpdFormatQty(totalQty);
+
+                // Sort categories by inventory value descending
+                const sortedCats = Object.keys(catData).sort((a,b) => catData[b].rp - catData[a].rp);
+
+                // Build category inventory table
+                const catBody = document.getElementById('wpdCategoryTableBody');
+                catBody.innerHTML = '';
+                let cumPct = 0;
+                sortedCats.forEach((cat, idx) => {
+                    const d = catData[cat];
+                    const pct = totalRp > 0 ? (d.rp / totalRp * 100) : 0;
+                    cumPct += pct;
+                    const shortCat = cat.includes(' - ') ? cat.split(' - ').slice(1).join(' - ') : cat;
+                    const barColor = WPD_CAT_COLORS[idx % WPD_CAT_COLORS.length];
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-gray-50 transition-colors';
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-gray-800 font-medium text-xs">${shortCat}</td>
+                        <td class="px-4 py-3 text-right text-gray-700 text-xs font-mono">${wpdFormatRpFull(d.rp)}</td>
+                        <td class="px-4 py-3 text-right text-gray-700 text-xs">${wpdFormatQty(d.qty)}</td>
+                        <td class="px-4 py-3 text-right text-xs"><span class="font-semibold" style="color:${barColor}">${pct.toFixed(1)}%</span></td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-1">
+                                <div class="flex-1 bg-gray-100 rounded-full h-2">
+                                    <div class="h-2 rounded-full transition-all" style="width:${pct.toFixed(1)}%;background:${barColor}"></div>
+                                </div>
+                                <span class="text-xs text-gray-400 w-10 text-right">${cumPct.toFixed(0)}%</span>
+                            </div>
+                        </td>`;
+                    catBody.appendChild(tr);
+                });
+
+                // Build Low Stock Table
+                wpdBuildStatusTable('wpdLowStockBody', 'wpdLSTotal', sortedCats, catData, 'lowStock', globalLS);
+
+                // Build OOS Table
+                wpdBuildStatusTable('wpdOOSBody', 'wpdOOSTotal', sortedCats, catData, 'oos', globalOOS);
+
+                // Build Charts
+                wpdBuildPieChart(sortedCats, catData, totalRp);
+                wpdBuildGradeBarChart(globalLS, globalOOS);
+
+                // Show dashboard
+                document.getElementById('wpdLoadingSpinner').classList.add('hidden');
+                document.getElementById('wpdDashboardGrid').classList.remove('hidden');
+                window._wpdLoaded = true;
+
+            } catch(err) {
+                document.getElementById('wpdLoadingSpinner').classList.add('hidden');
+                document.getElementById('wpdErrorMsg').classList.remove('hidden');
+                document.getElementById('wpdErrorText').textContent = 'Error processing data: ' + err.message;
+            }
+            document.getElementById('wpdRefreshIcon').classList.remove('fa-spin');
+        }
+
+        function wpdBuildStatusTable(bodyId, totalPrefix, sortedCats, catData, field, globalTotals) {
+            const body = document.getElementById(bodyId);
+            body.innerHTML = '';
+            const gradeColors = { AA: 'text-purple-700 font-bold', A: 'text-blue-700 font-bold', B: 'text-green-700 font-bold', C: 'text-orange-700 font-bold' };
+
+            sortedCats.forEach((cat, idx) => {
+                const d = catData[cat];
+                const shortCat = cat.includes(' - ') ? cat.split(' - ').slice(1).join(' - ') : cat;
+                const rowTotal = WPD_GRADE_GROUPS.reduce((s,g) => s + (d[field][g]||0), 0);
+                if (rowTotal === 0 && !WPD_GRADE_GROUPS.some(g => d[field][g] > 0)) {
+                    // still render to show all categories
+                }
+                const tr = document.createElement('tr');
+                tr.className = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                const cells = WPD_GRADE_GROUPS.map(g => {
+                    const v = d[field][g] || 0;
+                    const cls = gradeColors[g];
+                    return `<td class="px-3 py-2 text-center text-xs ${v > 0 ? cls : 'text-gray-400'}">${v > 0 ? v : '—'}</td>`;
+                }).join('');
+                tr.innerHTML = `
+                    <td class="px-3 py-2 text-xs text-gray-700 font-medium">${shortCat}</td>
+                    ${cells}
+                    <td class="px-3 py-2 text-center text-xs font-bold ${rowTotal > 0 ? 'text-gray-800' : 'text-gray-300'}">${rowTotal > 0 ? rowTotal : '—'}</td>`;
+                body.appendChild(tr);
+            });
+
+            // Totals row
+            const grandTotal = WPD_GRADE_GROUPS.reduce((s,g) => s + (globalTotals[g]||0), 0);
+            document.getElementById(totalPrefix + '_AA').textContent = globalTotals.AA || '—';
+            document.getElementById(totalPrefix + '_A').textContent  = globalTotals.A  || '—';
+            document.getElementById(totalPrefix + '_B').textContent  = globalTotals.B  || '—';
+            document.getElementById(totalPrefix + '_C').textContent  = globalTotals.C  || '—';
+            document.getElementById(totalPrefix + '_All').textContent = grandTotal || '—';
+        }
+
+        function wpdBuildPieChart(sortedCats, catData, totalRp) {
+            const ctx = document.getElementById('wpdCategoryPieChart').getContext('2d');
+            if (window._wpdCharts.pie) { window._wpdCharts.pie.destroy(); }
+            const top8 = sortedCats.slice(0, 8);
+            const others = sortedCats.slice(8);
+            const labels = top8.map(c => c.includes(' - ') ? c.split(' - ').slice(1).join(' - ') : c);
+            const data   = top8.map(c => catData[c].rp);
+            if (others.length > 0) {
+                labels.push('Others');
+                data.push(others.reduce((s,c) => s + catData[c].rp, 0));
+            }
+            const colors = WPD_CAT_COLORS.slice(0, labels.length);
+            window._wpdCharts.pie = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }] },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 8, boxWidth: 12 } },
+                        tooltip: { callbacks: { label: ctx => {
+                            const pct = totalRp > 0 ? (ctx.raw / totalRp * 100).toFixed(1) : 0;
+                            return ` ${wpdFormatRp(ctx.raw)} (${pct}%)`;
+                        }}}
+                    }
+                }
+            });
+        }
+
+        function wpdBuildGradeBarChart(globalLS, globalOOS) {
+            const ctx = document.getElementById('wpdGradeBarChart').getContext('2d');
+            if (window._wpdCharts.bar) { window._wpdCharts.bar.destroy(); }
+            window._wpdCharts.bar = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: WPD_GRADE_GROUPS,
+                    datasets: [
+                        { label: 'Low Stock', data: WPD_GRADE_GROUPS.map(g=>globalLS[g]||0), backgroundColor: 'rgba(245,158,11,0.8)', borderColor: '#d97706', borderWidth: 1, borderRadius: 4 },
+                        { label: 'OOS',       data: WPD_GRADE_GROUPS.map(g=>globalOOS[g]||0), backgroundColor: 'rgba(239,68,68,0.8)',  borderColor: '#b91c1c', borderWidth: 1, borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 11 }, padding: 10 } },
+                        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} SKUs` } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } }, grid: { color: '#f3f4f6' } },
+                        x: { ticks: { font: { size: 11, weight: 'bold' } }, grid: { display: false } }
+                    }
+                }
+            });
         }
 
         // BPT Subtab Functions
