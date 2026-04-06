@@ -2622,7 +2622,12 @@
                                         </h4>
                                         <p class="text-rose-500 text-xs mt-0.5">Items where (U + V) &gt; 3 &times; Reorder Point. Excludes Inactive &amp; Discontinue.</p>
                                     </div>
-                                    <span class="text-xs font-bold px-3 py-1 rounded-full text-white" style="background:#e11d48;" id="wpdHighStockBadge">0 SKUs</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-bold px-3 py-1 rounded-full text-white" style="background:#e11d48;" id="wpdHighStockBadge">0 SKUs</span>
+                                        <button onclick="wpdExportHighStock()" class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg text-white transition" style="background:#be123c;" onmouseover="this.style.background='#9f1239'" onmouseout="this.style.background='#be123c'">
+                                            <i class="fas fa-file-excel"></i> Export Excel
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="overflow-x-auto">
                                     <table class="min-w-full text-sm">
@@ -6480,7 +6485,9 @@
                 // J=9 (Item Status) — exclude Inactive and Discontinue
                 const WPD_EXCLUDED_STATUSES = ['inactive', 'discontinue'];
                 const dataRows = rows.slice(9).filter(r => {
-                    if (r.length <= 33 || r[0].trim() === '') return false;
+                    // Rows have 39 fields (AG column contains quoted numbers with commas
+                    // which get parsed as a single field, resulting in 39 columns total)
+                    if (r.length < 10 || r[0].trim() === '') return false;
                     const status = (r[9] || '').trim().toLowerCase();
                     return !WPD_EXCLUDED_STATUSES.includes(status);
                 });
@@ -6836,6 +6843,75 @@
             wpdDownload(wb, `OOS_Detail_${wpdTimestamp()}.xlsx`);
         }
 
+        // ─── EXPORT: HIGH STOCK ───────────────────────────────────────────────────
+        function wpdExportHighStock() {
+            const items = window._wpdHighStock;
+            if (!items || items.length === 0) {
+                alert('No high-stock data loaded yet. Please load the dashboard first.'); return;
+            }
+
+            const wb = XLSX.utils.book_new();
+
+            // Summary sheet – category breakdown of high-stock items
+            const catMap = {};
+            items.forEach(item => {
+                const c = item.cat || 'Unknown';
+                if (!catMap[c]) catMap[c] = { count: 0, totalQty: 0, totalRp: 0 };
+                catMap[c].count++;
+                catMap[c].totalQty += item.U;
+                catMap[c].totalRp  += item.ag;
+            });
+            const summaryHeaders = ['Category (Division)', 'High Stock SKU Count', 'Total Qty on Hand', 'Total Closing Stock Value (Rp)'];
+            const summaryRows = [summaryHeaders];
+            Object.entries(catMap)
+                .sort((a, b) => b[1].totalRp - a[1].totalRp)
+                .forEach(([cat, d]) => {
+                    summaryRows.push([cat, d.count, d.totalQty, d.totalRp]);
+                });
+            summaryRows.push(['TOTAL', items.length,
+                items.reduce((s, i) => s + i.U, 0),
+                items.reduce((s, i) => s + i.ag, 0)
+            ]);
+            const sumWs = XLSX.utils.aoa_to_sheet(summaryRows);
+            sumWs['!cols'] = [{wch:35},{wch:22},{wch:20},{wch:30}];
+            XLSX.utils.book_append_sheet(wb, sumWs, 'High Stock Summary');
+
+            // Detail sheet – all high-stock SKUs with MOI
+            const detailHeaders = [
+                'Item Code', 'Item Name', 'Category (Division)', 'Item Status', 'Item Grade',
+                'Qty on Hand (U)', 'Qty on Order (V)', 'U + V', 'Reorder Point (R)',
+                'MOI (x months)', 'Qty on Inventory', 'Closing Stock (Rp)', 'Supplier'
+            ];
+            const detailRows = [detailHeaders];
+            // Sort by MOI descending
+            const sorted = [...items].sort((a, b) => b.moi - a.moi);
+            sorted.forEach(item => {
+                detailRows.push([
+                    item.itemCode,
+                    item.itemName,
+                    item.cat,
+                    item.itemStatus,
+                    item.grade,
+                    item.U,
+                    item.V,
+                    item.U + item.V,
+                    item.R,
+                    parseFloat(item.moi.toFixed(2)),
+                    item.ah,
+                    item.ag,
+                    item.supplier,
+                ]);
+            });
+            const detailWs = XLSX.utils.aoa_to_sheet(detailRows);
+            detailWs['!cols'] = [
+                {wch:14},{wch:45},{wch:30},{wch:14},{wch:12},
+                {wch:14},{wch:14},{wch:10},{wch:16},{wch:14},{wch:16},{wch:22},{wch:40}
+            ];
+            XLSX.utils.book_append_sheet(wb, detailWs, 'High Stock Detail');
+
+            wpdDownload(wb, `High_Stock_Alert_${wpdTimestamp()}.xlsx`);
+        }
+
         // ─────────────────────────────────────────────────────────────────────────
 
         function wpdBuildHighStockTable(items) {
@@ -6878,8 +6954,8 @@
                 const tr = document.createElement('tr');
                 tr.style.background = rowBg;
                 tr.innerHTML = `
-                    <td class="px-4 py-2.5 text-xs font-mono text-gray-700 font-medium">${item.code}</td>
-                    <td class="px-4 py-2.5 text-xs text-gray-800">${item.name}</td>
+                    <td class="px-4 py-2.5 text-xs font-mono text-gray-700 font-medium">${item.itemCode}</td>
+                    <td class="px-4 py-2.5 text-xs text-gray-800">${item.itemName}</td>
                     <td class="px-4 py-2.5 text-xs text-gray-600">${shortCat}</td>
                     <td class="px-4 py-2.5 text-center">${gradeBadge}</td>
                     <td class="px-4 py-2.5 text-right text-xs text-gray-700">${wpdFormatQty(item.U)}</td>
