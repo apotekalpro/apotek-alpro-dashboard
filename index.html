@@ -2551,7 +2551,7 @@
                         </div>
 
                         <!-- Total Stock Summary Card -->
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                             <!-- Card 1: Inventory Value (indigo) -->
                             <div class="rounded-xl p-5 text-white shadow-lg" style="background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);">
                                 <div class="flex items-center justify-between mb-2">
@@ -2585,6 +2585,17 @@
                                 <p class="text-2xl font-bold text-white" id="wpdTotalQty">—</p>
                                 <p style="color:rgba(252,211,77,0.85);" class="text-xs mt-1">AH Column — Qty on Inventory</p>
                             </div>
+                            <!-- Card 4: High Stock Alert (rose) -->
+                            <div class="rounded-xl p-5 text-white shadow-lg" style="background: linear-gradient(135deg, #e11d48 0%, #9f1239 100%);">    
+                                <div class="flex items-center justify-between mb-2">
+                                    <p style="color:rgba(254,205,211,0.9);" class="text-xs font-medium uppercase tracking-wide">High Stock Alert (MOI &gt; 3 Months)</p>
+                                    <span style="background:rgba(255,255,255,0.15);border-radius:9999px;padding:6px 8px;">
+                                        <i class="fas fa-arrow-up" style="color:#fecdd3;font-size:14px;"></i>
+                                    </span>
+                                </div>
+                                <p class="text-2xl font-bold text-white" id="wpdHighStockCount">&mdash;</p>
+                                <p style="color:rgba(253,164,175,0.85);" class="text-xs mt-1">SKUs where (U+V) &gt; 3 &times; Reorder Point</p>
+                            </div>
                         </div>
 
                         <!-- Loading Spinner -->
@@ -2600,12 +2611,57 @@
 
                         <!-- Main Dashboard Grid -->
                         <div id="wpdDashboardGrid" class="hidden">
+
+                            <!-- High Stock Alert Detail Table -->
+                            <div class="bg-white rounded-xl shadow border border-rose-200 mb-6 overflow-hidden">
+                                <div class="px-5 py-3 border-b border-rose-100 flex items-center justify-between" style="background:linear-gradient(90deg,#fff1f2 0%,#ffffff 100%);">    
+                                    <div>
+                                        <h4 class="font-semibold text-rose-800 flex items-center text-sm">
+                                            <i class="fas fa-arrow-circle-up mr-2 text-rose-500"></i>
+                                            High Stock SKU Detail &mdash; MOI &gt; 3 Months
+                                        </h4>
+                                        <p class="text-rose-500 text-xs mt-0.5">Items where (U + V) &gt; 3 &times; Reorder Point. Excludes Inactive &amp; Discontinue.</p>
+                                    </div>
+                                    <span class="text-xs font-bold px-3 py-1 rounded-full text-white" style="background:#e11d48;" id="wpdHighStockBadge">0 SKUs</span>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full text-sm">
+                                        <thead>
+                                            <tr class="text-gray-600 text-xs uppercase tracking-wider" style="background:#fef2f2;">
+                                                <th class="text-left px-4 py-3 font-semibold">Item Code</th>
+                                                <th class="text-left px-4 py-3 font-semibold">Item Name</th>
+                                                <th class="text-left px-4 py-3 font-semibold">Category</th>
+                                                <th class="text-center px-4 py-3 font-semibold">Grade</th>
+                                                <th class="text-right px-4 py-3 font-semibold">Qty on Hand (U)</th>
+                                                <th class="text-right px-4 py-3 font-semibold">Reorder Point (R)</th>
+                                                <th class="text-right px-4 py-3 font-semibold">MOI (x months)</th>
+                                                <th class="text-right px-4 py-3 font-semibold">Closing Stock Value (Rp)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="wpdHighStockBody" class="divide-y divide-gray-100">
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style="background:#fef2f2;" class="font-bold text-rose-900 border-t-2 border-rose-200 text-xs">
+                                                <td class="px-4 py-3" colspan="4">TOTAL HIGH STOCK</td>
+                                                <td class="px-4 py-3 text-right" id="wpdHSTotalQty">&mdash;</td>
+                                                <td class="px-4 py-3 text-right">&mdash;</td>
+                                                <td class="px-4 py-3 text-right">&mdash;</td>
+                                                <td class="px-4 py-3 text-right" id="wpdHSTotalRp">&mdash;</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
                             <!-- Inventory by Category Table -->
                             <div class="bg-white rounded-xl shadow border border-gray-100 mb-6 overflow-hidden">
-                                <div class="bg-indigo-50 px-5 py-3 border-b border-indigo-100">
+                                <div class="bg-indigo-50 px-5 py-3 border-b border-indigo-100 flex items-center justify-between">
                                     <h4 class="font-semibold text-indigo-800 flex items-center text-sm">
                                         <i class="fas fa-boxes mr-2"></i>Inventory by Category (Division)
                                     </h4>
+                                    <button onclick="wpdExportInventory()" class="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg text-white transition" style="background:#4f46e5;" onmouseover="this.style.background='#3730a3'" onmouseout="this.style.background='#4f46e5'">
+                                        <i class="fas fa-file-excel"></i> Export Excel
+                                    </button>
                                 </div>
                                 <div class="overflow-x-auto">
                                     <table class="min-w-full text-sm">
@@ -2638,11 +2694,18 @@
                                 <!-- Low Stock Table -->
                                 <div class="bg-white rounded-xl shadow border border-amber-100 overflow-hidden">
                                     <div class="bg-amber-50 px-5 py-3 border-b border-amber-100">
-                                        <h4 class="font-semibold text-amber-800 flex items-center text-sm">
-                                            <i class="fas fa-exclamation-triangle mr-2 text-amber-500"></i>
-                                            Low Stock Count by Category &amp; Item Grade
-                                        </h4>
-                                        <p class="text-amber-600 text-xs mt-0.5">SKUs where (U+V) &lt; 50% of Reorder Point (R)</p>
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div>
+                                                <h4 class="font-semibold text-amber-800 flex items-center text-sm">
+                                                    <i class="fas fa-exclamation-triangle mr-2 text-amber-500"></i>
+                                                    Low Stock Count by Category &amp; Item Grade
+                                                </h4>
+                                                <p class="text-amber-600 text-xs mt-0.5">SKUs where (U+V) &lt; 50% of Reorder Point (R)</p>
+                                            </div>
+                                            <button onclick="wpdExportLowStock()" class="flex-shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg text-white transition" style="background:#d97706;" onmouseover="this.style.background='#b45309'" onmouseout="this.style.background='#d97706'">
+                                                <i class="fas fa-file-excel"></i> Export
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="overflow-x-auto">
                                         <table class="min-w-full text-sm" id="wpdLowStockTable">
@@ -2675,11 +2738,18 @@
                                 <!-- OOS Table -->
                                 <div class="bg-white rounded-xl shadow border border-red-100 overflow-hidden">
                                     <div class="bg-red-50 px-5 py-3 border-b border-red-100">
-                                        <h4 class="font-semibold text-red-800 flex items-center text-sm">
-                                            <i class="fas fa-times-circle mr-2 text-red-500"></i>
-                                            Out of Stock (OOS) Count by Category &amp; Item Grade
-                                        </h4>
-                                        <p class="text-red-600 text-xs mt-0.5">SKUs where (U+V) ≤ 0</p>
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div>
+                                                <h4 class="font-semibold text-red-800 flex items-center text-sm">
+                                                    <i class="fas fa-times-circle mr-2 text-red-500"></i>
+                                                    Out of Stock (OOS) Count by Category &amp; Item Grade
+                                                </h4>
+                                                <p class="text-red-600 text-xs mt-0.5">SKUs where (U+V) ≤ 0</p>
+                                            </div>
+                                            <button onclick="wpdExportOOS()" class="flex-shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg text-white transition" style="background:#dc2626;" onmouseover="this.style.background='#b91c1c'" onmouseout="this.style.background='#dc2626'">
+                                                <i class="fas fa-file-excel"></i> Export
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="overflow-x-auto">
                                         <table class="min-w-full text-sm" id="wpdOOSTable">
@@ -6422,30 +6492,53 @@
                 // AG=32 (Closing Cost = Inventory Rp), AH=33 (Qty on Inventory)
 
                 let totalRp = 0, totalQty = 0, totalSKUs = 0;
-                const catData = {}; // category -> { rp, qty, skuCount, lowStock: {AA,A,B,C}, oos: {AA,A,B,C} }
-                const globalLS = {AA:0, A:0, B:0, C:0};
+                // catData stores summary + per-SKU detail arrays for export
+                const catData = {};
+                const globalLS  = {AA:0, A:0, B:0, C:0};
                 const globalOOS = {AA:0, A:0, B:0, C:0};
+                const highStockItems = []; // SKUs where (U+V) > 3 × R
 
                 for (const row of dataRows) {
-                    const cat = (row[5] || '').trim();
-                    const grade = (row[13] || '').trim();
-                    const R = wpdParseNum(row[17]);
-                    const U = wpdParseNum(row[20]);
-                    const V = wpdParseNum(row[21]);
-                    const ag = wpdParseNum(row[32]);
-                    const ah = wpdParseNum(row[33]);
+                    const itemCode   = (row[2]  || '').trim(); // C – Item code
+                    const itemName   = (row[3]  || '').trim(); // D – Item name
+                    const cat        = (row[5]  || '').trim(); // F – Division / Category
+                    const itemStatus = (row[9]  || '').trim(); // J – Item Status
+                    const grade      = (row[13] || '').trim(); // N – Item Grade
+                    const R   = wpdParseNum(row[17]); // R  – System Reorder Qty (Reorder Point)
+                    const U   = wpdParseNum(row[20]); // U  – Qty on Hand
+                    const V   = wpdParseNum(row[21]); // V  – Qty on Order
+                    const ag  = wpdParseNum(row[32]); // AG – Closing Cost (Inventory Rp)
+                    const ah  = wpdParseNum(row[33]); // AH – Qty on Inventory
+                    const supplier = (row[29] || '').trim(); // AD – Supplier
 
                     totalRp  += ag;
                     totalQty += ah;
                     totalSKUs++;
 
+                    // Build a rich SKU record used for both dashboard and exports
+                    const skuRec = { itemCode, itemName, cat, itemStatus, grade, R, U, V, ag, ah, supplier };
+
+                    // High Stock: (U+V) > 3 × R (MOI > 3 months), only when R > 0
+                    if (R > 0 && (U + V) > 3 * R) {
+                        highStockItems.push({ ...skuRec, moi: (U + V) / R });
+                    }
+
                     if (!cat) continue;
                     if (!catData[cat]) {
-                        catData[cat] = { rp: 0, qty: 0, skuCount: 0, lowStock: {AA:0,A:0,B:0,C:0}, oos: {AA:0,A:0,B:0,C:0} };
+                        catData[cat] = {
+                            rp: 0, qty: 0, skuCount: 0,
+                            lowStock: {AA:0,A:0,B:0,C:0},
+                            oos:      {AA:0,A:0,B:0,C:0},
+                            // Per-SKU arrays for Excel export
+                            skus:         [],  // all SKUs in category
+                            lowStockSkus: [],  // SKUs flagged low stock
+                            oosSkus:      []   // SKUs flagged OOS
+                        };
                     }
                     catData[cat].rp += ag;
                     catData[cat].qty += ah;
                     catData[cat].skuCount++;
+                    catData[cat].skus.push(skuRec);
 
                     const grp = wpdGetGradeGroup(grade);
                     if (grp) {
@@ -6453,12 +6546,19 @@
                         if (UV <= 0) {
                             catData[cat].oos[grp]++;
                             globalOOS[grp]++;
+                            catData[cat].oosSkus.push(skuRec);
                         } else if (R > 0 && UV < 0.5 * R) {
                             catData[cat].lowStock[grp]++;
                             globalLS[grp]++;
+                            catData[cat].lowStockSkus.push(skuRec);
                         }
                     }
                 }
+
+                // Store processed data at module level for export functions
+                window._wpdCatData      = catData;
+                window._wpdHighStock    = highStockItems;
+                window._wpdLastUpdated  = lastUpdated;
 
                 // Update summary cards
                 document.getElementById('wpdTotalStockRp').textContent = wpdFormatRp(totalRp);
@@ -6466,6 +6566,12 @@
                 document.getElementById('wpdTotalQty').textContent = wpdFormatQty(totalQty);
                 document.getElementById('wpdCategoryTotalRp').textContent = wpdFormatRpFull(totalRp);
                 document.getElementById('wpdCategoryTotalQty').textContent = wpdFormatQty(totalQty);
+
+                // High Stock card
+                document.getElementById('wpdHighStockCount').textContent = highStockItems.length.toLocaleString('id-ID');
+
+                // Build High Stock detail table (sorted by MOI descending)
+                wpdBuildHighStockTable(highStockItems);
 
                 // Sort categories by inventory value descending
                 const sortedCats = Object.keys(catData).sort((a,b) => catData[b].rp - catData[a].rp);
@@ -6519,6 +6625,272 @@
                 document.getElementById('wpdErrorText').textContent = 'Error processing data: ' + err.message;
             }
             document.getElementById('wpdRefreshIcon').classList.remove('fa-spin');
+        }
+
+        // ─── EXCEL EXPORT HELPERS ────────────────────────────────────────────────
+
+        // Shared column definitions for SKU detail sheets
+        const WPD_SKU_COLS = [
+            { header: 'Item Code',            key: 'itemCode'   },
+            { header: 'Item Name',            key: 'itemName'   },
+            { header: 'Category (Division)',  key: 'cat'        },
+            { header: 'Item Status',          key: 'itemStatus' },
+            { header: 'Item Grade',           key: 'grade'      },
+            { header: 'Qty on Hand (U)',      key: 'U'          },
+            { header: 'Qty on Order (V)',     key: 'V'          },
+            { header: 'U + V',               key: '_UV'        },
+            { header: 'Reorder Point (R)',    key: 'R'          },
+            { header: 'Qty on Inventory',     key: 'ah'         },
+            { header: 'Closing Stock (Rp)',   key: 'ag'         },
+            { header: 'Supplier',             key: 'supplier'   },
+        ];
+
+        function wpdSkuToRow(sku) {
+            return {
+                itemCode:   sku.itemCode,
+                itemName:   sku.itemName,
+                cat:        sku.cat,
+                itemStatus: sku.itemStatus,
+                grade:      sku.grade,
+                U:          sku.U,
+                V:          sku.V,
+                _UV:        sku.U + sku.V,
+                R:          sku.R,
+                ah:         sku.ah,
+                ag:         sku.ag,
+                supplier:   sku.supplier,
+            };
+        }
+
+        function wpdMakeSheet(skuList) {
+            // Header row
+            const headers = WPD_SKU_COLS.map(c => c.header);
+            const dataMatrix = [headers];
+            skuList.forEach(sku => {
+                const rec = wpdSkuToRow(sku);
+                dataMatrix.push(WPD_SKU_COLS.map(c => rec[c.key]));
+            });
+            const ws = XLSX.utils.aoa_to_sheet(dataMatrix);
+
+            // Column widths
+            ws['!cols'] = [
+                {wch:14},{wch:45},{wch:30},{wch:14},{wch:12},
+                {wch:14},{wch:14},{wch:10},{wch:16},{wch:16},{wch:20},{wch:40}
+            ];
+            return ws;
+        }
+
+        function wpdMakeSummarySheet(catData, sortedCats, totalRp, totalQty) {
+            const headers = ['Category (Division)','Inventory Value (Rp)','Qty on Inventory','SKU Count','% of Total Value'];
+            const rows = [headers];
+            let cumPct = 0;
+            sortedCats.forEach(cat => {
+                const d = catData[cat];
+                const pct = totalRp > 0 ? (d.rp / totalRp * 100) : 0;
+                cumPct += pct;
+                rows.push([cat, d.rp, d.qty, d.skuCount, parseFloat(pct.toFixed(2))]);
+            });
+            rows.push(['TOTAL', totalRp, totalQty, sortedCats.reduce((s,c)=>s+catData[c].skuCount,0), 100]);
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            ws['!cols'] = [{wch:35},{wch:22},{wch:18},{wch:12},{wch:16}];
+            return ws;
+        }
+
+        function wpdDownload(wb, filename) {
+            XLSX.writeFile(wb, filename);
+        }
+
+        function wpdGetSortedCats() {
+            const catData = window._wpdCatData || {};
+            return Object.keys(catData).sort((a,b) => catData[b].rp - catData[a].rp);
+        }
+
+        function wpdGetTotals() {
+            const catData = window._wpdCatData || {};
+            let totalRp = 0, totalQty = 0;
+            Object.values(catData).forEach(d => { totalRp += d.rp; totalQty += d.qty; });
+            return { totalRp, totalQty };
+        }
+
+        function wpdTimestamp() {
+            return (window._wpdLastUpdated || 'export').replace(/[^a-zA-Z0-9_\-]/g,'_').slice(0,20);
+        }
+
+        // ─── EXPORT: INVENTORY BY CATEGORY ───────────────────────────────────────
+        function wpdExportInventory() {
+            const catData    = window._wpdCatData;
+            const sortedCats = wpdGetSortedCats();
+            const { totalRp, totalQty } = wpdGetTotals();
+
+            if (!catData || sortedCats.length === 0) {
+                alert('No data loaded yet. Please load the dashboard first.'); return;
+            }
+
+            const wb = XLSX.utils.book_new();
+
+            // Sheet 1 – Summary
+            const summaryWs = wpdMakeSummarySheet(catData, sortedCats, totalRp, totalQty);
+            XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary by Category');
+
+            // One sheet per category with full SKU details
+            sortedCats.forEach(cat => {
+                const d = catData[cat];
+                if (!d.skus || d.skus.length === 0) return;
+                const sheetName = cat.replace(/[\\\/\?\*\[\]:]/g,'').slice(0,31);
+                const ws = wpdMakeSheet(d.skus);
+                XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            });
+
+            // All SKUs combined sheet
+            const allSkus = sortedCats.flatMap(cat => catData[cat].skus || []);
+            XLSX.utils.book_append_sheet(wb, wpdMakeSheet(allSkus), 'All SKUs');
+
+            wpdDownload(wb, `Inventory_by_Category_${wpdTimestamp()}.xlsx`);
+        }
+
+        // ─── EXPORT: LOW STOCK ────────────────────────────────────────────────────
+        function wpdExportLowStock() {
+            const catData    = window._wpdCatData;
+            const sortedCats = wpdGetSortedCats();
+
+            if (!catData || sortedCats.length === 0) {
+                alert('No data loaded yet. Please load the dashboard first.'); return;
+            }
+
+            const wb = XLSX.utils.book_new();
+
+            // Summary count sheet (Category × Grade matrix)
+            const grades = ['AA','A','B','C'];
+            const summaryHeaders = ['Category (Division)', 'AA', 'A', 'B', 'C', 'Total'];
+            const summaryRows = [summaryHeaders];
+            const totals = {AA:0,A:0,B:0,C:0};
+            sortedCats.forEach(cat => {
+                const ls = catData[cat].lowStock;
+                const rowTotal = grades.reduce((s,g) => s + (ls[g]||0), 0);
+                grades.forEach(g => totals[g] += (ls[g]||0));
+                summaryRows.push([cat, ls.AA||0, ls.A||0, ls.B||0, ls.C||0, rowTotal]);
+            });
+            summaryRows.push(['TOTAL', totals.AA, totals.A, totals.B, totals.C, grades.reduce((s,g)=>s+totals[g],0)]);
+            const sumWs = XLSX.utils.aoa_to_sheet(summaryRows);
+            sumWs['!cols'] = [{wch:35},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10}];
+            XLSX.utils.book_append_sheet(wb, sumWs, 'Low Stock Summary');
+
+            // Per-category SKU detail sheets
+            sortedCats.forEach(cat => {
+                const skus = catData[cat].lowStockSkus || [];
+                if (skus.length === 0) return;
+                const sheetName = ('LS_' + cat.replace(/[\\\/\?\*\[\]:]/g,'').slice(0,27)).slice(0,31);
+                XLSX.utils.book_append_sheet(wb, wpdMakeSheet(skus), sheetName);
+            });
+
+            // All low-stock SKUs combined
+            const allLs = sortedCats.flatMap(cat => catData[cat].lowStockSkus || []);
+            if (allLs.length > 0) {
+                XLSX.utils.book_append_sheet(wb, wpdMakeSheet(allLs), 'All Low Stock SKUs');
+            }
+
+            wpdDownload(wb, `Low_Stock_Detail_${wpdTimestamp()}.xlsx`);
+        }
+
+        // ─── EXPORT: OUT OF STOCK (OOS) ───────────────────────────────────────────
+        function wpdExportOOS() {
+            const catData    = window._wpdCatData;
+            const sortedCats = wpdGetSortedCats();
+
+            if (!catData || sortedCats.length === 0) {
+                alert('No data loaded yet. Please load the dashboard first.'); return;
+            }
+
+            const wb = XLSX.utils.book_new();
+
+            // Summary count sheet (Category × Grade matrix)
+            const grades = ['AA','A','B','C'];
+            const summaryHeaders = ['Category (Division)', 'AA', 'A', 'B', 'C', 'Total'];
+            const summaryRows = [summaryHeaders];
+            const totals = {AA:0,A:0,B:0,C:0};
+            sortedCats.forEach(cat => {
+                const oos = catData[cat].oos;
+                const rowTotal = grades.reduce((s,g) => s + (oos[g]||0), 0);
+                grades.forEach(g => totals[g] += (oos[g]||0));
+                summaryRows.push([cat, oos.AA||0, oos.A||0, oos.B||0, oos.C||0, rowTotal]);
+            });
+            summaryRows.push(['TOTAL', totals.AA, totals.A, totals.B, totals.C, grades.reduce((s,g)=>s+totals[g],0)]);
+            const sumWs = XLSX.utils.aoa_to_sheet(summaryRows);
+            sumWs['!cols'] = [{wch:35},{wch:8},{wch:8},{wch:8},{wch:8},{wch:10}];
+            XLSX.utils.book_append_sheet(wb, sumWs, 'OOS Summary');
+
+            // Per-category SKU detail sheets
+            sortedCats.forEach(cat => {
+                const skus = catData[cat].oosSkus || [];
+                if (skus.length === 0) return;
+                const sheetName = ('OOS_' + cat.replace(/[\\\/\?\*\[\]:]/g,'').slice(0,27)).slice(0,31);
+                XLSX.utils.book_append_sheet(wb, wpdMakeSheet(skus), sheetName);
+            });
+
+            // All OOS SKUs combined
+            const allOos = sortedCats.flatMap(cat => catData[cat].oosSkus || []);
+            if (allOos.length > 0) {
+                XLSX.utils.book_append_sheet(wb, wpdMakeSheet(allOos), 'All OOS SKUs');
+            }
+
+            wpdDownload(wb, `OOS_Detail_${wpdTimestamp()}.xlsx`);
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+
+        function wpdBuildHighStockTable(items) {
+            const body = document.getElementById('wpdHighStockBody');
+            body.innerHTML = '';
+            const badge = document.getElementById('wpdHighStockBadge');
+            badge.textContent = items.length + ' SKUs';
+
+            if (items.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="8" class="px-4 py-8 text-center text-gray-400 text-sm"><i class="fas fa-check-circle mr-2 text-green-400"></i>No high-stock items found</td>`;
+                body.appendChild(tr);
+                document.getElementById('wpdHSTotalQty').textContent = '0';
+                document.getElementById('wpdHSTotalRp').textContent = 'Rp 0';
+                return;
+            }
+
+            // Sort by MOI descending (highest overstock first)
+            const sorted = [...items].sort((a, b) => b.moi - a.moi);
+
+            const gradeStyle = {
+                AA: 'background:#ede9fe;color:#5b21b6;',
+                A:  'background:#dbeafe;color:#1e40af;',
+                B:  'background:#dcfce7;color:#166534;',
+                C:  'background:#ffedd5;color:#9a3412;'
+            };
+
+            let totalQtyHS = 0, totalRpHS = 0;
+
+            sorted.forEach((item, idx) => {
+                const grp = wpdGetGradeGroup(item.grade);
+                const gradeBadge = grp && gradeStyle[grp]
+                    ? `<span class="px-2 py-0.5 rounded-full text-xs font-bold" style="${gradeStyle[grp]}">${item.grade}</span>`
+                    : `<span class="text-xs text-gray-400">${item.grade || '—'}</span>`;
+                const shortCat = item.cat.includes(' - ') ? item.cat.split(' - ').slice(1).join(' - ') : item.cat;
+                const moiColor = item.moi >= 6 ? '#b91c1c' : item.moi >= 4 ? '#d97706' : '#e11d48';
+                const rowBg = idx % 2 === 0 ? '#ffffff' : '#fff5f5';
+                totalQtyHS += item.U;
+                totalRpHS  += item.ag;
+                const tr = document.createElement('tr');
+                tr.style.background = rowBg;
+                tr.innerHTML = `
+                    <td class="px-4 py-2.5 text-xs font-mono text-gray-700 font-medium">${item.code}</td>
+                    <td class="px-4 py-2.5 text-xs text-gray-800">${item.name}</td>
+                    <td class="px-4 py-2.5 text-xs text-gray-600">${shortCat}</td>
+                    <td class="px-4 py-2.5 text-center">${gradeBadge}</td>
+                    <td class="px-4 py-2.5 text-right text-xs text-gray-700">${wpdFormatQty(item.U)}</td>
+                    <td class="px-4 py-2.5 text-right text-xs text-gray-700">${wpdFormatQty(item.R)}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-bold" style="color:${moiColor};">${item.moi.toFixed(1)}x</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-mono text-gray-700">${wpdFormatRpFull(item.ag)}</td>`;
+                body.appendChild(tr);
+            });
+
+            document.getElementById('wpdHSTotalQty').textContent = wpdFormatQty(totalQtyHS);
+            document.getElementById('wpdHSTotalRp').textContent  = wpdFormatRpFull(totalRpHS);
         }
 
         function wpdBuildStatusTable(bodyId, totalPrefix, sortedCats, catData, field, globalTotals) {
