@@ -232,6 +232,8 @@ class OpexDashboardV2 {
             return;
         }
 
+        console.log('Processing Audit data, total rows:', rawData.length - 1);
+        
         const rows = rawData.slice(1);
         const processedData = rows
             .filter(row => row[12] && row[12] !== '0.00%')
@@ -244,9 +246,21 @@ class OpexDashboardV2 {
                 finalScore: row[13] || ''
             }));
 
+        console.log('Filtered Audit records (non-zero scoring):', processedData.length);
+        
+        // Log sample data for debugging
+        if (processedData.length > 0) {
+            console.log('Sample audit record:', {
+                outletCode: processedData[0].outletCode,
+                visitDate: processedData[0].visitDate,
+                month: processedData[0].month,
+                scoring: processedData[0].scoring
+            });
+        }
+
         this.data.audit = this.getLatestRecordPerOutlet(processedData);
         this.pagination.audit.total = this.data.audit.length;
-        console.log('Processed Audit records:', this.data.audit.length);
+        console.log('Final Audit records (latest per outlet):', this.data.audit.length);
     }
 
     processAuditDetailData(rawData) {
@@ -318,17 +332,78 @@ class OpexDashboardV2 {
         const outletMap = new Map();
         data.forEach(record => {
             const outlet = record.outletCode;
-            const currentMonth = this.parseMonth(record.month);
+            
             if (!outletMap.has(outlet)) {
                 outletMap.set(outlet, record);
             } else {
-                const existingMonth = this.parseMonth(outletMap.get(outlet).month);
+                const existingRecord = outletMap.get(outlet);
+                
+                // Compare by month first
+                const currentMonth = this.parseMonth(record.month);
+                const existingMonth = this.parseMonth(existingRecord.month);
+                
+                // If months are different, use the newer month
                 if (currentMonth > existingMonth) {
                     outletMap.set(outlet, record);
+                } else if (currentMonth.getTime() === existingMonth.getTime()) {
+                    // Same month - compare by visit date
+                    const currentVisitDate = this.parseVisitDate(record.visitDate);
+                    const existingVisitDate = this.parseVisitDate(existingRecord.visitDate);
+                    
+                    if (currentVisitDate > existingVisitDate) {
+                        outletMap.set(outlet, record);
+                    }
                 }
             }
         });
         return Array.from(outletMap.values());
+    }
+    
+    parseVisitDate(dateStr) {
+        if (!dateStr) return new Date(0);
+        
+        // Handle various date formats
+        // Format 1: DD/MM/YYYY (e.g., "03/09/2026")
+        // Format 2: YYYY-MM-DD (e.g., "2026-03-09")
+        // Format 3: DD-MM-YYYY (e.g., "03-09-2026")
+        
+        try {
+            // Try DD/MM/YYYY format first (most common in your sheet)
+            if (dateStr.includes('/')) {
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1; // JS months are 0-indexed
+                    const year = parseInt(parts[2]);
+                    return new Date(year, month, day);
+                }
+            }
+            
+            // Try YYYY-MM-DD format
+            if (dateStr.includes('-') && dateStr.length === 10) {
+                const parts = dateStr.split('-');
+                if (parts.length === 3 && parts[0].length === 4) {
+                    return new Date(dateStr);
+                }
+            }
+            
+            // Try DD-MM-YYYY format
+            if (dateStr.includes('-')) {
+                const parts = dateStr.split('-');
+                if (parts.length === 3 && parts[0].length <= 2) {
+                    const day = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1;
+                    const year = parseInt(parts[2]);
+                    return new Date(year, month, day);
+                }
+            }
+            
+            // Fallback: try native Date parsing
+            return new Date(dateStr);
+        } catch (e) {
+            console.warn('Failed to parse visit date:', dateStr, e);
+            return new Date(0);
+        }
     }
 
     parseMonth(monthStr) {
