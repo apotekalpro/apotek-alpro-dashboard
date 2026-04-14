@@ -106,6 +106,7 @@ class OpexDashboardV2 {
         }
 
         console.log('Processing STTK data, rows:', rawData.length);
+        console.log('Sample STTK first row:', rawData[1]);
         
         // Skip header row
         this.data.sttk = rawData.slice(1)
@@ -113,7 +114,7 @@ class OpexDashboardV2 {
                 // Must have month and store name
                 if (!row[0] || !row[1]) return false;
                 
-                // Column C (index 2) must be "Manual" (exclude "Auto")
+                // Column C (index 2) contains Type: check for "Auto" (exclude it)
                 const type = (row[2] || '').toString().trim().toUpperCase();
                 if (type === 'AUTO') {
                     console.log(`Excluding Auto STTK: ${row[1]}`);
@@ -123,10 +124,12 @@ class OpexDashboardV2 {
                 return true;
             })
             .map(row => {
-                // Now columns are shifted: D=Qty, E=Cost, etc.
+                // Column structure: A=Month, B=StoreName, C=Type, D=Qty, E=Cost, F=SourceFileId, G=SourceFileName, H=AM, I=Outlet
                 const shrinkageQty = this.parseAndFormatSttkNumber(row[3]); // Column D
                 const shrinkageCost = this.parseAndFormatSttkNumber(row[4]); // Column E
                 const stockLoss = shrinkageCost || shrinkageQty || 0;
+                
+                console.log(`STTK: ${row[1]} | Type: ${row[2]} | Qty: ${row[3]} → ${shrinkageQty} | Cost: ${row[4]} → ${shrinkageCost}`);
                 
                 return {
                     month: row[0] || '',
@@ -143,7 +146,10 @@ class OpexDashboardV2 {
             })
             .filter(item => item.stockLoss !== 0);
 
-        console.log('Processed STTK records (Manual only):', this.data.sttk.length);
+        console.log('Processed STTK records (excluding Auto):', this.data.sttk.length);
+        if (this.data.sttk.length > 0) {
+            console.log('Sample processed STTK:', this.data.sttk[0]);
+        }
         this.pagination.sttk.total = this.data.sttk.length;
     }
 
@@ -154,30 +160,53 @@ class OpexDashboardV2 {
         }
 
         console.log('Processing Shrinkage data, rows:', rawData.length);
+        console.log('Sample Shrinkage first row:', rawData[1]);
         
-        // Skip header row
-        this.data.shrinkage = rawData.slice(1)
+        // Skip header row and aggregate by item code
+        const itemMap = new Map();
+        
+        rawData.slice(1)
             .filter(row => row[2] && row[3]) // Has ItemCode and ItemName
-            .map(row => {
-                // Use smart parsing for shrinkage values (same as STTK)
+            .forEach(row => {
+                const itemCode = row[2] || '';
+                const itemName = row[3] || '';
                 const qty = this.parseAndFormatSttkNumber(row[4]) || 0;
                 const cost = this.parseAndFormatSttkNumber(row[5]) || 0;
                 const value = cost || qty || 0;
                 
-                return {
-                    month: row[0] || '',
-                    storeName: row[1] || '',
-                    itemCode: row[2] || '',
-                    itemName: row[3] || '',
-                    qty: qty,
-                    cost: cost,
-                    value: value
-                };
-            })
+                console.log(`Shrinkage item: ${itemCode} | ${itemName} | Qty: ${row[4]} → ${qty} | Cost: ${row[5]} → ${cost}`);
+                
+                // If item already exists, sum the values
+                if (itemMap.has(itemCode)) {
+                    const existing = itemMap.get(itemCode);
+                    existing.qty += qty;
+                    existing.cost += cost;
+                    existing.value += value;
+                    console.log(`  → Summing with existing. New total: ${existing.value}`);
+                } else {
+                    // New item
+                    itemMap.set(itemCode, {
+                        month: row[0] || '',
+                        storeName: row[1] || '',
+                        itemCode: itemCode,
+                        itemName: itemName,
+                        qty: qty,
+                        cost: cost,
+                        value: value
+                    });
+                }
+            });
+        
+        // Convert map to array, sort by absolute value, and take top 30
+        this.data.shrinkage = Array.from(itemMap.values())
             .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
             .slice(0, 30);
 
-        console.log('Processed Shrinkage items (Top 30):', this.data.shrinkage.length);
+        console.log('Processed Shrinkage items (Top 30 after summing by item code):', this.data.shrinkage.length);
+        console.log('Total unique items before filtering to top 30:', itemMap.size);
+        if (this.data.shrinkage.length > 0) {
+            console.log('Top item:', this.data.shrinkage[0]);
+        }
     }
 
     processCctvData(rawData) {
