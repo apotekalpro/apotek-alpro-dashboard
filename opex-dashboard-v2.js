@@ -117,13 +117,13 @@ class OpexDashboardV2 {
                 return {
                     month: row[0] || '',
                     storeName: row[1] || '',
-                    shrinkageQty: this.parseNumber(row[2]) || 0,
-                    shrinkageCost: this.parseNumber(row[3]) || 0,
+                    shrinkageQty: (this.parseNumber(row[2]) || 0) / 100000,  // Divide by 100,000
+                    shrinkageCost: (this.parseNumber(row[3]) || 0) / 100000, // Divide by 100,000
                     sourceFileId: row[4] || '',
                     sourceFileName: row[5] || '',
                     am: row[6] || '',
                     outlet: row[7] || '',
-                    stockLoss: shrinkageValue
+                    stockLoss: shrinkageValue / 100000  // Divide by 100,000
                 };
             })
             .filter(item => item.stockLoss !== 0);
@@ -242,8 +242,8 @@ class OpexDashboardV2 {
                 amName: row[3] || '',
                 visitDate: row[11] || '',
                 month: row[6] || '',
-                scoring: row[12] || '0%',
-                finalScore: row[13] || ''
+                scoring: row[13] || '0%',      // SWAPPED: Column N = Scoring
+                finalScore: row[12] || ''      // SWAPPED: Column M = Final Score
             }));
 
         console.log('Filtered Audit records (non-zero scoring):', processedData.length);
@@ -474,17 +474,23 @@ class OpexDashboardV2 {
                 <td>${index + 1}</td>
                 <td>${this.escapeHtml(item.outletCode)}</td>
                 <td>${this.escapeHtml(item.amName)}</td>
-                <td><span class="badge badge-green">${this.escapeHtml(item.scoring)}</span></td>
+                <td><span class="badge badge-green">${this.escapeHtml(item.finalScore)}</span></td>
             </tr>
         `).join('');
         this.updateElement('top5Leaderboard', top5Html || '<tr><td colspan="4" class="no-data">No data</td></tr>');
 
-        const bottom5Html = sorted.slice(-5).reverse().map((item, index) => `
+        // Filter out outlets with 0 score (not yet audited) for bottom 5
+        const nonZeroSorted = sorted.filter(item => {
+            const score = this.parsePercentage(item.finalScore);
+            return score !== 0 && item.finalScore !== '0%' && item.finalScore !== '0.00%';
+        });
+        
+        const bottom5Html = nonZeroSorted.slice(-5).reverse().map((item, index) => `
             <tr>
                 <td>${index + 1}</td>
                 <td>${this.escapeHtml(item.outletCode)}</td>
                 <td>${this.escapeHtml(item.amName)}</td>
-                <td><span class="badge badge-red">${this.escapeHtml(item.scoring)}</span></td>
+                <td><span class="badge badge-red">${this.escapeHtml(item.finalScore)}</span></td>
             </tr>
         `).join('');
         this.updateElement('bottom5Leaderboard', bottom5Html || '<tr><td colspan="4" class="no-data">No data</td></tr>');
@@ -562,14 +568,14 @@ class OpexDashboardV2 {
         const tableHtml = pageData.map(item => {
             // Format: Rp 2,202,519 (no decimals, with separator)
             const formattedCost = 'Rp ' + Math.abs(item.stockLoss).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            const formattedQty = item.shrinkageQty.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const formattedQty = item.shrinkageQty.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); // 2 decimals after dividing
             
             return `
                 <tr>
                     <td>${this.escapeHtml(item.month)}</td>
                     <td>${this.escapeHtml(item.storeName)}</td>
-                    <td>${formattedQty}</td>
                     <td>${this.escapeHtml(item.am || 'N/A')}</td>
+                    <td>${formattedQty}</td>
                     <td><span class="badge ${item.stockLoss < 0 ? 'badge-red' : 'badge-green'}">${formattedCost}</span></td>
                 </tr>
             `;
