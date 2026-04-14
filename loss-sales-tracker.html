@@ -319,9 +319,9 @@
             'September': 9, 'October': 10, 'November': 11, 'December': 12
         };
         
-        // Determine year for each month (2026 for Jan-Mar, 2025 for rest)
+        // Determine year for each month (2026 for Jan-Apr, 2025 for rest)
         function getYearForMonth(month) {
-            if (month === 'January' || month === 'February' || month === 'March') {
+            if (month === 'January' || month === 'February' || month === 'March' || month === 'April') {
                 return 2026;
             }
             return 2025;
