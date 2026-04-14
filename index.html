@@ -3665,37 +3665,7 @@
                             <!-- Updates Grid -->
                             <div id="cl-updates-container" class="hidden">
 
-                                <!-- Recalls & Warnings Section -->
-                                <div id="cl-section-recalls" class="cl-section mb-10">
-                                    <div class="flex items-center mb-5">
-                                        <div class="bg-red-100 rounded-xl p-3 mr-4">
-                                            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="text-xl font-bold text-gray-800">Recalls & Warnings</h4>
-                                            <p class="text-sm text-gray-500">FDA alerts, product recalls, and consumer safety notices</p>
-                                        </div>
-                                        <span class="ml-auto bg-red-100 text-red-700 text-sm font-bold px-3 py-1 rounded-full" id="cl-badge-recalls">0</span>
-                                    </div>
-                                    <div id="cl-grid-recalls" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
-                                </div>
-
-                                <!-- Clinical Updates Section -->
-                                <div id="cl-section-clinical_updates" class="cl-section mb-10">
-                                    <div class="flex items-center mb-5">
-                                        <div class="bg-green-100 rounded-xl p-3 mr-4">
-                                            <i class="fas fa-flask text-green-600 text-xl"></i>
-                                        </div>
-                                        <div>
-                                            <h4 class="text-xl font-bold text-gray-800">Clinical Updates</h4>
-                                            <p class="text-sm text-gray-500">Latest research findings and clinical study results</p>
-                                        </div>
-                                        <span class="ml-auto bg-green-100 text-green-700 text-sm font-bold px-3 py-1 rounded-full" id="cl-badge-clinical_updates">0</span>
-                                    </div>
-                                    <div id="cl-grid-clinical_updates" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
-                                </div>
-
-                                <!-- Product Updates Section -->
+                                <!-- Product Updates Section (1st) -->
                                 <div id="cl-section-product_updates" class="cl-section mb-10">
                                     <div class="flex items-center mb-5">
                                         <div class="bg-orange-100 rounded-xl p-3 mr-4">
@@ -3710,7 +3680,22 @@
                                     <div id="cl-grid-product_updates" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
                                 </div>
 
-                                <!-- CL Answers Section -->
+                                <!-- Clinical Updates Section (2nd) -->
+                                <div id="cl-section-clinical_updates" class="cl-section mb-10">
+                                    <div class="flex items-center mb-5">
+                                        <div class="bg-green-100 rounded-xl p-3 mr-4">
+                                            <i class="fas fa-flask text-green-600 text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xl font-bold text-gray-800">Clinical Updates</h4>
+                                            <p class="text-sm text-gray-500">Latest research findings and clinical study results</p>
+                                        </div>
+                                        <span class="ml-auto bg-green-100 text-green-700 text-sm font-bold px-3 py-1 rounded-full" id="cl-badge-clinical_updates">0</span>
+                                    </div>
+                                    <div id="cl-grid-clinical_updates" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                                </div>
+
+                                <!-- CL Answers Section (3rd) -->
                                 <div id="cl-section-answers" class="cl-section mb-10">
                                     <div class="flex items-center mb-5">
                                         <div class="bg-purple-100 rounded-xl p-3 mr-4">
@@ -3723,6 +3708,21 @@
                                         <span class="ml-auto bg-purple-100 text-purple-700 text-sm font-bold px-3 py-1 rounded-full" id="cl-badge-answers">0</span>
                                     </div>
                                     <div id="cl-grid-answers" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                                </div>
+
+                                <!-- Recalls & Warnings Section (Last) -->
+                                <div id="cl-section-recalls" class="cl-section mb-10">
+                                    <div class="flex items-center mb-5">
+                                        <div class="bg-red-100 rounded-xl p-3 mr-4">
+                                            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xl font-bold text-gray-800">Recalls & Warnings</h4>
+                                            <p class="text-sm text-gray-500">FDA alerts, product recalls, and consumer safety notices</p>
+                                        </div>
+                                        <span class="ml-auto bg-red-100 text-red-700 text-sm font-bold px-3 py-1 rounded-full" id="cl-badge-recalls">0</span>
+                                    </div>
+                                    <div id="cl-grid-recalls" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
                                 </div>
 
                                 <!-- Empty State -->
@@ -8196,7 +8196,7 @@
             if (containerEl) containerEl.classList.remove('hidden');
 
             // Count per section
-            const sections = Object.keys(CL_CATEGORIES);
+            const sections = ['product_updates', 'clinical_updates', 'answers', 'recalls'];
             const counts   = {};
             sections.forEach(s => counts[s] = 0);
 
