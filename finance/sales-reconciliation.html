@@ -1326,15 +1326,13 @@
                 
                 const transactionType = determineTransactionType(description);
                 
-                // Amount parsing based on transaction type:
-                // - CDM and SETORAN_TUNAI: Use Column D (Jumlah)
-                // - QRIS, CREDITCARD, DEBITCARD: Parse from description (Column B)
-                let amount;
-                if (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') {
-                    amount = parseBCAAmount(columnD);
-                } else {
-                    amount = parseBCAAmountFromDescription(description, transactionType);
-                }
+                // Amount parsing: Use Column D (Jumlah) for ALL transaction types
+                // Column D contains the actual transaction amount with " CR" or " DB" suffix
+                // e.g., "2,800,000.00 CR" for credits, "-500.00 DB" for debits
+                let amount = parseBCAAmount(columnD);
+                
+                // Skip if amount is zero or invalid
+                if (amount <= 0) continue;
                 let outletCode = null;
                 
                 if (transactionType === 'CDM') {
