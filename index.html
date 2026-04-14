@@ -88,6 +88,117 @@
             color: white;
             box-shadow: 0 5px 15px rgba(79, 70, 229, 0.3);
         }
+
+        /* Consumer Lab Updates Styles */
+        .cl-filter-btn {
+            background: #f8fafc;
+            color: #64748b;
+            border-color: #e2e8f0;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .cl-filter-btn:hover {
+            background: #e0e7ff;
+            color: #4338ca;
+            border-color: #a5b4fc;
+            transform: translateY(-1px);
+        }
+        .cl-filter-active {
+            background: linear-gradient(135deg, #1d4ed8, #4f46e5) !important;
+            color: white !important;
+            border-color: #1d4ed8 !important;
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35);
+        }
+        .cl-news-card {
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .cl-news-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+            border-color: #c7d2fe;
+        }
+        .cl-card-header {
+            padding: 1rem 1.25rem 0.75rem;
+        }
+        .cl-card-body {
+            padding: 0 1.25rem 1rem;
+            flex: 1;
+        }
+        .cl-card-footer {
+            padding: 0.75rem 1.25rem;
+            border-top: 1px solid #f1f5f9;
+            background: #f8fafc;
+        }
+        .cl-category-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-bottom: 8px;
+        }
+        .cl-card-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .cl-card-summary {
+            font-size: 0.82rem;
+            color: #64748b;
+            line-height: 1.55;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .cl-card-date {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        .cl-read-more {
+            font-size: 0.78rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: gap 0.2s;
+            text-decoration: none;
+        }
+        .cl-read-more:hover {
+            gap: 8px;
+        }
+        /* Category color themes */
+        .cl-recall-theme { border-top: 4px solid #ef4444; }
+        .cl-recall-badge { background: #fef2f2; color: #dc2626; }
+        .cl-recall-link { color: #dc2626; }
+        .cl-clinical-theme { border-top: 4px solid #22c55e; }
+        .cl-clinical-badge { background: #f0fdf4; color: #16a34a; }
+        .cl-clinical-link { color: #16a34a; }
+        .cl-product-theme { border-top: 4px solid #f97316; }
+        .cl-product-badge { background: #fff7ed; color: #ea580c; }
+        .cl-product-link { color: #ea580c; }
+        .cl-answers-theme { border-top: 4px solid #a855f7; }
+        .cl-answers-badge { background: #faf5ff; color: #9333ea; }
+        .cl-answers-link { color: #9333ea; }
+        .cl-section { transition: opacity 0.3s ease; }
         
         .header-compact {
             padding: 0.75rem 1.5rem;
@@ -3189,6 +3300,11 @@
                                 <i class="fas fa-chart-pie mr-2"></i>
                                 Executive Dashboard
                             </button>
+                            <button onclick="showPowerlifeSubtab('consumer-lab-updates')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-newspaper mr-2"></i>
+                                Consumer Lab Updates
+                            </button>
                         </div>
 
                         <!-- Executive Dashboard Subtab -->
@@ -3437,6 +3553,190 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- ===== Consumer Lab Updates Subtab ===== -->
+                        <div id="powerlife-consumer-lab-updates" class="powerlife-subtab-content hidden">
+
+                            <!-- Hero Banner -->
+                            <div class="bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-700 rounded-2xl shadow-2xl p-8 mb-8 text-white relative overflow-hidden">
+                                <div class="absolute inset-0 opacity-10">
+                                    <div class="absolute top-0 right-0 w-64 h-64 bg-white rounded-full transform translate-x-16 -translate-y-16"></div>
+                                    <div class="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full transform -translate-x-12 translate-y-12"></div>
+                                </div>
+                                <div class="relative flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center mb-3">
+                                            <span class="bg-white bg-opacity-20 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mr-3">Live Updates</span>
+                                            <span class="flex items-center text-blue-200 text-sm"><i class="fas fa-circle text-green-400 mr-1 text-xs animate-pulse"></i> Auto-refreshed from ConsumerLab.com</span>
+                                        </div>
+                                        <h3 class="text-3xl font-bold mb-2 flex items-center">
+                                            <i class="fas fa-newspaper mr-3"></i>
+                                            Consumer Lab Updates
+                                        </h3>
+                                        <p class="text-blue-100 text-base mb-4">Stay informed with the latest recalls, clinical findings, product updates, and expert Q&A from ConsumerLab.com</p>
+                                        <div class="flex flex-wrap gap-3 mt-4">
+                                            <div class="bg-white bg-opacity-15 rounded-lg px-4 py-2 flex items-center">
+                                                <i class="fas fa-exclamation-triangle text-yellow-300 mr-2"></i>
+                                                <span class="text-sm font-semibold" id="cl-count-recalls">0 Recalls</span>
+                                            </div>
+                                            <div class="bg-white bg-opacity-15 rounded-lg px-4 py-2 flex items-center">
+                                                <i class="fas fa-flask text-green-300 mr-2"></i>
+                                                <span class="text-sm font-semibold" id="cl-count-clinical">0 Clinical Updates</span>
+                                            </div>
+                                            <div class="bg-white bg-opacity-15 rounded-lg px-4 py-2 flex items-center">
+                                                <i class="fas fa-box-open text-orange-300 mr-2"></i>
+                                                <span class="text-sm font-semibold" id="cl-count-products">0 Product Updates</span>
+                                            </div>
+                                            <div class="bg-white bg-opacity-15 rounded-lg px-4 py-2 flex items-center">
+                                                <i class="fas fa-question-circle text-pink-300 mr-2"></i>
+                                                <span class="text-sm font-semibold" id="cl-count-answers">0 CL Answers</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-5 ml-6 hidden md:block">
+                                        <i class="fas fa-microscope text-5xl text-white"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Search & Filter Bar -->
+                            <div class="bg-white rounded-xl shadow-md p-5 mb-6 border border-gray-100">
+                                <div class="flex flex-wrap gap-3 items-center">
+                                    <div class="flex-1 min-w-64 relative">
+                                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                                        <input type="text" id="cl-search-input" 
+                                               placeholder="Search updates, titles, summaries..." 
+                                               class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all"
+                                               oninput="filterCLUpdates()">
+                                    </div>
+                                    <div class="flex flex-wrap gap-2" id="cl-category-filters">
+                                        <button onclick="setCLFilter('all')" class="cl-filter-btn cl-filter-active px-4 py-2 rounded-lg text-sm font-semibold border-2 transition-all" data-filter="all">
+                                            <i class="fas fa-th-large mr-1"></i> All
+                                        </button>
+                                        <button onclick="setCLFilter('recalls')" class="cl-filter-btn px-4 py-2 rounded-lg text-sm font-semibold border-2 transition-all" data-filter="recalls">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i> Recalls & Warnings
+                                        </button>
+                                        <button onclick="setCLFilter('clinical_updates')" class="cl-filter-btn px-4 py-2 rounded-lg text-sm font-semibold border-2 transition-all" data-filter="clinical_updates">
+                                            <i class="fas fa-flask mr-1"></i> Clinical Updates
+                                        </button>
+                                        <button onclick="setCLFilter('product_updates')" class="cl-filter-btn px-4 py-2 rounded-lg text-sm font-semibold border-2 transition-all" data-filter="product_updates">
+                                            <i class="fas fa-box-open mr-1"></i> Product Updates
+                                        </button>
+                                        <button onclick="setCLFilter('answers')" class="cl-filter-btn px-4 py-2 rounded-lg text-sm font-semibold border-2 transition-all" data-filter="answers">
+                                            <i class="fas fa-question-circle mr-1"></i> CL Answers
+                                        </button>
+                                    </div>
+                                    <button onclick="loadCLUpdates()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2">
+                                        <i class="fas fa-sync-alt" id="cl-refresh-icon"></i> Refresh
+                                    </button>
+                                </div>
+                                <div class="mt-3 flex items-center gap-2 text-xs text-gray-500" id="cl-last-updated-bar">
+                                    <i class="fas fa-clock"></i>
+                                    <span id="cl-last-updated-text">Loading data...</span>
+                                    <span class="ml-auto font-medium" id="cl-result-count"></span>
+                                </div>
+                            </div>
+
+                            <!-- Loading State -->
+                            <div id="cl-loading" class="text-center py-16">
+                                <div class="inline-flex flex-col items-center">
+                                    <div class="relative w-20 h-20 mb-6">
+                                        <div class="animate-spin rounded-full h-20 w-20 border-4 border-blue-100"></div>
+                                        <div class="animate-spin rounded-full h-20 w-20 border-t-4 border-blue-600 absolute inset-0"></div>
+                                        <i class="fas fa-newspaper text-blue-600 text-2xl absolute inset-0 flex items-center justify-center" style="line-height:5rem; text-align:center; width:100%;"></i>
+                                    </div>
+                                    <p class="text-gray-600 font-medium">Fetching latest Consumer Lab updates...</p>
+                                    <p class="text-gray-400 text-sm mt-1">Connecting to Google Sheets data source</p>
+                                </div>
+                            </div>
+
+                            <!-- Error State -->
+                            <div id="cl-error" class="hidden">
+                                <div class="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+                                    <i class="fas fa-exclamation-circle text-red-400 text-5xl mb-4"></i>
+                                    <h4 class="text-lg font-bold text-red-800 mb-2">Failed to Load Updates</h4>
+                                    <p class="text-red-600 mb-6">Unable to fetch Consumer Lab updates from the data source.</p>
+                                    <button onclick="loadCLUpdates()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-all">
+                                        <i class="fas fa-redo mr-2"></i>Try Again
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Updates Grid -->
+                            <div id="cl-updates-container" class="hidden">
+
+                                <!-- Recalls & Warnings Section -->
+                                <div id="cl-section-recalls" class="cl-section mb-10">
+                                    <div class="flex items-center mb-5">
+                                        <div class="bg-red-100 rounded-xl p-3 mr-4">
+                                            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xl font-bold text-gray-800">Recalls & Warnings</h4>
+                                            <p class="text-sm text-gray-500">FDA alerts, product recalls, and consumer safety notices</p>
+                                        </div>
+                                        <span class="ml-auto bg-red-100 text-red-700 text-sm font-bold px-3 py-1 rounded-full" id="cl-badge-recalls">0</span>
+                                    </div>
+                                    <div id="cl-grid-recalls" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                                </div>
+
+                                <!-- Clinical Updates Section -->
+                                <div id="cl-section-clinical_updates" class="cl-section mb-10">
+                                    <div class="flex items-center mb-5">
+                                        <div class="bg-green-100 rounded-xl p-3 mr-4">
+                                            <i class="fas fa-flask text-green-600 text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xl font-bold text-gray-800">Clinical Updates</h4>
+                                            <p class="text-sm text-gray-500">Latest research findings and clinical study results</p>
+                                        </div>
+                                        <span class="ml-auto bg-green-100 text-green-700 text-sm font-bold px-3 py-1 rounded-full" id="cl-badge-clinical_updates">0</span>
+                                    </div>
+                                    <div id="cl-grid-clinical_updates" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                                </div>
+
+                                <!-- Product Updates Section -->
+                                <div id="cl-section-product_updates" class="cl-section mb-10">
+                                    <div class="flex items-center mb-5">
+                                        <div class="bg-orange-100 rounded-xl p-3 mr-4">
+                                            <i class="fas fa-box-open text-orange-600 text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xl font-bold text-gray-800">Product Updates</h4>
+                                            <p class="text-sm text-gray-500">New test results, quality certifications, and product news</p>
+                                        </div>
+                                        <span class="ml-auto bg-orange-100 text-orange-700 text-sm font-bold px-3 py-1 rounded-full" id="cl-badge-product_updates">0</span>
+                                    </div>
+                                    <div id="cl-grid-product_updates" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                                </div>
+
+                                <!-- CL Answers Section -->
+                                <div id="cl-section-answers" class="cl-section mb-10">
+                                    <div class="flex items-center mb-5">
+                                        <div class="bg-purple-100 rounded-xl p-3 mr-4">
+                                            <i class="fas fa-question-circle text-purple-600 text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xl font-bold text-gray-800">CL Answers</h4>
+                                            <p class="text-sm text-gray-500">Expert answers to consumer supplement questions</p>
+                                        </div>
+                                        <span class="ml-auto bg-purple-100 text-purple-700 text-sm font-bold px-3 py-1 rounded-full" id="cl-badge-answers">0</span>
+                                    </div>
+                                    <div id="cl-grid-answers" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+                                </div>
+
+                                <!-- Empty State -->
+                                <div id="cl-empty-state" class="hidden text-center py-16">
+                                    <i class="fas fa-search text-gray-300 text-6xl mb-4"></i>
+                                    <p class="text-gray-500 text-lg font-medium">No updates found</p>
+                                    <p class="text-gray-400 text-sm mt-1">Try adjusting your search or filters</p>
+                                </div>
+
+                            </div>
+
+                        </div>
+                        <!-- ===== End Consumer Lab Updates Subtab ===== -->
+
                     </div>
                 </div>
 
@@ -7765,6 +8065,236 @@
             if (subtabId === 'executive-dashboard') {
                 loadPowerlifeData();
             }
+            // Load CL Updates when that subtab is opened
+            if (subtabId === 'consumer-lab-updates') {
+                loadCLUpdates();
+            }
+        }
+
+        // =====================================================
+        // CONSUMER LAB UPDATES — Data & Rendering
+        // =====================================================
+        const CL_SHEET_ID  = '1dxhpR1ujnQc0eQw90qBAe20Z27eGrKCsbNHmOPBsn9Q';
+        const CL_SHEET_NAME = 'All Updates';
+
+        let clAllUpdates   = [];   // raw parsed rows
+        let clFiltered     = [];   // after search + category filter
+        let clActiveFilter = 'all';
+        let clHasLoaded    = false;
+
+        // Category meta-data
+        const CL_CATEGORIES = {
+            recalls:         { label: 'Recalls & Warnings', icon: 'fas fa-exclamation-triangle', theme: 'recall',   color: '#ef4444' },
+            clinical_updates:{ label: 'Clinical Updates',   icon: 'fas fa-flask',                theme: 'clinical', color: '#22c55e' },
+            product_updates: { label: 'Product Updates',    icon: 'fas fa-box-open',             theme: 'product',  color: '#f97316' },
+            answers:         { label: 'CL Answers',         icon: 'fas fa-question-circle',      theme: 'answers',  color: '#a855f7' }
+        };
+
+        async function loadCLUpdates(forceRefresh = false) {
+            if (clHasLoaded && !forceRefresh) return;
+
+            const loadingEl   = document.getElementById('cl-loading');
+            const errorEl     = document.getElementById('cl-error');
+            const containerEl = document.getElementById('cl-updates-container');
+            const refreshIcon = document.getElementById('cl-refresh-icon');
+
+            if (loadingEl)   loadingEl.classList.remove('hidden');
+            if (errorEl)     errorEl.classList.add('hidden');
+            if (containerEl) containerEl.classList.add('hidden');
+            if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+            try {
+                const url = `https://docs.google.com/spreadsheets/d/${CL_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(CL_SHEET_NAME)}`;
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const csv  = await resp.text();
+                clAllUpdates = parseCLCSV(csv);
+                clHasLoaded  = true;
+
+                updateCLCountBadges(clAllUpdates);
+                clFiltered = clAllUpdates;
+                renderCLUpdates(clFiltered);
+
+                // Update last-refreshed text
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+                const el = document.getElementById('cl-last-updated-text');
+                if (el) el.textContent = `Last updated: ${now.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})} at ${timeStr}`;
+
+            } catch(err) {
+                console.error('CL Updates load error:', err);
+                if (loadingEl)   loadingEl.classList.add('hidden');
+                if (errorEl)     errorEl.classList.remove('hidden');
+                if (containerEl) containerEl.classList.add('hidden');
+            } finally {
+                if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+            }
+        }
+
+        function parseCLCSV(csv) {
+            const lines = csv.trim().split('\n');
+            if (lines.length < 2) return [];
+            // skip header row (index 0)
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = splitCSVLine(lines[i]);
+                if (!cols || cols.length < 3) continue;
+                const section   = clean(cols[0]);
+                const category  = clean(cols[1]);
+                const title     = clean(cols[2]);
+                const date      = clean(cols[3]);
+                const summary   = clean(cols[4]);
+                const url       = clean(cols[5]);
+                if (!section && !title) continue; // blank row
+                rows.push({ section, category, title, date, summary, url });
+            }
+            return rows;
+        }
+
+        function splitCSVLine(line) {
+            // Handles quoted fields with embedded commas and doubled quotes
+            const result = [];
+            let cur = '';
+            let inQuote = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') {
+                    if (inQuote && line[i+1] === '"') { cur += '"'; i++; }
+                    else inQuote = !inQuote;
+                } else if (ch === ',' && !inQuote) {
+                    result.push(cur.trim());
+                    cur = '';
+                } else {
+                    cur += ch;
+                }
+            }
+            result.push(cur.trim());
+            return result;
+        }
+
+        function clean(s) {
+            if (!s) return '';
+            return s.replace(/^"|"$/g, '').trim();
+        }
+
+        function updateCLCountBadges(items) {
+            const counts = { recalls: 0, clinical_updates: 0, product_updates: 0, answers: 0 };
+            items.forEach(it => { if (counts[it.section] !== undefined) counts[it.section]++; });
+            const el = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
+            el('cl-count-recalls',   `${counts.recalls} Recalls`);
+            el('cl-count-clinical',  `${counts.clinical_updates} Clinical Updates`);
+            el('cl-count-products',  `${counts.product_updates} Product Updates`);
+            el('cl-count-answers',   `${counts.answers} CL Answers`);
+        }
+
+        function renderCLUpdates(items) {
+            const loadingEl   = document.getElementById('cl-loading');
+            const containerEl = document.getElementById('cl-updates-container');
+            const emptyEl     = document.getElementById('cl-empty-state');
+
+            if (loadingEl)   loadingEl.classList.add('hidden');
+            if (containerEl) containerEl.classList.remove('hidden');
+
+            // Count per section
+            const sections = Object.keys(CL_CATEGORIES);
+            const counts   = {};
+            sections.forEach(s => counts[s] = 0);
+
+            // Clear all grids
+            sections.forEach(s => {
+                const grid = document.getElementById(`cl-grid-${s}`);
+                if (grid) grid.innerHTML = '';
+            });
+
+            let total = 0;
+            items.forEach(item => {
+                const s = item.section;
+                if (!CL_CATEGORIES[s]) return;
+                counts[s]++;
+                total++;
+                const grid = document.getElementById(`cl-grid-${s}`);
+                if (grid) grid.appendChild(buildCLCard(item));
+            });
+
+            // Update section badges & visibility
+            sections.forEach(s => {
+                const badge   = document.getElementById(`cl-badge-${s}`);
+                const section = document.getElementById(`cl-section-${s}`);
+                if (badge)   badge.textContent = counts[s];
+                if (section) section.style.display = counts[s] > 0 ? '' : 'none';
+            });
+
+            // Show/hide empty state
+            if (emptyEl) emptyEl.classList.toggle('hidden', total > 0);
+
+            // Update result count
+            const rc = document.getElementById('cl-result-count');
+            if (rc) rc.textContent = `Showing ${total} update${total !== 1 ? 's' : ''}`;
+        }
+
+        function buildCLCard(item) {
+            const s    = item.section;
+            const meta = CL_CATEGORIES[s] || { label: s, icon: 'fas fa-tag', theme: 'answers', color: '#6366f1' };
+            const hasURL = item.url && item.url.startsWith('http');
+
+            const card = document.createElement('div');
+            card.className = `cl-news-card cl-${meta.theme}-theme`;
+
+            const dateHTML = item.date
+                ? `<span class="cl-card-date"><i class="fas fa-calendar-alt mr-1"></i>${item.date}</span>`
+                : '';
+            const summaryHTML = item.summary
+                ? `<p class="cl-card-summary mt-2">${escHTML(item.summary)}</p>`
+                : '';
+            const readMoreHTML = hasURL
+                ? `<a href="${escHTML(item.url)}" target="_blank" rel="noopener" class="cl-read-more cl-${meta.theme}-link">
+                       Read more <i class="fas fa-arrow-right text-xs"></i>
+                   </a>`
+                : '';
+
+            card.innerHTML = `
+                <div class="cl-card-header">
+                    <span class="cl-category-badge cl-${meta.theme}-badge">
+                        <i class="${meta.icon}"></i> ${escHTML(meta.label)}
+                    </span>
+                    <div class="cl-card-title">${escHTML(item.title)}</div>
+                </div>
+                <div class="cl-card-body">
+                    ${summaryHTML}
+                </div>
+                <div class="cl-card-footer flex items-center justify-between">
+                    ${dateHTML}
+                    ${readMoreHTML}
+                </div>`;
+            return card;
+        }
+
+        function escHTML(str) {
+            if (!str) return '';
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function setCLFilter(filter) {
+            clActiveFilter = filter;
+            // Update button styles
+            document.querySelectorAll('.cl-filter-btn').forEach(btn => {
+                const isActive = btn.dataset.filter === filter;
+                btn.classList.toggle('cl-filter-active', isActive);
+            });
+            filterCLUpdates();
+        }
+
+        function filterCLUpdates() {
+            const query = (document.getElementById('cl-search-input')?.value || '').toLowerCase().trim();
+            clFiltered = clAllUpdates.filter(item => {
+                const matchCat = clActiveFilter === 'all' || item.section === clActiveFilter;
+                const matchQ   = !query ||
+                    item.title.toLowerCase().includes(query) ||
+                    item.summary.toLowerCase().includes(query) ||
+                    item.category.toLowerCase().includes(query);
+                return matchCat && matchQ;
+            });
+            renderCLUpdates(clFiltered);
         }
 
         // Load Powerlife Product Performance Data from Google Sheets
