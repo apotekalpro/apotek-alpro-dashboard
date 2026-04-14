@@ -106,50 +106,31 @@ class OpexDashboardV2 {
         }
 
         console.log('Processing STTK data, rows:', rawData.length);
-        console.log('Sample STTK first row:', rawData[1]);
         
         // Skip header row
         this.data.sttk = rawData.slice(1)
-            .filter(row => {
-                // Must have month and store name
-                if (!row[0] || !row[1]) return false;
-                
-                // Column C (index 2) contains Type: check for "Auto" (exclude it)
-                const type = (row[2] || '').toString().trim().toUpperCase();
-                if (type === 'AUTO') {
-                    console.log(`Excluding Auto STTK: ${row[1]}`);
-                    return false;
-                }
-                
-                return true;
-            })
+            .filter(row => row[0] && row[1]) // Has month and store name
             .map(row => {
-                // Column structure: A=Month, B=StoreName, C=Type, D=Qty, E=Cost, F=SourceFileId, G=SourceFileName, H=AM, I=Outlet
-                const shrinkageQty = this.parseAndFormatSttkNumber(row[3]); // Column D
-                const shrinkageCost = this.parseAndFormatSttkNumber(row[4]); // Column E
+                // Smart parsing: checks format and divides if needed
+                const shrinkageQty = this.parseAndFormatSttkNumber(row[2]);
+                const shrinkageCost = this.parseAndFormatSttkNumber(row[3]);
                 const stockLoss = shrinkageCost || shrinkageQty || 0;
-                
-                console.log(`STTK: ${row[1]} | Type: ${row[2]} | Qty: ${row[3]} → ${shrinkageQty} | Cost: ${row[4]} → ${shrinkageCost}`);
                 
                 return {
                     month: row[0] || '',
                     storeName: row[1] || '',
-                    type: row[2] || '', // Auto/Manual
                     shrinkageQty: shrinkageQty,
                     shrinkageCost: shrinkageCost,
-                    sourceFileId: row[5] || '',
-                    sourceFileName: row[6] || '',
-                    am: row[7] || '',
-                    outlet: row[8] || '',
+                    sourceFileId: row[4] || '',
+                    sourceFileName: row[5] || '',
+                    am: row[6] || '',
+                    outlet: row[7] || '',
                     stockLoss: stockLoss
                 };
             })
             .filter(item => item.stockLoss !== 0);
 
-        console.log('Processed STTK records (excluding Auto):', this.data.sttk.length);
-        if (this.data.sttk.length > 0) {
-            console.log('Sample processed STTK:', this.data.sttk[0]);
-        }
+        console.log('Processed STTK records:', this.data.sttk.length);
         this.pagination.sttk.total = this.data.sttk.length;
     }
 
@@ -160,53 +141,23 @@ class OpexDashboardV2 {
         }
 
         console.log('Processing Shrinkage data, rows:', rawData.length);
-        console.log('Sample Shrinkage first row:', rawData[1]);
         
-        // Skip header row and aggregate by item code
-        const itemMap = new Map();
-        
-        rawData.slice(1)
+        // Skip header row
+        this.data.shrinkage = rawData.slice(1)
             .filter(row => row[2] && row[3]) // Has ItemCode and ItemName
-            .forEach(row => {
-                const itemCode = row[2] || '';
-                const itemName = row[3] || '';
-                const qty = this.parseAndFormatSttkNumber(row[4]) || 0;
-                const cost = this.parseAndFormatSttkNumber(row[5]) || 0;
-                const value = cost || qty || 0;
-                
-                console.log(`Shrinkage item: ${itemCode} | ${itemName} | Qty: ${row[4]} → ${qty} | Cost: ${row[5]} → ${cost}`);
-                
-                // If item already exists, sum the values
-                if (itemMap.has(itemCode)) {
-                    const existing = itemMap.get(itemCode);
-                    existing.qty += qty;
-                    existing.cost += cost;
-                    existing.value += value;
-                    console.log(`  → Summing with existing. New total: ${existing.value}`);
-                } else {
-                    // New item
-                    itemMap.set(itemCode, {
-                        month: row[0] || '',
-                        storeName: row[1] || '',
-                        itemCode: itemCode,
-                        itemName: itemName,
-                        qty: qty,
-                        cost: cost,
-                        value: value
-                    });
-                }
-            });
-        
-        // Convert map to array, sort by absolute value, and take top 30
-        this.data.shrinkage = Array.from(itemMap.values())
+            .map(row => ({
+                month: row[0] || '',
+                storeName: row[1] || '',
+                itemCode: row[2] || '',
+                itemName: row[3] || '',
+                qty: this.parseNumber(row[4]) || 0,
+                cost: this.parseNumber(row[5]) || 0,
+                value: this.parseNumber(row[5]) || this.parseNumber(row[4]) || 0
+            }))
             .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
             .slice(0, 30);
 
-        console.log('Processed Shrinkage items (Top 30 after summing by item code):', this.data.shrinkage.length);
-        console.log('Total unique items before filtering to top 30:', itemMap.size);
-        if (this.data.shrinkage.length > 0) {
-            console.log('Top item:', this.data.shrinkage[0]);
-        }
+        console.log('Processed Shrinkage items:', this.data.shrinkage.length);
     }
 
     processCctvData(rawData) {
@@ -698,17 +649,14 @@ class OpexDashboardV2 {
     renderShrinkageSection() {
         console.log('Rendering Shrinkage section with', this.data.shrinkage.length, 'items');
         
-        const tableHtml = this.data.shrinkage.map((item, index) => {
-            const formattedValue = this.formatSttkCurrency(item.value);
-            return `
+        const tableHtml = this.data.shrinkage.map((item, index) => `
             <tr>
                 <td>${index + 1}</td>
                 <td>${this.escapeHtml(item.itemCode)}</td>
                 <td>${this.escapeHtml(item.itemName)}</td>
-                <td><span class="badge badge-red">${formattedValue}</span></td>
+                <td><span class="badge badge-red">${Math.abs(item.value).toFixed(2)}</span></td>
             </tr>
-        `;
-        }).join('');
+        `).join('');
         
         this.updateElement('shrinkageItemsTable', tableHtml || '<tr><td colspan="4" class="no-data">No data available</td></tr>');
     }

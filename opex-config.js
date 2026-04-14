@@ -41,7 +41,7 @@ const OPEX_CONFIG = {
         },
         STTK: {
             name: 'STTK_SHRINKAGE',
-            range: 'A:I'
+            range: 'A:G'
         },
         SHRINKAGE: {
             name: 'Shrinkage_Top30',
