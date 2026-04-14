@@ -111,19 +111,21 @@ class OpexDashboardV2 {
         this.data.sttk = rawData.slice(1)
             .filter(row => row[0] && row[1]) // Has month and store name
             .map(row => {
-                // Based on your screenshot: A=Month, B=StoreName, C=ShrinkageQty, D=ShrinkageCost
-                const shrinkageValue = this.parseNumber(row[3]) || this.parseNumber(row[2]) || 0;
+                // Smart parsing: checks format and divides if needed
+                const shrinkageQty = this.parseAndFormatSttkNumber(row[2]);
+                const shrinkageCost = this.parseAndFormatSttkNumber(row[3]);
+                const stockLoss = shrinkageCost || shrinkageQty || 0;
                 
                 return {
                     month: row[0] || '',
                     storeName: row[1] || '',
-                    shrinkageQty: (this.parseNumber(row[2]) || 0) / 100000,  // Divide by 100,000
-                    shrinkageCost: (this.parseNumber(row[3]) || 0) / 100000, // Divide by 100,000
+                    shrinkageQty: shrinkageQty,
+                    shrinkageCost: shrinkageCost,
                     sourceFileId: row[4] || '',
                     sourceFileName: row[5] || '',
                     am: row[6] || '',
                     outlet: row[7] || '',
-                    stockLoss: shrinkageValue / 100000  // Divide by 100,000
+                    stockLoss: stockLoss
                 };
             })
             .filter(item => item.stockLoss !== 0);
@@ -427,6 +429,66 @@ class OpexDashboardV2 {
         const cleaned = value.toString().replace(/[^0-9.-]/g, '');
         return parseFloat(cleaned) || 0;
     }
+    
+    /**
+     * Smart number parser for STTK/Shrinkage values
+     * - If has "," as thousand separator and "." as decimal → Use as-is (already formatted)
+     * - If has "." as separator OR no separator → Divide by 100,000
+     */
+    parseAndFormatSttkNumber(value) {
+        if (!value) return 0;
+        
+        const str = value.toString().trim();
+        
+        // CASE 1: Number has comma as thousand separator (US/International format)
+        // Examples: "301,042,599" or "301,042,599.00" or "301,042.50"
+        // → Use original number WITHOUT division
+        if (str.includes(',')) {
+            // Remove all commas and parse as float
+            const cleaned = str.replace(/,/g, '');
+            const parsed = parseFloat(cleaned) || 0;
+            console.log(`STTK Parse (format with comma): "${str}" → ${parsed}`);
+            return parsed;
+        }
+        
+        // CASE 2: Number has dot as separator OR is plain digits (European format or unformatted)
+        // Examples: "301.042.599" or "301042599" or "301.042"
+        // → DIVIDE by 100,000
+        // Remove all dots (if European format) then divide
+        const cleaned = str.replace(/\./g, '');
+        const rawValue = parseFloat(cleaned) || 0;
+        const divided = rawValue / 100000;
+        console.log(`STTK Parse (format with dot/plain): "${str}" → raw: ${rawValue} → divided: ${divided}`);
+        return divided;
+    }
+
+    // Helper to format STTK numbers for display
+    formatSttkNumber(value) {
+        if (!value || value === 0) return '0';
+        
+        // If value >= 1000, format with commas as thousand separator
+        if (Math.abs(value) >= 1000) {
+            return Math.abs(value).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+        
+        // If value < 1000, show with 2 decimal places
+        return Math.abs(value).toFixed(2);
+    }
+
+    // Helper to format STTK currency for display
+    formatSttkCurrency(value) {
+        if (!value || value === 0) return 'Rp 0';
+        
+        const absValue = Math.abs(value);
+        
+        // If value >= 1000, format with commas and no decimals: Rp 2,202,519
+        if (absValue >= 1000) {
+            return 'Rp ' + absValue.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+        
+        // If value < 1000, show with 2 decimal places: Rp 3.01
+        return 'Rp ' + absValue.toFixed(2);
+    }
 
     parsePercentage(value) {
         if (!value) return 0;
@@ -533,7 +595,7 @@ class OpexDashboardV2 {
         
         // Top 5 worst
         const worst5Html = sorted.slice(0, 5).map((item, index) => {
-            const formattedCost = 'Rp ' + Math.abs(item.stockLoss).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const formattedCost = this.formatSttkCurrency(item.stockLoss);
             return `
                 <tr>
                     <td>${index + 1}</td>
@@ -566,9 +628,8 @@ class OpexDashboardV2 {
         const pageData = sorted.slice(startIdx, endIdx);
         
         const tableHtml = pageData.map(item => {
-            // Format: Rp 2,202,519 (no decimals, with separator)
-            const formattedCost = 'Rp ' + Math.abs(item.stockLoss).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            const formattedQty = item.shrinkageQty.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); // 2 decimals after dividing
+            const formattedCost = this.formatSttkCurrency(item.stockLoss);
+            const formattedQty = this.formatSttkNumber(item.shrinkageQty);
             
             return `
                 <tr>
