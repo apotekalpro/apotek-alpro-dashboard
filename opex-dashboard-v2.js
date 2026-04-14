@@ -117,13 +117,13 @@ class OpexDashboardV2 {
                 return {
                     month: row[0] || '',
                     storeName: row[1] || '',
-                    shrinkageQty: this.parseNumber(row[2]) || 0,
-                    shrinkageCost: this.parseNumber(row[3]) || 0,
+                    shrinkageQty: (this.parseNumber(row[2]) || 0) / 100000,  // Divide by 100,000
+                    shrinkageCost: (this.parseNumber(row[3]) || 0) / 100000, // Divide by 100,000
                     sourceFileId: row[4] || '',
                     sourceFileName: row[5] || '',
                     am: row[6] || '',
                     outlet: row[7] || '',
-                    stockLoss: shrinkageValue
+                    stockLoss: shrinkageValue / 100000  // Divide by 100,000
                 };
             })
             .filter(item => item.stockLoss !== 0);
@@ -232,6 +232,8 @@ class OpexDashboardV2 {
             return;
         }
 
+        console.log('Processing Audit data, total rows:', rawData.length - 1);
+        
         const rows = rawData.slice(1);
         const processedData = rows
             .filter(row => row[12] && row[12] !== '0.00%')
@@ -240,13 +242,25 @@ class OpexDashboardV2 {
                 amName: row[3] || '',
                 visitDate: row[11] || '',
                 month: row[6] || '',
-                scoring: row[12] || '0%',
-                finalScore: row[13] || ''
+                scoring: row[13] || '0%',      // SWAPPED: Column N = Scoring
+                finalScore: row[12] || ''      // SWAPPED: Column M = Final Score
             }));
+
+        console.log('Filtered Audit records (non-zero scoring):', processedData.length);
+        
+        // Log sample data for debugging
+        if (processedData.length > 0) {
+            console.log('Sample audit record:', {
+                outletCode: processedData[0].outletCode,
+                visitDate: processedData[0].visitDate,
+                month: processedData[0].month,
+                scoring: processedData[0].scoring
+            });
+        }
 
         this.data.audit = this.getLatestRecordPerOutlet(processedData);
         this.pagination.audit.total = this.data.audit.length;
-        console.log('Processed Audit records:', this.data.audit.length);
+        console.log('Final Audit records (latest per outlet):', this.data.audit.length);
     }
 
     processAuditDetailData(rawData) {
@@ -318,17 +332,78 @@ class OpexDashboardV2 {
         const outletMap = new Map();
         data.forEach(record => {
             const outlet = record.outletCode;
-            const currentMonth = this.parseMonth(record.month);
+            
             if (!outletMap.has(outlet)) {
                 outletMap.set(outlet, record);
             } else {
-                const existingMonth = this.parseMonth(outletMap.get(outlet).month);
+                const existingRecord = outletMap.get(outlet);
+                
+                // Compare by month first
+                const currentMonth = this.parseMonth(record.month);
+                const existingMonth = this.parseMonth(existingRecord.month);
+                
+                // If months are different, use the newer month
                 if (currentMonth > existingMonth) {
                     outletMap.set(outlet, record);
+                } else if (currentMonth.getTime() === existingMonth.getTime()) {
+                    // Same month - compare by visit date
+                    const currentVisitDate = this.parseVisitDate(record.visitDate);
+                    const existingVisitDate = this.parseVisitDate(existingRecord.visitDate);
+                    
+                    if (currentVisitDate > existingVisitDate) {
+                        outletMap.set(outlet, record);
+                    }
                 }
             }
         });
         return Array.from(outletMap.values());
+    }
+    
+    parseVisitDate(dateStr) {
+        if (!dateStr) return new Date(0);
+        
+        // Handle various date formats
+        // Format 1: DD/MM/YYYY (e.g., "03/09/2026")
+        // Format 2: YYYY-MM-DD (e.g., "2026-03-09")
+        // Format 3: DD-MM-YYYY (e.g., "03-09-2026")
+        
+        try {
+            // Try DD/MM/YYYY format first (most common in your sheet)
+            if (dateStr.includes('/')) {
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1; // JS months are 0-indexed
+                    const year = parseInt(parts[2]);
+                    return new Date(year, month, day);
+                }
+            }
+            
+            // Try YYYY-MM-DD format
+            if (dateStr.includes('-') && dateStr.length === 10) {
+                const parts = dateStr.split('-');
+                if (parts.length === 3 && parts[0].length === 4) {
+                    return new Date(dateStr);
+                }
+            }
+            
+            // Try DD-MM-YYYY format
+            if (dateStr.includes('-')) {
+                const parts = dateStr.split('-');
+                if (parts.length === 3 && parts[0].length <= 2) {
+                    const day = parseInt(parts[0]);
+                    const month = parseInt(parts[1]) - 1;
+                    const year = parseInt(parts[2]);
+                    return new Date(year, month, day);
+                }
+            }
+            
+            // Fallback: try native Date parsing
+            return new Date(dateStr);
+        } catch (e) {
+            console.warn('Failed to parse visit date:', dateStr, e);
+            return new Date(0);
+        }
     }
 
     parseMonth(monthStr) {
@@ -399,17 +474,23 @@ class OpexDashboardV2 {
                 <td>${index + 1}</td>
                 <td>${this.escapeHtml(item.outletCode)}</td>
                 <td>${this.escapeHtml(item.amName)}</td>
-                <td><span class="badge badge-green">${this.escapeHtml(item.scoring)}</span></td>
+                <td><span class="badge badge-green">${this.escapeHtml(item.finalScore)}</span></td>
             </tr>
         `).join('');
         this.updateElement('top5Leaderboard', top5Html || '<tr><td colspan="4" class="no-data">No data</td></tr>');
 
-        const bottom5Html = sorted.slice(-5).reverse().map((item, index) => `
+        // Filter out outlets with 0 score (not yet audited) for bottom 5
+        const nonZeroSorted = sorted.filter(item => {
+            const score = this.parsePercentage(item.finalScore);
+            return score !== 0 && item.finalScore !== '0%' && item.finalScore !== '0.00%';
+        });
+        
+        const bottom5Html = nonZeroSorted.slice(-5).reverse().map((item, index) => `
             <tr>
                 <td>${index + 1}</td>
                 <td>${this.escapeHtml(item.outletCode)}</td>
                 <td>${this.escapeHtml(item.amName)}</td>
-                <td><span class="badge badge-red">${this.escapeHtml(item.scoring)}</span></td>
+                <td><span class="badge badge-red">${this.escapeHtml(item.finalScore)}</span></td>
             </tr>
         `).join('');
         this.updateElement('bottom5Leaderboard', bottom5Html || '<tr><td colspan="4" class="no-data">No data</td></tr>');
@@ -487,14 +568,14 @@ class OpexDashboardV2 {
         const tableHtml = pageData.map(item => {
             // Format: Rp 2,202,519 (no decimals, with separator)
             const formattedCost = 'Rp ' + Math.abs(item.stockLoss).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-            const formattedQty = item.shrinkageQty.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const formattedQty = item.shrinkageQty.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); // 2 decimals after dividing
             
             return `
                 <tr>
                     <td>${this.escapeHtml(item.month)}</td>
                     <td>${this.escapeHtml(item.storeName)}</td>
-                    <td>${formattedQty}</td>
                     <td>${this.escapeHtml(item.am || 'N/A')}</td>
+                    <td>${formattedQty}</td>
                     <td><span class="badge ${item.stockLoss < 0 ? 'badge-red' : 'badge-green'}">${formattedCost}</span></td>
                 </tr>
             `;
