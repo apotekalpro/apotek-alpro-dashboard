@@ -896,14 +896,22 @@
                     const outletCode = row[1]?.toString().trim(); // Column B - Outcode
                     
                     if (mid && outletCode) {
-                        // Store BRI MID with prefix to distinguish from BCA
+                        // Store BRI MID - handle both 10-digit and 12-digit formats
+                        // BRI statements use 12-digit format (001999XXXXXX)
+                        // BRI MASTER MID uses 10-digit format (1999XXXXXX)
                         lookups.briMid.set(mid, outletCode);
+                        
+                        // Also store with "00" prefix for 10-digit MIDs
+                        if (mid.length === 10 && !mid.startsWith('00')) {
+                            lookups.briMid.set('00' + mid, outletCode);
+                        }
+                        
                         if (i <= 3) {
                             console.log(`BRI MID mapping [${i}]: MID="${mid}" -> Outlet="${outletCode}"`);
                         }
                     }
                 }
-                console.log(`Loaded ${lookups.briMid.size} BRI MID mappings`);
+                console.log(`Loaded ${lookups.briMid.size} BRI MID mappings (including 12-digit variants)`);
             }
 
             // Petty Cash Template (File 8)
@@ -968,13 +976,21 @@
                 // PRE-FILTER: Only process specific COA accounts (Column M)
                 // Only include:
                 //   - "11201010 - PIUTANG KARTU KREDIT - BCA"
+                //   - "11201013 - PIUTANG KARTU KREDIT - BRI"
                 //   - "11201100 - PIUTANG PENJUALAN CASH"
                 const validAccounts = [
                     '11201010 - PIUTANG KARTU KREDIT - BCA',
+                    '11201013 - PIUTANG KARTU KREDIT - BRI ',  // Note: has trailing space in actual data
                     '11201100 - PIUTANG PENJUALAN CASH'
                 ];
                 
-                if (!validAccounts.includes(coaAccount)) {
+                // Also check without trailing spaces for robustness
+                const coaAccountTrimmed = coaAccount.trim();
+                const isValid = validAccounts.some(acc => 
+                    acc === coaAccount || acc.trim() === coaAccountTrimmed
+                );
+                
+                if (!isValid) {
                     continue; // Skip rows with other COA accounts
                 }
                 
@@ -1415,6 +1431,7 @@
         }
         
         // Parse BRI amount from TLBDS1 field (format: "AMT:1.335.700,00MDR:2.004,00")
+        // Note: TLBDS1 is mostly empty in actual BRI data, so we use MUTASI_KREDIT directly
         function parseBRIAmount(tlbds1) {
             if (!tlbds1) return 0;
             const amtMatch = tlbds1.match(/AMT:([\d.,]+)/);
@@ -1435,37 +1452,33 @@
         function determineBRITransactionType(description) {
             const desc = description.toUpperCase();
             
-            // QRIS patterns
-            if (desc.includes('QRIS') || desc.includes('QR ')) {
+            // QRIS patterns (QRISOffUs or QRISOnUs)
+            if (desc.includes('QRIS')) {
                 return 'QRIS';
             }
             
-            // Credit card patterns
+            // Debit card patterns (OffUs or OnUs without QRIS)
+            if (desc.includes('OFFUS') || desc.includes('ONUS')) {
+                return 'DEBITCARD';
+            }
+            
+            // Credit card patterns (less common in BRI data)
             if (desc.includes('CREDIT') || desc.includes('KREDIT') || 
                 desc.includes('VISA') || desc.includes('MASTER') || 
                 desc.includes('JCB') || desc.includes('AMEX')) {
                 return 'CREDITCARD';
             }
             
-            // Debit card patterns
-            if (desc.includes('DEBIT') || desc.includes('ATM') || desc.includes('EDC')) {
-                return 'DEBITCARD';
-            }
-            
             return null; // Unknown type
         }
         
-        // Parse MID from BRI description (similar to BCA)
+        // Parse MID from BRI description (12-digit format: 001999605050)
         function parseBRIMID(description) {
-            // Try to find MID patterns in description
-            // Common patterns: MID:1234567, M:1234567, or just numbers
-            const midMatch = description.match(/MID[:\s]*(\d{7,15})/i) || 
-                           description.match(/M[:\s]*(\d{7,15})/i);
-            if (midMatch) return midMatch[1];
+            if (!description) return null;
             
-            // Try to find standalone numbers (7-15 digits)
-            const numMatch = description.match(/\b(\d{7,15})\b/);
-            if (numMatch) return numMatch[1];
+            // BRI MID is 12 digits in format 001999XXXXXX
+            const midMatch = description.match(/\b(\d{12})\b/);
+            if (midMatch) return midMatch[1];
             
             return null;
         }
