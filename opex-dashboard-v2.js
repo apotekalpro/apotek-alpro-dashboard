@@ -142,22 +142,45 @@ class OpexDashboardV2 {
 
         console.log('Processing Shrinkage data, rows:', rawData.length);
         
-        // Skip header row
-        this.data.shrinkage = rawData.slice(1)
+        // Skip header row and aggregate by item code
+        const itemMap = new Map();
+        
+        rawData.slice(1)
             .filter(row => row[2] && row[3]) // Has ItemCode and ItemName
-            .map(row => ({
-                month: row[0] || '',
-                storeName: row[1] || '',
-                itemCode: row[2] || '',
-                itemName: row[3] || '',
-                qty: this.parseNumber(row[4]) || 0,
-                cost: this.parseNumber(row[5]) || 0,
-                value: this.parseNumber(row[5]) || this.parseNumber(row[4]) || 0
-            }))
+            .forEach(row => {
+                const itemCode = row[2] || '';
+                const itemName = row[3] || '';
+                // Use smart parsing for shrinkage values (same as STTK)
+                const qty = this.parseAndFormatSttkNumber(row[4]) || 0;
+                const cost = this.parseAndFormatSttkNumber(row[5]) || 0;
+                const value = cost || qty || 0;
+                
+                // If item already exists, sum the values
+                if (itemMap.has(itemCode)) {
+                    const existing = itemMap.get(itemCode);
+                    existing.qty += qty;
+                    existing.cost += cost;
+                    existing.value += value;
+                } else {
+                    // New item
+                    itemMap.set(itemCode, {
+                        month: row[0] || '',
+                        storeName: row[1] || '',
+                        itemCode: itemCode,
+                        itemName: itemName,
+                        qty: qty,
+                        cost: cost,
+                        value: value
+                    });
+                }
+            });
+        
+        // Convert map to array, sort by absolute value, and take top 30
+        this.data.shrinkage = Array.from(itemMap.values())
             .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
             .slice(0, 30);
 
-        console.log('Processed Shrinkage items:', this.data.shrinkage.length);
+        console.log('Processed Shrinkage items (Top 30 after summing by item code):', this.data.shrinkage.length);
     }
 
     processCctvData(rawData) {
