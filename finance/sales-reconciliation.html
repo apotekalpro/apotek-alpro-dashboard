@@ -1230,9 +1230,10 @@
         let cashReconciliationResults = [];
         let nonCashReconciliationResults = [];
         let nonCashTotalReconciliationResults = [];
-        let bcaOnlyResults = { cash: [], nonCash: [] };
-        let briOnlyResults = { cash: [], nonCash: [] };
-        let combinedResults = { cash: [], nonCash: [] };
+        let grandTotalReconciliationResults = [];  // NEW: Grand total (CASH + NON-CASH)
+        let bcaOnlyResults = { cash: [], nonCash: [], grandTotal: [] };
+        let briOnlyResults = { cash: [], nonCash: [], grandTotal: [] };
+        let combinedResults = { cash: [], nonCash: [], grandTotal: [] };
         let pettyCashResults = [];
         let exceptionsResults = [];
         let reconciliationStatistics = {};
@@ -1859,25 +1860,121 @@
             
             console.log(`Created ${cashResults.length} CASH results, ${nonCashTotalReconciliationResults.length} NON-CASH total results`);
             
+            // NEW: GRAND TOTAL RECONCILIATION (CASH + NON-CASH per outlet)
+            // This shows if total sales = total bank received, regardless of payment method breakdown
+            const grandTotalResults = [];
+            
+            console.log('=== Performing GRAND TOTAL Matching (All Payment Methods) ===');
+            
+            for (const outletCode of allOutlets) {
+                // Get ACMM TOTAL (ALL payment methods)
+                let acmmGrandTotal = 0;
+                const acmmAllMethods = [];
+                
+                for (const [key, data] of acmmData.weeklyACMM.entries()) {
+                    const [outlet, paymentMethod] = key.split('|');
+                    if (outlet === outletCode) {
+                        acmmGrandTotal += data.totalAmount;
+                        acmmAllMethods.push(`${paymentMethod}: ${data.totalAmount.toFixed(2)}`);
+                    }
+                }
+                
+                // Get BANK TOTAL (BCA ALL + BRI ALL)
+                let bcaGrandTotal = 0;
+                const bcaAllTypes = [];
+                
+                // BCA: Cash + Non-Cash
+                for (const [key, data] of bcaData.weeklyBCA.entries()) {
+                    const [outlet, txnType] = key.split('|');
+                    if (outlet === outletCode) {
+                        bcaGrandTotal += data.totalAmount;
+                        bcaAllTypes.push(`${txnType}: ${data.totalAmount.toFixed(2)}`);
+                    }
+                }
+                
+                // BRI: Non-Cash only (BRI has no cash)
+                let briGrandTotal = 0;
+                const briAllTypes = [];
+                if (briData) {
+                    for (const [key, data] of briData.weeklyBRI.entries()) {
+                        const [outlet, txnType] = key.split('|');
+                        if (outlet === outletCode) {
+                            briGrandTotal += data.totalAmount;
+                            briAllTypes.push(`${txnType}: ${data.totalAmount.toFixed(2)}`);
+                        }
+                    }
+                }
+                
+                const bankGrandTotal = bcaGrandTotal + briGrandTotal;
+                const bankBreakdown = [];
+                if (bcaAllTypes.length > 0) {
+                    bankBreakdown.push(`BCA: ${bcaAllTypes.join(', ')}`);
+                }
+                if (briAllTypes.length > 0) {
+                    bankBreakdown.push(`BRI: ${briAllTypes.join(', ')}`);
+                }
+                
+                // Only add if there's data
+                if (acmmGrandTotal > 0 || bankGrandTotal > 0) {
+                    const difference = bankGrandTotal - acmmGrandTotal;
+                    
+                    let status = 'UNMATCHED';
+                    if (acmmGrandTotal > 0 && bankGrandTotal > 0) {
+                        status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                    } else if (acmmGrandTotal === 0) {
+                        status = 'NO_ACMM_DATA';
+                    } else if (bankGrandTotal === 0) {
+                        status = 'NO_BANK_DATA';
+                    }
+                    
+                    grandTotalResults.push({
+                        weekKey: 'ALL',
+                        weekLabel: 'All Dates',
+                        weekStart: '',
+                        weekEnd: '',
+                        outletCode,
+                        category: 'GRAND_TOTAL',
+                        transactionType: 'ALL',
+                        bank: 'BCA+BRI',
+                        bcaTotal: bankGrandTotal,
+                        acmmTotal: acmmGrandTotal,
+                        difference,
+                        status,
+                        acmmBreakdown: acmmAllMethods.join('; '),
+                        bcaBreakdown: bankBreakdown.join(' | ')
+                    });
+                }
+            }
+            
+            console.log(`Created ${grandTotalResults.length} GRAND TOTAL results`);
+            
             // Calculate match statistics
             const cashMatched = cashResults.filter(r => r.status === 'MATCHED').length;
             const nonCashTotalMatched = nonCashTotalReconciliationResults.filter(r => r.status === 'MATCHED').length;
+            const grandTotalMatched = grandTotalResults.filter(r => r.status === 'MATCHED').length;
+            
             const cashMatchRate = cashResults.length > 0 ? ((cashMatched / cashResults.length) * 100).toFixed(1) : 0;
             const nonCashTotalMatchRate = nonCashTotalReconciliationResults.length > 0 ? ((nonCashTotalMatched / nonCashTotalReconciliationResults.length) * 100).toFixed(1) : 0;
+            const grandTotalMatchRate = grandTotalResults.length > 0 ? ((grandTotalMatched / grandTotalResults.length) * 100).toFixed(1) : 0;
             
             console.log(`📊 CASH Match Rate: ${cashMatchRate}% (${cashMatched}/${cashResults.length})`);
             console.log(`📊 NON-CASH Total Match Rate: ${nonCashTotalMatchRate}% (${nonCashTotalMatched}/${nonCashTotalReconciliationResults.length})`);
+            console.log(`📊 GRAND TOTAL Match Rate: ${grandTotalMatchRate}% (${grandTotalMatched}/${grandTotalResults.length})`);
             
             return { 
                 cashResults: cashResults, 
                 nonCashTotalResults: nonCashTotalReconciliationResults,
+                grandTotalResults: grandTotalResults,
                 statistics: {
                     cashTotal: cashResults.length,
                     cashMatched: cashMatched,
                     cashMatchRate: cashMatchRate,
                     nonCashTotalCount: nonCashTotalReconciliationResults.length,
                     nonCashTotalMatched: nonCashTotalMatched,
-                    nonCashTotalMatchRate: nonCashTotalMatchRate
+                    nonCashTotalMatchRate: nonCashTotalMatchRate,
+                    grandTotalCount: grandTotalResults.length,
+                    grandTotalMatched: grandTotalMatched,
+                    grandTotalMatchRate: grandTotalMatchRate
                 }
             };
         }
@@ -1908,10 +2005,10 @@
         }
         
         // Separate results by bank for individual reports
-        function separateResultsByBank(cashResults, nonCashTotalResults, bcaData, briData) {
-            const bcaOnly = { cash: [], nonCash: [] };
-            const briOnly = { cash: [], nonCash: [] };
-            const combined = { cash: cashResults, nonCash: nonCashTotalResults };
+        function separateResultsByBank(cashResults, nonCashTotalResults, grandTotalResults, bcaData, briData) {
+            const bcaOnly = { cash: [], nonCash: [], grandTotal: [] };
+            const briOnly = { cash: [], nonCash: [], grandTotal: [] };
+            const combined = { cash: cashResults, nonCash: nonCashTotalResults, grandTotal: grandTotalResults };
             
             // BCA CASH (all cash results are BCA only)
             bcaOnly.cash = [...cashResults];
@@ -2012,6 +2109,14 @@
                 }
             }
             
+            // Process GRAND TOTAL results (BCA + BRI combined per outlet)
+            for (const result of grandTotalResults) {
+                // For BCA report: grandTotal is same as combined (BCA+BRI)
+                bcaOnly.grandTotal.push({...result, bank: 'BCA+BRI'});
+                // For BRI report: grandTotal is same as combined (BCA+BRI)
+                briOnly.grandTotal.push({...result, bank: 'BCA+BRI'});
+            }
+            
             return { bcaOnly, briOnly, combined };
         }
         
@@ -2085,12 +2190,14 @@
                 
                 cashReconciliationResults = matchResults.cashResults;
                 nonCashTotalReconciliationResults = matchResults.nonCashTotalResults;
+                grandTotalReconciliationResults = matchResults.grandTotalResults;  // NEW
                 reconciliationStatistics = matchResults.statistics;
                 
                 // Separate results by bank for individual reports
                 const separated = separateResultsByBank(
                     cashReconciliationResults, 
                     nonCashTotalReconciliationResults,
+                    grandTotalReconciliationResults,  // NEW
                     bcaWeekly,
                     briWeekly
                 );
@@ -2110,6 +2217,7 @@
                 
                 console.log(`Generated ${cashReconciliationResults.length} CASH results`);
                 console.log(`Generated ${nonCashTotalReconciliationResults.length} NON-CASH total results`);
+                console.log(`Generated ${grandTotalReconciliationResults.length} GRAND TOTAL results`);
                 console.log(`📊 Statistics:`, reconciliationStatistics);
 
                 // Display results
@@ -2131,6 +2239,8 @@
             const matchedCash = cashReconciliationResults.filter(r => r.status === 'MATCHED').length;
             const totalNonCash = nonCashTotalReconciliationResults.length;
             const matchedNonCash = nonCashTotalReconciliationResults.filter(r => r.status === 'MATCHED').length;
+            const totalGrandTotal = grandTotalReconciliationResults.length;
+            const matchedGrandTotal = grandTotalReconciliationResults.filter(r => r.status === 'MATCHED').length;
             const totalRecords = totalCash + totalNonCash;
             const matched = matchedCash + matchedNonCash;
             const unmatched = totalRecords - matched;
@@ -2139,18 +2249,18 @@
             document.getElementById('total-records').textContent = totalRecords;
             document.getElementById('matched-count').textContent = matched;
             document.getElementById('unmatched-count').textContent = unmatched;
-            document.getElementById('match-rate').textContent = `${matchRate}% (Cash: ${reconciliationStatistics.cashMatchRate}%, Non-Cash: ${reconciliationStatistics.nonCashTotalMatchRate}%)`;
+            document.getElementById('match-rate').textContent = `${matchRate}% (Cash: ${reconciliationStatistics.cashMatchRate}%, Non-Cash: ${reconciliationStatistics.nonCashTotalMatchRate}%, Grand Total: ${reconciliationStatistics.grandTotalMatchRate}%)`;
 
             updateResultsTable();
         }
 
-        // Update results table based on current filter - SEPARATED BY CASH/NON-CASH
+        // Update results table based on current filter - SEPARATED BY CASH/NON-CASH/GRAND-TOTAL
         function updateResultsTable() {
             const tbody = document.getElementById('results-tbody');
             tbody.innerHTML = '';
 
-            // Combine cash and non-cash total results
-            let filteredResults = [...cashReconciliationResults, ...nonCashTotalReconciliationResults];
+            // Combine cash, non-cash, and grand total results
+            let filteredResults = [...cashReconciliationResults, ...nonCashTotalReconciliationResults, ...grandTotalReconciliationResults];
 
             if (currentTab === 'matched') {
                 filteredResults = filteredResults.filter(r => r.status === 'MATCHED');
@@ -2178,6 +2288,8 @@
                 
                 const categoryBadge = result.category === 'CASH' ? 
                     '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">CASH</span>' :
+                    result.category === 'GRAND_TOTAL' ?
+                    '<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">GRAND TOTAL</span>' :
                     '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-semibold">NON-CASH</span>';
                 
                 const typeBadge = result.transactionType ? 
@@ -2328,11 +2440,48 @@
             ];
             XLSX.utils.book_append_sheet(wb, wsNonCashTotal, 'Non-Cash Total');
             
-            // SHEET 3: STATISTICS SUMMARY
+            // SHEET 3: GRAND TOTAL RECONCILIATION (CASH + NON-CASH)
+            const grandTotalData = [
+                ['Category', 'Week', 'Outlet Code', 'Bank', 'Bank Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'Bank Breakdown']
+            ];
+            
+            let grandTotalToExport = results.grandTotal || [];
+            if (type === 'matched') {
+                grandTotalToExport = grandTotalToExport.filter(r => r.status === 'MATCHED');
+            } else if (type === 'unmatched') {
+                grandTotalToExport = grandTotalToExport.filter(r => r.status !== 'MATCHED');
+            }
+            
+            grandTotalToExport.forEach(row => {
+                grandTotalData.push([
+                    row.category,
+                    row.weekLabel,
+                    row.outletCode,
+                    row.bank || bankName,
+                    row.bcaTotal,
+                    row.acmmTotal,
+                    row.difference,
+                    row.status,
+                    row.acmmBreakdown,
+                    row.bcaBreakdown || '-'
+                ]);
+            });
+            
+            const wsGrandTotal = XLSX.utils.aoa_to_sheet(grandTotalData);
+            wsGrandTotal['!cols'] = [
+                { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 10 },
+                { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 },
+                { wch: 60 }, { wch: 80 }
+            ];
+            XLSX.utils.book_append_sheet(wb, wsGrandTotal, 'Grand Total (All Types)');
+            
+            // SHEET 4: STATISTICS SUMMARY
             const cashMatched = results.cash.filter(r => r.status === 'MATCHED').length;
             const nonCashMatched = results.nonCash.filter(r => r.status === 'MATCHED').length;
+            const grandTotalMatched = (results.grandTotal || []).filter(r => r.status === 'MATCHED').length;
             const cashTotal = results.cash.length;
             const nonCashTotal = results.nonCash.length;
+            const grandTotalCount = (results.grandTotal || []).length;
             const totalRecords = cashTotal + nonCashTotal;
             const totalMatched = cashMatched + nonCashMatched;
             
@@ -2353,6 +2502,13 @@
                     nonCashTotal > 0 ? `${((nonCashMatched / nonCashTotal) * 100).toFixed(1)}%` : '0%'
                 ],
                 [
+                    'GRAND TOTAL (CASH + NON-CASH)',
+                    grandTotalCount,
+                    grandTotalMatched,
+                    grandTotalCount - grandTotalMatched,
+                    grandTotalCount > 0 ? `${((grandTotalMatched / grandTotalCount) * 100).toFixed(1)}%` : '0%'
+                ],
+                [
                     'TOTAL',
                     totalRecords,
                     totalMatched,
@@ -2363,7 +2519,7 @@
             
             const wsStats = XLSX.utils.aoa_to_sheet(statsData);
             wsStats['!cols'] = [
-                { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
+                { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }
             ];
             XLSX.utils.book_append_sheet(wb, wsStats, 'Statistics');
             
