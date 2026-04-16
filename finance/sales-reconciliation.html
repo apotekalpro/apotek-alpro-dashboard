@@ -963,6 +963,7 @@
                 const storeName = row[2]; // Column C
                 let paymentMethod = row[5]; // Column F
                 const cardNum = row[6]; // Column G
+                const bankName = row[7]?.toString().trim().toUpperCase(); // Column H (index 7) - "BCA" or "BRI"
                 const debitCredit = row[11]?.toString().trim().toUpperCase(); // Column L (index 11) - "DEBIT" or "CREDIT"
                 const coaAccount = row[12]?.toString().trim(); // Column M (index 12) - COA Account
                 const amount = parseFloat(row[13]) || 0; // Column N (index 13)
@@ -1003,14 +1004,15 @@
                 // DEBIT = payments received (add to total)
                 // CREDIT = refunds/returns (subtract from total)
                 
-                // Create pivot key by OUTLET and PAYMENT METHOD only (no date)
-                // This groups all dates together for total matching
-                const key = `${outletCode}|${paymentMethod}`;
+                // Create pivot key by OUTLET, PAYMENT METHOD, and BANK (Column H)
+                // This splits ACMM data by BCA and BRI
+                const key = `${outletCode}|${paymentMethod}|${bankName}`;
                 
                 if (!pivotMap.has(key)) {
                     pivotMap.set(key, {
                         outletCode: outletCode,
                         paymentMethod: paymentMethod,
+                        bankName: bankName,  // NEW: Track which bank (BCA or BRI)
                         amount: 0,
                         debitAmount: 0,   // Track debits separately
                         creditAmount: 0,  // Track credits separately
@@ -1039,7 +1041,7 @@
                 });
             }
             
-            console.log(`Created ${pivotMap.size} pivot entries (Debit payment types + Credit SALES)`);
+            console.log(`Created ${pivotMap.size} pivot entries (split by bank: BCA/BRI)`);
 
             return pivotMap;
         }
@@ -1242,28 +1244,33 @@
             const weeklyACMM = new Map();
             const weeklySummary = new Map();
             
-            console.log('=== Aggregating ACMM Totals (All Dates) ===');
+            console.log('=== Aggregating ACMM Totals (All Dates, split by Bank) ===');
             console.log('🔍 DEBUG: Pivot map has', pivotMap.size, 'entries');
             
             let sampleCount = 0;
             for (const [key, pivot] of pivotMap.entries()) {
-                const [outletCode, paymentMethod] = key.split('|');
+                // Key format: "OutletCode|PaymentMethod|BankName"
+                const parts = key.split('|');
+                const outletCode = parts[0];
+                const paymentMethod = parts[1];
+                const bankName = parts[2] || 'UNKNOWN';
                 
                 // DEBUG: Log first 5 ACMM entries
                 if (sampleCount < 5) {
                     console.log(`🔍 ACMM Entry ${sampleCount + 1}:`);
-                    console.log(`  🏪 Outlet: ${outletCode} | Method: ${paymentMethod}`);
+                    console.log(`  🏪 Outlet: ${outletCode} | Method: ${paymentMethod} | Bank: ${bankName}`);
                     console.log(`  💰 Total Amount: ${pivot.amount.toFixed(2)} (${pivot.count} transactions)`);
                     console.log(`  📊 Debit: ${pivot.debitAmount.toFixed(2)} | Credit: ${pivot.creditAmount.toFixed(2)}`);
                     console.log('');
                     sampleCount++;
                 }
                 
-                // Store by outlet and payment method
-                const detailKey = `${outletCode}|${paymentMethod}`;
+                // Store by outlet, payment method, AND bank
+                const detailKey = `${outletCode}|${paymentMethod}|${bankName}`;
                 weeklyACMM.set(detailKey, {
                     outletCode, 
-                    paymentMethod, 
+                    paymentMethod,
+                    bankName,  // NEW: Track which bank
                     totalAmount: pivot.amount,
                     transactionCount: pivot.count,
                     weekKey: 'ALL',
@@ -1272,7 +1279,7 @@
                     weekEnd: null
                 });
                 
-                // Summary by outlet only
+                // Summary by outlet only (combined across all banks)
                 const summaryKey = outletCode;
                 if (!weeklySummary.has(summaryKey)) {
                     weeklySummary.set(summaryKey, {
@@ -1292,7 +1299,7 @@
                 summary.byType[paymentMethod] += pivot.amount;
             }
             
-            console.log(`Aggregated ${weeklyACMM.size} ACMM totals by payment type`);
+            console.log(`Aggregated ${weeklyACMM.size} ACMM totals by payment type and bank`);
             console.log(`Aggregated ${weeklySummary.size} ACMM totals by outlet`);
             
             // DEBUG: Show sample ACMM weeks
@@ -1327,10 +1334,38 @@
                 
                 const transactionType = determineTransactionType(description);
                 
-                // Amount parsing: Use Column D (Jumlah) for ALL transaction types
-                // Column D contains the actual transaction amount with " CR" or " DB" suffix
-                // e.g., "2,800,000.00 CR" for credits, "-500.00 DB" for debits
-                let amount = parseBCAAmount(columnD);
+                // Amount parsing based on transaction type:
+                // - CDM and SETORAN_TUNAI: Use Column D (Jumlah) - net amount after fees
+                // - QRIS: Parse from description "QR : xxxxx" - gross amount before fees
+                // - DEBITCARD/CREDITCARD: Parse from description "TGH: xxxxx" - gross amount before fees
+                let amount;
+                if (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') {
+                    // For cash, use Column D (Jumlah)
+                    amount = parseBCAAmount(columnD);
+                } else if (transactionType === 'QRIS') {
+                    // For QRIS, parse from "QR : xxxxx" in description
+                    const qrMatch = description.match(/QR\s*:\s*([\d.,]+)/i);
+                    if (qrMatch) {
+                        // Clean: remove dots (thousand separators), replace comma with decimal point
+                        let cleanAmount = qrMatch[1].replace(/\./g, '').replace(/,/g, '.');
+                        amount = parseFloat(cleanAmount) || 0;
+                    } else {
+                        amount = 0;
+                    }
+                } else if (transactionType === 'DEBITCARD' || transactionType === 'CREDITCARD') {
+                    // For DEBIT/CREDIT cards, parse from "TGH: xxxxx" in description
+                    const tghMatch = description.match(/TGH:\s*([\d.,]+)/i);
+                    if (tghMatch) {
+                        // Clean: remove dots (thousand separators), replace comma with decimal point
+                        let cleanAmount = tghMatch[1].replace(/\./g, '').replace(/,/g, '.');
+                        amount = parseFloat(cleanAmount) || 0;
+                    } else {
+                        amount = 0;
+                    }
+                } else {
+                    // For other types, use Column D
+                    amount = parseBCAAmount(columnD);
+                }
                 
                 // Skip if amount is zero or invalid
                 if (amount <= 0) continue;
@@ -1716,12 +1751,14 @@
             
             // Match CASH transactions for each outlet (BCA only, no BRI cash)
             for (const outletCode of allOutlets) {
-                // Get ACMM CASH total
+                // Get ACMM CASH total (from BCA only, since CASH is always BCA in ACMM)
                 let acmmCashTotal = 0;
                 const acmmCashMethods = [];
-                const acmmKey = `${outletCode}|CASH`;
-                if (acmmData.weeklyACMM.has(acmmKey)) {
-                    const acmmDetail = acmmData.weeklyACMM.get(acmmKey);
+                
+                // ACMM key format is now: "outletCode|paymentMethod|bankName"
+                const acmmKeyBCA = `${outletCode}|CASH|BCA`;
+                if (acmmData.weeklyACMM.has(acmmKeyBCA)) {
+                    const acmmDetail = acmmData.weeklyACMM.get(acmmKeyBCA);
                     acmmCashTotal = acmmDetail.totalAmount;
                     acmmCashMethods.push(`CASH: ${acmmDetail.totalAmount.toFixed(2)}`);
                 }
@@ -1777,18 +1814,42 @@
                 }
             }
             
-            // Match NON-CASH TOTAL for each outlet (BCA + BRI combined)
+            // Match NON-CASH TOTAL for each outlet (BCA + BRI, but split ACMM by bank)
             for (const outletCode of allOutlets) {
-                // Get ACMM NON-CASH total (all non-cash payment methods)
-                let acmmNonCashTotal = 0;
-                const acmmNonCashMethods = [];
+                // Get ACMM BCA NON-CASH total (only BCA payment methods)
+                let acmmBCANonCashTotal = 0;
+                const acmmBCANonCashMethods = [];
+                
+                // Get ACMM BRI NON-CASH total (only BRI payment methods)
+                let acmmBRINonCashTotal = 0;
+                const acmmBRINonCashMethods = [];
                 
                 for (const [key, data] of acmmData.weeklyACMM.entries()) {
-                    const [outlet, paymentMethod] = key.split('|');
+                    // Key format: "outletCode|paymentMethod|bankName"
+                    const parts = key.split('|');
+                    const outlet = parts[0];
+                    const paymentMethod = parts[1];
+                    const bankName = parts[2];
+                    
                     if (outlet === outletCode && paymentMethod !== 'CASH') {
-                        acmmNonCashTotal += data.totalAmount;
-                        acmmNonCashMethods.push(`${paymentMethod}: ${data.totalAmount.toFixed(2)}`);
+                        if (bankName === 'BCA') {
+                            acmmBCANonCashTotal += data.totalAmount;
+                            acmmBCANonCashMethods.push(`${paymentMethod}: ${data.totalAmount.toFixed(2)}`);
+                        } else if (bankName === 'BRI') {
+                            acmmBRINonCashTotal += data.totalAmount;
+                            acmmBRINonCashMethods.push(`${paymentMethod}: ${data.totalAmount.toFixed(2)}`);
+                        }
                     }
+                }
+                
+                // Total ACMM non-cash (BCA + BRI)
+                const acmmNonCashTotal = acmmBCANonCashTotal + acmmBRINonCashTotal;
+                const acmmNonCashMethods = [];
+                if (acmmBCANonCashMethods.length > 0) {
+                    acmmNonCashMethods.push(`BCA: ${acmmBCANonCashMethods.join(', ')}`);
+                }
+                if (acmmBRINonCashMethods.length > 0) {
+                    acmmNonCashMethods.push(`BRI: ${acmmBRINonCashMethods.join(', ')}`);
                 }
                 
                 // Get BCA NON-CASH total
@@ -1867,15 +1928,20 @@
             console.log('=== Performing GRAND TOTAL Matching (All Payment Methods) ===');
             
             for (const outletCode of allOutlets) {
-                // Get ACMM TOTAL (ALL payment methods)
+                // Get ACMM TOTAL (ALL payment methods from both BCA and BRI)
                 let acmmGrandTotal = 0;
                 const acmmAllMethods = [];
                 
                 for (const [key, data] of acmmData.weeklyACMM.entries()) {
-                    const [outlet, paymentMethod] = key.split('|');
+                    // Key format: "outletCode|paymentMethod|bankName"
+                    const parts = key.split('|');
+                    const outlet = parts[0];
+                    const paymentMethod = parts[1];
+                    const bankName = parts[2];
+                    
                     if (outlet === outletCode) {
                         acmmGrandTotal += data.totalAmount;
-                        acmmAllMethods.push(`${paymentMethod}: ${data.totalAmount.toFixed(2)}`);
+                        acmmAllMethods.push(`${bankName}-${paymentMethod}: ${data.totalAmount.toFixed(2)}`);
                     }
                 }
                 
