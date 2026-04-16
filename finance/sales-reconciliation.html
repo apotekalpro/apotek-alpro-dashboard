@@ -1914,7 +1914,14 @@
                         difference,
                         status,
                         acmmBreakdown: acmmNonCashMethods.join('; '),
-                        bcaBreakdown: allBankBreakdown.join(' | ')
+                        bcaBreakdown: allBankBreakdown.join(' | '),
+                        // Store split ACMM values for bank-specific reports
+                        acmmBCATotal: acmmBCANonCashTotal,
+                        acmmBRITotal: acmmBRINonCashTotal,
+                        acmmBCABreakdown: acmmBCANonCashMethods.join(', '),
+                        acmmBRIBreakdown: acmmBRINonCashMethods.join(', '),
+                        bcaBankTotal: bcaNonCashTotal,
+                        briBankTotal: briNonCashTotal
                     });
                 }
             }
@@ -2083,18 +2090,14 @@
             for (const result of nonCashTotalResults) {
                 const outletCode = result.outletCode;
                 
-                // Get ACMM NON-CASH total
-                let acmmNonCashTotal = 0;
-                const acmmNonCashMethods = [];
+                // Use split ACMM BCA values from the result
+                const acmmBCATotal = result.acmmBCATotal || 0;
+                const acmmBCABreakdown = result.acmmBCABreakdown || '';
                 
-                // Extract ACMM breakdown from the combined result
-                if (result.acmmBreakdown) {
-                    acmmNonCashTotal = result.acmmTotal;
-                    acmmNonCashMethods.push(result.acmmBreakdown);
-                }
+                // Use BCA bank total from result
+                const bcaNonCashTotal = result.bcaBankTotal || 0;
                 
-                // Get BCA NON-CASH total
-                let bcaNonCashTotal = 0;
+                // Get BCA breakdown
                 const bcaNonCashBreakdown = [];
                 const nonCashTypes = ['CREDITCARD', 'DEBITCARD', 'QRIS'];
                 
@@ -2102,17 +2105,16 @@
                     const key = `${outletCode}|${transactionType}`;
                     if (bcaData && bcaData.weeklyBCA.has(key)) {
                         const detail = bcaData.weeklyBCA.get(key);
-                        bcaNonCashTotal += detail.totalAmount;
                         bcaNonCashBreakdown.push(`${transactionType}: ${detail.totalAmount.toFixed(2)} (${detail.transactionCount} txns)`);
                     }
                 }
                 
-                if (acmmNonCashTotal > 0 || bcaNonCashTotal > 0) {
-                    const difference = bcaNonCashTotal - acmmNonCashTotal;
+                if (acmmBCATotal > 0 || bcaNonCashTotal > 0) {
+                    const difference = bcaNonCashTotal - acmmBCATotal;
                     let status = 'UNMATCHED';
-                    if (acmmNonCashTotal > 0 && bcaNonCashTotal > 0) {
+                    if (acmmBCATotal > 0 && bcaNonCashTotal > 0) {
                         status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
-                    } else if (acmmNonCashTotal === 0) {
+                    } else if (acmmBCATotal === 0) {
                         status = 'NO_ACMM_DATA';
                     } else if (bcaNonCashTotal === 0) {
                         status = 'NO_BCA_DATA';
@@ -2125,34 +2127,40 @@
                         category: 'NON-CASH',
                         bank: 'BCA',
                         bcaTotal: bcaNonCashTotal,
-                        acmmTotal: acmmNonCashTotal,
+                        acmmTotal: acmmBCATotal,
                         difference,
                         status,
-                        acmmBreakdown: result.acmmBreakdown,
+                        acmmBreakdown: acmmBCABreakdown ? `BCA: ${acmmBCABreakdown}` : '',
                         bcaBreakdown: bcaNonCashBreakdown.join('; ')
                     });
                 }
                 
                 // Get BRI NON-CASH total (if BRI data exists)
                 if (briData) {
-                    let briNonCashTotal = 0;
+                    // Use split ACMM BRI values from the result
+                    const acmmBRITotal = result.acmmBRITotal || 0;
+                    const acmmBRIBreakdown = result.acmmBRIBreakdown || '';
+                    
+                    // Use BRI bank total from result
+                    const briNonCashTotal = result.briBankTotal || 0;
+                    
+                    // Get BRI breakdown
                     const briNonCashBreakdown = [];
                     
                     for (const transactionType of nonCashTypes) {
                         const key = `${outletCode}|${transactionType}`;
                         if (briData.weeklyBRI.has(key)) {
                             const detail = briData.weeklyBRI.get(key);
-                            briNonCashTotal += detail.totalAmount;
                             briNonCashBreakdown.push(`${transactionType}: ${detail.totalAmount.toFixed(2)} (${detail.transactionCount} txns)`);
                         }
                     }
                     
-                    if (acmmNonCashTotal > 0 || briNonCashTotal > 0) {
-                        const difference = briNonCashTotal - acmmNonCashTotal;
+                    if (acmmBRITotal > 0 || briNonCashTotal > 0) {
+                        const difference = briNonCashTotal - acmmBRITotal;
                         let status = 'UNMATCHED';
-                        if (acmmNonCashTotal > 0 && briNonCashTotal > 0) {
+                        if (acmmBRITotal > 0 && briNonCashTotal > 0) {
                             status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
-                        } else if (acmmNonCashTotal === 0) {
+                        } else if (acmmBRITotal === 0) {
                             status = 'NO_ACMM_DATA';
                         } else if (briNonCashTotal === 0) {
                             status = 'NO_BRI_DATA';
@@ -2165,10 +2173,10 @@
                             category: 'NON-CASH',
                             bank: 'BRI',
                             bcaTotal: briNonCashTotal,
-                            acmmTotal: acmmNonCashTotal,
+                            acmmTotal: acmmBRITotal,
                             difference,
                             status,
-                            acmmBreakdown: result.acmmBreakdown,
+                            acmmBreakdown: acmmBRIBreakdown ? `BRI: ${acmmBRIBreakdown}` : '',
                             bcaBreakdown: briNonCashBreakdown.join('; ')
                         });
                     }
