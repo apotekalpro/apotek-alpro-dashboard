@@ -1335,40 +1335,14 @@
                 const transactionType = determineTransactionType(description);
                 
                 // Amount parsing based on transaction type:
-                // - CDM and SETORAN_TUNAI: Use Column D (Jumlah) - net amount after fees
-                // - QRIS: Parse from description "QR : xxxxx" - gross amount before fees
-                // - DEBITCARD/CREDITCARD: Parse from description "TGH: xxxxx" - gross amount before fees
+                // - CDM and SETORAN_TUNAI: Use Column D (Jumlah)
+                // - QRIS, CREDITCARD, DEBITCARD: Parse from description (Column B)
                 let amount;
                 if (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') {
-                    // For cash, use Column D (Jumlah)
                     amount = parseBCAAmount(columnD);
-                } else if (transactionType === 'QRIS') {
-                    // For QRIS, parse from "QR : xxxxx" in description
-                    const qrMatch = description.match(/QR\s*:\s*([\d.,]+)/i);
-                    if (qrMatch) {
-                        // Clean: remove dots (thousand separators), replace comma with decimal point
-                        let cleanAmount = qrMatch[1].replace(/\./g, '').replace(/,/g, '.');
-                        amount = parseFloat(cleanAmount) || 0;
-                    } else {
-                        amount = 0;
-                    }
-                } else if (transactionType === 'DEBITCARD' || transactionType === 'CREDITCARD') {
-                    // For DEBIT/CREDIT cards, parse from "TGH: xxxxx" in description
-                    const tghMatch = description.match(/TGH:\s*([\d.,]+)/i);
-                    if (tghMatch) {
-                        // Clean: remove dots (thousand separators), replace comma with decimal point
-                        let cleanAmount = tghMatch[1].replace(/\./g, '').replace(/,/g, '.');
-                        amount = parseFloat(cleanAmount) || 0;
-                    } else {
-                        amount = 0;
-                    }
                 } else {
-                    // For other types, use Column D
-                    amount = parseBCAAmount(columnD);
+                    amount = parseBCAAmountFromDescription(description, transactionType);
                 }
-                
-                // Skip if amount is zero or invalid
-                if (amount <= 0) continue;
                 let outletCode = null;
                 
                 if (transactionType === 'CDM') {
