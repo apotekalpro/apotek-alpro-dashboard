@@ -963,7 +963,7 @@
                 const storeName = row[2]; // Column C
                 let paymentMethod = row[5]; // Column F
                 const cardNum = row[6]; // Column G
-                const bankName = row[7]?.toString().trim().toUpperCase(); // Column H (index 7) - "BCA" or "BRI"
+                let bankName = row[7]?.toString().trim().toUpperCase(); // Column H (index 7) - "BCA" or "BRI"
                 const debitCredit = row[11]?.toString().trim().toUpperCase(); // Column L (index 11) - "DEBIT" or "CREDIT"
                 const coaAccount = row[12]?.toString().trim(); // Column M (index 12) - COA Account
                 const amount = parseFloat(row[13]) || 0; // Column N (index 13)
@@ -993,6 +993,12 @@
                 
                 if (!isValid) {
                     continue; // Skip rows with other COA accounts
+                }
+                
+                // Fix bankName for CASH transactions (Column H is empty/NaN for CASH)
+                // CASH should be treated as BCA since it goes to BCA account via CDM/Setoran
+                if (paymentMethod === 'CASH' && (!bankName || bankName === 'NAN' || bankName === 'UNDEFINED')) {
+                    bankName = 'BCA';
                 }
                 
                 // Exclude "SALES" payment method
