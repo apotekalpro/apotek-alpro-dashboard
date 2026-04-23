@@ -3204,6 +3204,11 @@
                                 <i class="fas fa-rocket mr-2"></i>
                                 Grand Opening Dashboard
                             </button>
+                            <button onclick="showSGMSubtab('competition-updates', event)" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-trophy mr-2"></i>
+                                Competition Updates
+                            </button>
                         </div>
                         
                         <!-- Grand Opening Dashboard Subtab -->
@@ -3282,6 +3287,28 @@
                                 <p class="text-gray-500 text-sm mt-2">Data will appear once the Google Sheet is populated</p>
                             </div>
                         </div>
+
+                        <!-- Competition Updates Subtab -->
+                        <div id="competitionUpdatesSubtab" class="sgm-subtab hidden">
+                            <div class="mb-4">
+                                <h3 class="text-xl font-semibold text-gray-800 mb-1 flex items-center">
+                                    <i class="fas fa-trophy mr-2 text-yellow-500"></i>
+                                    Competition Updates
+                                </h3>
+                                <p class="text-gray-500 text-sm">Live competition dashboard powered by SGM Analytics</p>
+                            </div>
+                            <div class="w-full" style="height: calc(100vh - 220px); min-height: 600px;">
+                                <iframe 
+                                    src="https://sgm-dashboard.vercel.app/" 
+                                    title="Competition Updates Dashboard"
+                                    class="w-full h-full rounded-lg border border-gray-200 shadow"
+                                    style="width:100%; height:100%; border:none;"
+                                    allowfullscreen
+                                    loading="lazy">
+                                </iframe>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -7447,7 +7474,8 @@
             
             // Show selected subtab
             const subtabMap = {
-                'grand-opening-dashboard': 'grandOpeningDashboardSubtab'
+                'grand-opening-dashboard': 'grandOpeningDashboardSubtab',
+                'competition-updates': 'competitionUpdatesSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
