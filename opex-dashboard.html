@@ -447,9 +447,9 @@
                 <button onclick="clearSttkFilters()" class="btn-secondary">Clear</button>
             </div>
 
-            <!-- Top 5 Worst Stock Loss -->
+            <!-- Top 5 Worst Stock Loss (Value) -->
             <h3 class="font-bold text-red-600 mb-2">
-                <i class="fas fa-arrow-down mr-2"></i>Top 5 Worst STTK Stock Loss
+                <i class="fas fa-arrow-down mr-2"></i>Top 5 Worst STTK Stock Loss (Value)
             </h3>
             <table class="data-table">
                 <thead class="leaderboard-bottom">
@@ -462,6 +462,25 @@
                     </tr>
                 </thead>
                 <tbody id="worstStockLoss">
+                    <tr><td colspan="5" class="no-data">Loading...</td></tr>
+                </tbody>
+            </table>
+
+            <!-- Top 5 Worst Stock Loss (Qty) -->
+            <h3 class="font-bold text-red-600 mb-2 mt-4">
+                <i class="fas fa-arrow-down mr-2"></i>Top 5 Worst STTK Stock Loss (Qty)
+            </h3>
+            <table class="data-table">
+                <thead class="leaderboard-bottom">
+                    <tr>
+                        <th>Rank</th>
+                        <th>Month</th>
+                        <th>Outlet Name</th>
+                        <th>Area Manager</th>
+                        <th>Shrinkage Qty</th>
+                    </tr>
+                </thead>
+                <tbody id="worstStockLossQty">
                     <tr><td colspan="5" class="no-data">Loading...</td></tr>
                 </tbody>
             </table>
@@ -896,6 +915,40 @@
             if (opexDashboard) {
                 const monthFilter = document.getElementById('lossSalesMonthFilter').value;
                 opexDashboard.updateLossSalesSummary(monthFilter);
+            }
+        }
+        
+        // Sort table function
+        function sortTable(section, column) {
+            if (!opexDashboard) return;
+            
+            // Get the sorting state for this section
+            const sorting = opexDashboard.sorting[section];
+            
+            // Toggle sorting direction or set new column
+            if (sorting.column === column) {
+                if (sorting.direction === 'asc') {
+                    sorting.direction = 'desc';
+                } else if (sorting.direction === 'desc') {
+                    sorting.column = null;
+                    sorting.direction = 'asc';
+                } else {
+                    sorting.direction = 'asc';
+                }
+            } else {
+                sorting.column = column;
+                sorting.direction = 'asc';
+            }
+            
+            console.log(`Sorting ${section} by column ${column} (${sorting.direction})`);
+            
+            // Re-render the appropriate table
+            if (section === 'audit') {
+                opexDashboard.renderAuditTable();
+            } else if (section === 'sttk') {
+                opexDashboard.renderSttkTable();
+            } else if (section === 'cctv') {
+                opexDashboard.renderCctvTable();
             }
         }
         

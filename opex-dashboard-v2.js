@@ -518,6 +518,32 @@ class OpexDashboardV2 {
         return this.parseNumber(value.toString().replace('%', ''));
     }
 
+    // Format score for display: if it's 0.xxx convert to %, otherwise keep as is
+    formatScoreForDisplay(value) {
+        if (!value) return '0%';
+        
+        const str = value.toString();
+        
+        // If already has % sign, return as is
+        if (str.includes('%')) {
+            return str;
+        }
+        
+        // If it's a decimal like 0.8152, convert to percentage
+        const num = parseFloat(str);
+        if (num < 1 && num > 0) {
+            return (num * 100).toFixed(2) + '%';
+        }
+        
+        // If it's already a percentage number like 81.52, add %
+        if (num >= 1 && num <= 100) {
+            return num.toFixed(2) + '%';
+        }
+        
+        // Otherwise return as is with %
+        return str + '%';
+    }
+
     renderAll() {
         // Initialize filtered data with all data
         this.filteredData.sttk = [...this.data.sttk];
@@ -537,13 +563,13 @@ class OpexDashboardV2 {
         
         // Summary cards
         this.updateElement('totalAudits', data.length);
-        const avgScore = data.reduce((sum, item) => sum + this.parsePercentage(item.scoring), 0) / data.length || 0;
+        const avgScore = data.reduce((sum, item) => sum + this.parsePercentage(item.finalScore), 0) / data.length || 0;
         this.updateElement('avgScore', avgScore.toFixed(1) + '%');
         this.updateElement('outletsAudited', new Set(data.map(a => a.outletCode)).size);
 
-        // Sort data
+        // Sort data by Final Score (not Scoring)
         const sorted = [...data].sort((a, b) => 
-            this.parsePercentage(b.scoring) - this.parsePercentage(a.scoring)
+            this.parsePercentage(b.finalScore) - this.parsePercentage(a.finalScore)
         );
 
         // Top 5 & Bottom 5 Leaderboards
@@ -554,70 +580,104 @@ class OpexDashboardV2 {
     }
 
     renderLeaderboards(sorted) {
-        const top5Html = sorted.slice(0, 5).map((item, index) => `
-            <tr>
-                <td>${index + 1}</td>
-                <td>${this.escapeHtml(item.outletCode)}</td>
-                <td>${this.escapeHtml(item.amName)}</td>
-                <td><span class="badge badge-green">${this.escapeHtml(item.finalScore)}</span></td>
-            </tr>
-        `).join('');
-        this.updateElement('top5Leaderboard', top5Html || '<tr><td colspan="4" class="no-data">No data</td></tr>');
-
-        // Filter out outlets with 0 score (not yet audited) for bottom 5
+        // Filter out outlets with 0 score for both top and bottom
         const nonZeroSorted = sorted.filter(item => {
             const score = this.parsePercentage(item.finalScore);
             return score !== 0 && item.finalScore !== '0%' && item.finalScore !== '0.00%';
         });
         
-        const bottom5Html = nonZeroSorted.slice(-5).reverse().map((item, index) => `
+        // Top 5 (highest scores)
+        const top5Html = nonZeroSorted.slice(0, 5).map((item, index) => {
+            const displayScore = this.formatScoreForDisplay(item.finalScore);
+            return `
             <tr>
                 <td>${index + 1}</td>
                 <td>${this.escapeHtml(item.outletCode)}</td>
                 <td>${this.escapeHtml(item.amName)}</td>
-                <td><span class="badge badge-red">${this.escapeHtml(item.finalScore)}</span></td>
+                <td><span class="badge badge-green">${displayScore}</span></td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
+        this.updateElement('top5Leaderboard', top5Html || '<tr><td colspan="4" class="no-data">No data</td></tr>');
+        
+        // Bottom 5 (lowest scores)
+        const bottom5Html = nonZeroSorted.slice(-5).reverse().map((item, index) => {
+            const displayScore = this.formatScoreForDisplay(item.finalScore);
+            return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${this.escapeHtml(item.outletCode)}</td>
+                <td>${this.escapeHtml(item.amName)}</td>
+                <td><span class="badge badge-red">${displayScore}</span></td>
+            </tr>
+        `;
+        }).join('');
         this.updateElement('bottom5Leaderboard', bottom5Html || '<tr><td colspan="4" class="no-data">No data</td></tr>');
     }
 
     renderAuditTable() {
         const { currentPage, pageSize } = this.pagination.audit;
-        const sorted = [...this.data.audit].sort((a, b) => 
-            this.parsePercentage(b.scoring) - this.parsePercentage(a.scoring)
-        );
+        let data = [...this.data.audit];
+        
+        // Apply sorting if active
+        const { column, direction } = this.sorting.audit;
+        if (column !== null && direction !== 'asc') {
+            data.sort((a, b) => {
+                let valA, valB;
+                switch(column) {
+                    case 0: valA = a.outletCode; valB = b.outletCode; break;
+                    case 1: valA = a.amName; valB = b.amName; break;
+                    case 2: valA = a.visitDate; valB = b.visitDate; break;
+                    case 3: valA = this.parsePercentage(a.scoring); valB = this.parsePercentage(b.scoring); break;
+                    case 4: valA = this.parsePercentage(a.finalScore); valB = this.parsePercentage(b.finalScore); break;
+                    default: return 0;
+                }
+                
+                if (typeof valA === 'string') {
+                    return direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                } else {
+                    return direction === 'asc' ? valA - valB : valB - valA;
+                }
+            });
+        } else {
+            // Default sort by finalScore descending
+            data.sort((a, b) => this.parsePercentage(b.finalScore) - this.parsePercentage(a.finalScore));
+        }
         
         const startIdx = (currentPage - 1) * pageSize;
         const endIdx = startIdx + pageSize;
-        const pageData = sorted.slice(startIdx, endIdx);
+        const pageData = data.slice(startIdx, endIdx);
         
-        const tableHtml = pageData.map(item => `
+        const tableHtml = pageData.map(item => {
+            const displayScoring = this.formatScoreForDisplay(item.scoring);
+            const displayFinalScore = this.formatScoreForDisplay(item.finalScore);
+            return `
             <tr class="clickable-row" onclick="opexDashboard.showAuditDetail('${this.escapeHtml(item.outletCode)}')">
                 <td>${this.escapeHtml(item.outletCode)}</td>
                 <td>${this.escapeHtml(item.amName)}</td>
                 <td>${this.escapeHtml(item.visitDate)}</td>
-                <td>${this.escapeHtml(item.scoring)}</td>
-                <td>${this.escapeHtml(item.finalScore)}</td>
+                <td>${displayScoring}</td>
+                <td>${displayFinalScore}</td>
                 <td>
                     <button class="btn-primary text-xs px-3 py-1" onclick="event.stopPropagation(); opexDashboard.showAuditDetail('${this.escapeHtml(item.outletCode)}')">
                         <i class="fas fa-eye mr-1"></i>View
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
         
         this.updateElement('auditDataTable', tableHtml || '<tr><td colspan="6" class="no-data">No data</td></tr>');
-        this.updatePaginationControls('audit', sorted.length);
+        this.updatePaginationControls('audit', data.length);
     }
 
     renderSttkSection() {
         const data = this.data.sttk;
         console.log('Rendering STTK section with', data.length, 'records');
         
-        const sorted = [...data].sort((a, b) => a.stockLoss - b.stockLoss);
-        
-        // Top 5 worst
-        const worst5Html = sorted.slice(0, 5).map((item, index) => {
+        // Top 5 worst by Stock Loss VALUE
+        const sortedByValue = [...data].sort((a, b) => a.stockLoss - b.stockLoss);
+        const worst5ValueHtml = sortedByValue.slice(0, 5).map((item, index) => {
             const formattedCost = this.formatSttkCurrency(item.stockLoss);
             return `
                 <tr>
@@ -629,7 +689,23 @@ class OpexDashboardV2 {
                 </tr>
             `;
         }).join('');
-        this.updateElement('worstStockLoss', worst5Html || '<tr><td colspan="5" class="no-data">No data</td></tr>');
+        this.updateElement('worstStockLoss', worst5ValueHtml || '<tr><td colspan="5" class="no-data">No data</td></tr>');
+        
+        // Top 5 worst by Shrinkage QTY
+        const sortedByQty = [...data].sort((a, b) => a.shrinkageQty - b.shrinkageQty);
+        const worst5QtyHtml = sortedByQty.slice(0, 5).map((item, index) => {
+            const formattedQty = this.formatSttkNumber(item.shrinkageQty);
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${this.escapeHtml(item.month)}</td>
+                    <td>${this.escapeHtml(item.storeName)}</td>
+                    <td>${this.escapeHtml(item.am || 'N/A')}</td>
+                    <td><span class="badge badge-red">${formattedQty}</span></td>
+                </tr>
+            `;
+        }).join('');
+        this.updateElement('worstStockLossQty', worst5QtyHtml || '<tr><td colspan="5" class="no-data">No data</td></tr>');
         
         // Paginated table
         this.renderSttkTable();
@@ -644,11 +720,36 @@ class OpexDashboardV2 {
             ? this.filteredData.sttk 
             : this.data.sttk;
         
-        const sorted = [...dataToRender].sort((a, b) => a.stockLoss - b.stockLoss);
+        let data = [...dataToRender];
+        
+        // Apply sorting if active
+        const { column, direction } = this.sorting.sttk;
+        if (column !== null && direction !== 'asc') {
+            data.sort((a, b) => {
+                let valA, valB;
+                switch(column) {
+                    case 0: valA = a.month; valB = b.month; break;
+                    case 1: valA = a.storeName; valB = b.storeName; break;
+                    case 2: valA = a.am || ''; valB = b.am || ''; break;
+                    case 3: valA = a.shrinkageQty; valB = b.shrinkageQty; break;
+                    case 4: valA = a.stockLoss; valB = b.stockLoss; break;
+                    default: return 0;
+                }
+                
+                if (typeof valA === 'string') {
+                    return direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                } else {
+                    return direction === 'asc' ? valA - valB : valB - valA;
+                }
+            });
+        } else {
+            // Default sort by stockLoss ascending (worst first)
+            data.sort((a, b) => a.stockLoss - b.stockLoss);
+        }
         
         const startIdx = (currentPage - 1) * pageSize;
         const endIdx = startIdx + pageSize;
-        const pageData = sorted.slice(startIdx, endIdx);
+        const pageData = data.slice(startIdx, endIdx);
         
         const tableHtml = pageData.map(item => {
             const formattedCost = this.formatSttkCurrency(item.stockLoss);
@@ -666,20 +767,23 @@ class OpexDashboardV2 {
         }).join('');
         
         this.updateElement('sttkDataTable', tableHtml || '<tr><td colspan="5" class="no-data">No data</td></tr>');
-        this.updatePaginationControls('sttk', sorted.length);
+        this.updatePaginationControls('sttk', data.length);
     }
 
     renderShrinkageSection() {
         console.log('Rendering Shrinkage section with', this.data.shrinkage.length, 'items');
         
-        const tableHtml = this.data.shrinkage.map((item, index) => `
+        const tableHtml = this.data.shrinkage.map((item, index) => {
+            const formattedValue = this.formatSttkCurrency(item.value);
+            return `
             <tr>
                 <td>${index + 1}</td>
                 <td>${this.escapeHtml(item.itemCode)}</td>
                 <td>${this.escapeHtml(item.itemName)}</td>
-                <td><span class="badge badge-red">${Math.abs(item.value).toFixed(2)}</span></td>
+                <td><span class="badge badge-red">${formattedValue}</span></td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
         
         this.updateElement('shrinkageItemsTable', tableHtml || '<tr><td colspan="4" class="no-data">No data available</td></tr>');
     }
