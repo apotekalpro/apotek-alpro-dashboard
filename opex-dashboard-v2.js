@@ -28,7 +28,8 @@ class OpexDashboardV2 {
             audit: { column: null, direction: 'asc' },
             sttk: { column: null, direction: 'asc' },
             cctv: { column: null, direction: 'asc' },
-            compliance: { column: null, direction: 'asc' }
+            compliance: { column: null, direction: 'asc' },
+            shrinkage: { column: null, direction: 'asc' }
         };
         
         // Filtering state
@@ -773,19 +774,45 @@ class OpexDashboardV2 {
     renderShrinkageSection() {
         console.log('Rendering Shrinkage section with', this.data.shrinkage.length, 'items');
         
-        const tableHtml = this.data.shrinkage.map((item, index) => {
+        let data = [...this.data.shrinkage];
+        
+        // Apply sorting if active
+        const { column, direction } = this.sorting.shrinkage;
+        if (column !== null && direction !== 'asc') {
+            data.sort((a, b) => {
+                let valA, valB;
+                switch(column) {
+                    case 1: valA = a.itemCode; valB = b.itemCode; break;
+                    case 2: valA = a.itemName; valB = b.itemName; break;
+                    case 3: valA = a.qty; valB = b.qty; break;
+                    case 4: valA = a.value; valB = b.value; break;
+                    default: return 0;
+                }
+                
+                if (typeof valA === 'string') {
+                    return direction === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                } else {
+                    return direction === 'asc' ? valA - valB : valB - valA;
+                }
+            });
+        }
+        // else: keep default sort (by value descending from processShrinkageData)
+        
+        const tableHtml = data.map((item, index) => {
+            const formattedQty = this.formatSttkNumber(item.qty);
             const formattedValue = this.formatSttkCurrency(item.value);
             return `
             <tr>
                 <td>${index + 1}</td>
                 <td>${this.escapeHtml(item.itemCode)}</td>
                 <td>${this.escapeHtml(item.itemName)}</td>
+                <td>${formattedQty}</td>
                 <td><span class="badge badge-red">${formattedValue}</span></td>
             </tr>
         `;
         }).join('');
         
-        this.updateElement('shrinkageItemsTable', tableHtml || '<tr><td colspan="4" class="no-data">No data available</td></tr>');
+        this.updateElement('shrinkageItemsTable', tableHtml || '<tr><td colspan="5" class="no-data">No data available</td></tr>');
     }
 
     renderCctvSection() {

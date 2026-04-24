@@ -551,12 +551,15 @@
                                 Item Name <i class="fas fa-sort sort-icon"></i>
                             </th>
                             <th class="sortable" onclick="sortTable('shrinkage', 3)">
+                                Shrinkage Qty <i class="fas fa-sort sort-icon"></i>
+                            </th>
+                            <th class="sortable" onclick="sortTable('shrinkage', 4)">
                                 Shrinkage Value <i class="fas fa-sort sort-icon"></i>
                             </th>
                         </tr>
                     </thead>
                     <tbody id="shrinkageItemsTable">
-                        <tr><td colspan="4" class="loading">Loading shrinkage items...</td></tr>
+                        <tr><td colspan="5" class="loading">Loading shrinkage items...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -949,6 +952,8 @@
                 opexDashboard.renderSttkTable();
             } else if (section === 'cctv') {
                 opexDashboard.renderCctvTable();
+            } else if (section === 'shrinkage') {
+                opexDashboard.renderShrinkageSection();
             }
         }
         
