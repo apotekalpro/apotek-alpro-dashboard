@@ -53,13 +53,14 @@
     font-size: 1rem;
     display: flex; align-items: center; gap: 10px;
   }
-  /* 3-column grid for 3 weeks */
+
+  /* 4-column grid for up to 4 weeks */
   .lb-weeks-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 0;
   }
-  @media (max-width: 900px) {
+  @media (max-width: 1100px) {
     .lb-weeks-grid { grid-template-columns: repeat(2, 1fr); }
   }
   @media (max-width: 580px) {
@@ -80,11 +81,11 @@
     display: flex; align-items: center; gap: 6px;
   }
   .rank-badge {
-    width: 26px; height: 26px;
+    width: 24px; height: 24px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-weight: 800;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     flex-shrink: 0;
   }
   .rank-1 { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 2px 6px rgba(245,158,11,0.4); }
@@ -95,8 +96,8 @@
   .lb-row {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
-    padding: 8px 10px;
+    gap: 7px;
+    padding: 7px 9px;
     border-bottom: 1px solid #f8fafc;
     transition: background 0.15s;
   }
@@ -106,9 +107,9 @@
 
   .metric-pill {
     display: inline-flex; align-items: center; gap: 3px;
-    padding: 1px 6px;
+    padding: 1px 5px;
     border-radius: 999px;
-    font-size: 0.67rem;
+    font-size: 0.63rem;
     font-weight: 600;
     white-space: nowrap;
   }
@@ -147,9 +148,9 @@
   .tiktok-link {
     color: var(--primary);
     text-decoration: none;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     display: inline-flex; align-items: center; gap: 3px;
-    max-width: 160px;
+    max-width: 140px;
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -230,11 +231,11 @@
         <tfoot id="summaryTableFoot" style="display:none;">
           <tr style="background:#fff7ed;">
             <td style="font-weight:800;color:#92400e;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;">TOTAL</td>
-            <td id="ftPosts"    style="text-align:right;font-weight:800;color:#1e293b;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
-            <td id="ftViews"   style="text-align:right;font-weight:800;color:#1d4ed8;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
-            <td id="ftLikes"   style="text-align:right;font-weight:800;color:#be185d;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
+            <td id="ftPosts"     style="text-align:right;font-weight:800;color:#1e293b;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
+            <td id="ftViews"    style="text-align:right;font-weight:800;color:#1d4ed8;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
+            <td id="ftLikes"    style="text-align:right;font-weight:800;color:#be185d;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
             <td id="ftComments" style="text-align:right;font-weight:800;color:#065f46;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
-            <td id="ftShares"  style="text-align:right;font-weight:800;color:#5b21b6;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
+            <td id="ftShares"   style="text-align:right;font-weight:800;color:#5b21b6;padding:9px 14px;font-size:0.82rem;border-top:2px solid #fed7aa;"></td>
           </tr>
         </tfoot>
       </table>
@@ -265,8 +266,8 @@
   <div>
     <div class="section-title mb-3">
       <i class="fas fa-trophy text-yellow-500"></i>
-      Dashboard 2 – Monthly Leaderboard
-      <span class="section-sub">Top 5 posts per week, ranked by combined score (views+likes+comments+shares)</span>
+      Dashboard 2 – Weekly Leaderboard
+      <span class="section-sub">Top 5 per week, ranked by total views</span>
     </div>
     <div id="leaderboardContainer">
       <div class="lb-card">
@@ -289,25 +290,29 @@ var MONTH_ORDER = [
   'Juli','Agustus','September','Oktober','November','Desember'
 ];
 
-// ── Column indices (0-based) ────────────────────────────────────────────
-// A(0)=Timestamp  B(1)=Nama KOS
-// Week 1:  C(2)=link  D(3)=views  E(4)=likes  F(5)=comments  G(6)=shares
-// Week 2:  H(7)=link  I(8)=views  J(9)=likes  K(10)=comments L(11)=shares
-// Week 3:  M(12)=link N(13)=views O(14)=likes P(15)=comments Q(16)=shares
-// R(17) = screenshot upload  S(18) = CODE  (NOT weekly posting data)
-// ────────────────────────────────────────────────────────────────────────
-var WEEKS = [
-  { label:'Week 1', linkCol:2,  viewCol:3,  likeCol:4,  cmtCol:5,  shrCol:6  },
-  { label:'Week 2', linkCol:7,  viewCol:8,  likeCol:9,  cmtCol:10, shrCol:11 },
-  { label:'Week 3', linkCol:12, viewCol:13, likeCol:14, cmtCol:15, shrCol:16 }
+// ── Updated Column Schema (0-based indices) ────────────────────────────
+// Col A (0) = Week label  e.g. "Week 1", "Week 2", "Week 3", "Week 4"
+// Col B (1) = Timestamp
+// Col C (2) = Nama KOS
+// Posting slot 1 (Mon):  D(3)=link  E(4)=views  F(5)=likes  G(6)=comments  H(7)=shares
+// Posting slot 2 (Wed):  I(8)=link  J(9)=views  K(10)=likes L(11)=comments  M(12)=shares
+// Posting slot 3 (Fri):  N(13)=link O(14)=views P(15)=likes Q(16)=comments  R(17)=shares
+// Col S (18) = screenshot upload  (NOT posting data)
+// ──────────────────────────────────────────────────────────────────────
+var POSTING_SLOTS = [
+  { label:'Mon', linkCol:3,  viewCol:4,  likeCol:5,  cmtCol:6,  shrCol:7  },
+  { label:'Wed', linkCol:8,  viewCol:9,  likeCol:10, cmtCol:11, shrCol:12 },
+  { label:'Fri', linkCol:13, viewCol:14, likeCol:15, cmtCol:16, shrCol:17 }
 ];
+
+// Ordered week labels as they appear in Col A
+var WEEK_LABELS = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
 
 // ═══════════════════════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════════════════════
 
-// Extract numeric value from a gviz cell.
-// gviz returns .v as a proper JS number (float) — no locale parsing needed.
+// gviz returns .v as a proper JS number — no locale parsing needed.
 function gvizNum(cell) {
   if (!cell || cell.v === null || cell.v === undefined) return 0;
   var n = typeof cell.v === 'number' ? cell.v : parseFloat(String(cell.v).replace(/[^0-9.\-]/g, ''));
@@ -329,35 +334,31 @@ function fmtFull(n) { return Math.round(n).toLocaleString('id-ID'); }
 // ═══════════════════════════════════════════════════════════════════════
 // FETCH ONE SHEET via gviz/tq JSON
 // Same approach as tiktok-performance.html — works on GitHub Pages (CORS OK)
-// Returns a Promise that resolves to the gviz JSON object, or null if the
-// sheet does not exist (detected by checking column labels).
+// Returns a Promise resolving to the gviz JSON object, or null if the
+// sheet does not exist.
 // ═══════════════════════════════════════════════════════════════════════
 function fetchGviz(sheetName) {
   var url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID
     + '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent(sheetName);
 
   return fetch(url)
-    .then(function(res) {
-      if (!res.ok) return null;
-      return res.text();
-    })
+    .then(function(res) { return res.ok ? res.text() : null; })
     .then(function(text) {
       if (!text) return null;
-      // Strip the JSONP wrapper:  /*O_o*/\ngoogle.visualization.Query.setResponse({...});
       var start = text.indexOf('{');
       var end   = text.lastIndexOf('}');
       if (start === -1 || end === -1) return null;
       var json;
       try { json = JSON.parse(text.substring(start, end + 1)); } catch(e) { return null; }
 
-      // ── KEY CHECK ─────────────────────────────────────────────────────
+      // ── SHEET EXISTENCE CHECK ──────────────────────────────────────────
       // Google returns the FIRST sheet when the requested sheet doesn't
-      // exist. Detect this by verifying column[3] label mentions the
-      // sheet name (every KOS Seeding sheet has column headers like
-      // "Total Views Postingan 23 Februari").
+      // exist.  Detect this by checking that col[4] label (the Views
+      // column, "Total Views Postingan … <MonthName>") contains the
+      // requested month name.
       var cols = (json.table && json.table.cols) ? json.table.cols : [];
-      var col3Label = cols.length > 3 ? (cols[3].label || '').toLowerCase() : '';
-      if (col3Label.indexOf(sheetName.toLowerCase()) === -1) {
+      var viewsColLabel = cols.length > 4 ? (cols[4].label || '').toLowerCase() : '';
+      if (viewsColLabel.indexOf(sheetName.toLowerCase()) === -1) {
         // Column header doesn't mention this month → sheet doesn't exist
         return null;
       }
@@ -368,28 +369,56 @@ function fetchGviz(sheetName) {
 
 // ═══════════════════════════════════════════════════════════════════════
 // PARSE ONE MONTH's gviz data
+//
+// New schema: Col A = Week label ("Week 1"…"Week 4")
+//             Col C = Nama KOS
+//             Each row has 3 posting slots (Mon/Wed/Fri) in cols D-R
+//
+// For the leaderboard we build per-week, per-person aggregates across
+// all 3 posting slots in that week-row.
 // ═══════════════════════════════════════════════════════════════════════
 function parseGvizMonth(json, sheetName) {
   var rows = (json && json.table && json.table.rows) ? json.table.rows : [];
   if (!rows.length) return null;
 
   var totalPosts = 0, totalViews = 0, totalLikes = 0, totalComments = 0, totalShares = 0;
-  var weeklyEntries = [];
+
+  // weeklyAgg[weekLabel][personName] = { views, likes, comments, shares, bestLink, bestViews }
+  var weeklyAgg = {};
+  WEEK_LABELS.forEach(function(wl) { weeklyAgg[wl] = {}; });
 
   for (var ri = 0; ri < rows.length; ri++) {
     var cells = rows[ri].c || [];
-    var name = gvizStr(cells[1]);
-    if (!name) continue;
-    // Skip header-like rows
-    if (name.toLowerCase() === 'nama kos' || name.toLowerCase() === 'timestamp') continue;
 
-    for (var wi = 0; wi < WEEKS.length; wi++) {
-      var wk = WEEKS[wi];
-      var link     = gvizStr(cells[wk.linkCol]);
-      var views    = gvizNum(cells[wk.viewCol]);
-      var likes    = gvizNum(cells[wk.likeCol]);
-      var comments = gvizNum(cells[wk.cmtCol]);
-      var shares   = gvizNum(cells[wk.shrCol]);
+    // Col A = week label
+    var weekLabel = gvizStr(cells[0]);
+    // Normalise to "Week N" (trim, title-case)
+    if (!weekLabel) continue;
+    // Accept "Week 1" / "week 1" / "WEEK 1"
+    var weekNorm = weekLabel.trim().replace(/^week\s+/i, 'Week ');
+
+    // Col C (index 2) = Nama KOS
+    var name = gvizStr(cells[2]);
+    if (!name || name.toLowerCase() === 'nama kos') continue;
+
+    // Ensure this week bucket exists (handles any week label not pre-defined)
+    if (!weeklyAgg[weekNorm]) weeklyAgg[weekNorm] = {};
+
+    var personAgg = weeklyAgg[weekNorm][name];
+    if (!personAgg) {
+      personAgg = { name: name, views: 0, likes: 0, comments: 0, shares: 0,
+                    bestLink: '', bestViews: -1 };
+      weeklyAgg[weekNorm][name] = personAgg;
+    }
+
+    // Accumulate all 3 posting slots
+    for (var si = 0; si < POSTING_SLOTS.length; si++) {
+      var slot = POSTING_SLOTS[si];
+      var link     = gvizStr(cells[slot.linkCol]);
+      var views    = gvizNum(cells[slot.viewCol]);
+      var likes    = gvizNum(cells[slot.likeCol]);
+      var comments = gvizNum(cells[slot.cmtCol]);
+      var shares   = gvizNum(cells[slot.shrCol]);
 
       var hasData = link !== '' || views > 0 || likes > 0 || comments > 0 || shares > 0;
       if (!hasData) continue;
@@ -400,22 +429,43 @@ function parseGvizMonth(json, sheetName) {
       totalComments += comments;
       totalShares   += shares;
 
-      weeklyEntries.push({
-        weekLabel: wk.label,
-        weekIdx:   wi,
-        name:      name,
-        link:      link,
-        views:     views,
-        likes:     likes,
-        comments:  comments,
-        shares:    shares,
-        score:     views + likes + comments + shares
-      });
+      personAgg.views    += views;
+      personAgg.likes    += likes;
+      personAgg.comments += comments;
+      personAgg.shares   += shares;
+
+      // Track best link by highest views in a single slot
+      if (views > personAgg.bestViews) {
+        personAgg.bestViews = views;
+        personAgg.bestLink  = link;
+      }
     }
   }
 
-  return { totalPosts: totalPosts, totalViews: totalViews, totalLikes: totalLikes,
-           totalComments: totalComments, totalShares: totalShares, weeklyEntries: weeklyEntries };
+  // Flatten weeklyAgg into an array of { weekLabel, persons[] }
+  // Only include weeks that actually have data
+  var weekSections = [];
+  var allWeekLabels = Object.keys(weeklyAgg).filter(function(wl) {
+    return Object.keys(weeklyAgg[wl]).length > 0;
+  });
+  // Sort by week number
+  allWeekLabels.sort(function(a, b) {
+    var na = parseInt(a.replace(/\D/g,''), 10) || 0;
+    var nb = parseInt(b.replace(/\D/g,''), 10) || 0;
+    return na - nb;
+  });
+  allWeekLabels.forEach(function(wl) {
+    var persons = Object.values(weeklyAgg[wl]);
+    if (persons.length) weekSections.push({ weekLabel: wl, persons: persons });
+  });
+
+  if (!totalPosts) return null;
+
+  return {
+    totalPosts: totalPosts, totalViews: totalViews,
+    totalLikes: totalLikes, totalComments: totalComments, totalShares: totalShares,
+    weekSections: weekSections
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -433,7 +483,6 @@ function discoverSheets() {
 
   return Promise.all(promises).then(function(results) {
     var found = results.filter(function(r) { return r !== null; });
-    // Sort by calendar order
     found.sort(function(a, b) {
       return MONTH_ORDER.indexOf(a.name) - MONTH_ORDER.indexOf(b.name);
     });
@@ -492,7 +541,8 @@ function buildSummaryTable(months) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// DASHBOARD 2: BUILD LEADERBOARDS (per month, per week, top 5)
+// DASHBOARD 2: BUILD LEADERBOARDS
+// Per month → per week (side-by-side columns) → top 5 by total views
 // ═══════════════════════════════════════════════════════════════════════
 function buildLeaderboards(months) {
   var container = document.getElementById('leaderboardContainer');
@@ -508,90 +558,67 @@ function buildLeaderboards(months) {
 }
 
 function buildMonthLeaderboard(month) {
-  var name = month.name;
-  var data = month.data;
-  var entries = data.weeklyEntries;
+  var name      = month.name;
+  var data      = month.data;
+  var sections  = data.weekSections; // [{weekLabel, persons[]}]
 
-  if (!entries.length) {
+  if (!sections.length) {
     return '<div class="lb-card">'
       + '<div class="lb-month-header"><i class="fas fa-trophy"></i> ' + name + '</div>'
       + '<div class="no-data-msg" style="padding:20px;">No posting data for this month.</div>'
       + '</div>';
   }
 
-  // Group by week index
-  var byWeek = {};
-  for (var i = 0; i < entries.length; i++) {
-    var e = entries[i];
-    if (!byWeek[e.weekIdx]) byWeek[e.weekIdx] = [];
-    byWeek[e.weekIdx].push(e);
-  }
+  // Determine grid width based on number of active weeks
+  var numWeeks  = sections.length;
+  var gridStyle = numWeeks >= 4 ? '' : 'grid-template-columns:repeat(' + numWeeks + ',1fr);';
 
-  // Build each week column
   var colsHtml = '';
-  for (var wi = 0; wi < WEEKS.length; wi++) {
-    var wk = WEEKS[wi];
-    var wkEntries = byWeek[wi] || [];
+  var medals      = ['🥇','🥈','🥉','',''];
+  var rankClasses = ['rank-1','rank-2','rank-3','rank-4','rank-4'];
+  var rowClasses  = ['rank-1-row','','','',''];
+
+  for (var wi = 0; wi < sections.length; wi++) {
+    var section  = sections[wi];
+    var wkLabel  = section.weekLabel;
+    // Sort by total views DESC, then total score as tiebreaker
+    var top5 = section.persons
+      .slice()
+      .sort(function(a, b) {
+        if (b.views !== a.views) return b.views - a.views;
+        return (b.likes + b.comments + b.shares) - (a.likes + a.comments + a.shares);
+      })
+      .slice(0, 5);
 
     var headerHtml = '<div class="lb-week-header">'
       + '<i class="fas fa-calendar-week text-orange-400"></i>'
-      + ' ' + wk.label
-      + ' <span class="text-gray-400 font-normal" style="font-size:0.7rem;">'
-      + wkEntries.length + ' post' + (wkEntries.length !== 1 ? 's' : '')
+      + ' ' + wkLabel
+      + ' <span class="text-gray-400 font-normal" style="font-size:0.68rem;">'
+      + '(' + section.persons.length + ' submitter' + (section.persons.length !== 1 ? 's' : '') + ')'
       + '</span></div>';
-
-    if (!wkEntries.length) {
-      colsHtml += '<div class="lb-week-col">' + headerHtml
-        + '<div class="no-data-msg" style="padding:14px 10px;font-size:0.78rem;">No posts this week</div>'
-        + '</div>';
-      continue;
-    }
-
-    // Aggregate per person (multiple submissions → sum)
-    var nameMap = {};
-    for (var j = 0; j < wkEntries.length; j++) {
-      var entry = wkEntries[j];
-      if (!nameMap[entry.name]) {
-        nameMap[entry.name] = { name: entry.name, link: entry.link,
-          views: 0, likes: 0, comments: 0, shares: 0, score: 0, _best: 0 };
-      }
-      var agg = nameMap[entry.name];
-      agg.views    += entry.views;
-      agg.likes    += entry.likes;
-      agg.comments += entry.comments;
-      agg.shares   += entry.shares;
-      agg.score    += entry.score;
-      if (entry.score > agg._best) { agg.link = entry.link; agg._best = entry.score; }
-    }
-
-    // Sort by score desc, top 5
-    var top5 = Object.values(nameMap).sort(function(a,b){ return b.score - a.score; }).slice(0, 5);
-    var medals = ['🥇','🥈','🥉','',''];
-    var rankClasses = ['rank-1','rank-2','rank-3','rank-4','rank-4'];
-    var rowClasses  = ['rank-1-row','','','',''];
 
     var rowsHtml = '';
     for (var k = 0; k < top5.length; k++) {
       var p = top5[k];
-      var shortLink = p.link
-        ? p.link.replace(/^https?:\/\/(www\.)?/,'').replace(/\?.*/,'').substring(0, 26)
+      var shortLink = p.bestLink
+        ? p.bestLink.replace(/^https?:\/\/(www\.)?/,'').replace(/\?.*/,'').substring(0, 24)
         : '';
-      var linkHtml = p.link
-        ? '<a href="' + p.link + '" target="_blank" rel="noopener" class="tiktok-link">'
-          + '<i class="fab fa-tiktok" style="font-size:0.6rem;flex-shrink:0;"></i>'
+      var linkHtml = p.bestLink
+        ? '<a href="' + p.bestLink + '" target="_blank" rel="noopener" class="tiktok-link">'
+          + '<i class="fab fa-tiktok" style="font-size:0.55rem;flex-shrink:0;"></i>'
           + '<span>' + shortLink + '</span></a>'
-        : '<span class="text-gray-400 italic" style="font-size:0.7rem;">No link</span>';
+        : '<span class="text-gray-400 italic" style="font-size:0.68rem;">No link</span>';
 
       rowsHtml += '<div class="lb-row ' + rowClasses[k] + '">'
         + '<div class="rank-badge ' + rankClasses[k] + '">' + (medals[k] || (k+1)) + '</div>'
         + '<div class="flex-1 min-w-0">'
-        +   '<div class="font-semibold text-gray-800 truncate" style="font-size:0.74rem;" title="' + p.name + '">' + p.name + '</div>'
+        +   '<div class="font-semibold text-gray-800 truncate" style="font-size:0.72rem;" title="' + p.name + '">' + p.name + '</div>'
         +   '<div style="margin:2px 0;">' + linkHtml + '</div>'
         +   '<div class="flex flex-wrap gap-1">'
-        +     '<span class="metric-pill metric-views"><i class="fas fa-eye" style="font-size:0.55rem;"></i>' + fmt(p.views) + '</span>'
-        +     '<span class="metric-pill metric-likes"><i class="fas fa-heart" style="font-size:0.55rem;"></i>' + fmt(p.likes) + '</span>'
-        +     '<span class="metric-pill metric-comments"><i class="fas fa-comment" style="font-size:0.55rem;"></i>' + fmt(p.comments) + '</span>'
-        +     '<span class="metric-pill metric-shares"><i class="fas fa-share" style="font-size:0.55rem;"></i>' + fmt(p.shares) + '</span>'
+        +     '<span class="metric-pill metric-views"><i class="fas fa-eye" style="font-size:0.5rem;"></i>' + fmt(p.views) + '</span>'
+        +     '<span class="metric-pill metric-likes"><i class="fas fa-heart" style="font-size:0.5rem;"></i>' + fmt(p.likes) + '</span>'
+        +     '<span class="metric-pill metric-comments"><i class="fas fa-comment" style="font-size:0.5rem;"></i>' + fmt(p.comments) + '</span>'
+        +     '<span class="metric-pill metric-shares"><i class="fas fa-share" style="font-size:0.5rem;"></i>' + fmt(p.shares) + '</span>'
         +   '</div>'
         + '</div>'
         + '</div>';
@@ -600,15 +627,16 @@ function buildMonthLeaderboard(month) {
     colsHtml += '<div class="lb-week-col">' + headerHtml + rowsHtml + '</div>';
   }
 
-  var activeWeeks = Object.keys(byWeek).length;
+  var totalEntries = sections.reduce(function(s, sec) { return s + sec.persons.length; }, 0);
   return '<div class="lb-card">'
     + '<div class="lb-month-header">'
     +   '<i class="fas fa-trophy"></i> ' + name + ' Leaderboard'
     +   '<span style="font-size:0.75rem;font-weight:400;margin-left:auto;opacity:0.9;">'
-    +     data.weeklyEntries.length + ' entries · ' + activeWeeks + ' week' + (activeWeeks !== 1 ? 's' : '')
+    +     totalEntries + ' submitter' + (totalEntries !== 1 ? 's' : '')
+    +     ' · ' + sections.length + ' week' + (sections.length !== 1 ? 's' : '')
     +   '</span>'
     + '</div>'
-    + '<div class="lb-weeks-grid">' + colsHtml + '</div>'
+    + '<div class="lb-weeks-grid" style="' + gridStyle + '">' + colsHtml + '</div>'
     + '</div>';
 }
 
