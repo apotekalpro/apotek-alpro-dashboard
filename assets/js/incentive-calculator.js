@@ -1396,15 +1396,16 @@ const IncentiveCalculator = {
                 }
             }
             
-            // Compare Goal incentive vs Ops reward incentive and use higher
-            // For BM, we need to compare component by component
+            // Store original Ops rewards for comparison (before Goal Bulanan overwrites them)
+            const opsAMReward = emp.amReward || 0;
             const opsAlproeanReward = emp.alproeanReward || 0;
             const opsBMReward = emp.bmReward || 0;
-            const opsRewardTotal = emp.amReward + opsAlproeanReward + opsBMReward;
             
+            // Compare Goal incentive vs Ops reward incentive and use higher
+            // For BM, we need to compare component by component
             let finalAlproeanReward = 0;
             let finalBMReward = 0;
-            let finalAMReward = emp.amReward || 0;
+            let finalAMReward = 0;
             
             if (isBM) {
                 // Compare BM components separately
@@ -1458,12 +1459,12 @@ const IncentiveCalculator = {
                 emp.finalIncentive = finalAlproeanReward;
                 
             } else if (isAM) {
-                // AM uses total comparison
-                if (goalBulananIncentive > opsRewardTotal) {
+                // AM: Compare AM Goal Bulanan vs AM Ops Reward ONLY (not total)
+                if (goalBulananIncentive > opsAMReward) {
                     finalAMReward = goalBulananIncentive;
                     emp.incentiveType = 'Goal Bulanan';
                 } else {
-                    finalAMReward = opsRewardTotal;
+                    finalAMReward = opsAMReward;
                     emp.incentiveType = 'Ops Reward';
                 }
                 
@@ -1472,8 +1473,8 @@ const IncentiveCalculator = {
                 emp.finalIncentive = finalAMReward;
             }
             
-            // Store Ops reward for comparison in export
-            emp.opsRewardIncentive = opsRewardTotal;
+            // Store original Ops rewards for export (before Goal Bulanan comparison)
+            emp.opsRewardIncentive = opsAMReward + opsAlproeanReward + opsBMReward;
             
             // Update total reward to use final incentive
             emp.totalReward = emp.finalIncentive;
