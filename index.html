@@ -1549,6 +1549,30 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Payroll Month Selection -->
+                                <div class="mt-6 bg-indigo-50 rounded-lg p-4 border-2 border-indigo-200">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-calendar-alt text-indigo-600 mr-2"></i>
+                                        <label class="block text-sm font-semibold text-indigo-900">Payroll Month</label>
+                                    </div>
+                                    <select id="payrollMonthSelect" 
+                                            class="block w-full px-4 py-2.5 text-sm text-gray-700 bg-white border-2 border-indigo-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                        <option value="1">January (Multiplier: 1x)</option>
+                                        <option value="2">February (Multiplier: 2x)</option>
+                                        <option value="3">March (Multiplier: 3x)</option>
+                                        <option value="4">April (Multiplier: 4x)</option>
+                                        <option value="5">May (Multiplier: 5x)</option>
+                                        <option value="6">June (Multiplier: 6x)</option>
+                                        <option value="1">July (Multiplier: 1x)</option>
+                                        <option value="2">August (Multiplier: 2x)</option>
+                                        <option value="3">September (Multiplier: 3x)</option>
+                                        <option value="4">October (Multiplier: 4x)</option>
+                                        <option value="5">November (Multiplier: 5x)</option>
+                                        <option value="6">December (Multiplier: 6x)</option>
+                                    </select>
+                                    <p class="text-xs text-indigo-600 mt-2">Select the payroll month to apply the correct incentive multiplier</p>
+                                </div>
+                                
                                 <!-- Action Buttons -->
                                 <div class="mt-6 flex gap-4 pt-6 border-t border-gray-200">
                                     <button id="calculateIncentivesBtn" onclick="IncentiveCalculator.calculate()" 

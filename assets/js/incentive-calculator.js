@@ -605,6 +605,10 @@ const IncentiveCalculator = {
             console.log('💰 Calculating BM rewards...');
             this.calculateBMRewards(matchedEmployees);
             
+            // Step 5: Calculate Goal Bulanan Incentives
+            console.log('🎯 Calculating Goal Bulanan incentives...');
+            this.calculateGoalBulananIncentives(matchedEmployees);
+            
             // Log sample results
             console.log('🎯 Sample calculated results:', matchedEmployees.slice(0, 5).map(e => ({
                 name: e.employee.employeeName,
@@ -1223,12 +1227,165 @@ const IncentiveCalculator = {
         
         console.log(`Processed ${Object.keys(outletGroups).length} outlet groups for Alproean rewards`);
         
-        // Calculate total rewards
+        // Calculate total rewards (will be updated after Goal Bulanan calculation)
         matchedEmployees.forEach(emp => {
             emp.totalReward = emp.amReward + emp.bmReward + emp.alproeanReward;
         });
         
         this.data.results = matchedEmployees;
+    },
+    
+    // Calculate Goal Bulanan Incentives
+    calculateGoalBulananIncentives: function(matchedEmployees) {
+        console.log('🎯 Starting Goal Bulanan incentive calculation...');
+        
+        // Get selected payroll month and calculate multiplier
+        const payrollMonthSelect = document.getElementById('payrollMonthSelect');
+        const monthMultiplier = payrollMonthSelect ? parseInt(payrollMonthSelect.value) : 1;
+        
+        console.log(`📅 Payroll month multiplier: ${monthMultiplier}x`);
+        
+        // Base incentive amount
+        const BASE_INCENTIVE = 100000; // Rp 100,000
+        
+        // Group AMs by their areas to calculate AM incentives
+        const amAreas = {};
+        
+        this.data.outletMappingData.forEach(mapping => {
+            const amName = this.toSafeString(mapping.areaManager);
+            if (!amName) return;
+            
+            if (!amAreas[amName]) {
+                amAreas[amName] = {
+                    amName: amName,
+                    outlets: [],
+                    totalOutlets: 0
+                };
+            }
+            
+            // Find Goal Bulanan for this outlet
+            const outletGoalBulanan = this.findGoalBulananForOutlet(mapping.outlet);
+            
+            // Find sales data for this outlet
+            const salesData = this.data.salesGpData.find(sales => 
+                this.outletMatch(sales.outlet, mapping.outlet)
+            );
+            
+            if (outletGoalBulanan > 0 && salesData) {
+                const goalAchievement = (salesData.totalSales / outletGoalBulanan) * 100;
+                const goalHit = goalAchievement >= 100;
+                
+                amAreas[amName].outlets.push({
+                    outletCode: mapping.outlet,
+                    goalBulanan: outletGoalBulanan,
+                    totalSales: salesData.totalSales,
+                    gpMargin: salesData.gpMargin,
+                    goalAchievement: goalAchievement,
+                    goalHit: goalHit
+                });
+                
+                if (goalHit) {
+                    amAreas[amName].totalOutlets++;
+                }
+            }
+        });
+        
+        console.log(`📊 Found ${Object.keys(amAreas).length} AM areas for Goal Bulanan calculation`);
+        
+        // Calculate incentives for each employee
+        matchedEmployees.forEach(emp => {
+            const role = this.toSafeString(emp.employee.role).toUpperCase();
+            const isAM = (role.includes('AREA MANAGER') && !role.includes('BRANCH')) || 
+                         (role.includes('ASSOCIATE') && role.includes('AREA MANAGER'));
+            const isBM = (role.includes('BRANCH MANAGER') || role.includes('SENIOR BRANCH MANAGER')) && 
+                         !role.includes('TRAINEE');
+            const isAlproean = !isAM && !isBM;
+            
+            let goalBulananIncentive = 0;
+            let marginFactor = 1.0;
+            
+            if (isAM) {
+                // AM Incentive: 100,000 × month multiplier × number of outlets that hit goal
+                const empName = this.toSafeString(emp.employee.employeeName);
+                const amArea = amAreas[empName];
+                
+                if (amArea && amArea.totalOutlets > 0 && emp.areaGoalBulananHit === 'YES') {
+                    // Calculate average GP margin for all outlets
+                    const avgGPMargin = amArea.outlets.reduce((sum, o) => sum + o.gpMargin, 0) / amArea.outlets.length;
+                    marginFactor = this.getGPAdjustment(avgGPMargin);
+                    
+                    goalBulananIncentive = BASE_INCENTIVE * monthMultiplier * amArea.totalOutlets * marginFactor;
+                    
+                    emp.goalBulananIncentive = goalBulananIncentive;
+                    emp.goalBulananBase = BASE_INCENTIVE * monthMultiplier * amArea.totalOutlets;
+                    emp.goalBulananMarginFactor = marginFactor;
+                    emp.goalBulananMargin = avgGPMargin;
+                }
+            } else if (isBM || isAlproean) {
+                // BM and Alproean: Only their own outlet, only if contribution ratio > 10%
+                if (emp.goalBulananHit === 'YES' && emp.contributionRatio && emp.contributionRatio > 10) {
+                    // Get GP margin for this outlet
+                    const outletGPMargin = emp.salesData ? emp.salesData.gpMargin : 0;
+                    marginFactor = this.getGPAdjustment(outletGPMargin);
+                    
+                    // Base incentive
+                    const baseIncentive = BASE_INCENTIVE * monthMultiplier * marginFactor;
+                    
+                    if (isBM) {
+                        // BM gets base + 50% bonus
+                        goalBulananIncentive = baseIncentive * 1.5;
+                    } else {
+                        // Alproean gets base only
+                        goalBulananIncentive = baseIncentive;
+                    }
+                    
+                    emp.goalBulananIncentive = goalBulananIncentive;
+                    emp.goalBulananBase = BASE_INCENTIVE * monthMultiplier;
+                    emp.goalBulananMarginFactor = marginFactor;
+                    emp.goalBulananMargin = outletGPMargin;
+                    
+                    // Store main outlet for remark
+                    emp.mainOutlet = emp.employee.outlet;
+                }
+            }
+            
+            // Compare Goal incentive vs Ops reward incentive and use higher
+            const opsRewardIncentive = emp.totalReward || 0;
+            
+            if (goalBulananIncentive > opsRewardIncentive) {
+                emp.finalIncentive = goalBulananIncentive;
+                emp.incentiveType = 'Goal Bulanan';
+            } else {
+                emp.finalIncentive = opsRewardIncentive;
+                emp.incentiveType = 'Ops Reward';
+            }
+            
+            // Store both for comparison in export
+            emp.opsRewardIncentive = opsRewardIncentive;
+            
+            // Update total reward to use final incentive
+            emp.totalReward = emp.finalIncentive;
+        });
+        
+        // Log sample calculations
+        const samples = matchedEmployees.filter(e => e.goalBulananIncentive > 0).slice(0, 3);
+        if (samples.length > 0) {
+            console.log('🎯 Sample Goal Bulanan calculations:', samples.map(e => ({
+                name: e.employee.employeeName,
+                role: e.employee.role,
+                outlet: e.employee.outlet,
+                goalBulananHit: e.goalBulananHit || e.areaGoalBulananHit,
+                contributionRatio: e.contributionRatio ? e.contributionRatio.toFixed(2) + '%' : 'N/A',
+                goalBulananBase: e.goalBulananBase,
+                marginFactor: e.goalBulananMarginFactor,
+                goalBulananIncentive: e.goalBulananIncentive.toFixed(2),
+                opsRewardIncentive: e.opsRewardIncentive.toFixed(2),
+                finalIncentive: e.finalIncentive.toFixed(2),
+                incentiveType: e.incentiveType
+            })));
+        }
+        
+        console.log('✅ Goal Bulanan incentive calculation complete');
     },
     
     // Get GP margin adjustment factor
@@ -1364,12 +1521,13 @@ const IncentiveCalculator = {
     exportMatched: function() {
         const exportData = [];
         
-        // Add headers (removed Region column, added Personal Sales and Contribution %, Goal Bulanan, Area Goal Bulanan)
+        // Add headers with new Goal Bulanan Incentive columns
         exportData.push([
             'Employee Name',
             'Employee ID',
             'Role',
             'Outlet',
+            'Remark',
             'Personal Sales (Rp)',
             'Contribution Ratio (%)',
             'GP Margin (%)',
@@ -1380,7 +1538,10 @@ const IncentiveCalculator = {
             'AM Reward (Rp)',
             'BM Reward (Rp)',
             'Alproean Reward (Rp)',
-            'Total Reward (Rp)'
+            'Ops Reward Incentive (Rp)',
+            'Goal Bulanan Incentive (Rp)',
+            'Final Incentive (Rp)',
+            'Incentive Type'
         ]);
         
         // AGGREGATE MULTI-OUTLET EMPLOYEES FOR EXPORT
@@ -1395,6 +1556,7 @@ const IncentiveCalculator = {
                     employeeName: emp.employee.employeeName,
                     employeeId: emp.employee.employeeId,
                     role: emp.employee.role,
+                    mainOutlet: emp.mainOutlet || emp.employee.outlet,
                     outlets: [],
                     personalSales: 0,
                     contributionRatio: 0,
@@ -1406,6 +1568,10 @@ const IncentiveCalculator = {
                     amReward: 0,
                     bmReward: 0,
                     alproeanReward: 0,
+                    opsRewardIncentive: 0,
+                    goalBulananIncentive: 0,
+                    finalIncentive: 0,
+                    incentiveType: emp.incentiveType || 'Ops Reward',
                     totalReward: 0,
                     outletCount: 0
                 };
@@ -1443,7 +1609,15 @@ const IncentiveCalculator = {
             aggregatedResults[key].amReward += emp.amReward;
             aggregatedResults[key].bmReward += emp.bmReward;
             aggregatedResults[key].alproeanReward += emp.alproeanReward;
+            aggregatedResults[key].opsRewardIncentive += (emp.opsRewardIncentive || 0);
+            aggregatedResults[key].goalBulananIncentive += (emp.goalBulananIncentive || 0);
+            aggregatedResults[key].finalIncentive += (emp.finalIncentive || 0);
             aggregatedResults[key].totalReward += emp.totalReward;
+            
+            // Store incentive type (prefer Goal Bulanan if any occurrence)
+            if (emp.incentiveType === 'Goal Bulanan') {
+                aggregatedResults[key].incentiveType = 'Goal Bulanan';
+            }
             
             aggregatedResults[key].outletCount += 1;
         });
@@ -1474,11 +1648,20 @@ const IncentiveCalculator = {
                 ? this.formatCurrency(emp.areaGoalBulananTarget) 
                 : '';
             
+            // Remark for BM & Alproean main outlet (no remark for AM)
+            const role = (emp.role || '').toUpperCase();
+            const isAM = role.includes('AREA MANAGER') && !role.includes('BRANCH');
+            let remark = '';
+            if (!isAM && emp.mainOutlet) {
+                remark = `Main Outlet: ${emp.mainOutlet}`;
+            }
+            
             exportData.push([
                 emp.employeeName,
                 emp.employeeId,
                 emp.role,
                 outletDisplay,
+                remark,
                 emp.personalSales,
                 avgContributionRatio.toFixed(2),
                 avgGpMargin.toFixed(2),
@@ -1489,7 +1672,10 @@ const IncentiveCalculator = {
                 emp.amReward,
                 emp.bmReward,
                 emp.alproeanReward,
-                emp.totalReward
+                emp.opsRewardIncentive,
+                emp.goalBulananIncentive,
+                emp.finalIncentive,
+                emp.incentiveType
             ]);
         });
         
