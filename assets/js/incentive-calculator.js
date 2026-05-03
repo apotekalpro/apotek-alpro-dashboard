@@ -1325,11 +1325,12 @@ const IncentiveCalculator = {
                 const amArea = amAreas[empName];
                 
                 if (amArea && amArea.totalOutletsInMapping > 0 && emp.areaGoalBulananHit === 'YES') {
-                    // Calculate average GP margin for outlets with Goal Bulanan data
-                    const avgGPMargin = amArea.outletsWithGoal.length > 0
-                        ? amArea.outletsWithGoal.reduce((sum, o) => sum + o.gpMargin, 0) / amArea.outletsWithGoal.length
+                    // Calculate AREA-LEVEL GP margin: (Total GP / Total Revenue) × 100
+                    // This gives the TRUE weighted margin, not the average of outlet margins
+                    const areaGPMargin = amArea.totalRevenue > 0
+                        ? (amArea.totalGP / amArea.totalRevenue) * 100
                         : 0;
-                    marginFactor = this.getGPAdjustment(avgGPMargin);
+                    marginFactor = this.getGPAdjustment(areaGPMargin);
                     
                     // Use TOTAL outlets from Mapping file (not just those with Goal Bulanan)
                     // CORRECT ORDER: BASE × total outlets in mapping × multiplier × marginFactor
@@ -1338,7 +1339,7 @@ const IncentiveCalculator = {
                     emp.goalBulananIncentive = goalBulananIncentive;
                     emp.goalBulananBase = BASE_INCENTIVE * amArea.totalOutletsInMapping * monthMultiplier;
                     emp.goalBulananMarginFactor = marginFactor;
-                    emp.goalBulananMargin = avgGPMargin;
+                    emp.goalBulananMargin = areaGPMargin;
                     emp.goalBulananTotalOutlets = amArea.totalOutletsInMapping;  // Store for debugging
                     emp.goalBulananOutletsHit = amArea.outletsHitGoal;  // Store for debugging
                 }
