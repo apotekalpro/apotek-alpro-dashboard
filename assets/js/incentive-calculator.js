@@ -1305,7 +1305,7 @@ const IncentiveCalculator = {
             let marginFactor = 1.0;
             
             if (isAM) {
-                // AM Incentive: 100,000 × month multiplier × number of outlets that hit goal
+                // AM Incentive: 100,000 × number of outlets × month multiplier × margin factor
                 const empName = this.toSafeString(emp.employee.employeeName);
                 const amArea = amAreas[empName];
                 
@@ -1314,17 +1314,24 @@ const IncentiveCalculator = {
                     const avgGPMargin = amArea.outlets.reduce((sum, o) => sum + o.gpMargin, 0) / amArea.outlets.length;
                     marginFactor = this.getGPAdjustment(avgGPMargin);
                     
-                    goalBulananIncentive = BASE_INCENTIVE * monthMultiplier * amArea.totalOutlets * marginFactor;
+                    // CORRECT ORDER: BASE × outlets × multiplier × marginFactor
+                    goalBulananIncentive = BASE_INCENTIVE * amArea.totalOutlets * monthMultiplier * marginFactor;
                     
                     emp.goalBulananIncentive = goalBulananIncentive;
-                    emp.goalBulananBase = BASE_INCENTIVE * monthMultiplier * amArea.totalOutlets;
+                    emp.goalBulananBase = BASE_INCENTIVE * amArea.totalOutlets * monthMultiplier;
                     emp.goalBulananMarginFactor = marginFactor;
                     emp.goalBulananMargin = avgGPMargin;
                 }
             } else if (isBM || isAlproean) {
-                // BM and Alproean: Only their own outlet, only if contribution ratio > 10%
-                if (emp.goalBulananHit === 'YES' && emp.contributionRatio && emp.contributionRatio > 10) {
-                    // Get GP margin for this outlet
+                // BM and Alproean: ONLY their MAIN outlet (from Active List)
+                // CRITICAL: For multi-outlet employees, only check their main outlet for Goal Bulanan
+                
+                // Check if current outlet matches main outlet
+                // This ensures we only calculate Goal Bulanan for main outlet
+                const isMainOutletEntry = !emp.employee._multiOutlet || emp.employee._outletIndex === 1;
+                
+                if (isMainOutletEntry && emp.goalBulananHit === 'YES' && emp.contributionRatio && emp.contributionRatio > 10) {
+                    // Get GP margin for MAIN outlet only
                     const outletGPMargin = emp.salesData ? emp.salesData.gpMargin : 0;
                     marginFactor = this.getGPAdjustment(outletGPMargin);
                     
@@ -1355,8 +1362,9 @@ const IncentiveCalculator = {
                     emp.goalBulananMarginFactor = marginFactor;
                     emp.goalBulananMargin = outletGPMargin;
                     
-                    // Store main outlet for remark
+                    // Store main outlet for remark with GP margin
                     emp.mainOutlet = emp.employee.outlet;
+                    emp.mainOutletGPMargin = outletGPMargin;
                 }
             }
             
@@ -1724,12 +1732,13 @@ const IncentiveCalculator = {
                 ? this.formatCurrency(emp.areaGoalBulananTarget) 
                 : '';
             
-            // Remark for BM & Alproean main outlet (no remark for AM)
+            // Remark for BM & Alproean main outlet with GP margin (no remark for AM)
             const role = (emp.role || '').toUpperCase();
             const isAM = role.includes('AREA MANAGER') && !role.includes('BRANCH');
             let remark = '';
             if (!isAM && emp.mainOutlet) {
-                remark = `Main Outlet: ${emp.mainOutlet}`;
+                const gpMargin = emp.mainOutletGPMargin ? emp.mainOutletGPMargin.toFixed(2) + '%' : 'N/A';
+                remark = `Main Outlet: ${emp.mainOutlet} (GP: ${gpMargin})`;
             }
             
             exportData.push([
