@@ -1261,7 +1261,9 @@ const IncentiveCalculator = {
                     amName: amName,
                     totalOutletsInMapping: 0,  // Total outlets assigned to AM in Mapping file
                     outletsWithGoal: [],  // Outlets that have Goal Bulanan data
-                    outletsHitGoal: 0  // Count of outlets that hit their Goal Bulanan
+                    outletsHitGoal: 0,  // Count of outlets that hit their Goal Bulanan
+                    totalRevenue: 0,  // Sum of all outlet revenues (for area GP margin calculation)
+                    totalGP: 0  // Sum of all outlet GP (for area GP margin calculation)
                 };
             }
             
@@ -1276,6 +1278,12 @@ const IncentiveCalculator = {
                 this.outletMatch(sales.outlet, mapping.outlet)
             );
             
+            // Accumulate revenue and GP for area-level margin calculation
+            if (salesData) {
+                amAreas[amName].totalRevenue += salesData.totalSales || 0;
+                amAreas[amName].totalGP += salesData.gp || 0;
+            }
+            
             // Track outlets with Goal Bulanan data
             if (outletGoalBulanan > 0 && salesData) {
                 const goalAchievement = (salesData.totalSales / outletGoalBulanan) * 100;
@@ -1285,6 +1293,7 @@ const IncentiveCalculator = {
                     outletCode: mapping.outlet,
                     goalBulanan: outletGoalBulanan,
                     totalSales: salesData.totalSales,
+                    gp: salesData.gp,
                     gpMargin: salesData.gpMargin,
                     goalAchievement: goalAchievement,
                     goalHit: goalHit
