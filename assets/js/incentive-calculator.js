@@ -1328,15 +1328,26 @@ const IncentiveCalculator = {
                     const outletGPMargin = emp.salesData ? emp.salesData.gpMargin : 0;
                     marginFactor = this.getGPAdjustment(outletGPMargin);
                     
-                    // Base incentive
-                    const baseIncentive = BASE_INCENTIVE * monthMultiplier * marginFactor;
+                    // Alproean reward (base incentive)
+                    const alproeanGoalBulananReward = BASE_INCENTIVE * monthMultiplier * marginFactor;
                     
                     if (isBM) {
-                        // BM gets base + 50% bonus
-                        goalBulananIncentive = baseIncentive * 1.5;
+                        // BM has TWO components:
+                        // 1. Alproean reward (same as regular Alproean)
+                        // 2. BM bonus = 0.5 × Alproean reward
+                        
+                        const bmGoalBulananBonus = alproeanGoalBulananReward * 0.5;
+                        
+                        // Store separate components for BM
+                        emp.alproeanGoalBulananReward = alproeanGoalBulananReward;
+                        emp.bmGoalBulananBonus = bmGoalBulananBonus;
+                        
+                        // Total Goal Bulanan incentive for BM
+                        goalBulananIncentive = alproeanGoalBulananReward + bmGoalBulananBonus;
                     } else {
                         // Alproean gets base only
-                        goalBulananIncentive = baseIncentive;
+                        goalBulananIncentive = alproeanGoalBulananReward;
+                        emp.alproeanGoalBulananReward = alproeanGoalBulananReward;
                     }
                     
                     emp.goalBulananIncentive = goalBulananIncentive;
@@ -1350,18 +1361,74 @@ const IncentiveCalculator = {
             }
             
             // Compare Goal incentive vs Ops reward incentive and use higher
-            const opsRewardIncentive = emp.totalReward || 0;
+            // For BM, we need to compare component by component
+            const opsAlproeanReward = emp.alproeanReward || 0;
+            const opsBMReward = emp.bmReward || 0;
+            const opsRewardTotal = emp.amReward + opsAlproeanReward + opsBMReward;
             
-            if (goalBulananIncentive > opsRewardIncentive) {
-                emp.finalIncentive = goalBulananIncentive;
-                emp.incentiveType = 'Goal Bulanan';
-            } else {
-                emp.finalIncentive = opsRewardIncentive;
-                emp.incentiveType = 'Ops Reward';
+            let finalAlproeanReward = 0;
+            let finalBMReward = 0;
+            let finalAMReward = emp.amReward || 0;
+            
+            if (isBM) {
+                // Compare BM components separately
+                const goalAlproeanReward = emp.alproeanGoalBulananReward || 0;
+                const goalBMBonus = emp.bmGoalBulananBonus || 0;
+                
+                // Compare Alproean component: Goal vs Ops
+                if (goalAlproeanReward > opsAlproeanReward) {
+                    finalAlproeanReward = goalAlproeanReward;
+                    emp.alproeanIncentiveType = 'Goal Bulanan';
+                } else {
+                    finalAlproeanReward = opsAlproeanReward;
+                    emp.alproeanIncentiveType = 'Ops Reward';
+                }
+                
+                // Compare BM bonus component: Goal vs Ops
+                if (goalBMBonus > opsBMReward) {
+                    finalBMReward = goalBMBonus;
+                    emp.bmIncentiveType = 'Goal Bulanan';
+                } else {
+                    finalBMReward = opsBMReward;
+                    emp.bmIncentiveType = 'Ops Reward';
+                }
+                
+                emp.finalIncentive = finalAlproeanReward + finalBMReward;
+                
+                // Overall incentive type (if any component uses Goal Bulanan)
+                if (emp.alproeanIncentiveType === 'Goal Bulanan' || emp.bmIncentiveType === 'Goal Bulanan') {
+                    emp.incentiveType = 'Goal Bulanan';
+                } else {
+                    emp.incentiveType = 'Ops Reward';
+                }
+                
+            } else if (isAlproean) {
+                // Compare Alproean reward: Goal vs Ops
+                const goalAlproeanReward = emp.alproeanGoalBulananReward || 0;
+                
+                if (goalAlproeanReward > opsAlproeanReward) {
+                    finalAlproeanReward = goalAlproeanReward;
+                    emp.incentiveType = 'Goal Bulanan';
+                } else {
+                    finalAlproeanReward = opsAlproeanReward;
+                    emp.incentiveType = 'Ops Reward';
+                }
+                
+                emp.finalIncentive = finalAlproeanReward;
+                
+            } else if (isAM) {
+                // AM uses total comparison
+                if (goalBulananIncentive > opsRewardTotal) {
+                    emp.finalIncentive = goalBulananIncentive;
+                    emp.incentiveType = 'Goal Bulanan';
+                } else {
+                    emp.finalIncentive = opsRewardTotal;
+                    emp.incentiveType = 'Ops Reward';
+                }
             }
             
-            // Store both for comparison in export
-            emp.opsRewardIncentive = opsRewardIncentive;
+            // Store Ops reward for comparison in export
+            emp.opsRewardIncentive = opsRewardTotal;
             
             // Update total reward to use final incentive
             emp.totalReward = emp.finalIncentive;
