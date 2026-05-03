@@ -1249,6 +1249,7 @@ const IncentiveCalculator = {
         const BASE_INCENTIVE = 100000; // Rp 100,000
         
         // Group AMs by their areas to calculate AM incentives
+        // Use Outlet Mapping data to get ALL outlets under each AM (not just those with Goal Bulanan)
         const amAreas = {};
         
         this.data.outletMappingData.forEach(mapping => {
@@ -1258,10 +1259,14 @@ const IncentiveCalculator = {
             if (!amAreas[amName]) {
                 amAreas[amName] = {
                     amName: amName,
-                    outlets: [],
-                    totalOutlets: 0
+                    totalOutletsInMapping: 0,  // Total outlets assigned to AM in Mapping file
+                    outletsWithGoal: [],  // Outlets that have Goal Bulanan data
+                    outletsHitGoal: 0  // Count of outlets that hit their Goal Bulanan
                 };
             }
+            
+            // Count ALL outlets in mapping (this is the total outlet count for AM)
+            amAreas[amName].totalOutletsInMapping++;
             
             // Find Goal Bulanan for this outlet
             const outletGoalBulanan = this.findGoalBulananForOutlet(mapping.outlet);
@@ -1271,11 +1276,12 @@ const IncentiveCalculator = {
                 this.outletMatch(sales.outlet, mapping.outlet)
             );
             
+            // Track outlets with Goal Bulanan data
             if (outletGoalBulanan > 0 && salesData) {
                 const goalAchievement = (salesData.totalSales / outletGoalBulanan) * 100;
                 const goalHit = goalAchievement >= 100;
                 
-                amAreas[amName].outlets.push({
+                amAreas[amName].outletsWithGoal.push({
                     outletCode: mapping.outlet,
                     goalBulanan: outletGoalBulanan,
                     totalSales: salesData.totalSales,
@@ -1285,7 +1291,7 @@ const IncentiveCalculator = {
                 });
                 
                 if (goalHit) {
-                    amAreas[amName].totalOutlets++;
+                    amAreas[amName].outletsHitGoal++;
                 }
             }
         });
@@ -1305,22 +1311,27 @@ const IncentiveCalculator = {
             let marginFactor = 1.0;
             
             if (isAM) {
-                // AM Incentive: 100,000 × number of outlets × month multiplier × margin factor
+                // AM Incentive: 100,000 × number of outlets (from Mapping) × month multiplier × margin factor
                 const empName = this.toSafeString(emp.employee.employeeName);
                 const amArea = amAreas[empName];
                 
-                if (amArea && amArea.totalOutlets > 0 && emp.areaGoalBulananHit === 'YES') {
-                    // Calculate average GP margin for all outlets
-                    const avgGPMargin = amArea.outlets.reduce((sum, o) => sum + o.gpMargin, 0) / amArea.outlets.length;
+                if (amArea && amArea.totalOutletsInMapping > 0 && emp.areaGoalBulananHit === 'YES') {
+                    // Calculate average GP margin for outlets with Goal Bulanan data
+                    const avgGPMargin = amArea.outletsWithGoal.length > 0
+                        ? amArea.outletsWithGoal.reduce((sum, o) => sum + o.gpMargin, 0) / amArea.outletsWithGoal.length
+                        : 0;
                     marginFactor = this.getGPAdjustment(avgGPMargin);
                     
-                    // CORRECT ORDER: BASE × outlets × multiplier × marginFactor
-                    goalBulananIncentive = BASE_INCENTIVE * amArea.totalOutlets * monthMultiplier * marginFactor;
+                    // Use TOTAL outlets from Mapping file (not just those with Goal Bulanan)
+                    // CORRECT ORDER: BASE × total outlets in mapping × multiplier × marginFactor
+                    goalBulananIncentive = BASE_INCENTIVE * amArea.totalOutletsInMapping * monthMultiplier * marginFactor;
                     
                     emp.goalBulananIncentive = goalBulananIncentive;
-                    emp.goalBulananBase = BASE_INCENTIVE * amArea.totalOutlets * monthMultiplier;
+                    emp.goalBulananBase = BASE_INCENTIVE * amArea.totalOutletsInMapping * monthMultiplier;
                     emp.goalBulananMarginFactor = marginFactor;
                     emp.goalBulananMargin = avgGPMargin;
+                    emp.goalBulananTotalOutlets = amArea.totalOutletsInMapping;  // Store for debugging
+                    emp.goalBulananOutletsHit = amArea.outletsHitGoal;  // Store for debugging
                 }
             } else if (isBM || isAlproean) {
                 // BM and Alproean: ONLY their MAIN outlet (from Active List)
