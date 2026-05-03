@@ -1393,6 +1393,9 @@ const IncentiveCalculator = {
                     emp.bmIncentiveType = 'Ops Reward';
                 }
                 
+                // Update the actual reward fields with final values
+                emp.alproeanReward = finalAlproeanReward;
+                emp.bmReward = finalBMReward;
                 emp.finalIncentive = finalAlproeanReward + finalBMReward;
                 
                 // Overall incentive type (if any component uses Goal Bulanan)
@@ -1414,17 +1417,23 @@ const IncentiveCalculator = {
                     emp.incentiveType = 'Ops Reward';
                 }
                 
+                // Update the actual reward field with final value
+                emp.alproeanReward = finalAlproeanReward;
                 emp.finalIncentive = finalAlproeanReward;
                 
             } else if (isAM) {
                 // AM uses total comparison
                 if (goalBulananIncentive > opsRewardTotal) {
-                    emp.finalIncentive = goalBulananIncentive;
+                    finalAMReward = goalBulananIncentive;
                     emp.incentiveType = 'Goal Bulanan';
                 } else {
-                    emp.finalIncentive = opsRewardTotal;
+                    finalAMReward = opsRewardTotal;
                     emp.incentiveType = 'Ops Reward';
                 }
+                
+                // Update the actual reward field with final value
+                emp.amReward = finalAMReward;
+                emp.finalIncentive = finalAMReward;
             }
             
             // Store Ops reward for comparison in export
