@@ -2,6 +2,8 @@
  * Incentive Calculator Module
  * Calculates AM, BM, and Alproean incentives based on sales performance and GP margins
  * 
+ * VERSION: 4.0-GB (Goal Bulanan Enhanced)
+ * 
  * Features:
  * - Process 5 Excel files (Active Alproean, Full Alproean, Sales & GP, Personal Sales, Outlet Mapping)
  * - Calculate AM rewards (region-level + individual outlet rewards)
@@ -9,7 +11,10 @@
  * - Calculate Personal Alproean rewards (proportional distribution)
  * - Apply GP margin adjustments
  * - Export matched and unmatched results
+ * - Goal Bulanan incentive system with month multiplier
  */
+
+console.log('🎯 Incentive Calculator v4.0-GB loaded - Goal Bulanan Enhanced System Active');
 
 const IncentiveCalculator = {
     // Data storage
