@@ -2,7 +2,7 @@
  * Incentive Calculator Module
  * Calculates AM, BM, and Alproean incentives based on sales performance and GP margins
  * 
- * VERSION: 4.0-GB (Goal Bulanan Enhanced)
+ * VERSION: 4.1-GB (Goal Bulanan Enhanced)
  * 
  * Features:
  * - Process 5 Excel files (Active Alproean, Full Alproean, Sales & GP, Personal Sales, Outlet Mapping)
@@ -14,7 +14,7 @@
  * - Goal Bulanan incentive system with month multiplier
  */
 
-console.log('🎯 Incentive Calculator v4.0-GB loaded - Goal Bulanan Enhanced System Active');
+console.log('🎯 Incentive Calculator v4.1-GB loaded - Goal Bulanan Enhanced System Active');
 
 const IncentiveCalculator = {
     // Data storage
@@ -1460,6 +1460,7 @@ const IncentiveCalculator = {
                 
             } else if (isAM) {
                 // AM: Compare AM Goal Bulanan vs AM Ops Reward ONLY (not total)
+                // IMPORTANT: Don't replace amReward - keep both values visible
                 if (goalBulananIncentive > opsAMReward) {
                     finalAMReward = goalBulananIncentive;
                     emp.incentiveType = 'Goal Bulanan';
@@ -1468,8 +1469,8 @@ const IncentiveCalculator = {
                     emp.incentiveType = 'Ops Reward';
                 }
                 
-                // Update the actual reward field with final value
-                emp.amReward = finalAMReward;
+                // DON'T overwrite emp.amReward - keep original Ops reward visible
+                // Store final incentive separately
                 emp.finalIncentive = finalAMReward;
             }
             
@@ -1679,6 +1680,7 @@ const IncentiveCalculator = {
                     areaGoalBulananHit: emp.areaGoalBulananHit || '',  // For AM only
                     areaGoalBulananTarget: emp.areaGoalBulananTarget || 0,  // For AM only
                     amTotalOutlets: 0,  // For AM outlet count remark
+                    amAreaGPMargin: 0,  // For AM weighted area GP margin
                     amReward: 0,
                     bmReward: 0,
                     alproeanReward: 0,
@@ -1704,6 +1706,8 @@ const IncentiveCalculator = {
                 aggregatedResults[key].areaGoalBulananTarget = emp.areaGoalBulananTarget || 0;
                 // Track AM outlet count for remark (from goalBulananTotalOutlets)
                 aggregatedResults[key].amTotalOutlets = emp.goalBulananTotalOutlets || 0;
+                // Track AM weighted area GP margin (from goalBulananMargin)
+                aggregatedResults[key].amAreaGPMargin = emp.goalBulananMargin || 0;
             }
             
             // Sum personal sales
@@ -1764,11 +1768,17 @@ const IncentiveCalculator = {
                 ? `${this.formatCurrency(emp.areaGoalBulananTarget)}${emp.amTotalOutlets > 0 ? ` [${emp.amTotalOutlets} outlets]` : ''}`
                 : '';
             
-            // Remark for BM & Alproean main outlet with GP margin (no remark for AM)
+            // Remark for BM & Alproean main outlet with GP margin
+            // For AM: show total outlets and weighted area GP margin
             const role = (emp.role || '').toUpperCase();
             const isAM = role.includes('AREA MANAGER') && !role.includes('BRANCH');
             let remark = '';
-            if (!isAM && emp.mainOutlet) {
+            if (isAM && emp.amTotalOutlets > 0) {
+                // AM remark shows total outlets and weighted area GP margin
+                const areaGPMargin = emp.amAreaGPMargin ? emp.amAreaGPMargin.toFixed(2) + '%' : 'N/A';
+                remark = `Total Outlets: ${emp.amTotalOutlets} | Area GP: ${areaGPMargin}`;
+            } else if (!isAM && emp.mainOutlet) {
+                // BM/Alproean remark shows main outlet and its GP margin
                 const gpMargin = emp.mainOutletGPMargin ? emp.mainOutletGPMargin.toFixed(2) + '%' : 'N/A';
                 remark = `Main Outlet: ${emp.mainOutlet} (GP: ${gpMargin})`;
             }
