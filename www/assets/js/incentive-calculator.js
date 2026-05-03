@@ -1056,6 +1056,7 @@ const IncentiveCalculator = {
                 : 0;
             
             // Determine area percentage (UPDATED RATES)
+            // CRITICAL: Only give reward if achievement >= 80%
             let areaPercentage = 0;
             if (areaAchievement >= 100) {
                 areaPercentage = 0.3;    // 0.3% (increased from 0.15%)
@@ -1064,6 +1065,7 @@ const IncentiveCalculator = {
             } else if (areaAchievement >= 80) {
                 areaPercentage = 0.15;   // 0.15% (increased from 0.075%)
             }
+            // If areaAchievement < 80%, areaPercentage remains 0
             
             // Calculate area GP margin (Total GP / Total Revenue)
             const areaGPMargin = amArea.totalSales > 0 
@@ -1670,6 +1672,7 @@ const IncentiveCalculator = {
                     goalBulananTargets: [],
                     areaGoalBulananHit: emp.areaGoalBulananHit || '',  // For AM only
                     areaGoalBulananTarget: emp.areaGoalBulananTarget || 0,  // For AM only
+                    amTotalOutlets: 0,  // For AM outlet count remark
                     amReward: 0,
                     bmReward: 0,
                     alproeanReward: 0,
@@ -1693,6 +1696,8 @@ const IncentiveCalculator = {
             if (emp.areaGoalBulananHit) {
                 aggregatedResults[key].areaGoalBulananHit = emp.areaGoalBulananHit;
                 aggregatedResults[key].areaGoalBulananTarget = emp.areaGoalBulananTarget || 0;
+                // Track AM outlet count for remark (from goalBulananTotalOutlets)
+                aggregatedResults[key].amTotalOutlets = emp.goalBulananTotalOutlets || 0;
             }
             
             // Sum personal sales
@@ -1750,7 +1755,7 @@ const IncentiveCalculator = {
             // Area Goal Bulanan (for AM only)
             const areaGoalBulananDisplay = emp.areaGoalBulananHit || '';
             const areaGoalBulananTargetDisplay = emp.areaGoalBulananTarget > 0 
-                ? this.formatCurrency(emp.areaGoalBulananTarget) 
+                ? `${this.formatCurrency(emp.areaGoalBulananTarget)}${emp.amTotalOutlets > 0 ? ` [${emp.amTotalOutlets} outlets]` : ''}`
                 : '';
             
             // Remark for BM & Alproean main outlet with GP margin (no remark for AM)
