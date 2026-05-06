@@ -319,12 +319,29 @@
             'September': 9, 'October': 10, 'November': 11, 'December': 12
         };
         
-        // Determine year for each month (2026 for Jan-Apr, 2025 for rest)
+        const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 
+                             'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        // Get current date info
+        function getCurrentDateInfo() {
+            const now = new Date();
+            const currentMonth = MONTH_NAMES[now.getMonth()];
+            const currentYear = now.getFullYear();
+            return { currentMonth, currentYear, monthIndex: now.getMonth() };
+        }
+        
+        // Determine year for each month dynamically based on current date
         function getYearForMonth(month) {
-            if (month === 'January' || month === 'February' || month === 'March' || month === 'April') {
-                return 2026;
+            const { currentMonth, currentYear, monthIndex } = getCurrentDateInfo();
+            const monthNum = MONTH_ORDER[month];
+            const currentMonthNum = monthIndex + 1;
+            
+            // If the month number is greater than current month, it's likely from last year
+            // If the month number is less than or equal to current month, it's likely from this year
+            if (monthNum > currentMonthNum) {
+                return currentYear - 1;
             }
-            return 2025;
+            return currentYear;
         }
         
         // Format month with year
@@ -875,14 +892,26 @@
             const uniqueOutlets = new Set(allData.map(item => item.outlet));
             document.getElementById('outletsAffected').textContent = uniqueOutlets.size.toLocaleString();
             
-            const months = sortMonths([...new Set(allData.map(item => item.month))].filter(m => m !== 'N/A'));
-            const latestMonth = months[0] || 'N/A';
-            document.getElementById('currentMonth').textContent = latestMonth !== 'N/A' ? formatMonthWithYear(latestMonth) : 'N/A';
+            // Always show current month, even if no data exists yet
+            const { currentMonth } = getCurrentDateInfo();
+            document.getElementById('currentMonth').textContent = formatMonthWithYear(currentMonth);
         }
 
         // Populate filter dropdowns
         function populateFilters() {
-            const months = sortMonths([...new Set(allData.map(item => item.month))].filter(m => m !== 'N/A'));
+            // Get months from data
+            let months = [...new Set(allData.map(item => item.month))].filter(m => m !== 'N/A');
+            
+            // Always include current month (even if no data exists yet)
+            const { currentMonth } = getCurrentDateInfo();
+            if (!months.includes(currentMonth)) {
+                months.push(currentMonth);
+                console.log(`📅 Added current month (${currentMonth}) to filters (no data yet)`);
+            }
+            
+            // Sort months chronologically
+            months = sortMonths(months);
+            
             const outlets = [...new Set(allData.map(item => item.outlet))].filter(o => o !== 'N/A').sort();
             
             const monthFilter = document.getElementById('monthFilter');
@@ -931,7 +960,19 @@
 
         // Render monthly loss sales counts
         function renderMonthlyCounts() {
-            const months = sortMonths([...new Set(processedData.map(item => item.month))]);
+            // Get months from data
+            let months = [...new Set(processedData.map(item => item.month))];
+            
+            // Always include current month (even if no data exists yet)
+            const { currentMonth } = getCurrentDateInfo();
+            if (!months.includes(currentMonth)) {
+                months.push(currentMonth);
+                console.log(`📅 Added current month (${currentMonth}) to monthly count cards (no data yet)`);
+            }
+            
+            // Sort months chronologically
+            months = sortMonths(months);
+            
             const container = document.getElementById('monthlyCountsContainer');
             container.innerHTML = '';
             
@@ -981,7 +1022,19 @@
         
         // Render monthly top 10 tables
         function renderMonthlyTables() {
-            const months = sortMonths([...new Set(processedData.map(item => item.month))]);
+            // Get months from data
+            let months = [...new Set(processedData.map(item => item.month))];
+            
+            // Always include current month (even if no data exists yet)
+            const { currentMonth } = getCurrentDateInfo();
+            if (!months.includes(currentMonth)) {
+                months.push(currentMonth);
+                console.log(`📅 Added current month (${currentMonth}) to monthly tables (no data yet)`);
+            }
+            
+            // Sort months chronologically
+            months = sortMonths(months);
+            
             const container = document.getElementById('monthlyTablesContainer');
             container.innerHTML = '';
             
@@ -995,6 +1048,16 @@
                 monthTitle.className = 'text-lg font-bold text-gray-800 mb-3';
                 monthTitle.innerHTML = `<span class="badge badge-primary">${formatMonthWithYear(month)}</span> - Top 10 Products`;
                 monthSection.appendChild(monthTitle);
+                
+                // Show "No data yet" message for months with no data
+                if (monthData.length === 0) {
+                    const noDataMsg = document.createElement('p');
+                    noDataMsg.className = 'text-gray-500 italic py-4 px-4 bg-gray-50 rounded';
+                    noDataMsg.textContent = 'No loss sales data recorded for this month yet.';
+                    monthSection.appendChild(noDataMsg);
+                    container.appendChild(monthSection);
+                    return;
+                }
                 
                 const table = document.createElement('table');
                 table.className = 'w-full';
