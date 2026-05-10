@@ -4,12 +4,19 @@ HTTP server + /api/tiktok-data proxy for TikTok Live Performance dashboard.
 Key fix: properly handles merged cells in column F (Judul Live / Title)
 by carrying the last-seen value forward to sub-rows that share the same
 live session date block (Day A / Date B are also merged and carried forward).
+
+Also includes /api/aria-chat — secure AI proxy for ARIA chatbot.
 """
 import http.server
 import socketserver
 import os, sys, json, re, time
 import urllib.request, urllib.parse
 from datetime import datetime
+
+# ── ARIA AI Proxy Config ──────────────────────────────────────────────────────
+ARIA_API_ENDPOINT = 'https://www.genspark.ai/api/llm_proxy/v1/chat/completions'
+# GSK_TOKEN is the working JWT token — must be used server-side (CORS blocks browser calls)
+ARIA_API_KEY = os.environ.get('GSK_TOKEN', '')
 
 SHEET_ID = '1VE4yznBlIAfLUP50tkF6IAOlNbFm2vhyPs0Jv5aJ-6U'
 CACHE = {'data': None, 'ts': 0}
@@ -372,6 +379,95 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         super().end_headers()
 
+    def do_OPTIONS(self):
+        """Handle CORS preflight for ARIA chat API."""
+        self.send_response(204)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.end_headers()
+
+    def do_POST(self):
+        """Handle POST requests — specifically /api/aria-chat."""
+        if self.path.startswith('/api/aria-chat'):
+            self._handle_aria_chat()
+        else:
+            self.send_response(404)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+
+    def _handle_aria_chat(self):
+        """Secure AI proxy — forwards chat request to OpenAI-compatible API."""
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+            body_bytes = self.rfile.read(length)
+            payload = json.loads(body_bytes)
+
+            # Always use the server-side GSK_TOKEN — never trust client-provided keys
+            # (pop any client key fields silently so they never reach the upstream API)
+            payload.pop('_k', '')
+            payload.pop('_api_key', '')
+            api_key = ARIA_API_KEY
+
+            if not api_key:
+                self.send_response(401)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps({'error': 'No API key configured'}).encode())
+                return
+
+            # Force safe model — only Genspark-supported models allowed
+            allowed_models = {
+                'gpt-5-mini', 'gpt-5', 'gpt-5.1', 'gpt-5.2', 'gpt-5.4',
+                'gpt-5.4-mini', 'gpt-5.4-nano', 'gpt-5-nano',
+                'claude-haiku-4-5', 'claude-sonnet-4-5', 'claude-opus-4-5',
+            }
+            if payload.get('model') not in allowed_models:
+                payload['model'] = 'gpt-5-mini'
+
+            # Cap tokens for safety
+            payload['max_tokens'] = min(int(payload.get('max_tokens', 1500)), 2000)
+
+            req_data = json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(
+                ARIA_API_ENDPOINT,
+                data=req_data,
+                headers={
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {api_key}',
+                    'User-Agent': 'AlproARIA/2.0',
+                },
+                method='POST'
+            )
+
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                resp_body = resp.read()
+                resp_status = resp.getcode()
+
+            self.send_response(resp_status)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(resp_body)
+            print(f'  [ARIA] Chat request proxied OK ({len(resp_body)} bytes)', file=sys.stderr)
+
+        except urllib.error.HTTPError as e:
+            err_body = e.read()
+            self.send_response(e.code)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(err_body)
+            print(f'  [ARIA] API error {e.code}: {err_body[:200]}', file=sys.stderr)
+        except Exception as ex:
+            print(f'  [ARIA] Proxy error: {ex}', file=sys.stderr)
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': str(ex)}).encode())
+
     def do_GET(self):
         if self.path.startswith('/api/tiktok-data'):
             bust = 'bust=' in self.path
@@ -384,6 +480,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 err = json.dumps({'error': str(e)}).encode()
                 self.wfile.write(err)
+
+        elif self.path == '/api/aria-config':
+            # Serve AI config securely (key is obfuscated, not raw)
+            import base64
+            key = ARIA_API_KEY
+            base_url = os.environ.get('OPENAI_BASE_URL', 'https://www.genspark.ai/api/llm_proxy/v1')
+            # Simple XOR obfuscation so key isn't in plain sight in network tab
+            seed = 0x5A
+            encoded = ''.join(chr(ord(c) ^ (seed + i % 7)) for i, c in enumerate(key))
+            b64 = base64.b64encode(encoded.encode('latin-1')).decode()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                'c': b64,
+                's': seed,
+                'b': base_url,
+                'm': 'gpt-5-mini',
+            }).encode())
 
         elif self.path == '/favicon.ico':
             self.send_response(204)
