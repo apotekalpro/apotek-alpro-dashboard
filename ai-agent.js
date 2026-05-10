@@ -284,13 +284,14 @@ AI Strategy Recommendations:
 
     // ── Role Helpers ──────────────────────────────────────────────────────────
     function isAdmin() {
-        return (window.currentUserRole || '').toLowerCase() === 'admin';
+        const role = (window.currentUserRole || '').toLowerCase();
+        return role === 'admin' || role === 'superadmin';
     }
 
     function getUserDeptAccess() {
         try {
             const role = (window.currentUserRole || '').toLowerCase();
-            if (role === 'admin' || role === 'chief') return Object.keys(DEPARTMENTS);
+            if (role === 'admin' || role === 'superadmin' || role === 'chief') return Object.keys(DEPARTMENTS);
             if (window.department_accessConfig && window.department_accessConfig[role])
                 return window.department_accessConfig[role];
         } catch (e) { /* ignore */ }
@@ -342,7 +343,11 @@ AI Strategy Recommendations:
         const c = document.getElementById('alpro-ai-container');
         if (c) { c.style.display = ''; c.classList.add('aria-logged-in'); }
         renderDeptChips();
+        // Immediate check + retries to handle timing where window.currentUserRole
+        // may not yet be populated when the login transition fires.
         refreshSettingsVisibility();
+        const _retryDelays = [200, 500, 1000, 2000, 3500];
+        _retryDelays.forEach(ms => setTimeout(refreshSettingsVisibility, ms));
     }
 
     function hideARIA() {
@@ -563,7 +568,11 @@ Your personality:
     // ── Admin-only settings visibility ────────────────────────────────────────
     function refreshSettingsVisibility() {
         const cogBtn = document.getElementById('alpro-settings-cog-btn');
-        if (cogBtn) cogBtn.style.display = isAdmin() ? '' : 'none';
+        if (!cogBtn) return;
+        const visible = isAdmin();
+        cogBtn.style.display = visible ? '' : 'none';
+        // Debug trace — remove once confirmed working
+        console.debug('[ARIA] refreshSettingsVisibility → role:', window.currentUserRole, '| isAdmin:', visible);
     }
 
     // ── Send message ──────────────────────────────────────────────────────────
@@ -882,6 +891,8 @@ Your personality:
         onLogin()  { showARIA(); },
         onLogout() { hideARIA(); },
         getState() { return { isOpen: state.isOpen, currentDept: state.currentDept, soundEnabled: state.soundEnabled }; },
+        // Emergency console fallback: window.ARIA.refreshSettings()
+        refreshSettings() { refreshSettingsVisibility(); },
     };
 
     // ── Tab hook ──────────────────────────────────────────────────────────────
