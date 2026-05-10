@@ -7722,6 +7722,7 @@
                 displayGrandOpeningData();
                 
                 grandOpeningData.lastFetchTime = new Date();
+                window.grandOpeningData = grandOpeningData; // expose to ARIA
                 console.log('✅ Grand Opening data loaded and displayed successfully');
 
             } catch (error) {
@@ -8193,6 +8194,7 @@
                 const csv  = await resp.text();
                 clAllUpdates = parseCLCSV(csv);
                 clHasLoaded  = true;
+                window.clAllUpdates = clAllUpdates; // expose to ARIA
 
                 updateCLCountBadges(clAllUpdates);
                 clFiltered = clAllUpdates;
@@ -8589,6 +8591,7 @@
                 powerlifeData.products = products;
                 powerlifeData.filteredProducts = products;
                 powerlifeData.lastFetchTime = new Date();
+                window.powerlifeData = powerlifeData; // expose to ARIA
                 
                 console.log(`✅ Parsed ${products.length} products`);
                 console.log('📦 First 3 products:', products.slice(0, 3));
@@ -13542,6 +13545,7 @@ Ready for deployment! 🚀
             if (stored) {
                 try {
                     outletsData = JSON.parse(stored);
+                    window.outletsData = outletsData; // expose to ARIA
                     renderOutletsTable();
                     updateStatistics();
                     updateLeaderboard();
@@ -14717,6 +14721,7 @@ Ready for deployment! 🚀
                     console.log('🔄 Calling updateLeaderboard()...');
                     updateLeaderboard();
                     
+                    window.outletsData = outletsData; // expose to ARIA (Supabase path)
                     console.log('✅ Dashboard updated with', outletsData.length, 'outlets');
                 } else {
                     console.warn('⚠️ No data returned from Supabase query');
@@ -15043,6 +15048,7 @@ Ready for deployment! 🚀
                 
                 pshProjectData = pshData;
                 pshFilteredData = [...pshProjectData];
+                window.pshProjectData = pshProjectData; // expose to ARIA
                 
                 console.log('✅ PSH Data loaded:', pshProjectData.length, 'outlets');
                 
