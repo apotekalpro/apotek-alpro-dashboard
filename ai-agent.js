@@ -382,13 +382,200 @@ AI Strategy Recommendations:
         );
     }
 
+    // ── Live Data Scraper ─────────────────────────────────────────────────────
+    // Reads every exposed window data object at call time and formats them into
+    // a single text block injected into the Gemini system prompt.
+    // Each section is wrapped in a try/catch so one broken source never kills all.
+    function gatherLiveData() {
+        const sections = [];
+        const fmt  = n  => (n && n > 0) ? 'Rp ' + Math.round(n).toLocaleString('id-ID') : 'N/A';
+        const pct  = n  => (typeof n === 'number') ? n.toFixed(1) + '%' : 'N/A';
+        const safe = v  => (v && String(v).trim()) ? String(v).trim() : 'N/A';
+
+        // ── OPERATIONS: AM Tracker ────────────────────────────────────────────
+        // Fields: outlet, outletName, amName, totalUpToDate, forecastSalesEndOfMonth,
+        //         growthPercent, forecastPercent, monthlyTarget
+        try {
+            const d = window.amTracker?.performanceData;
+            if (d?.length) {
+                sections.push(
+                    `=== OPERATIONS: AM TRACKER — Outlet Sales & Growth (${d.length} outlets) ===\n` +
+                    `Format: OutletCode | OutletName | AM | SalesMTD | ForecastEOM | Growth% | Forecast% | MonthlyTarget\n` +
+                    d.map(o =>
+                        `  • ${safe(o.outlet)} | ${safe(o.outletName)} | AM:${safe(o.amName)} | ` +
+                        `MTD:${fmt(o.totalUpToDate)} | EOM:${fmt(o.forecastSalesEndOfMonth)} | ` +
+                        `Grow:${pct(o.growthPercent)} | Fcst:${pct(o.forecastPercent)} | Tgt:${fmt(o.monthlyTarget)}`
+                    ).join('\n')
+                );
+            }
+        } catch(e) { /* silent */ }
+
+        // ── OPERATIONS: BM Tracker ────────────────────────────────────────────
+        // Fields: outlet, outletName, amName, clanName, bmName, bmType,
+        //         revenue, transQty, forecastSales, goalBulanan, vsGoalBulanan,
+        //         targetJuni, vsTargetJuni
+        try {
+            const d = window.bmTracker?.performanceData;
+            if (d?.length) {
+                sections.push(
+                    `=== OPERATIONS: BM TRACKER — Outlet Revenue & Goal Achievement (${d.length} outlets) ===\n` +
+                    `Format: OutletCode | OutletName | AM | Clan | BM(Type) | RevenueMTD | Transactions | ForecastEOM | GoalBulanan | vsGoal% | Target | vsTarget%\n` +
+                    d.map(o =>
+                        `  • ${safe(o.outlet)} | ${safe(o.outletName)} | AM:${safe(o.amName)} | Clan:${safe(o.clanName)} | ` +
+                        `BM:${safe(o.bmName)}(${safe(o.bmType)}) | Rev:${fmt(o.revenue)} | ` +
+                        `Trx:${o.transQty > 0 ? o.transQty.toLocaleString('id-ID') : 'N/A'} | ` +
+                        `EOM:${fmt(o.forecastSales)} | Goal:${fmt(o.goalBulanan)} | vsGoal:${pct(o.vsGoalBulanan)} | ` +
+                        `Tgt:${fmt(o.targetJuni)} | vsTgt:${pct(o.vsTargetJuni)}`
+                    ).join('\n')
+                );
+            }
+        } catch(e) { /* silent */ }
+
+        // ── OPERATIONS: Outlet Google Reviews ────────────────────────────────
+        // Fields: name, rating, reviewCount, status, lastChecked
+        try {
+            const d = window.outletsData;
+            if (d?.length) {
+                sections.push(
+                    `=== OPERATIONS: OUTLET GOOGLE REVIEWS (${d.length} outlets) ===\n` +
+                    `Format: OutletName | Rating | ReviewCount | Status | LastChecked\n` +
+                    d.map(o =>
+                        `  • ${safe(o.name)} | Rating:${o.rating || 'N/A'} | Reviews:${o.reviewCount || 0} | ` +
+                        `Status:${safe(o.status)} | Checked:${o.lastChecked ? new Date(o.lastChecked).toLocaleDateString('en-GB') : 'N/A'}`
+                    ).join('\n')
+                );
+            }
+        } catch(e) { /* silent */ }
+
+        // ── STRATEGY: PSH Bull Eye Project Data ──────────────────────────────
+        // Fields: outletCode, outletName, baseline{revenue,trano,psh},
+        //         month1..month3, latestMonth{revenue,trano,psh}
+        try {
+            const d = window.pshProjectData;
+            if (d?.length) {
+                sections.push(
+                    `=== STRATEGY: PSH BULL EYE — Outlet Project Performance (${d.length} outlets) ===\n` +
+                    `Format: OutletCode | OutletName | BaselineRev | BaselineTrx | BaselinePSH | LatestRev | LatestTrx | LatestPSH\n` +
+                    d.map(o =>
+                        `  • ${safe(o.outletCode)} | ${safe(o.outletName)} | ` +
+                        `BaseRev:${fmt(o.baseline?.revenue)} | BaseTrx:${o.baseline?.trano || 0} | BasePSH:${o.baseline?.psh?.toFixed(1) || 'N/A'} | ` +
+                        `LatestRev:${fmt(o.latestMonth?.revenue)} | LatestTrx:${o.latestMonth?.trano || 0} | LatestPSH:${o.latestMonth?.psh?.toFixed(1) || 'N/A'}`
+                    ).join('\n')
+                );
+            }
+        } catch(e) { /* silent */ }
+
+        // ── SGM: Grand Opening Store Data ─────────────────────────────────────
+        // Fields: outletName, group, goPeriod, city, province + performance metrics
+        try {
+            const d = window.grandOpeningData?.storeData;
+            if (d?.length) {
+                sections.push(
+                    `=== SGM: GRAND OPENING STORE DATA (${d.length} stores) ===\n` +
+                    `Format: OutletName | Group | GOPeriod | City | Province\n` +
+                    d.slice(0, 100).map(o =>  // cap at 100 to avoid token overflow
+                        `  • ${safe(o.outletName)} | Group:${safe(o.group)} | Period:${safe(o.goPeriod)} | ` +
+                        `${safe(o.city)}, ${safe(o.province)}`
+                    ).join('\n') +
+                    (d.length > 100 ? `\n  ... and ${d.length - 100} more stores` : '')
+                );
+            }
+        } catch(e) { /* silent */ }
+
+        // ── POWERLIFE: Product SKU Performance ───────────────────────────────
+        // Fields: itemCode, itemName, division, currentMonthRevenue, prevMonthRevenue,
+        //         growthPercent, currentMonthQty, threeMonthAvgRevenue
+        try {
+            const d = window.powerlifeData?.products;
+            if (d?.length) {
+                const month = window.powerlifeData?.currentMonth || 'Current Month';
+                // Sort by currentMonthRevenue desc, cap at 150 rows for token budget
+                const sorted = [...d].sort((a,b) => b.currentMonthRevenue - a.currentMonthRevenue);
+                sections.push(
+                    `=== POWERLIFE: SKU PERFORMANCE — ${month} (${d.length} SKUs, showing top by revenue) ===\n` +
+                    `Format: ItemCode | ItemName | Division | CurrMonthRev | PrevMonthRev | Growth% | CurrQty | 3MonthAvgRev\n` +
+                    sorted.slice(0, 150).map(o =>
+                        `  • ${safe(o.itemCode)} | ${safe(o.itemName)} | Div:${safe(o.division)} | ` +
+                        `CurrRev:${fmt(o.currentMonthRevenue)} | PrevRev:${fmt(o.prevMonthRevenue)} | ` +
+                        `Grow:${pct(o.growthPercent)} | Qty:${o.currentMonthQty?.toLocaleString('id-ID') || 'N/A'} | ` +
+                        `3MoAvg:${fmt(o.threeMonthAvgRevenue)}`
+                    ).join('\n') +
+                    (sorted.length > 150 ? `\n  ... and ${sorted.length - 150} more SKUs` : '')
+                );
+            }
+        } catch(e) { /* silent */ }
+
+        // ── POWERLIFE: Consumer Lab Updates ──────────────────────────────────
+        // Fields: section, title, date, description, category
+        try {
+            const d = window.clAllUpdates;
+            if (d?.length) {
+                sections.push(
+                    `=== POWERLIFE: CONSUMER LAB UPDATES (${d.length} entries) ===\n` +
+                    `Format: Section | Title | Date | Category\n` +
+                    d.slice(0, 80).map(o =>
+                        `  • [${safe(o.section)}] ${safe(o.title)} | Date:${safe(o.date)} | Cat:${safe(o.category)}`
+                    ).join('\n') +
+                    (d.length > 80 ? `\n  ... and ${d.length - 80} more entries` : '')
+                );
+            }
+        } catch(e) { /* silent */ }
+
+        // ── WAREHOUSE APD: Inventory by Category ─────────────────────────────
+        // window._wpdCatData: { [category]: {rp, qty, skuCount, lowStock, oos} }
+        // window._wpdHighStock: array of high-stock SKUs
+        try {
+            const catData = window._wpdCatData;
+            if (catData && Object.keys(catData).length > 0) {
+                const cats = Object.entries(catData)
+                    .sort((a,b) => b[1].rp - a[1].rp)
+                    .map(([cat, v]) =>
+                        `  • ${cat} | StockRp:${fmt(v.rp)} | Qty:${v.qty?.toLocaleString('id-ID')} | SKUs:${v.skuCount} | ` +
+                        `LowStock(AA/A/B/C):${v.lowStock.AA}/${v.lowStock.A}/${v.lowStock.B}/${v.lowStock.C} | ` +
+                        `OOS(AA/A/B/C):${v.oos.AA}/${v.oos.A}/${v.oos.B}/${v.oos.C}`
+                    ).join('\n');
+                sections.push(
+                    `=== WAREHOUSE APD: INVENTORY PARETO BY CATEGORY ===\n` +
+                    `Format: Category | StockValue(Rp) | TotalQty | SKUCount | LowStockByGrade | OOSByGrade\n` +
+                    cats
+                );
+            }
+            const hs = window._wpdHighStock;
+            if (hs?.length) {
+                sections.push(
+                    `=== WAREHOUSE APD: HIGH STOCK ITEMS — MOI > 3 months (${hs.length} SKUs) ===\n` +
+                    `Format: ItemCode | ItemName | Category | Grade | QtyOnHand | QtyOnOrder | ReorderPoint | MOI\n` +
+                    hs.slice(0, 80).map(o =>
+                        `  • ${safe(o.itemCode)} | ${safe(o.itemName)} | Cat:${safe(o.cat)} | Grade:${safe(o.grade)} | ` +
+                        `OnHand:${o.U?.toLocaleString('id-ID')} | OnOrder:${o.V?.toLocaleString('id-ID')} | ` +
+                        `Reorder:${o.R?.toLocaleString('id-ID')} | MOI:${o.moi?.toFixed(1)}mo`
+                    ).join('\n') +
+                    (hs.length > 80 ? `\n  ... and ${hs.length - 80} more` : '')
+                );
+            }
+        } catch(e) { /* silent */ }
+
+        if (sections.length === 0) {
+            return '\n\n[NOTE: Live dashboard data not yet loaded — user may need to open the relevant tab first to trigger data fetch.]';
+        }
+
+        return (
+            '\n\n--- LIVE DASHBOARD DATA — use exact figures below to answer directly ---\n' +
+            `Data snapshot taken: ${new Date().toLocaleTimeString('en-GB')}\n` +
+            `Sections available: ${sections.length}\n\n` +
+            sections.join('\n\n') +
+            '\n--- END LIVE DATA ---'
+        );
+    }
+
     // ── System Prompt ─────────────────────────────────────────────────────────
     function buildSystemPrompt(deptId) {
-        const dept        = DEPARTMENTS[deptId] || DEPARTMENTS.all;
-        const userName    = window.currentUserName || window.currentUser || 'Team Member';
-        const userRole    = window.currentUserRole || 'user';
-        const dateStr     = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-        const accessList  = getUserDeptAccess().filter(id => id !== 'all').map(id => DEPARTMENTS[id]?.name || id).join(', ') || 'None';
+        const dept       = DEPARTMENTS[deptId] || DEPARTMENTS.all;
+        const userName   = window.currentUserName || window.currentUser || 'Team Member';
+        const userRole   = window.currentUserRole || 'user';
+        const dateStr    = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+        const accessList = getUserDeptAccess().filter(id => id !== 'all').map(id => DEPARTMENTS[id]?.name || id).join(', ') || 'None';
+        const liveData   = gatherLiveData();
 
         const base = `You are ARIA (Alpro Research & Intelligence Agent), the official AI assistant for the Apotek Alpro Executive Dashboard — a leading pharmacy chain in Indonesia.
 
@@ -396,14 +583,18 @@ Current User: ${userName} (Role: ${userRole})
 Today: ${dateStr}
 User's Authorized Departments: ${accessList}
 
-CRITICAL RULE: Only provide information and strategies for the user's authorized departments listed above. Politely refuse any questions about departments outside their access.
+CRITICAL RULES:
+1. You have been given LIVE DASHBOARD DATA below — use those exact figures to answer questions directly. Do NOT say "check the dashboard" or redirect users. Answer with the real numbers.
+2. When asked about a specific outlet, find it in the data and quote the exact figures.
+3. When comparing outlets, rank them from the data and present the results.
+4. Only provide information for the user's authorized departments listed above.
+5. If data for a specific metric is genuinely not in the live data provided, say "that metric is not in the current data snapshot" — do not redirect to the dashboard.
 
 Your personality:
-- Professional, sharp, data-focused
-- Speak in clear English with occasional Bahasa Indonesia terms when appropriate
-- Structure responses with headers, bullet points, and actionable steps
-- Keep responses under 350 words unless a detailed explanation is required
-- NEVER make up specific numbers — say "check the dashboard for current figures"`;
+- Direct, data-first — lead with numbers, then analysis
+- Professional, sharp; occasional Bahasa Indonesia terms are fine
+- Structure with headers and bullet points
+- Keep under 400 words unless a detailed breakdown is needed${liveData}`;
 
         if (deptId !== 'all' && dept.aiStrategy) {
             const userAccess = getUserDeptAccess();

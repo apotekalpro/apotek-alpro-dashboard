@@ -7722,6 +7722,7 @@
                 displayGrandOpeningData();
                 
                 grandOpeningData.lastFetchTime = new Date();
+                window.grandOpeningData = grandOpeningData; // expose to ARIA
                 console.log('✅ Grand Opening data loaded and displayed successfully');
 
             } catch (error) {
@@ -8193,6 +8194,7 @@
                 const csv  = await resp.text();
                 clAllUpdates = parseCLCSV(csv);
                 clHasLoaded  = true;
+                window.clAllUpdates = clAllUpdates; // expose to ARIA
 
                 updateCLCountBadges(clAllUpdates);
                 clFiltered = clAllUpdates;
@@ -8589,6 +8591,7 @@
                 powerlifeData.products = products;
                 powerlifeData.filteredProducts = products;
                 powerlifeData.lastFetchTime = new Date();
+                window.powerlifeData = powerlifeData; // expose to ARIA
                 
                 console.log(`✅ Parsed ${products.length} products`);
                 console.log('📦 First 3 products:', products.slice(0, 3));
@@ -12166,6 +12169,7 @@
                 return `<span class="text-gray-500 mr-2 font-medium">${rank}</span>`;
             }
         };
+        window.amTracker = amTracker; // expose to ARIA
 
         // Elite BM Performance Tracker Namespace - All functions isolated
         const bmTracker = {
@@ -12763,6 +12767,7 @@
                 return `<span class="text-gray-500 font-medium">${rank}</span>`;
             }
         };
+        window.bmTracker = bmTracker; // expose to ARIA
 
         // ==============================================
         // JWT AUTHENTICATION SYSTEM - Phase 1 & 2
@@ -13540,6 +13545,7 @@ Ready for deployment! 🚀
             if (stored) {
                 try {
                     outletsData = JSON.parse(stored);
+                    window.outletsData = outletsData; // expose to ARIA
                     renderOutletsTable();
                     updateStatistics();
                     updateLeaderboard();
@@ -14715,6 +14721,7 @@ Ready for deployment! 🚀
                     console.log('🔄 Calling updateLeaderboard()...');
                     updateLeaderboard();
                     
+                    window.outletsData = outletsData; // expose to ARIA (Supabase path)
                     console.log('✅ Dashboard updated with', outletsData.length, 'outlets');
                 } else {
                     console.warn('⚠️ No data returned from Supabase query');
@@ -15041,6 +15048,7 @@ Ready for deployment! 🚀
                 
                 pshProjectData = pshData;
                 pshFilteredData = [...pshProjectData];
+                window.pshProjectData = pshProjectData; // expose to ARIA
                 
                 console.log('✅ PSH Data loaded:', pshProjectData.length, 'outlets');
                 
