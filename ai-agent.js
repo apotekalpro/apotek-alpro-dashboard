@@ -11,8 +11,8 @@
     const AGENT_CONFIG = {
         name: 'ARIA',
         fullName: 'Alpro AI Research & Intelligence Agent',
-        version: '2.2',
-        model: 'gemini-2.0-flash',
+        version: '2.3',
+        model: 'gemini-2.5-flash-lite-preview-06-17',
         geminiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
         maxTokens: 1500,
         temperature: 0.65,
