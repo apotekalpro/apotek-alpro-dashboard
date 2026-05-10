@@ -6160,6 +6160,11 @@
                     currentUser = user.email;
                     currentUserRole = user.role;
                     currentUserName = user.name;
+                    // Expose to window so ai-agent.js can read role/access
+                    window.currentUser = currentUser;
+                    window.currentUserRole = currentUserRole;
+                    window.currentUserName = currentUserName;
+                    window.department_accessConfig = department_accessConfig;
                     
                     // Log successful login activity
                     console.log('🔍 Checking SecureUserManager.logActivity availability...');
@@ -6265,6 +6270,11 @@
                         currentUser = sheetsUser.email;
                         currentUserRole = sheetsUser.role;
                         currentUserName = sheetsUser.name;
+                        // Expose to window so ai-agent.js can read role/access
+                        window.currentUser = currentUser;
+                        window.currentUserRole = currentUserRole;
+                        window.currentUserName = currentUserName;
+                        window.department_accessConfig = department_accessConfig;
                         
                         // Show dashboard and reset button state
                         try {
@@ -8999,6 +9009,10 @@
             currentUser = null;
             currentUserRole = null;
             currentUserName = null;
+            window.currentUser = null;
+            window.currentUserRole = null;
+            window.currentUserName = null;
+            window.department_accessConfig = null;
             localStorage.removeItem('loginTime');
             
             // Reset UI

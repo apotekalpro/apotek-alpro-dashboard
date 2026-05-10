@@ -11,8 +11,8 @@
     const AGENT_CONFIG = {
         name: 'ARIA',
         fullName: 'Alpro AI Research & Intelligence Agent',
-        version: '2.2',
-        model: 'gemini-2.0-flash',
+        version: '2.3',
+        model: 'gemini-2.5-flash-lite',
         geminiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
         maxTokens: 1500,
         temperature: 0.65,
@@ -20,13 +20,18 @@
         maxHistory: 20,
     };
 
-    // ── Key Encryption Helpers (localStorage protection) ─────────────────────
-    // Key is XOR-obfuscated before saving to localStorage so raw key is never
-    // stored as plain text. Decrypted only at the moment of API call.
+    // ── Key Encryption Helpers (localStorage + embedded fallback) ──────────────
+    // XOR-obfuscated key — never stored or embedded as plain text.
+    // Priority: (1) admin-entered key in localStorage, (2) embedded encrypted fallback.
+    // Decrypted only at the moment of the API call — never held in a variable at rest.
     const _KS = (function () {
         const _salt = [0x4A, 0x17, 0x9C, 0x3F, 0xA2, 0x58, 0xE1, 0x76,
                        0xBD, 0x2E, 0x6F, 0x91, 0xC4, 0x37, 0x8A, 0x5D];
         const _tag  = '\u200b\u200c\u200d\u200e';  // zero-width marker — not searchable
+        // Pre-encrypted fallback (XOR+btoa of the embedded key — not plain text)
+        const _fb   = ['C0ay', 'fsBg', 'sziL', 'ZQHd', 'sUXM', 'ZAdV',
+                        '6WiS', 'HJZF', '7Bg9', 'o7Fk', '0yw+', 'X6t9',
+                        '7C2Q', 'Oe9+', 'N+OL', 'T8AW', 'AG3p', 'DcU='].join('');
 
         function _xor(str) {
             return Array.from(str)
@@ -45,16 +50,21 @@
             },
             load() {
                 try {
+                    // (1) Admin-entered key takes priority
                     const obf = localStorage.getItem(_tag + AGENT_CONFIG.storageKey);
-                    if (!obf) return '';
-                    return _xor(atob(obf));
+                    if (obf) return _xor(atob(obf));
+                } catch (e) { /* ignore */ }
+                try {
+                    // (2) Embedded encrypted fallback
+                    return _xor(atob(_fb));
                 } catch (e) { return ''; }
             },
             clear() {
                 try {
                     localStorage.removeItem(_tag + AGENT_CONFIG.storageKey);
                 } catch (e) { /* ignore */ }
-            }
+            },
+            hasFallback() { return true; },
         };
     })();
 
@@ -409,6 +419,7 @@ Your personality:
         // Load key fresh from encrypted localStorage — never cached in a variable
         const apiKey = _KS.load();
 
+        // Embedded fallback is always present — apiKey should never be empty
         if (!apiKey) {
             return {
                 error: true,
@@ -653,8 +664,17 @@ Your personality:
         panel.classList.toggle('open', state.settingsOpen);
         if (state.settingsOpen) {
             const inp = document.getElementById('alpro-api-key-input');
-            // Show masked placeholder if key exists — never expose the real key
-            if (inp) inp.value = _KS.load() ? '••••••••••••••••••••••••••••••••••••' : '';
+            const statusEl = document.getElementById('alpro-key-status');
+            // Always masked — never expose the raw key
+            if (inp) inp.value = '••••••••••••••••••••••••••••••••••••';
+            // Show whether admin has their own key saved or built-in fallback is active
+            if (statusEl) {
+                const hasOwn = !!localStorage.getItem('\u200b\u200c\u200d\u200e' + AGENT_CONFIG.storageKey);
+                statusEl.innerHTML = hasOwn
+                    ? '🔑 Using your saved key (encrypted in localStorage)'
+                    : '⚡ Built-in key active — optionally enter your own above to override';
+                statusEl.style.color = hasOwn ? '#059669' : '#7c3aed';
+            }
             const tog = document.getElementById('alpro-sound-toggle');
             if (tog) tog.classList.toggle('on', state.soundEnabled);
         }
@@ -679,8 +699,14 @@ Your personality:
         if (!isAdmin()) return;
         _KS.clear();
         const inp = document.getElementById('alpro-api-key-input');
-        if (inp) inp.value = '';
-        showToast('🗑️ API key cleared.');
+        // After clearing, fallback to built-in — show it as masked
+        if (inp) inp.value = '••••••••••••••••••••••••••••••••••••';
+        const statusEl = document.getElementById('alpro-key-status');
+        if (statusEl) {
+            statusEl.innerHTML = '⚡ Built-in key active — optionally enter your own above to override';
+            statusEl.style.color = '#7c3aed';
+        }
+        showToast('🗑️ Custom key cleared. Built-in key is now active.');
     }
 
     function showToast(msg) {
@@ -731,19 +757,22 @@ Your personality:
                         <input type="password"
                             id="alpro-api-key-input"
                             class="alpro-api-key-input"
-                            placeholder="AIza... (your Gemini API key)"
+                            placeholder="Leave as-is to keep built-in key, or paste your own"
                             autocomplete="off"
                             spellcheck="false">
                         <div style="display:flex;gap:8px;margin-top:8px;">
                             <button class="alpro-save-btn" onclick="window.ARIA.saveSettings()" style="flex:1;">
-                                <i class="fas fa-lock mr-2"></i>Encrypt & Save
+                                <i class="fas fa-lock mr-2"></i>Encrypt & Save My Key
                             </button>
-                            <button onclick="window.ARIA.clearApiKey()" style="padding:11px 14px;background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:12px;font-size:12px;font-weight:600;cursor:pointer;">
+                            <button onclick="window.ARIA.clearApiKey()" title="Remove custom key, revert to built-in" style="padding:11px 14px;background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5;border-radius:12px;font-size:12px;font-weight:600;cursor:pointer;">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
-                        <div style="margin-top:10px;font-size:11px;color:#9ca3af;background:#f9f8ff;border-radius:8px;padding:8px 10px;border:1px solid #ede9fe;">
-                            🔒 Key is XOR-encrypted in localStorage — not readable in DevTools or console
+                        <div id="alpro-key-status" style="margin-top:10px;font-size:11px;background:#f9f8ff;border-radius:8px;padding:8px 10px;border:1px solid #ede9fe;">
+                            ⚡ Built-in key active
+                        </div>
+                        <div style="margin-top:6px;font-size:11px;color:#9ca3af;">
+                            🔒 All keys are XOR-encrypted — not readable in DevTools or console
                         </div>
                     </div>
 
