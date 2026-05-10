@@ -12,7 +12,7 @@
         name: 'ARIA',
         fullName: 'Alpro AI Research & Intelligence Agent',
         version: '2.3',
-        model: 'gemini-2.5-flash-lite-preview-06-17',
+        model: 'gemini-2.5-flash-lite',
         geminiEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
         maxTokens: 1500,
         temperature: 0.65,
