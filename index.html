@@ -12166,6 +12166,7 @@
                 return `<span class="text-gray-500 mr-2 font-medium">${rank}</span>`;
             }
         };
+        window.amTracker = amTracker; // expose to ARIA
 
         // Elite BM Performance Tracker Namespace - All functions isolated
         const bmTracker = {
@@ -12763,6 +12764,7 @@
                 return `<span class="text-gray-500 font-medium">${rank}</span>`;
             }
         };
+        window.bmTracker = bmTracker; // expose to ARIA
 
         // ==============================================
         // JWT AUTHENTICATION SYSTEM - Phase 1 & 2

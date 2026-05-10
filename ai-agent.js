@@ -382,13 +382,74 @@ AI Strategy Recommendations:
         );
     }
 
+    // ── Live Data Scraper ─────────────────────────────────────────────────────
+    // Pulls real numbers from amTracker / bmTracker at the moment of each call.
+    // Returns a formatted text block injected directly into the system prompt.
+    function gatherLiveData() {
+        const sections = [];
+
+        try {
+            // ── AM Tracker (outlet-level sales, growth, forecast) ────────────
+            const amData = window.amTracker?.performanceData;
+            if (amData && amData.length > 0) {
+                const fmt = n => n > 0 ? 'Rp ' + Math.round(n).toLocaleString('id-ID') : 'N/A';
+                const pct = n => (typeof n === 'number' ? n.toFixed(1) + '%' : 'N/A');
+
+                const rows = amData.map(o =>
+                    `  • ${o.outlet} | ${o.outletName} | AM: ${o.amName} | ` +
+                    `Sales MTD: ${fmt(o.totalUpToDate)} | ` +
+                    `Forecast EOM: ${fmt(o.forecastSalesEndOfMonth)} | ` +
+                    `Growth: ${pct(o.growthPercent)} | ` +
+                    `Forecast%: ${pct(o.forecastPercent)} | ` +
+                    `Target: ${fmt(o.monthlyTarget)}`
+                ).join('\n');
+
+                sections.push(`=== AM TRACKER — OUTLET SALES DATA (${amData.length} outlets) ===\n` +
+                    `Columns: OutletCode | OutletName | AM | Sales MTD | Forecast EOM | Growth vs Last Month | Forecast vs Target | Monthly Target\n` +
+                    rows);
+            }
+        } catch (e) { /* silent */ }
+
+        try {
+            // ── BM Tracker (outlet revenue, transactions, goal achievement) ──
+            const bmData = window.bmTracker?.performanceData;
+            if (bmData && bmData.length > 0) {
+                const fmt = n => n > 0 ? 'Rp ' + Math.round(n).toLocaleString('id-ID') : 'N/A';
+                const pct = n => (typeof n === 'number' ? n.toFixed(1) + '%' : 'N/A');
+
+                const rows = bmData.map(o =>
+                    `  • ${o.outlet} | ${o.outletName} | AM: ${o.amName} | Clan: ${o.clanName} | ` +
+                    `BM: ${o.bmName || 'N/A'} (${o.bmType || '-'}) | ` +
+                    `Revenue MTD: ${fmt(o.revenue)} | ` +
+                    `Transactions: ${o.transQty > 0 ? o.transQty.toLocaleString('id-ID') : 'N/A'} | ` +
+                    `Forecast EOM: ${fmt(o.forecastSales)} | ` +
+                    `Goal Bulanan: ${fmt(o.goalBulanan)} | ` +
+                    `vs Goal: ${pct(o.vsGoalBulanan)} | ` +
+                    `Target: ${fmt(o.targetJuni)} | ` +
+                    `vs Target: ${pct(o.vsTargetJuni)}`
+                ).join('\n');
+
+                sections.push(`=== BM TRACKER — OUTLET PERFORMANCE DATA (${bmData.length} outlets) ===\n` +
+                    `Columns: OutletCode | OutletName | AM | Clan | BM | Revenue MTD | Transactions | Forecast EOM | Goal Bulanan | vs Goal% | Target | vs Target%\n` +
+                    rows);
+            }
+        } catch (e) { /* silent */ }
+
+        if (sections.length === 0) return '';
+
+        return '\n\n--- LIVE DASHBOARD DATA (use these exact figures to answer questions) ---\n' +
+            sections.join('\n\n') +
+            '\n--- END LIVE DATA ---';
+    }
+
     // ── System Prompt ─────────────────────────────────────────────────────────
     function buildSystemPrompt(deptId) {
-        const dept        = DEPARTMENTS[deptId] || DEPARTMENTS.all;
-        const userName    = window.currentUserName || window.currentUser || 'Team Member';
-        const userRole    = window.currentUserRole || 'user';
-        const dateStr     = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-        const accessList  = getUserDeptAccess().filter(id => id !== 'all').map(id => DEPARTMENTS[id]?.name || id).join(', ') || 'None';
+        const dept       = DEPARTMENTS[deptId] || DEPARTMENTS.all;
+        const userName   = window.currentUserName || window.currentUser || 'Team Member';
+        const userRole   = window.currentUserRole || 'user';
+        const dateStr    = new Date().toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+        const accessList = getUserDeptAccess().filter(id => id !== 'all').map(id => DEPARTMENTS[id]?.name || id).join(', ') || 'None';
+        const liveData   = gatherLiveData();
 
         const base = `You are ARIA (Alpro Research & Intelligence Agent), the official AI assistant for the Apotek Alpro Executive Dashboard — a leading pharmacy chain in Indonesia.
 
@@ -396,14 +457,18 @@ Current User: ${userName} (Role: ${userRole})
 Today: ${dateStr}
 User's Authorized Departments: ${accessList}
 
-CRITICAL RULE: Only provide information and strategies for the user's authorized departments listed above. Politely refuse any questions about departments outside their access.
+CRITICAL RULES:
+1. You have been given LIVE DASHBOARD DATA below — use those exact figures to answer questions directly. Do NOT say "check the dashboard" or redirect users. Answer with the real numbers.
+2. When asked about a specific outlet, find it in the data and quote the exact figures.
+3. When comparing outlets, rank them from the data and present the results.
+4. Only provide information for the user's authorized departments listed above.
+5. If data for a specific metric is genuinely not in the live data provided, say "that metric is not in the current data snapshot" — do not redirect to the dashboard.
 
 Your personality:
-- Professional, sharp, data-focused
-- Speak in clear English with occasional Bahasa Indonesia terms when appropriate
-- Structure responses with headers, bullet points, and actionable steps
-- Keep responses under 350 words unless a detailed explanation is required
-- NEVER make up specific numbers — say "check the dashboard for current figures"`;
+- Direct, data-first — lead with numbers, then analysis
+- Professional, sharp; occasional Bahasa Indonesia terms are fine
+- Structure with headers and bullet points
+- Keep under 400 words unless a detailed breakdown is needed${liveData}`;
 
         if (deptId !== 'all' && dept.aiStrategy) {
             const userAccess = getUserDeptAccess();
