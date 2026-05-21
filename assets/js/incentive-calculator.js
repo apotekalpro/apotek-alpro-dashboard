@@ -2,7 +2,7 @@
  * Incentive Calculator Module
  * Calculates AM, BM, and Alproean incentives based on sales performance and GP margins
  * 
- * VERSION: 4.6-GB (Goal Bulanan Enhanced - Export Enhancements)
+ * VERSION: 4.6.1-GB (Goal Bulanan Enhanced - Fixed Original Incentive)
  * 
  * Features:
  * - Process 5 Excel files (Active Alproean, Full Alproean, Sales & GP, Personal Sales, Outlet Mapping)
@@ -15,10 +15,10 @@
  * - AM outlet display from Mapping file (not personal sales)
  * - Export includes Sales & GP data (total revenue, GP amount)
  * - Export includes Ops targets and deduction remarks
- * - Export shows original incentive before deductions
+ * - Export shows ORIGINAL incentive BEFORE ALL deductions (including GP margin)
  */
 
-console.log('🎯 Incentive Calculator v4.6-GB loaded - Enhanced Export with Deduction Tracking');
+console.log('🎯 Incentive Calculator v4.6.1-GB loaded - Original Incentive Before All Deductions');
 
 const IncentiveCalculator = {
     // Data storage
@@ -1082,12 +1082,16 @@ const IncentiveCalculator = {
                 ? (amArea.totalGP / amArea.totalSales) * 100 
                 : 0;
             
+            // Calculate area reward BEFORE GP adjustment
+            const areaRewardBeforeGP = amArea.totalSales * (areaPercentage / 100);
+            
             // Apply GP adjustment to area reward
             const areaGPAdjustment = this.getGPAdjustment(areaGPMargin);
-            const areaReward = amArea.totalSales * (areaPercentage / 100) * areaGPAdjustment;
+            const areaReward = areaRewardBeforeGP * areaGPAdjustment;
             
             // Total AM Reward = Area Reward only (no individual outlet incentives)
             emp.amReward = areaReward;
+            emp.amRewardBeforeGP = areaRewardBeforeGP;  // Store original before GP adjustment
             
             // AREA GOAL BULANAN CHECK
             // Compare total area sales vs total area Goal Bulanan
@@ -1143,6 +1147,10 @@ const IncentiveCalculator = {
                 // This is calculated from their alproeanReward which was set in calculateAlproeanRewards()
                 if (emp.alproeanReward > 0) {
                     emp.bmReward = emp.alproeanReward * 0.5;
+                    // Store BM reward before GP (based on Alproean before GP)
+                    if (emp.alproeanRewardBeforeGP) {
+                        emp.bmRewardBeforeGP = emp.alproeanRewardBeforeGP * 0.5;
+                    }
                 }
             }
         });
@@ -1203,10 +1211,13 @@ const IncentiveCalculator = {
                     }
                     
                     if (outlet.salesData && alproeanPercentage > 0) {
+                        // Calculate incentive pool BEFORE GP adjustment
+                        const outletIncentivePoolBeforeGP = outlet.salesData.totalSales * (alproeanPercentage / 100);
+                        
                         const gpAdjustment = this.getGPAdjustment(outlet.salesData.gpMargin);
                         
                         // Calculate total outlet incentive pool based on ACTUAL outlet total from Sales & GP
-                        const outletIncentivePool = outlet.salesData.totalSales * (alproeanPercentage / 100) * gpAdjustment;
+                        const outletIncentivePool = outletIncentivePoolBeforeGP * gpAdjustment;
                         
                         // CRITICAL FIX: Use outlet total from Sales & GP report (Column G) as denominator
                         // NOT the sum of matched employees (outlet.totalPersonalSales)
@@ -1217,6 +1228,7 @@ const IncentiveCalculator = {
                             // Calculate employee's share based on their contribution to ACTUAL outlet total
                             const employeeShare = emp.personalSales.personalSales / outletTotalFromSalesGP;
                             emp.alproeanReward = outletIncentivePool * employeeShare;
+                            emp.alproeanRewardBeforeGP = outletIncentivePoolBeforeGP * employeeShare;  // Store original before GP
                             
                             // Store contribution ratio for export (percentage of ACTUAL outlet total)
                             // Only set if not already set (preserve from matchEmployees if exists)
@@ -1245,10 +1257,11 @@ const IncentiveCalculator = {
         // CRITICAL: Apply 50% cut to Ops Rewards if Goal Bulanan = NO
         // This incentivizes employees to hit Goal Bulanan targets
         matchedEmployees.forEach(emp => {
-            // Store original Ops rewards before any cuts
-            const originalAM = emp.amReward || 0;
-            const originalBM = emp.bmReward || 0;
-            const originalAlproean = emp.alproeanReward || 0;
+            // Store ORIGINAL Ops rewards BEFORE GP adjustment and BEFORE 50% cut
+            // This is the true starting point before any deductions
+            const originalAM = emp.amRewardBeforeGP || 0;
+            const originalBM = emp.bmRewardBeforeGP || 0;
+            const originalAlproean = emp.alproeanRewardBeforeGP || 0;
             emp.originalIncentive = originalAM + originalBM + originalAlproean;
             
             if (emp.goalBulananHit === 'NO') {
@@ -1259,6 +1272,31 @@ const IncentiveCalculator = {
                 
                 // Add deduction remark
                 emp.deductionRemark = '50% Ops cut (Goal Bulanan = NO)';
+            }
+            
+            // Add GP margin deduction remark if applicable (for Ops rewards)
+            const role = this.toSafeString(emp.employee.role).toUpperCase();
+            const isAM = (role.includes('AREA MANAGER') && !role.includes('BRANCH')) || 
+                         (role.includes('ASSOCIATE') && role.includes('AREA MANAGER'));
+            const isBM = (role.includes('BRANCH MANAGER') || role.includes('SENIOR BRANCH MANAGER')) && 
+                         !role.includes('TRAINEE');
+            
+            if (isAM && emp.amReward > 0 && emp.amRewardBeforeGP > emp.amReward) {
+                const gpMargin = emp.salesData ? emp.salesData.gpMargin : 0;
+                const marginFactor = this.getGPAdjustment(gpMargin);
+                if (marginFactor < 1.0) {
+                    const existingRemark = emp.deductionRemark || '';
+                    const marginRemark = `Ops GP Margin ${gpMargin.toFixed(2)}% → ${(marginFactor * 100).toFixed(0)}% factor`;
+                    emp.deductionRemark = existingRemark ? `${existingRemark}; ${marginRemark}` : marginRemark;
+                }
+            } else if ((isBM || !isAM) && emp.alproeanReward > 0 && emp.alproeanRewardBeforeGP > emp.alproeanReward) {
+                const gpMargin = emp.salesData ? emp.salesData.gpMargin : 0;
+                const marginFactor = this.getGPAdjustment(gpMargin);
+                if (marginFactor < 1.0) {
+                    const existingRemark = emp.deductionRemark || '';
+                    const marginRemark = `Ops GP Margin ${gpMargin.toFixed(2)}% → ${(marginFactor * 100).toFixed(0)}% factor`;
+                    emp.deductionRemark = existingRemark ? `${existingRemark}; ${marginRemark}` : marginRemark;
+                }
             }
         });
         
@@ -1378,10 +1416,10 @@ const IncentiveCalculator = {
                     emp.goalBulananTotalOutlets = amArea.totalOutletsInMapping;  // Store for debugging
                     emp.goalBulananOutletsHit = amArea.outletsHitGoal;  // Store for debugging
                     
-                    // Add margin factor deduction remark if applicable
+                    // Add margin factor deduction remark if applicable (for Goal Bulanan)
                     if (marginFactor < 1.0) {
                         const existingRemark = emp.deductionRemark || '';
-                        const marginRemark = `GP Margin ${areaGPMargin.toFixed(2)}% → ${(marginFactor * 100).toFixed(0)}% factor`;
+                        const marginRemark = `Goal GP Margin ${areaGPMargin.toFixed(2)}% → ${(marginFactor * 100).toFixed(0)}% factor`;
                         emp.deductionRemark = existingRemark ? `${existingRemark}; ${marginRemark}` : marginRemark;
                     }
                 }
@@ -1437,10 +1475,10 @@ const IncentiveCalculator = {
                     emp.goalBulananMarginFactor = marginFactor;
                     emp.goalBulananMargin = outletGPMargin;
                     
-                    // Add margin factor deduction remark if applicable
+                    // Add margin factor deduction remark if applicable (for Goal Bulanan)
                     if (marginFactor < 1.0) {
                         const existingRemark = emp.deductionRemark || '';
-                        const marginRemark = `GP Margin ${outletGPMargin.toFixed(2)}% → ${(marginFactor * 100).toFixed(0)}% factor`;
+                        const marginRemark = `Goal GP Margin ${outletGPMargin.toFixed(2)}% → ${(marginFactor * 100).toFixed(0)}% factor`;
                         emp.deductionRemark = existingRemark ? `${existingRemark}; ${marginRemark}` : marginRemark;
                     }
                     
