@@ -2,7 +2,7 @@
  * Incentive Calculator Module
  * Calculates AM, BM, and Alproean incentives based on sales performance and GP margins
  * 
- * VERSION: 4.2-GB (Goal Bulanan Enhanced - Critical Fixes)
+ * VERSION: 4.3-GB (Goal Bulanan Enhanced - Complete Fix)
  * 
  * Features:
  * - Process 5 Excel files (Active Alproean, Full Alproean, Sales & GP, Personal Sales, Outlet Mapping)
@@ -14,7 +14,7 @@
  * - Goal Bulanan incentive system with month multiplier
  */
 
-console.log('🎯 Incentive Calculator v4.2-GB loaded - Goal Bulanan Enhanced System Active');
+console.log('🎯 Incentive Calculator v4.3-GB loaded - Goal Bulanan Enhanced System Active');
 
 const IncentiveCalculator = {
     // Data storage
@@ -1215,7 +1215,10 @@ const IncentiveCalculator = {
                             emp.alproeanReward = outletIncentivePool * employeeShare;
                             
                             // Store contribution ratio for export (percentage of ACTUAL outlet total)
-                            emp.contributionRatio = (emp.personalSales.personalSales / outletTotalFromSalesGP) * 100;
+                            // Only set if not already set (preserve from matchEmployees if exists)
+                            if (!emp.contributionRatio || emp.contributionRatio === 0) {
+                                emp.contributionRatio = (emp.personalSales.personalSales / outletTotalFromSalesGP) * 100;
+                            }
                             
                             // Debug logging for first few employees
                             if (Object.values(outletGroups).indexOf(outlet) === 0 && outlet.employees.indexOf(emp) < 3) {
@@ -1377,6 +1380,18 @@ const IncentiveCalculator = {
                     
                     // Alproean reward (base incentive)
                     const alproeanGoalBulananReward = BASE_INCENTIVE * monthMultiplier * marginFactor;
+                    
+                    // Debug: Log if incentive is 0
+                    if (alproeanGoalBulananReward === 0) {
+                        console.warn('⚠️ Goal Bulanan incentive = 0 for', emp.employee.employeeName, {
+                            goalBulananHit: emp.goalBulananHit,
+                            contributionRatio: emp.contributionRatio,
+                            gpMargin: outletGPMargin,
+                            marginFactor: marginFactor,
+                            monthMultiplier: monthMultiplier,
+                            baseIncentive: BASE_INCENTIVE
+                        });
+                    }
                     
                     if (isBM) {
                         // BM has TWO components:
@@ -1683,6 +1698,8 @@ const IncentiveCalculator = {
                     employeeId: emp.employee.employeeId,
                     role: emp.employee.role,
                     mainOutlet: emp.mainOutlet || emp.employee.outlet,
+                    mainOutletGPMargin: 0,  // Track GP margin for main outlet
+                    outletSalesMap: {},  // Track sales per outlet to find highest
                     outlets: [],
                     personalSales: 0,
                     contributionRatio: 0,
@@ -1704,6 +1721,19 @@ const IncentiveCalculator = {
                     outletCount: 0
                 };
             }
+            
+            // Track sales per outlet to determine main outlet later
+            const currentOutlet = emp.employee.outlet;
+            const currentSales = emp.personalSales ? emp.personalSales.personalSales : 0;
+            const currentGPMargin = emp.salesData ? emp.salesData.gpMargin : 0;
+            
+            if (!aggregatedResults[key].outletSalesMap[currentOutlet]) {
+                aggregatedResults[key].outletSalesMap[currentOutlet] = {
+                    sales: 0,
+                    gpMargin: currentGPMargin
+                };
+            }
+            aggregatedResults[key].outletSalesMap[currentOutlet].sales += currentSales;
             
             // Add outlet
             aggregatedResults[key].outlets.push(emp.employee.outlet);
@@ -1752,6 +1782,26 @@ const IncentiveCalculator = {
             }
             
             aggregatedResults[key].outletCount += 1;
+        });
+        
+        // Determine main outlet for each employee (outlet with highest sales)
+        Object.values(aggregatedResults).forEach(emp => {
+            if (Object.keys(emp.outletSalesMap).length > 0) {
+                let maxSales = 0;
+                let mainOutlet = '';
+                let mainGPMargin = 0;
+                
+                Object.entries(emp.outletSalesMap).forEach(([outlet, data]) => {
+                    if (data.sales > maxSales) {
+                        maxSales = data.sales;
+                        mainOutlet = outlet;
+                        mainGPMargin = data.gpMargin;
+                    }
+                });
+                
+                emp.mainOutlet = mainOutlet;
+                emp.mainOutletGPMargin = mainGPMargin;
+            }
         });
         
         // Add data rows
