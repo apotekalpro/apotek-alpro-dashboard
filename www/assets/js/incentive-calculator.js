@@ -2,7 +2,7 @@
  * Incentive Calculator Module
  * Calculates AM, BM, and Alproean incentives based on sales performance and GP margins
  * 
- * VERSION: 4.5-GB (Goal Bulanan Enhanced - Export Fix + Sales & GP Data)
+ * VERSION: 4.6-GB (Goal Bulanan Enhanced - Export Enhancements)
  * 
  * Features:
  * - Process 5 Excel files (Active Alproean, Full Alproean, Sales & GP, Personal Sales, Outlet Mapping)
@@ -14,9 +14,11 @@
  * - Goal Bulanan incentive system with month multiplier
  * - AM outlet display from Mapping file (not personal sales)
  * - Export includes Sales & GP data (total revenue, GP amount)
+ * - Export includes Ops targets and deduction remarks
+ * - Export shows original incentive before deductions
  */
 
-console.log('🎯 Incentive Calculator v4.5-GB loaded - Export Fixed + Sales & GP Data');
+console.log('🎯 Incentive Calculator v4.6-GB loaded - Enhanced Export with Deduction Tracking');
 
 const IncentiveCalculator = {
     // Data storage
@@ -1243,11 +1245,20 @@ const IncentiveCalculator = {
         // CRITICAL: Apply 50% cut to Ops Rewards if Goal Bulanan = NO
         // This incentivizes employees to hit Goal Bulanan targets
         matchedEmployees.forEach(emp => {
+            // Store original Ops rewards before any cuts
+            const originalAM = emp.amReward || 0;
+            const originalBM = emp.bmReward || 0;
+            const originalAlproean = emp.alproeanReward || 0;
+            emp.originalIncentive = originalAM + originalBM + originalAlproean;
+            
             if (emp.goalBulananHit === 'NO') {
                 // Cut Ops Rewards by 50%
                 emp.alproeanReward = emp.alproeanReward * 0.5;
                 emp.bmReward = emp.bmReward * 0.5;
                 emp.amReward = emp.amReward * 0.5;
+                
+                // Add deduction remark
+                emp.deductionRemark = '50% Ops cut (Goal Bulanan = NO)';
             }
         });
         
@@ -1366,6 +1377,13 @@ const IncentiveCalculator = {
                     emp.goalBulananMargin = areaGPMargin;
                     emp.goalBulananTotalOutlets = amArea.totalOutletsInMapping;  // Store for debugging
                     emp.goalBulananOutletsHit = amArea.outletsHitGoal;  // Store for debugging
+                    
+                    // Add margin factor deduction remark if applicable
+                    if (marginFactor < 1.0) {
+                        const existingRemark = emp.deductionRemark || '';
+                        const marginRemark = `GP Margin ${areaGPMargin.toFixed(2)}% → ${(marginFactor * 100).toFixed(0)}% factor`;
+                        emp.deductionRemark = existingRemark ? `${existingRemark}; ${marginRemark}` : marginRemark;
+                    }
                 }
             } else if (isBM || isAlproean) {
                 // BM and Alproean: ONLY their MAIN outlet (from Active List)
@@ -1418,6 +1436,13 @@ const IncentiveCalculator = {
                     emp.goalBulananBase = BASE_INCENTIVE * monthMultiplier;
                     emp.goalBulananMarginFactor = marginFactor;
                     emp.goalBulananMargin = outletGPMargin;
+                    
+                    // Add margin factor deduction remark if applicable
+                    if (marginFactor < 1.0) {
+                        const existingRemark = emp.deductionRemark || '';
+                        const marginRemark = `GP Margin ${outletGPMargin.toFixed(2)}% → ${(marginFactor * 100).toFixed(0)}% factor`;
+                        emp.deductionRemark = existingRemark ? `${existingRemark}; ${marginRemark}` : marginRemark;
+                    }
                     
                     // Store main outlet for remark with GP margin
                     emp.mainOutlet = emp.employee.outlet;
@@ -1674,12 +1699,15 @@ const IncentiveCalculator = {
             'Personal Sales (Rp)',
             'Outlet Total Revenue (Rp)',  // From Sales & GP report
             'Outlet GP (Rp)',  // From Sales & GP report
+            'Outlet Ops Target (Rp)',  // From Outlet Mapping
             'Contribution Ratio (%)',
             'GP Margin (%)',
             'Goal Bulanan',
             'Goal Bulanan Target (Rp)',
             'Area Goal Bulanan',
             'Area Goal Bulanan Target (Rp)',
+            'Original Incentive (Rp)',  // Before deductions
+            'Deduction Remarks',  // Why incentive was reduced
             'AM Reward (Rp)',
             'BM Reward (Rp)',
             'Alproean Reward (Rp)',
@@ -1705,6 +1733,7 @@ const IncentiveCalculator = {
                     mainOutletGPMargin: 0,  // Track GP margin for main outlet
                     mainOutletTotalRevenue: 0,  // Track total revenue for main outlet (from Sales & GP)
                     mainOutletGP: 0,  // Track total GP for main outlet (from Sales & GP)
+                    mainOutletOpsTarget: 0,  // Track Ops target for main outlet
                     outletSalesMap: {},  // Track sales per outlet to find highest
                     outlets: [],
                     allMappedOutlets: [],  // For AM: ALL outlets from Mapping file
@@ -1713,19 +1742,23 @@ const IncentiveCalculator = {
                     gpMargin: 0,
                     goalBulananHits: [],
                     goalBulananTargets: [],
+                    opsTargets: [],  // Track Ops targets for each outlet
                     areaGoalBulananHit: emp.areaGoalBulananHit || '',  // For AM only
                     areaGoalBulananTarget: emp.areaGoalBulananTarget || 0,  // For AM only
                     amTotalOutlets: 0,  // For AM outlet count remark
                     amAreaGPMargin: 0,  // For AM weighted area GP margin
                     amTotalRevenue: 0,  // For AM total area revenue (from Sales & GP)
                     amTotalGP: 0,  // For AM total area GP (from Sales & GP)
+                    amAreaOpsTarget: 0,  // For AM total area Ops target
                     amReward: 0,
                     bmReward: 0,
                     alproeanReward: 0,
                     opsRewardIncentive: 0,
+                    originalIncentive: 0,  // Before any deductions
                     goalBulananIncentive: 0,
                     finalIncentive: 0,
                     incentiveType: emp.incentiveType || 'Ops Reward',
+                    deductionRemarks: [],  // Track all deductions applied
                     totalReward: 0,
                     outletCount: 0
                 };
@@ -1738,12 +1771,16 @@ const IncentiveCalculator = {
             const currentTotalRevenue = emp.salesData ? emp.salesData.totalSales : 0;
             const currentGP = emp.salesData ? emp.salesData.gp : 0;
             
+            // Get Ops target from outlet mapping
+            const currentOpsTarget = emp.outletMapping ? emp.outletMapping.target : 0;
+            
             if (!aggregatedResults[key].outletSalesMap[currentOutlet]) {
                 aggregatedResults[key].outletSalesMap[currentOutlet] = {
                     sales: 0,
                     gpMargin: currentGPMargin,
                     totalRevenue: currentTotalRevenue,  // From Sales & GP report
-                    gp: currentGP  // From Sales & GP report
+                    gp: currentGP,  // From Sales & GP report
+                    opsTarget: currentOpsTarget  // From Outlet Mapping
                 };
             }
             aggregatedResults[key].outletSalesMap[currentOutlet].sales += currentSales;
@@ -1754,6 +1791,7 @@ const IncentiveCalculator = {
             // Track Goal Bulanan status for each outlet
             aggregatedResults[key].goalBulananHits.push(emp.goalBulananHit || 'NO');
             aggregatedResults[key].goalBulananTargets.push(emp.goalBulananTarget || 0);
+            aggregatedResults[key].opsTargets.push(currentOpsTarget);
             
             // Track Area Goal Bulanan (for AM only, will be same across all outlets)
             if (emp.areaGoalBulananHit) {
@@ -1773,20 +1811,28 @@ const IncentiveCalculator = {
                         .map(mapping => mapping.outlet);
                     aggregatedResults[key].allMappedOutlets = mappedOutlets;
                     
-                    // Calculate total AM area revenue and GP from Sales & GP report
+                    // Calculate total AM area revenue, GP, and Ops target from data sources
                     let totalRevenue = 0;
                     let totalGP = 0;
+                    let totalOpsTarget = 0;
                     mappedOutlets.forEach(outlet => {
                         const salesData = this.data.salesGpData.find(sales => 
                             this.outletMatch(sales.outlet, outlet)
+                        );
+                        const outletMapping = this.data.outletMappingData.find(mapping => 
+                            this.outletMatch(mapping.outlet, outlet)
                         );
                         if (salesData) {
                             totalRevenue += salesData.totalSales || 0;
                             totalGP += salesData.gp || 0;
                         }
+                        if (outletMapping) {
+                            totalOpsTarget += outletMapping.target || 0;
+                        }
                     });
                     aggregatedResults[key].amTotalRevenue = totalRevenue;
                     aggregatedResults[key].amTotalGP = totalGP;
+                    aggregatedResults[key].amAreaOpsTarget = totalOpsTarget;
                 }
             }
             
@@ -1810,8 +1856,14 @@ const IncentiveCalculator = {
             aggregatedResults[key].bmReward += emp.bmReward;
             aggregatedResults[key].alproeanReward += emp.alproeanReward;
             aggregatedResults[key].opsRewardIncentive += (emp.opsRewardIncentive || 0);
+            aggregatedResults[key].originalIncentive += (emp.originalIncentive || 0);
             aggregatedResults[key].goalBulananIncentive += (emp.goalBulananIncentive || 0);
             aggregatedResults[key].finalIncentive += (emp.finalIncentive || 0);
+            
+            // Collect deduction remarks
+            if (emp.deductionRemark && !aggregatedResults[key].deductionRemarks.includes(emp.deductionRemark)) {
+                aggregatedResults[key].deductionRemarks.push(emp.deductionRemark);
+            }
             aggregatedResults[key].totalReward += emp.totalReward;
             
             // Store incentive type (prefer Goal Bulanan if any occurrence)
@@ -1830,6 +1882,7 @@ const IncentiveCalculator = {
                 let mainGPMargin = 0;
                 let mainTotalRevenue = 0;
                 let mainGP = 0;
+                let mainOpsTarget = 0;
                 
                 Object.entries(emp.outletSalesMap).forEach(([outlet, data]) => {
                     if (data.sales > maxSales) {
@@ -1838,6 +1891,7 @@ const IncentiveCalculator = {
                         mainGPMargin = data.gpMargin;
                         mainTotalRevenue = data.totalRevenue;
                         mainGP = data.gp;
+                        mainOpsTarget = data.opsTarget;
                     }
                 });
                 
@@ -1845,6 +1899,7 @@ const IncentiveCalculator = {
                 emp.mainOutletGPMargin = mainGPMargin;
                 emp.mainOutletTotalRevenue = mainTotalRevenue;
                 emp.mainOutletGP = mainGP;
+                emp.mainOutletOpsTarget = mainOpsTarget;
             }
         });
         
@@ -1903,11 +1958,17 @@ const IncentiveCalculator = {
                 remark = `Main Outlet: ${emp.mainOutlet} (GP: ${gpMargin})`;
             }
             
-            // Determine outlet revenue and GP to display
-            // For AM: Show total area revenue and GP
-            // For BM/Alproean: Show main outlet revenue and GP
+            // Determine outlet revenue, GP, and Ops target to display
+            // For AM: Show total area revenue, GP, and Ops target
+            // For BM/Alproean: Show main outlet revenue, GP, and Ops target
             const outletRevenue = isAM ? emp.amTotalRevenue : emp.mainOutletTotalRevenue;
             const outletGP = isAM ? emp.amTotalGP : emp.mainOutletGP;
+            const outletOpsTarget = isAM ? emp.amAreaOpsTarget : emp.mainOutletOpsTarget;
+            
+            // Format deduction remarks
+            const deductionRemark = emp.deductionRemarks.length > 0 
+                ? emp.deductionRemarks.join('; ') 
+                : '';
             
             exportData.push([
                 emp.employeeName,
@@ -1918,12 +1979,15 @@ const IncentiveCalculator = {
                 emp.personalSales,
                 outletRevenue,  // Outlet Total Revenue from Sales & GP
                 outletGP,  // Outlet GP from Sales & GP
+                outletOpsTarget,  // Outlet Ops Target from Outlet Mapping
                 avgContributionRatio.toFixed(2),
                 avgGpMargin.toFixed(2),
                 goalBulananOverall,
                 goalBulananTargetDisplay,
                 areaGoalBulananDisplay,
                 areaGoalBulananTargetDisplay,
+                emp.originalIncentive,  // Before any deductions
+                deductionRemark,  // Why incentive was reduced
                 emp.amReward,
                 emp.bmReward,
                 emp.alproeanReward,
