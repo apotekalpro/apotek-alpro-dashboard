@@ -1464,7 +1464,7 @@
                                 <div class="flex items-center mb-2">
                                     <i class="fas fa-gift text-3xl mr-4"></i>
                                     <div>
-                                        <h3 class="text-2xl font-bold">Incentive Calculator <span class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full ml-2">v4.1-GB</span></h3>
+                                        <h3 class="text-2xl font-bold">Incentive Calculator <span class="text-sm bg-white bg-opacity-20 px-3 py-1 rounded-full ml-2">v4.3-GB</span></h3>
                                         <p class="text-purple-100 text-sm mt-1">Calculate AM, BM, and Alproean incentives based on sales performance</p>
                                     </div>
                                 </div>
@@ -6160,6 +6160,11 @@
                     currentUser = user.email;
                     currentUserRole = user.role;
                     currentUserName = user.name;
+                    // Expose to window so ai-agent.js can read role/access
+                    window.currentUser = currentUser;
+                    window.currentUserRole = currentUserRole;
+                    window.currentUserName = currentUserName;
+                    window.department_accessConfig = department_accessConfig;
                     
                     // Log successful login activity
                     console.log('🔍 Checking SecureUserManager.logActivity availability...');
@@ -6265,6 +6270,11 @@
                         currentUser = sheetsUser.email;
                         currentUserRole = sheetsUser.role;
                         currentUserName = sheetsUser.name;
+                        // Expose to window so ai-agent.js can read role/access
+                        window.currentUser = currentUser;
+                        window.currentUserRole = currentUserRole;
+                        window.currentUserName = currentUserName;
+                        window.department_accessConfig = department_accessConfig;
                         
                         // Show dashboard and reset button state
                         try {
@@ -7712,6 +7722,7 @@
                 displayGrandOpeningData();
                 
                 grandOpeningData.lastFetchTime = new Date();
+                window.grandOpeningData = grandOpeningData; // expose to ARIA
                 console.log('✅ Grand Opening data loaded and displayed successfully');
 
             } catch (error) {
@@ -8183,6 +8194,7 @@
                 const csv  = await resp.text();
                 clAllUpdates = parseCLCSV(csv);
                 clHasLoaded  = true;
+                window.clAllUpdates = clAllUpdates; // expose to ARIA
 
                 updateCLCountBadges(clAllUpdates);
                 clFiltered = clAllUpdates;
@@ -8579,6 +8591,7 @@
                 powerlifeData.products = products;
                 powerlifeData.filteredProducts = products;
                 powerlifeData.lastFetchTime = new Date();
+                window.powerlifeData = powerlifeData; // expose to ARIA
                 
                 console.log(`✅ Parsed ${products.length} products`);
                 console.log('📦 First 3 products:', products.slice(0, 3));
@@ -8999,6 +9012,10 @@
             currentUser = null;
             currentUserRole = null;
             currentUserName = null;
+            window.currentUser = null;
+            window.currentUserRole = null;
+            window.currentUserName = null;
+            window.department_accessConfig = null;
             localStorage.removeItem('loginTime');
             
             // Reset UI
@@ -12152,6 +12169,7 @@
                 return `<span class="text-gray-500 mr-2 font-medium">${rank}</span>`;
             }
         };
+        window.amTracker = amTracker; // expose to ARIA
 
         // Elite BM Performance Tracker Namespace - All functions isolated
         const bmTracker = {
@@ -12749,6 +12767,7 @@
                 return `<span class="text-gray-500 font-medium">${rank}</span>`;
             }
         };
+        window.bmTracker = bmTracker; // expose to ARIA
 
         // ==============================================
         // JWT AUTHENTICATION SYSTEM - Phase 1 & 2
@@ -13526,6 +13545,7 @@ Ready for deployment! 🚀
             if (stored) {
                 try {
                     outletsData = JSON.parse(stored);
+                    window.outletsData = outletsData; // expose to ARIA
                     renderOutletsTable();
                     updateStatistics();
                     updateLeaderboard();
@@ -14701,6 +14721,7 @@ Ready for deployment! 🚀
                     console.log('🔄 Calling updateLeaderboard()...');
                     updateLeaderboard();
                     
+                    window.outletsData = outletsData; // expose to ARIA (Supabase path)
                     console.log('✅ Dashboard updated with', outletsData.length, 'outlets');
                 } else {
                     console.warn('⚠️ No data returned from Supabase query');
@@ -15027,6 +15048,7 @@ Ready for deployment! 🚀
                 
                 pshProjectData = pshData;
                 pshFilteredData = [...pshProjectData];
+                window.pshProjectData = pshProjectData; // expose to ARIA
                 
                 console.log('✅ PSH Data loaded:', pshProjectData.length, 'outlets');
                 
@@ -15561,14 +15583,21 @@ Ready for deployment! 🚀
     </script>
     
     <!-- Incentive Calculator Module -->
-    <script src="assets/js/incentive-calculator.js?v=4.1">
+    <script src="assets/js/incentive-calculator.js?v=4.3">
     
     <!-- Product Incentive Calculator Module -->
     <script src="assets/js/product-incentive-calculator.js?v=1.0"></script>
 
     <!-- Biodata Outlet Module -->
     <script src="biodata-outlet.js?v=1.0"></script>
-    
+
+    <!-- ============================================================
+         ARIA - Apotek Alpro AI Research & Intelligence Agent v2.0
+         Intelligent Department Chatbot with OpenAI API Integration
+    ============================================================ -->
+    <link rel="stylesheet" href="ai-agent.css?v=2.0">
+    <script src="ai-agent.js?v=2.0"></script>
+
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"95a376871c4135f2","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.6.2","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
 </body>
 </html>
