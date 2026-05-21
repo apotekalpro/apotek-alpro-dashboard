@@ -2,7 +2,7 @@
  * Incentive Calculator Module
  * Calculates AM, BM, and Alproean incentives based on sales performance and GP margins
  * 
- * VERSION: 4.1-GB (Goal Bulanan Enhanced)
+ * VERSION: 4.2-GB (Goal Bulanan Enhanced - Critical Fixes)
  * 
  * Features:
  * - Process 5 Excel files (Active Alproean, Full Alproean, Sales & GP, Personal Sales, Outlet Mapping)
@@ -14,7 +14,7 @@
  * - Goal Bulanan incentive system with month multiplier
  */
 
-console.log('🎯 Incentive Calculator v4.1-GB loaded - Goal Bulanan Enhanced System Active');
+console.log('🎯 Incentive Calculator v4.2-GB loaded - Goal Bulanan Enhanced System Active');
 
 const IncentiveCalculator = {
     // Data storage
@@ -805,6 +805,7 @@ const IncentiveCalculator = {
                             goalBulananHit: goalBulananHit,
                             goalBulananTarget: goalBulananTarget,
                             goalBulananAchievement: goalBulananAchievement,
+                            contributionRatio: contributionRatio,  // Store contribution ratio for display
                             amReward: 0,
                             bmReward: 0,
                             alproeanReward: 0,
@@ -1233,6 +1234,17 @@ const IncentiveCalculator = {
         });
         
         console.log(`Processed ${Object.keys(outletGroups).length} outlet groups for Alproean rewards`);
+        
+        // CRITICAL: Apply 50% cut to Ops Rewards if Goal Bulanan = NO
+        // This incentivizes employees to hit Goal Bulanan targets
+        matchedEmployees.forEach(emp => {
+            if (emp.goalBulananHit === 'NO') {
+                // Cut Ops Rewards by 50%
+                emp.alproeanReward = emp.alproeanReward * 0.5;
+                emp.bmReward = emp.bmReward * 0.5;
+                emp.amReward = emp.amReward * 0.5;
+            }
+        });
         
         // Calculate total rewards (will be updated after Goal Bulanan calculation)
         matchedEmployees.forEach(emp => {
