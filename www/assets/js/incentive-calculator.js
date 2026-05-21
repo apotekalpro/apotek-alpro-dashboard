@@ -2,7 +2,7 @@
  * Incentive Calculator Module
  * Calculates AM, BM, and Alproean incentives based on sales performance and GP margins
  * 
- * VERSION: 4.4-GB (Goal Bulanan Enhanced - AM Outlet Mapping Fix)
+ * VERSION: 4.5-GB (Goal Bulanan Enhanced - Export Fix + Sales & GP Data)
  * 
  * Features:
  * - Process 5 Excel files (Active Alproean, Full Alproean, Sales & GP, Personal Sales, Outlet Mapping)
@@ -13,9 +13,10 @@
  * - Export matched and unmatched results
  * - Goal Bulanan incentive system with month multiplier
  * - AM outlet display from Mapping file (not personal sales)
+ * - Export includes Sales & GP data (total revenue, GP amount)
  */
 
-console.log('🎯 Incentive Calculator v4.4-GB loaded - Goal Bulanan Enhanced with AM Mapping Fix');
+console.log('🎯 Incentive Calculator v4.5-GB loaded - Export Fixed + Sales & GP Data');
 
 const IncentiveCalculator = {
     // Data storage
@@ -1671,6 +1672,8 @@ const IncentiveCalculator = {
             'Outlet',
             'Remark',
             'Personal Sales (Rp)',
+            'Outlet Total Revenue (Rp)',  // From Sales & GP report
+            'Outlet GP (Rp)',  // From Sales & GP report
             'Contribution Ratio (%)',
             'GP Margin (%)',
             'Goal Bulanan',
@@ -1700,6 +1703,8 @@ const IncentiveCalculator = {
                     role: emp.employee.role,
                     mainOutlet: emp.mainOutlet || emp.employee.outlet,
                     mainOutletGPMargin: 0,  // Track GP margin for main outlet
+                    mainOutletTotalRevenue: 0,  // Track total revenue for main outlet (from Sales & GP)
+                    mainOutletGP: 0,  // Track total GP for main outlet (from Sales & GP)
                     outletSalesMap: {},  // Track sales per outlet to find highest
                     outlets: [],
                     allMappedOutlets: [],  // For AM: ALL outlets from Mapping file
@@ -1712,6 +1717,8 @@ const IncentiveCalculator = {
                     areaGoalBulananTarget: emp.areaGoalBulananTarget || 0,  // For AM only
                     amTotalOutlets: 0,  // For AM outlet count remark
                     amAreaGPMargin: 0,  // For AM weighted area GP margin
+                    amTotalRevenue: 0,  // For AM total area revenue (from Sales & GP)
+                    amTotalGP: 0,  // For AM total area GP (from Sales & GP)
                     amReward: 0,
                     bmReward: 0,
                     alproeanReward: 0,
@@ -1728,11 +1735,15 @@ const IncentiveCalculator = {
             const currentOutlet = emp.employee.outlet;
             const currentSales = emp.personalSales ? emp.personalSales.personalSales : 0;
             const currentGPMargin = emp.salesData ? emp.salesData.gpMargin : 0;
+            const currentTotalRevenue = emp.salesData ? emp.salesData.totalSales : 0;
+            const currentGP = emp.salesData ? emp.salesData.gp : 0;
             
             if (!aggregatedResults[key].outletSalesMap[currentOutlet]) {
                 aggregatedResults[key].outletSalesMap[currentOutlet] = {
                     sales: 0,
-                    gpMargin: currentGPMargin
+                    gpMargin: currentGPMargin,
+                    totalRevenue: currentTotalRevenue,  // From Sales & GP report
+                    gp: currentGP  // From Sales & GP report
                 };
             }
             aggregatedResults[key].outletSalesMap[currentOutlet].sales += currentSales;
@@ -1761,6 +1772,21 @@ const IncentiveCalculator = {
                         .filter(mapping => this.toSafeString(mapping.areaManager) === amName)
                         .map(mapping => mapping.outlet);
                     aggregatedResults[key].allMappedOutlets = mappedOutlets;
+                    
+                    // Calculate total AM area revenue and GP from Sales & GP report
+                    let totalRevenue = 0;
+                    let totalGP = 0;
+                    mappedOutlets.forEach(outlet => {
+                        const salesData = this.data.salesGpData.find(sales => 
+                            this.outletMatch(sales.outlet, outlet)
+                        );
+                        if (salesData) {
+                            totalRevenue += salesData.totalSales || 0;
+                            totalGP += salesData.gp || 0;
+                        }
+                    });
+                    aggregatedResults[key].amTotalRevenue = totalRevenue;
+                    aggregatedResults[key].amTotalGP = totalGP;
                 }
             }
             
@@ -1802,17 +1828,23 @@ const IncentiveCalculator = {
                 let maxSales = 0;
                 let mainOutlet = '';
                 let mainGPMargin = 0;
+                let mainTotalRevenue = 0;
+                let mainGP = 0;
                 
                 Object.entries(emp.outletSalesMap).forEach(([outlet, data]) => {
                     if (data.sales > maxSales) {
                         maxSales = data.sales;
                         mainOutlet = outlet;
                         mainGPMargin = data.gpMargin;
+                        mainTotalRevenue = data.totalRevenue;
+                        mainGP = data.gp;
                     }
                 });
                 
                 emp.mainOutlet = mainOutlet;
                 emp.mainOutletGPMargin = mainGPMargin;
+                emp.mainOutletTotalRevenue = mainTotalRevenue;
+                emp.mainOutletGP = mainGP;
             }
         });
         
@@ -1821,6 +1853,10 @@ const IncentiveCalculator = {
             // Average the ratio and margin by outlet count
             const avgContributionRatio = emp.outletCount > 0 ? emp.contributionRatio / emp.outletCount : 0;
             const avgGpMargin = emp.outletCount > 0 ? emp.gpMargin / emp.outletCount : 0;
+            
+            // Determine role type FIRST (before using isAM)
+            const role = (emp.role || '').toUpperCase();
+            const isAM = role.includes('AREA MANAGER') && !role.includes('BRANCH');
             
             // Show all outlets
             // For AM: Use ALL mapped outlets from Outlet Mapping file (authoritative source)
@@ -1855,8 +1891,7 @@ const IncentiveCalculator = {
             
             // Remark for BM & Alproean main outlet with GP margin
             // For AM: show total outlets and weighted area GP margin
-            const role = (emp.role || '').toUpperCase();
-            const isAM = role.includes('AREA MANAGER') && !role.includes('BRANCH');
+            // Note: isAM already defined above (line 1828)
             let remark = '';
             if (isAM && emp.amTotalOutlets > 0) {
                 // AM remark shows total outlets and weighted area GP margin
@@ -1868,6 +1903,12 @@ const IncentiveCalculator = {
                 remark = `Main Outlet: ${emp.mainOutlet} (GP: ${gpMargin})`;
             }
             
+            // Determine outlet revenue and GP to display
+            // For AM: Show total area revenue and GP
+            // For BM/Alproean: Show main outlet revenue and GP
+            const outletRevenue = isAM ? emp.amTotalRevenue : emp.mainOutletTotalRevenue;
+            const outletGP = isAM ? emp.amTotalGP : emp.mainOutletGP;
+            
             exportData.push([
                 emp.employeeName,
                 emp.employeeId,
@@ -1875,6 +1916,8 @@ const IncentiveCalculator = {
                 outletDisplay,
                 remark,
                 emp.personalSales,
+                outletRevenue,  // Outlet Total Revenue from Sales & GP
+                outletGP,  // Outlet GP from Sales & GP
                 avgContributionRatio.toFixed(2),
                 avgGpMargin.toFixed(2),
                 goalBulananOverall,
