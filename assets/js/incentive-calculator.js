@@ -2,7 +2,7 @@
  * Incentive Calculator Module
  * Calculates AM, BM, and Alproean incentives based on sales performance and GP margins
  * 
- * VERSION: 4.6.1-GB (Goal Bulanan Enhanced - Fixed Original Incentive)
+ * VERSION: 4.6.2-GB (Goal Bulanan Enhanced - Added Calculated GP Margin Column)
  * 
  * Features:
  * - Process 5 Excel files (Active Alproean, Full Alproean, Sales & GP, Personal Sales, Outlet Mapping)
@@ -16,9 +16,10 @@
  * - Export includes Sales & GP data (total revenue, GP amount)
  * - Export includes Ops targets and deduction remarks
  * - Export shows ORIGINAL incentive BEFORE ALL deductions (including GP margin)
+ * - Export includes calculated GP Margin % (GP / Revenue)
  */
 
-console.log('🎯 Incentive Calculator v4.6.1-GB loaded - Original Incentive Before All Deductions');
+console.log('🎯 Incentive Calculator v4.6.2-GB loaded - Added Calculated GP Margin Column');
 
 const IncentiveCalculator = {
     // Data storage
@@ -1736,10 +1737,11 @@ const IncentiveCalculator = {
             'Remark',
             'Personal Sales (Rp)',
             'Outlet Total Revenue (Rp)',  // From Sales & GP report
-            'Outlet GP (Rp)',  // From Sales & GP report
+            'Outlet Total GP (Rp)',  // From Sales & GP report (renamed from "Outlet GP")
+            'Calculated GP Margin (%)',  // NEW: (GP / Revenue) × 100
             'Outlet Ops Target (Rp)',  // From Outlet Mapping
             'Contribution Ratio (%)',
-            'GP Margin (%)',
+            'GP Margin (%)',  // From Sales & GP report (original margin)
             'Goal Bulanan',
             'Goal Bulanan Target (Rp)',
             'Area Goal Bulanan',
@@ -2003,6 +2005,11 @@ const IncentiveCalculator = {
             const outletGP = isAM ? emp.amTotalGP : emp.mainOutletGP;
             const outletOpsTarget = isAM ? emp.amAreaOpsTarget : emp.mainOutletOpsTarget;
             
+            // Calculate GP Margin %: (GP / Revenue) × 100
+            const calculatedGPMargin = outletRevenue > 0 
+                ? (outletGP / outletRevenue) * 100 
+                : 0;
+            
             // Format deduction remarks
             const deductionRemark = emp.deductionRemarks.length > 0 
                 ? emp.deductionRemarks.join('; ') 
@@ -2016,10 +2023,11 @@ const IncentiveCalculator = {
                 remark,
                 emp.personalSales,
                 outletRevenue,  // Outlet Total Revenue from Sales & GP
-                outletGP,  // Outlet GP from Sales & GP
+                outletGP,  // Outlet Total GP from Sales & GP (renamed)
+                calculatedGPMargin.toFixed(2),  // NEW: Calculated GP Margin % (GP/Revenue×100)
                 outletOpsTarget,  // Outlet Ops Target from Outlet Mapping
                 avgContributionRatio.toFixed(2),
-                avgGpMargin.toFixed(2),
+                avgGpMargin.toFixed(2),  // Original GP Margin from Sales & GP
                 goalBulananOverall,
                 goalBulananTargetDisplay,
                 areaGoalBulananDisplay,
