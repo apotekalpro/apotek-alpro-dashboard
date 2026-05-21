@@ -2,7 +2,7 @@
  * Incentive Calculator Module
  * Calculates AM, BM, and Alproean incentives based on sales performance and GP margins
  * 
- * VERSION: 4.3-GB (Goal Bulanan Enhanced - Complete Fix)
+ * VERSION: 4.4-GB (Goal Bulanan Enhanced - AM Outlet Mapping Fix)
  * 
  * Features:
  * - Process 5 Excel files (Active Alproean, Full Alproean, Sales & GP, Personal Sales, Outlet Mapping)
@@ -12,9 +12,10 @@
  * - Apply GP margin adjustments
  * - Export matched and unmatched results
  * - Goal Bulanan incentive system with month multiplier
+ * - AM outlet display from Mapping file (not personal sales)
  */
 
-console.log('🎯 Incentive Calculator v4.3-GB loaded - Goal Bulanan Enhanced System Active');
+console.log('🎯 Incentive Calculator v4.4-GB loaded - Goal Bulanan Enhanced with AM Mapping Fix');
 
 const IncentiveCalculator = {
     // Data storage
@@ -1701,6 +1702,7 @@ const IncentiveCalculator = {
                     mainOutletGPMargin: 0,  // Track GP margin for main outlet
                     outletSalesMap: {},  // Track sales per outlet to find highest
                     outlets: [],
+                    allMappedOutlets: [],  // For AM: ALL outlets from Mapping file
                     personalSales: 0,
                     contributionRatio: 0,
                     gpMargin: 0,
@@ -1750,6 +1752,16 @@ const IncentiveCalculator = {
                 aggregatedResults[key].amTotalOutlets = emp.goalBulananTotalOutlets || 0;
                 // Track AM weighted area GP margin (from goalBulananMargin)
                 aggregatedResults[key].amAreaGPMargin = emp.goalBulananMargin || 0;
+                
+                // For AM: Get ALL mapped outlets from Outlet Mapping file
+                // This is the authoritative source for AM outlet assignments
+                if (aggregatedResults[key].allMappedOutlets.length === 0) {
+                    const amName = this.toSafeString(emp.employee.employeeName);
+                    const mappedOutlets = this.data.outletMappingData
+                        .filter(mapping => this.toSafeString(mapping.areaManager) === amName)
+                        .map(mapping => mapping.outlet);
+                    aggregatedResults[key].allMappedOutlets = mappedOutlets;
+                }
             }
             
             // Sum personal sales
@@ -1810,10 +1822,21 @@ const IncentiveCalculator = {
             const avgContributionRatio = emp.outletCount > 0 ? emp.contributionRatio / emp.outletCount : 0;
             const avgGpMargin = emp.outletCount > 0 ? emp.gpMargin / emp.outletCount : 0;
             
-            // Show all outlets if employee works in multiple
-            const outletDisplay = emp.outlets.length > 1 
-                ? emp.outlets.join(', ') + ` [${emp.outlets.length} outlets]`
-                : emp.outlets[0] || '';
+            // Show all outlets
+            // For AM: Use ALL mapped outlets from Outlet Mapping file (authoritative source)
+            // For BM/Alproean: Use outlets where they have personal sales
+            let outletDisplay = '';
+            if (isAM && emp.allMappedOutlets.length > 0) {
+                // AM: Show ALL outlets from Mapping file
+                outletDisplay = emp.allMappedOutlets.length > 1 
+                    ? emp.allMappedOutlets.join(', ') + ` [${emp.allMappedOutlets.length} outlets]`
+                    : emp.allMappedOutlets[0];
+            } else {
+                // BM/Alproean: Show outlets where they have personal sales
+                outletDisplay = emp.outlets.length > 1 
+                    ? emp.outlets.join(', ') + ` [${emp.outlets.length} outlets]`
+                    : emp.outlets[0] || '';
+            }
             
             // Determine overall Goal Bulanan status
             // If ANY outlet hits goal, show YES; otherwise NO
