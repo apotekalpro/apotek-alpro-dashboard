@@ -2537,6 +2537,10 @@
                                         class="bpt-subtab whitespace-nowrap py-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
                                     <i class="fab fa-instagram mr-2"></i>Instagram Performance
                                 </button>
+                                <button onclick="showBptSubTab('vmDashboard')" id="vmDashboardTab"
+                                        class="bpt-subtab whitespace-nowrap py-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                                    <i class="fas fa-store mr-2"></i>VM
+                                </button>
                             </nav>
                         </div>
                     </div>
@@ -2591,6 +2595,85 @@
                             <iframe id="instagramPerfIframe" data-src="instagram-performance.html"
                                     class="iframe-full lazy-iframe w-full h-full border-0 rounded-lg"
                                     sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- VM Dashboard Sub-content -->
+                    <div id="vmDashboardContent" class="bpt-subcontent hidden">
+                        <div class="p-4" style="background:#f8fafc;min-height:calc(100vh - 200px);">
+
+                            <!-- VM Header -->
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                                        <i class="fas fa-store text-purple-600"></i>
+                                        VM — Visual Merchandising Booking
+                                    </h3>
+                                    <p class="text-gray-500 text-sm mt-0.5">Live data from Google Sheets · auto-refreshes every 60 s</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span id="vmLastUpdated" class="text-xs text-gray-400 italic">Loading…</span>
+                                    <button onclick="vmFetchData()" title="Refresh now"
+                                            class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-white"
+                                            style="background:#7c3aed">
+                                        <i class="fas fa-sync-alt" id="vmRefreshIcon"></i>
+                                        Refresh
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Summary Cards -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="vmSummaryCards">
+                                <!-- injected by JS -->
+                            </div>
+
+                            <!-- Filter bar -->
+                            <div class="flex flex-wrap gap-3 mb-4 items-center">
+                                <label class="text-sm font-medium text-gray-700">Filter Status:</label>
+                                <select id="vmStatusFilter" onchange="vmRenderTable()"
+                                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-400 outline-none">
+                                    <option value="">All Status</option>
+                                </select>
+                                <label class="text-sm font-medium text-gray-700 ml-2">Supplier:</label>
+                                <select id="vmSupplierFilter" onchange="vmRenderTable()"
+                                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-purple-400 outline-none">
+                                    <option value="">All Suppliers</option>
+                                </select>
+                            </div>
+
+                            <!-- Booking Table -->
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr style="background:linear-gradient(135deg,#7c3aed,#a855f7);" class="text-white">
+                                                <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Supplier</th>
+                                                <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Type VM</th>
+                                                <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Product</th>
+                                                <th class="px-4 py-3 text-left font-semibold whitespace-nowrap">Periode</th>
+                                                <th class="px-4 py-3 text-center font-semibold whitespace-nowrap">Qty Toko</th>
+                                                <th class="px-4 py-3 text-right font-semibold whitespace-nowrap">Total Sponsorship</th>
+                                                <th class="px-4 py-3 text-center font-semibold whitespace-nowrap">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="vmTableBody">
+                                            <tr><td colspan="7" class="text-center py-10 text-gray-400">
+                                                <i class="fas fa-spinner fa-spin text-2xl mb-2 block"></i>Loading data…
+                                            </td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Empty state -->
+                            <div id="vmEmptyState" class="hidden text-center py-12">
+                                <i class="fas fa-inbox text-4xl text-gray-300 mb-3 block"></i>
+                                <p class="text-gray-400">No bookings match the selected filters.</p>
+                            </div>
+
+                            <p class="text-xs text-gray-400 mt-3 text-right">
+                                Source: <a href="https://docs.google.com/spreadsheets/d/1hG0LYjAGubpoFceMr2yOqj8NCcmA7L05khOfivrE3aw/edit" target="_blank" class="text-purple-500 underline">Google Sheets · DETAIL PER BOOKING</a>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -7471,10 +7554,281 @@
                     tabEl.classList.add('border-black', 'text-black');
                 } else if (subtabId === 'instagramPerformance') {
                     tabEl.classList.add('border-pink-500', 'text-pink-600');
+                } else if (subtabId === 'vmDashboard') {
+                    tabEl.classList.add('border-purple-500', 'text-purple-600');
+                    // Trigger VM data load on first visit
+                    if (!window._vmInitialized) {
+                        window._vmInitialized = true;
+                        vmFetchData();
+                        window._vmRefreshInterval = setInterval(vmFetchData, 60000);
+                    }
                 } else {
                     tabEl.classList.add('border-orange-500', 'text-orange-600');
                 }
             }
+        }
+
+        /* ============================================================
+           VM Dashboard — Live Google Sheets Data
+           Sheet: DETAIL PER BOOKING
+           B=Supplier, D=Type VM, E=Product, F=Periode, G=Qty Toko,
+           I=Total Sponsorship, J=Status
+           Exclude supplier: KENKO
+           B column is merged (same supplier spans multiple rows)
+        ============================================================ */
+        const VM_SHEET_ID  = '1hG0LYjAGubpoFceMr2yOqj8NCcmA7L05khOfivrE3aw';
+        const VM_SHEET_NAME = 'DETAIL PER BOOKING';
+        let   _vmRawData   = [];
+
+        async function vmFetchData() {
+            const icon = document.getElementById('vmRefreshIcon');
+            if (icon) icon.classList.add('fa-spin');
+            try {
+                const url = `https://docs.google.com/spreadsheets/d/${VM_SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(VM_SHEET_NAME)}&t=${Date.now()}`;
+                const res = await fetch(url);
+                const txt = await res.text();
+                // GViz wraps response in google.visualization.Query.setResponse(...)
+                const jsonStr = txt.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, '');
+                const data = JSON.parse(jsonStr);
+                _vmRawData = vmParseGviz(data);
+                vmBuildFilters();
+                vmRenderCards();
+                vmRenderTable();
+                const now = new Date();
+                const el = document.getElementById('vmLastUpdated');
+                if (el) el.textContent = 'Last updated: ' + now.toLocaleTimeString('id-ID');
+            } catch(e) {
+                console.error('VM fetch error', e);
+                const tb = document.getElementById('vmTableBody');
+                if (tb) tb.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-red-400"><i class="fas fa-exclamation-triangle mr-2"></i>Failed to load data. Will retry.</td></tr>`;
+            }
+            if (icon) icon.classList.remove('fa-spin');
+        }
+
+        function vmParseGviz(gviz) {
+            // GViz rows are already data rows (no extra header row to skip)
+            // table.cols[].label gives the column headers
+            const rows = gviz.table.rows;
+            const results = [];
+            let lastSupplier = '';
+            for (let i = 0; i < rows.length; i++) {
+                const r = rows[i];
+                const cell = (col) => {
+                    if (!r.c || !r.c[col]) return '';
+                    const c = r.c[col];
+                    // For number cells use formatted value first, fallback to v
+                    if (c.f !== undefined && c.f !== null) return String(c.f);
+                    if (c.v !== undefined && c.v !== null) return String(c.v);
+                    return '';
+                };
+                const cellRaw = (col) => {
+                    if (!r.c || !r.c[col]) return null;
+                    const c = r.c[col];
+                    return (c && c.v !== undefined && c.v !== null) ? c.v : null;
+                };
+
+                // GViz: Col A=0(NO), B=1(SUPPLIER), C=2(PIC), D=3(VM BOOKING), E=4(SKU/PRODUCT),
+                //       F=5(PERIODE), G=6(QTY TOKO), H=7(BIAYA/TOKO), I=8(TOTAL BIAYA), J=9(STATUS)
+                const rawSupplier = cell(1).trim();
+                if (rawSupplier) lastSupplier = rawSupplier;
+                const supplier = lastSupplier;
+
+                // Exclude KENKO (case-insensitive) and empty supplier rows
+                if (!supplier || supplier.toUpperCase() === 'KENKO') continue;
+
+                const typeVM   = cell(3).trim();
+                const product  = cell(4).trim();
+                const periode  = cell(5).trim();
+                const qtyToko  = cell(6).trim();
+                const totalRaw = cellRaw(8);
+                const totalFmt = cell(8).trim();
+                const status   = cell(9).trim();
+
+                // Skip rows where all relevant fields are empty
+                if (!typeVM && !product && !periode && !status) continue;
+
+                results.push({ supplier, typeVM, product, periode, qtyToko, totalRaw, totalFmt, status });
+            }
+            return results;
+        }
+
+        function vmBuildFilters() {
+            const statuses  = [...new Set(_vmRawData.map(r => r.status).filter(Boolean))].sort();
+            const suppliers = [...new Set(_vmRawData.map(r => r.supplier).filter(Boolean))].sort();
+
+            const statusSel = document.getElementById('vmStatusFilter');
+            const supplierSel = document.getElementById('vmSupplierFilter');
+            if (!statusSel || !supplierSel) return;
+
+            const prevStatus   = statusSel.value;
+            const prevSupplier = supplierSel.value;
+
+            statusSel.innerHTML   = '<option value="">All Status</option>';
+            supplierSel.innerHTML = '<option value="">All Suppliers</option>';
+
+            statuses.forEach(s  => {
+                const o = document.createElement('option'); o.value = s; o.textContent = s;
+                if (s === prevStatus) o.selected = true;
+                statusSel.appendChild(o);
+            });
+            suppliers.forEach(s => {
+                const o = document.createElement('option'); o.value = s; o.textContent = s;
+                if (s === prevSupplier) o.selected = true;
+                supplierSel.appendChild(o);
+            });
+        }
+
+        function vmGetFiltered() {
+            const statusF   = (document.getElementById('vmStatusFilter')   || {}).value || '';
+            const supplierF = (document.getElementById('vmSupplierFilter') || {}).value || '';
+            return _vmRawData.filter(r =>
+                (!statusF   || r.status   === statusF)   &&
+                (!supplierF || r.supplier === supplierF)
+            );
+        }
+
+        function vmFormatRp(val) {
+            if (val === null || val === undefined || val === '') return '—';
+            const num = typeof val === 'number' ? val : parseFloat(String(val).replace(/[^0-9.-]/g,''));
+            if (isNaN(num)) return '—';
+            if (num === 0) return 'Rp 0';
+            return 'Rp ' + num.toLocaleString('id-ID');
+        }
+
+        function vmExtractNumber(raw) {
+            if (raw === null || raw === undefined) return 0;
+            if (typeof raw === 'number') return raw;
+            const n = parseFloat(String(raw).replace(/[^0-9.-]/g, ''));
+            return isNaN(n) ? 0 : n;
+        }
+
+        function vmRenderCards() {
+            const container = document.getElementById('vmSummaryCards');
+            if (!container) return;
+
+            const data = _vmRawData; // cards use unfiltered data
+
+            // Total sponsorship (year 2026) – use totalRaw numeric value
+            const total2026 = data
+                .filter(r => r.periode && r.periode.includes('2026'))
+                .reduce((s, r) => s + vmExtractNumber(r.totalRaw), 0);
+
+            // Also sum ALL rows regardless of year
+            const totalAll = data.reduce((s, r) => s + vmExtractNumber(r.totalRaw), 0);
+
+            const totalBookings  = data.length;
+            const uniqueSuppliers = new Set(data.map(r => r.supplier).filter(Boolean)).size;
+            const statusCounts = {};
+            data.forEach(r => { statusCounts[r.status] = (statusCounts[r.status] || 0) + 1; });
+            const sudahDipasang = statusCounts['SUDAH DIPASANG'] || 0;
+            const approved      = Object.entries(statusCounts)
+                                        .filter(([k]) => k && k.toUpperCase().includes('APPROVED'))
+                                        .reduce((s,[,v]) => s+v, 0);
+
+            const fmt2026 = 'Rp ' + (total2026 > 0 ? total2026 : totalAll).toLocaleString('id-ID');
+
+            const cards = [
+                {
+                    icon: 'fas fa-receipt',
+                    color: '#7c3aed',
+                    bg: '#f5f3ff',
+                    label: 'Total Sponsorship 2026',
+                    value: fmt2026,
+                    sub: total2026 > 0 ? 'Periode 2026 | Excl. Kenko' : 'All bookings | Excl. Kenko'
+                },
+                {
+                    icon: 'fas fa-building',
+                    color: '#0891b2',
+                    bg: '#ecfeff',
+                    label: 'Active Suppliers',
+                    value: uniqueSuppliers,
+                    sub: 'Excl. Kenko'
+                },
+                {
+                    icon: 'fas fa-clipboard-list',
+                    color: '#059669',
+                    bg: '#ecfdf5',
+                    label: 'Total Bookings',
+                    value: totalBookings,
+                    sub: 'All VM items'
+                },
+                {
+                    icon: 'fas fa-check-circle',
+                    color: '#d97706',
+                    bg: '#fffbeb',
+                    label: 'Sudah Dipasang',
+                    value: sudahDipasang,
+                    sub: approved > 0 ? approved + ' approved / pending' : 'All installed'
+                },
+            ];
+
+            container.innerHTML = cards.map(c => `
+                <div class="rounded-xl p-4 border border-gray-100 shadow-sm flex items-start gap-3" style="background:${c.bg}">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style="background:${c.color}20">
+                        <i class="${c.icon} text-base" style="color:${c.color}"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs text-gray-500 font-medium truncate">${c.label}</p>
+                        <p class="text-lg font-bold text-gray-800 leading-tight">${c.value}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">${c.sub}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function vmRenderTable() {
+            const filtered = vmGetFiltered();
+            const tbody = document.getElementById('vmTableBody');
+            const empty = document.getElementById('vmEmptyState');
+            if (!tbody) return;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                if (empty) empty.classList.remove('hidden');
+                return;
+            }
+            if (empty) empty.classList.add('hidden');
+
+            // Status badge color map
+            const statusColor = (s) => {
+                if (!s) return 'background:#e5e7eb;color:#374151';
+                const u = s.toUpperCase();
+                if (u.includes('SUDAH DIPASANG'))         return 'background:#dcfce7;color:#166534';
+                if (u.includes('APPROVED') && u.includes('BELUM')) return 'background:#fef9c3;color:#854d0e';
+                if (u.includes('APPROVED'))                return 'background:#dbeafe;color:#1e40af';
+                if (u.includes('PENDING'))                 return 'background:#fee2e2;color:#991b1b';
+                if (u.includes('CANCEL'))                  return 'background:#f3f4f6;color:#6b7280';
+                return 'background:#e0e7ff;color:#3730a3';
+            };
+
+            // Group by supplier to show supplier name once (visual grouping)
+            let html = '';
+            let prevSupplier = null;
+            filtered.forEach((r, idx) => {
+                const rowBg = idx % 2 === 0 ? '#ffffff' : '#fafafa';
+                const isNewSupplier = r.supplier !== prevSupplier;
+                if (isNewSupplier) {
+                    html += `<tr style="background:#f3e8ff;">
+                        <td colspan="7" class="px-4 py-2 font-bold text-purple-800 text-sm border-t-2 border-purple-200">
+                            <i class="fas fa-building mr-2 text-purple-500"></i>${r.supplier}
+                        </td>
+                    </tr>`;
+                    prevSupplier = r.supplier;
+                }
+                html += `<tr style="background:${rowBg};" class="hover:bg-purple-50 transition-colors">
+                    <td class="px-4 py-2.5 text-gray-500 text-xs pl-8">${r.supplier}</td>
+                    <td class="px-4 py-2.5 font-medium text-gray-800">${r.typeVM || '—'}</td>
+                    <td class="px-4 py-2.5 text-gray-600">${r.product || '—'}</td>
+                    <td class="px-4 py-2.5 text-gray-600 whitespace-nowrap text-xs">${r.periode || '—'}</td>
+                    <td class="px-4 py-2.5 text-center font-semibold text-gray-700">${r.qtyToko || '—'}</td>
+                    <td class="px-4 py-2.5 text-right font-semibold text-gray-800 whitespace-nowrap">${vmFormatRp(r.totalRaw)}</td>
+                    <td class="px-4 py-2.5 text-center">
+                        <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold" style="${statusColor(r.status)}">${r.status || '—'}</span>
+                    </td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = html;
         }
 
         // Strategy Subtab Functions
