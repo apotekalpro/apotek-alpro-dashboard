@@ -351,18 +351,49 @@ function fetchGviz(sheetName) {
       var json;
       try { json = JSON.parse(text.substring(start, end + 1)); } catch(e) { return null; }
 
-      // ── SHEET EXISTENCE CHECK ──────────────────────────────────────────
-      // Google returns the FIRST sheet when the requested sheet doesn't
-      // exist.  Detect this by checking that col[4] label (the Views
-      // column, "Total Views Postingan … <MonthName>") contains the
-      // requested month name.
-      var cols = (json.table && json.table.cols) ? json.table.cols : [];
-      var viewsColLabel = cols.length > 4 ? (cols[4].label || '').toLowerCase() : '';
-      if (viewsColLabel.indexOf(sheetName.toLowerCase()) === -1) {
-        // Column header doesn't mention this month → sheet doesn't exist
-        return null;
+      // ── SHEET EXISTENCE CHECK — 3-strategy approach ───────────────────
+      // Google silently returns the FIRST sheet when the requested sheet
+      // doesn't exist.  We use three strategies to detect the right sheet:
+      var cols  = (json.table && json.table.cols) ? json.table.cols : [];
+      var rows2 = (json.table && json.table.rows) ? json.table.rows : [];
+      var sLow  = sheetName.toLowerCase();
+
+      // Strategy 1 (Februari/Maret): col[4] label has the month name
+      //   e.g. "Total Views Postingan 23 Februari"
+      var viewsLabel = cols.length > 4 ? (cols[4].label || '').toLowerCase() : '';
+      if (viewsLabel && viewsLabel.indexOf(sLow) !== -1) return json;
+
+      // Strategy 2 (April): col labels are generic ("Week","NAMA KOS",
+      //   "Total Views Postingan") but the sheet really exists.
+      //   Identified by: col[0]="Week", col[2] name-like, AND col[4] does
+      //   NOT mention a different month (rules out fallback returns).
+      var col0Lbl = (cols.length > 0 ? cols[0].label || '' : '').toLowerCase().trim();
+      var col2Lbl = (cols.length > 2 ? cols[2].label || '' : '').toLowerCase().trim();
+      var genericHeaders = (col0Lbl === 'week' || col0Lbl === 'week ') &&
+          (col2Lbl === 'nama kos' || col2Lbl === 'nama' || col2Lbl === 'name');
+      // Critical guard: if col[4] mentions a DIFFERENT month, this is a fallback
+      var col4LblFull = cols.length > 4 ? (cols[4].label || '').toLowerCase() : '';
+      var col4HasOtherMonth = col4LblFull !== '' && col4LblFull.indexOf(sLow) === -1 &&
+          MONTH_ORDER.some(function(m) {
+            return m.toLowerCase() !== sLow && col4LblFull.indexOf(m.toLowerCase()) !== -1;
+          });
+      if (genericHeaders && !col4HasOtherMonth && rows2.length > 0) {
+        var fr = rows2[0].c || [];
+        var frVal = fr[0] ? String(fr[0].v || '').trim().toLowerCase() : '';
+        if (/^week\s+\d/.test(frVal)) return json;
       }
-      return json;
+
+      // Strategy 3 (Mei): all col labels are empty; the very first row
+      //   holds a title cell like "Mei 2026".
+      var allEmpty = cols.every(function(c) { return !c.label; });
+      if (allEmpty && rows2.length > 0) {
+        var tr = rows2[0].c || [];
+        var trVal = tr[0] ? String(tr[0].v || '').toLowerCase() : '';
+        if (trVal.indexOf(sLow) !== -1) return json;
+      }
+
+      // No strategy matched → this is a fallback (wrong sheet returned)
+      return null;
     })
     .catch(function() { return null; });
 }
@@ -370,15 +401,24 @@ function fetchGviz(sheetName) {
 // ═══════════════════════════════════════════════════════════════════════
 // PARSE ONE MONTH's gviz data
 //
-// New schema: Col A = Week label ("Week 1"…"Week 4")
-//             Col C = Nama KOS
-//             Each row has 3 posting slots (Mon/Wed/Fri) in cols D-R
+// Handles all 3 sheet formats:
+//   Format A (Februari/Maret): labelled cols, no extra rows
+//   Format B (April):          generic col labels, no extra rows
+//   Format C (Mei):            empty col labels, row 0 = title,
+//                              row 1 = header, row 2+ = data
 //
-// For the leaderboard we build per-week, per-person aggregates across
-// all 3 posting slots in that week-row.
+// Common schema: A(0)=Week, C(2)=Name, D-H(3-7)=slot1, I-M(8-12)=slot2,
+//                N-R(13-17)=slot3
 // ═══════════════════════════════════════════════════════════════════════
 function parseGvizMonth(json, sheetName) {
-  var rows = (json && json.table && json.table.rows) ? json.table.rows : [];
+  var allRows = (json && json.table && json.table.rows) ? json.table.rows : [];
+  if (!allRows.length) return null;
+
+  // Detect Format C: all col labels empty → skip title row + header row
+  var cols = (json.table && json.table.cols) ? json.table.cols : [];
+  var allLabelsEmpty = cols.every(function(c) { return !c.label; });
+  var rows = allLabelsEmpty && allRows.length >= 2 ? allRows.slice(2) : allRows;
+
   if (!rows.length) return null;
 
   var totalPosts = 0, totalViews = 0, totalLikes = 0, totalComments = 0, totalShares = 0;
@@ -390,16 +430,20 @@ function parseGvizMonth(json, sheetName) {
   for (var ri = 0; ri < rows.length; ri++) {
     var cells = rows[ri].c || [];
 
-    // Col A = week label
+    // Col A = week label — normalise to "Week N" regardless of case
     var weekLabel = gvizStr(cells[0]);
-    // Normalise to "Week N" (trim, title-case)
     if (!weekLabel) continue;
-    // Accept "Week 1" / "week 1" / "WEEK 1"
+    // Must contain "week" + a digit to be a real data row
+    if (!/week\s*\d/i.test(weekLabel)) continue;
     var weekNorm = weekLabel.trim().replace(/^week\s+/i, 'Week ');
 
     // Col C (index 2) = Nama KOS
     var name = gvizStr(cells[2]);
-    if (!name || name.toLowerCase() === 'nama kos') continue;
+    if (!name) continue;
+    var nLow = name.toLowerCase();
+    // Skip any residual header/label rows
+    if (nLow === 'nama kos' || nLow === 'nama' || nLow === 'name' ||
+        nLow === 'timestamp' || nLow === 'week') continue;
 
     // Ensure this week bucket exists (handles any week label not pre-defined)
     if (!weeklyAgg[weekNorm]) weeklyAgg[weekNorm] = {};
