@@ -313,8 +313,8 @@ const MONTHS = [
   { key:'feb2026', label:'Februari 2026', short:'Feb',  sheet:'Februari 2026', active:true  },
   { key:'mar2026', label:'Maret 2026',    short:'Mar',  sheet:'Maret 2026',    active:true  },
   { key:'apr2026', label:'April 2026',    short:'Apr',  sheet:'April 2026',    active:true  },
-  { key:'mei2026', label:'Mei 2026',      short:'Mei',  sheet:'Mei 2026',      active:false },
-  { key:'jun2026', label:'Juni 2026',     short:'Jun',  sheet:'Juni 2026',     active:false },
+  { key:'mei2026', label:'Mei 2026',      short:'Mei',  sheet:'Mei 2026',      active:true  },
+  { key:'jun2026', label:'Juni 2026',     short:'Jun',  sheet:'Juni 2026',     active:true  },
   { key:'jul2026', label:'Juli 2026',     short:'Jul',  sheet:'Juli 2026',     active:false },
   { key:'ags2026', label:'Agustus 2026',  short:'Ags',  sheet:'Agustus 2026',  active:false },
   { key:'sep2026', label:'September 2026',short:'Sep',  sheet:'September 2026',active:false },
@@ -357,60 +357,63 @@ function pNum(v) { if (!v) return 0; return parseFloat(v.toString().trim().repla
 function pPct(v) { if (!v) return 0; return parseFloat(v.toString().trim().replace(/%/g,'')) || 0; }
 
 // ── FOLLOWER DATA ────────────────────────────────────────────
-function currentMonthFollowerSheet() {
-  // Returns the follower sheet name for the current real month
-  const MONTH_NAMES = [
-    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-  ];
-  const now = new Date();
-  const m = MONTH_NAMES[now.getMonth() + 1]; // +1 because getMonth() is 0-based
-  const y = now.getFullYear();
-  return `${m} ${y} Follower`;
+const MONTH_NAMES_ID = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+function followerSheetName(monthIndex, year) {
+  return `${MONTH_NAMES_ID[monthIndex]} ${year} Follower`;
+}
+
+async function parseFollowerCsv(csv) {
+  // Row 0 = starting numbers row 1 in sheet: col C=ig_start
+  // Data starts row index 2: col A=date, C=ig, D=tt, E=fb
+  const rows = csvToRows(csv);
+  const igTarget = pNum(rows[0]?.[2]);
+  let lastRow = null, prevIg = igTarget;
+  for (let i = 2; i < rows.length; i++) {
+    const row = rows[i];
+    const igVal = pNum(row[2]);
+    if (igVal > 0) {
+      lastRow = {
+        date:     (row[0]||'').trim(),
+        ig:       igVal,
+        tt:       pNum(row[3]),
+        fb:       pNum(row[4]),
+        igGrowth: i > 2 ? igVal - (pNum(rows[i-1]?.[2]) || prevIg) : igVal - igTarget,
+        ttGrowth: i > 2 ? pNum(row[3]) - pNum(rows[i-1]?.[3]) : 0,
+        fbGrowth: i > 2 ? pNum(row[4]) - pNum(rows[i-1]?.[4]) : 0,
+      };
+      prevIg = igVal;
+    }
+  }
+  return lastRow;
 }
 
 async function fetchFollowerData() {
-  const sheetName = currentMonthFollowerSheet();
-  try {
-    const csv = await fetchSheet(sheetName);
-    const rows = csvToRows(csv);
+  const IG_FOLLOWER_TARGET = 100000;
+  const now = new Date();
+  let mo = now.getMonth() + 1; // 1-based
+  let yr = now.getFullYear();
 
-    // Row 0 (Row 1 in sheet) = starting numbers: C=ig_start, D=tt_start, E=fb_start
-    const igTarget = pNum(rows[0]?.[2]); // col C row 1 = target/starting
-
-    // Find last data row where col C (index 2) has a real follower number
-    // Data starts at row 2 (index 2), col A = date, C = ig, D = tt, E = fb
-    // Growth cols: H=igGrowth (index 7), I=ttGrowth (index 8), J=fbGrowth (index 9)
-    let lastRow = null;
-    let prevIg = igTarget;
-    for (let i = 2; i < rows.length; i++) {
-      const row = rows[i];
-      const igVal = pNum(row[2]);
-      if (igVal > 0) {
-        lastRow = {
-          date:     (row[0]||'').trim(),
-          ig:       igVal,
-          tt:       pNum(row[3]),
-          fb:       pNum(row[4]),
-          // Daily growth = difference from previous row
-          igGrowth: i > 2 ? igVal - (pNum(rows[i-1]?.[2]) || prevIg) : igVal - igTarget,
-          ttGrowth: i > 2 ? pNum(row[3]) - pNum(rows[i-1]?.[3]) : 0,
-          fbGrowth: i > 2 ? pNum(row[4]) - pNum(rows[i-1]?.[4]) : 0,
-        };
-        prevIg = igVal;
+  // Try current month first, then fall back up to 3 previous months
+  for (let attempt = 0; attempt < 4; attempt++) {
+    let m = mo - attempt;
+    let y = yr;
+    if (m <= 0) { m += 12; y -= 1; }
+    const sheetName = followerSheetName(m, y);
+    try {
+      const csv = await fetchSheet(sheetName);
+      const lastRow = await parseFollowerCsv(csv);
+      if (lastRow) {
+        return { ...lastRow, igTarget: IG_FOLLOWER_TARGET, sheetName };
       }
+      // Sheet exists but no data rows yet → try previous month
+    } catch(e) {
+      // Sheet doesn't exist → try previous month
     }
-
-    // Row 0 col G (index 6) can be target or growth total; col C row 1 = starting
-    // igTarget here = the "starting" number displayed in row 1; 
-    // Use a fixed target from config if you want, but for now use 100000
-    const IG_FOLLOWER_TARGET = 100000;
-
-    return lastRow ? { ...lastRow, igTarget: IG_FOLLOWER_TARGET, sheetName } : null;
-  } catch(e) {
-    console.warn('Follower fetch failed:', e.message);
-    return null;
   }
+  console.warn('No follower data found for current or recent months.');
+  return null;
 }
 
 function renderFollowerBanner(data) {
@@ -842,7 +845,7 @@ function buildScaffold() {
     `<div class="sec active" id="sec-overview"><div id="content-overview"></div></div>` +
     MONTHS.map(m =>
       `<div class="sec" id="sec-${m.key}">
-        <div class="sec-title">📸 ${m.label} <span class="pill ig">Instagram</span> ${m.active?'<span class="pill mo">Live Data</span>':'<span class="pill future">Belum Tersedia</span>'}</div>
+        <div class="sec-title">📸 ${m.label} <span class="pill ig">Instagram</span> <span class="pill ${m.active?'mo':'future'}">${m.active?'Live Data':'Belum Tersedia'}</span></div>
         <div id="content-${m.key}"><div class="coming-soon"><div class="cs-icon">⏳</div><h3>Memuat…</h3></div></div>
       </div>`
     ).join('');
