@@ -12247,9 +12247,9 @@
                                     ${this.getPerformanceBadge(am.l3Achievement)}
                                 </div>
                                 <div class="text-xs text-gray-600 space-y-1">
-                                    <div>L3: Rp ${(am.totalL3Target / 1000000000).toFixed(2)}Jt ${am.gapToL3 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL3 / 1000000000).toFixed(2) + 'Jt, Daily: ' + (am.dailyGapL3 / 1000000).toFixed(1) + 'Jt/' + am.daysRemaining + 'd)</span>' : '<span class="text-green-600">✓</span>'}</div>
-                                    <div>L2: Rp ${(am.totalL2Target / 1000000000).toFixed(2)}Jt ${am.gapToL2 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL2 / 1000000000).toFixed(2) + 'Jt, Daily: ' + (am.dailyGapL2 / 1000000).toFixed(1) + 'Jt/' + am.daysRemaining + 'd)</span>' : '<span class="text-green-600">✓</span>'}</div>
-                                    <div>L1: Rp ${(am.totalL1Target / 1000000000).toFixed(2)}Jt ${am.gapToL1 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL1 / 1000000000).toFixed(2) + 'Jt, Daily: ' + (am.dailyGapL1 / 1000000).toFixed(1) + 'Jt/' + am.daysRemaining + 'd)</span>' : '<span class="text-green-600">✓</span>'}</div>
+                                    <div>L3: Rp ${(am.totalL3Target / 1000000000).toFixed(2)}M ${am.gapToL3 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL3 / 1000000000).toFixed(2) + 'M, Daily: ' + (am.dailyGapL3 / 1000000).toFixed(1) + 'Jt/' + am.daysRemaining + 'd)</span>' : '<span class="text-green-600">✓</span>'}</div>
+                                    <div>L2: Rp ${(am.totalL2Target / 1000000000).toFixed(2)}M ${am.gapToL2 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL2 / 1000000000).toFixed(2) + 'M, Daily: ' + (am.dailyGapL2 / 1000000).toFixed(1) + 'Jt/' + am.daysRemaining + 'd)</span>' : '<span class="text-green-600">✓</span>'}</div>
+                                    <div>L1: Rp ${(am.totalL1Target / 1000000000).toFixed(2)}M ${am.gapToL1 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL1 / 1000000000).toFixed(2) + 'M, Daily: ' + (am.dailyGapL1 / 1000000).toFixed(1) + 'Jt/' + am.daysRemaining + 'd)</span>' : '<span class="text-green-600">✓</span>'}</div>
                                 </div>
                             </div>
                         </td>
@@ -12332,9 +12332,9 @@
                                     ${this.getPerformanceBadge(am.l3Achievement)}
                                 </div>
                                 <div class="text-xs text-gray-600">
-                                    <div>L3: ${(am.l3Target / 1000000000).toFixed(2)}Jt ${am.gapToL3 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL3 / 1000000000).toFixed(2) + 'Jt, +' + (am.dailyGapL3 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
-                                    <div>L2: ${(am.l2Target / 1000000000).toFixed(2)}Jt ${am.gapToL2 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL2 / 1000000000).toFixed(2) + 'Jt, +' + (am.dailyGapL2 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
-                                    <div>L1: ${(am.l1Target / 1000000000).toFixed(2)}Jt ${am.gapToL1 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL1 / 1000000000).toFixed(2) + 'Jt, +' + (am.dailyGapL1 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
+                                    <div>L3: ${(am.l3Target / 1000000000).toFixed(2)}M ${am.gapToL3 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL3 / 1000000000).toFixed(2) + 'M, +' + (am.dailyGapL3 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
+                                    <div>L2: ${(am.l2Target / 1000000000).toFixed(2)}M ${am.gapToL2 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL2 / 1000000000).toFixed(2) + 'M, +' + (am.dailyGapL2 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
+                                    <div>L1: ${(am.l1Target / 1000000000).toFixed(2)}M ${am.gapToL1 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL1 / 1000000000).toFixed(2) + 'M, +' + (am.dailyGapL1 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
                                 </div>
                             </div>
                         </td>
@@ -12418,9 +12418,9 @@
                                 
                                 <div class="text-xs text-gray-600 space-y-1 pt-2 border-t">
                                     <div class="font-semibold text-gray-700">Target Levels (${am.daysRemaining}d left):</div>
-                                    <div>L3: Rp ${(am.l3Target / 1000000000).toFixed(2)}Jt ${am.gapToL3 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL3 / 1000000000).toFixed(2) + 'Jt, +' + (am.dailyGapL3 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
-                                    <div>L2: Rp ${(am.l2Target / 1000000000).toFixed(2)}Jt ${am.gapToL2 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL2 / 1000000000).toFixed(2) + 'Jt, +' + (am.dailyGapL2 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
-                                    <div>L1: Rp ${(am.l1Target / 1000000000).toFixed(2)}Jt ${am.gapToL1 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL1 / 1000000000).toFixed(2) + 'Jt, +' + (am.dailyGapL1 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
+                                    <div>L3: Rp ${(am.l3Target / 1000000000).toFixed(2)}M ${am.gapToL3 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL3 / 1000000000).toFixed(2) + 'M, +' + (am.dailyGapL3 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
+                                    <div>L2: Rp ${(am.l2Target / 1000000000).toFixed(2)}M ${am.gapToL2 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL2 / 1000000000).toFixed(2) + 'M, +' + (am.dailyGapL2 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
+                                    <div>L1: Rp ${(am.l1Target / 1000000000).toFixed(2)}M ${am.gapToL1 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL1 / 1000000000).toFixed(2) + 'M, +' + (am.dailyGapL1 / 1000000).toFixed(1) + 'Jt/d)</span>' : '<span class="text-green-600">✓</span>'}</div>
                                 </div>
                             </div>
                         </div>
@@ -12588,7 +12588,7 @@
                 const am = this.overviewData.find(a => a.amName === amName);
                 if (!am) return;
                 
-                alert(`AM Details: ${amName}\n\nOutlets Managed: ${am.outletCount}\nAverage Growth: ${am.avgGrowth.toFixed(1)}%\nDays Remaining: ${am.daysRemaining} days\n\nTargets & Achievement:\nL3 Target: Rp ${(am.totalL3Target / 1000000000).toFixed(2)}Jt (${am.l3Achievement.toFixed(1)}%)\n${am.gapToL3 > 0 ? '   Gap: Rp ' + (am.gapToL3 / 1000000000).toFixed(2) + 'Jt (Need +' + (am.dailyGapL3 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nL2 Target: Rp ${(am.totalL2Target / 1000000000).toFixed(2)}Jt (${am.l2Achievement.toFixed(1)}%)\n${am.gapToL2 > 0 ? '   Gap: Rp ' + (am.gapToL2 / 1000000000).toFixed(2) + 'Jt (Need +' + (am.dailyGapL2 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nL1 Target: Rp ${(am.totalL1Target / 1000000000).toFixed(2)}Jt (${am.l1Achievement.toFixed(1)}%)\n${am.gapToL1 > 0 ? '   Gap: Rp ' + (am.gapToL1 / 1000000000).toFixed(2) + 'Jt (Need +' + (am.dailyGapL1 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nTotal Forecast: Rp ${(am.totalForecastSales / 1000000000).toFixed(2)}Jt\n\nOutlets:\n${am.outlets.map(o => `• ${o.outlet} (${o.outletName}): Growth ${o.growthPercent.toFixed(1)}%, Forecast ${o.forecastPercent.toFixed(1)}%`).join('\n')}`);
+                alert(`AM Details: ${amName}\n\nOutlets Managed: ${am.outletCount}\nAverage Growth: ${am.avgGrowth.toFixed(1)}%\nDays Remaining: ${am.daysRemaining} days\n\nTargets & Achievement:\nL3 Target: Rp ${(am.totalL3Target / 1000000000).toFixed(2)}M (${am.l3Achievement.toFixed(1)}%)\n${am.gapToL3 > 0 ? '   Gap: Rp ' + (am.gapToL3 / 1000000000).toFixed(2) + 'M (Need +' + (am.dailyGapL3 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nL2 Target: Rp ${(am.totalL2Target / 1000000000).toFixed(2)}M (${am.l2Achievement.toFixed(1)}%)\n${am.gapToL2 > 0 ? '   Gap: Rp ' + (am.gapToL2 / 1000000000).toFixed(2) + 'M (Need +' + (am.dailyGapL2 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nL1 Target: Rp ${(am.totalL1Target / 1000000000).toFixed(2)}M (${am.l1Achievement.toFixed(1)}%)\n${am.gapToL1 > 0 ? '   Gap: Rp ' + (am.gapToL1 / 1000000000).toFixed(2) + 'M (Need +' + (am.dailyGapL1 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nTotal Forecast: Rp ${(am.totalForecastSales / 1000000000).toFixed(2)}M\n\nOutlets:\n${am.outlets.map(o => `• ${o.outlet} (${o.outletName}): Growth ${o.growthPercent.toFixed(1)}%, Forecast ${o.forecastPercent.toFixed(1)}%`).join('\n')}`);
             },
             
             // Filter by specific AM
