@@ -11772,7 +11772,7 @@
             performanceData: [],
             filteredData: [],
             overviewData: [],
-            amGoalBulanan: {}, // Store AM Goal Bulanan lookup
+            targetData: {}, // Store L1/L2/L3 targets lookup by outlet code
             currentPage: 1,
             itemsPerPage: 10,
             currentViewMode: 'table',
@@ -11780,14 +11780,14 @@
             overviewItemsPerPage: 15,
             currentOverviewSort: 'performance',
             
-            // Fetch AM Goal Bulanan data
-            async fetchAMGoalBulanan() {
-                console.log('🎯 AM Tracker: Fetching AM Goal Bulanan...');
+            // Fetch L1/L2/L3 targets from Goal Jan 2026 to Dec 2026 sheet
+            async fetchTargets() {
+                console.log('🎯 AM Tracker: Fetching L1/L2/L3 targets...');
                 
                 try {
                     const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
                     const timestamp = new Date().getTime();
-                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=AM+Goal+Bulanan&timestamp=${timestamp}`;
+                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Goal+Jan+2026+to+Dec+2026&timestamp=${timestamp}`;
                     
                     const response = await fetch(csvUrl, {
                         method: 'GET',
@@ -11796,33 +11796,41 @@
                     });
                     
                     if (!response.ok) {
-                        console.error('❌ AM Tracker: Failed to fetch AM Goal Bulanan');
+                        console.error('❌ AM Tracker: Failed to fetch targets');
                         return;
                     }
                     
                     const csvData = await response.text();
                     const lines = csvData.split('\n');
                     
-                    // Parse AM Goal Bulanan (Column A: AM Name, Column B: Goal)
-                    for (let i = 1; i < lines.length; i++) {
+                    // Parse targets (skip first 2 header rows)
+                    for (let i = 2; i < lines.length; i++) {
                         const line = lines[i].trim();
                         if (!line) continue;
                         
                         const values = this.parseCSVLine(line);
-                        if (values.length >= 2) {
-                            const amName = values[0]?.trim().toUpperCase();
-                            const goalBulanan = parseFloat(values[1]?.replace(/,/g, '')) || 0;
+                        if (values.length >= 17) {
+                            const outletCode = values[3]?.trim(); // Col 3: Short Name (Outlet Code)
+                            const newAM = values[8]?.trim(); // Col 8: New AM
+                            const l3Target = parseFloat(values[13]?.replace(/,/g, '').trim()) || 0; // Col 13: L3 Target
+                            const l2Target = parseFloat(values[14]?.replace(/,/g, '').trim()) || 0; // Col 14: L2 Target
+                            const l1Target = parseFloat(values[15]?.replace(/,/g, '').trim()) || 0; // Col 15: L1 Target
                             
-                            if (amName && goalBulanan > 0) {
-                                this.amGoalBulanan[amName] = goalBulanan;
-                                console.log(`📊 Loaded goal for ${amName}: ${goalBulanan.toLocaleString()}`);
+                            if (outletCode) {
+                                this.targetData[outletCode] = {
+                                    newAM: newAM || '',
+                                    l1Target: l1Target,
+                                    l2Target: l2Target,
+                                    l3Target: l3Target
+                                };
+                                console.log(`📊 Loaded targets for ${outletCode}: L1=${l1Target.toLocaleString()}, L2=${l2Target.toLocaleString()}, L3=${l3Target.toLocaleString()}`);
                             }
                         }
                     }
                     
-                    console.log('✅ AM Goal Bulanan loaded:', Object.keys(this.amGoalBulanan).length, 'AMs');
+                    console.log('✅ Targets loaded:', Object.keys(this.targetData).length, 'outlets');
                 } catch (error) {
-                    console.error('❌ Error fetching AM Goal Bulanan:', error);
+                    console.error('❌ Error fetching targets:', error);
                 }
             },
             
@@ -11834,8 +11842,8 @@
                     document.getElementById('amTrackerLoading').classList.remove('hidden');
                     document.getElementById('amTrackerError').classList.add('hidden');
                     
-                    // First fetch AM Goal Bulanan
-                    await this.fetchAMGoalBulanan();
+                    // First fetch L1/L2/L3 targets
+                    await this.fetchTargets();
                     
                     const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
                     const gid = '353860854';
@@ -11914,17 +11922,44 @@
                         const growthPercent = parseFloat(values[9]?.replace('%', '')) || 0;
                         const forecastPercent = parseFloat(values[10]?.replace('%', '')) || 0;
                         
-                        if (!outlet || !amName) continue;
+                        if (!outlet) continue;
+                        
+                        // Get L1/L2/L3 targets and new AM from target data
+                        const targetInfo = this.targetData[outlet] || {};
+                        const newAM = targetInfo.newAM || amName; // Use new AM if available, fallback to old AM
+                        const l1Target = targetInfo.l1Target || 0;
+                        const l2Target = targetInfo.l2Target || 0;
+                        const l3Target = targetInfo.l3Target || monthlyTarget; // Use L3 as main target, fallback to old target
+                        
+                        // Calculate achievement percentages for each target level
+                        const l1Achievement = l1Target > 0 ? (forecastSalesEndOfMonth / l1Target) * 100 : 0;
+                        const l2Achievement = l2Target > 0 ? (forecastSalesEndOfMonth / l2Target) * 100 : 0;
+                        const l3Achievement = l3Target > 0 ? (forecastSalesEndOfMonth / l3Target) * 100 : 0;
+                        
+                        // Calculate gaps (how much more needed to reach each level)
+                        const gapToL1 = Math.max(0, l1Target - forecastSalesEndOfMonth);
+                        const gapToL2 = Math.max(0, l2Target - forecastSalesEndOfMonth);
+                        const gapToL3 = Math.max(0, l3Target - forecastSalesEndOfMonth);
                         
                         const record = {
                             outlet,
                             outletName: outletName || outlet,
-                            amName,
-                            monthlyTarget: monthlyTarget,
-                            monthlyTargetDisplay: monthlyTarget > 0 ? monthlyTarget.toLocaleString() : 'N/A',
+                            amName: newAM, // Use new AM
+                            oldAM: amName, // Keep old AM for reference
+                            monthlyTarget: l3Target, // Use L3 as main target
+                            monthlyTargetDisplay: l3Target > 0 ? l3Target.toLocaleString() : 'N/A',
+                            l1Target,
+                            l2Target,
+                            l3Target,
+                            l1Achievement,
+                            l2Achievement,
+                            l3Achievement,
+                            gapToL1,
+                            gapToL2,
+                            gapToL3,
                             growthPercent,
-                            forecastPercent,
-                            performanceScore: (growthPercent + forecastPercent) / 2,
+                            forecastPercent: l3Achievement, // Main forecast % is vs L3 target
+                            performanceScore: (growthPercent + l3Achievement) / 2,
                             dailyAvgLastMonth,
                             dailyAvgUpToDate,
                             totalUpToDate,
@@ -11976,7 +12011,9 @@
                             totalDailyAvgLastMonth: 0,
                             totalDailyAvgUpToDate: 0,
                             totalForecastSales: 0,
-                            totalTargets: 0
+                            totalL1Target: 0,
+                            totalL2Target: 0,
+                            totalL3Target: 0
                         };
                     }
                     
@@ -11984,7 +12021,9 @@
                     amGroups[amName].totalDailyAvgLastMonth += record.dailyAvgLastMonth;
                     amGroups[amName].totalDailyAvgUpToDate += record.dailyAvgUpToDate;
                     amGroups[amName].totalForecastSales += record.forecastSalesEndOfMonth;
-                    amGroups[amName].totalTargets += record.monthlyTarget;
+                    amGroups[amName].totalL1Target += record.l1Target;
+                    amGroups[amName].totalL2Target += record.l2Target;
+                    amGroups[amName].totalL3Target += record.l3Target;
                 });
                 
                 this.overviewData = Object.values(amGroups).map(group => {
@@ -11994,33 +12033,41 @@
                         ? ((group.totalDailyAvgUpToDate - group.totalDailyAvgLastMonth) / group.totalDailyAvgLastMonth) * 100
                         : 0;
                     
-                    // Get AM Goal Bulanan for this AM
-                    const amNameUpper = group.amName.toUpperCase();
-                    const amGoalBulanan = this.amGoalBulanan[amNameUpper] || 0;
-                    
-                    // Calculate Goal Achievement % using AM Goal Bulanan
-                    const goalAchievement = amGoalBulanan > 0 
-                        ? (group.totalForecastSales / amGoalBulanan) * 100
+                    // Calculate achievement % for each target level
+                    const l1Achievement = group.totalL1Target > 0 
+                        ? (group.totalForecastSales / group.totalL1Target) * 100
+                        : 0;
+                    const l2Achievement = group.totalL2Target > 0 
+                        ? (group.totalForecastSales / group.totalL2Target) * 100
+                        : 0;
+                    const l3Achievement = group.totalL3Target > 0 
+                        ? (group.totalForecastSales / group.totalL3Target) * 100
                         : 0;
                     
-                    // Keep old forecastAchievement for reference (using outlet targets)
-                    const forecastAchievement = group.totalTargets > 0 
-                        ? (group.totalForecastSales / group.totalTargets) * 100
-                        : 0;
+                    // Calculate gaps (how much more needed to reach each level)
+                    const gapToL1 = Math.max(0, group.totalL1Target - group.totalForecastSales);
+                    const gapToL2 = Math.max(0, group.totalL2Target - group.totalForecastSales);
+                    const gapToL3 = Math.max(0, group.totalL3Target - group.totalForecastSales);
                     
                     return {
                         amName: group.amName,
                         outletCount: outletCount,
                         outlets: group.outlets,
                         avgGrowth: actualGrowthRate,
-                        avgForecast: forecastAchievement,
-                        goalAchievement: goalAchievement,
-                        goalBulanan: amGoalBulanan,
-                        overallPerformance: goalAchievement, // Use goalAchievement as the new performance metric
+                        avgForecast: l3Achievement, // Use L3 achievement as main forecast %
+                        l1Achievement,
+                        l2Achievement,
+                        l3Achievement,
+                        gapToL1,
+                        gapToL2,
+                        gapToL3,
+                        totalL1Target: group.totalL1Target,
+                        totalL2Target: group.totalL2Target,
+                        totalL3Target: group.totalL3Target,
+                        overallPerformance: l3Achievement, // Use L3 achievement as the new performance metric
                         totalDailyAvgLastMonth: group.totalDailyAvgLastMonth,
                         totalDailyAvgUpToDate: group.totalDailyAvgUpToDate,
-                        totalForecastSales: group.totalForecastSales,
-                        totalTargets: group.totalTargets
+                        totalForecastSales: group.totalForecastSales
                     };
                 });
                 
@@ -12035,7 +12082,7 @@
                 if (!this.overviewData || this.overviewData.length === 0) return;
                 
                 const growthChampions = [...this.overviewData].sort((a, b) => b.avgGrowth - a.avgGrowth);
-                const achievementChampions = [...this.overviewData].sort((a, b) => b.goalAchievement - a.goalAchievement);
+                const achievementChampions = [...this.overviewData].sort((a, b) => b.l3Achievement - a.l3Achievement);
                 
                 // Update Growth Champions
                 for (let i = 0; i < 3; i++) {
@@ -12060,7 +12107,7 @@
                     
                     if (achievementChampions[i]) {
                         nameElement.textContent = achievementChampions[i].amName;
-                        rateElement.textContent = `${achievementChampions[i].goalAchievement.toFixed(1)}%`;
+                        rateElement.textContent = `${achievementChampions[i].l3Achievement.toFixed(1)}%`;
                         rateElement.className = 'font-bold text-purple-600';
                     } else {
                         nameElement.textContent = 'N/A';
@@ -12167,12 +12214,16 @@
                             <div class="flex flex-col">
                                 <div class="flex items-center mb-1">
                                     <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
-                                        <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.goalAchievement))}%"></div>
+                                        <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.l3Achievement))}%"></div>
                                     </div>
-                                    <span class="font-medium text-gray-900">${am.goalAchievement.toFixed(1)}%</span>
-                                    ${this.getPerformanceBadge(am.goalAchievement)}
+                                    <span class="font-medium text-gray-900">${am.l3Achievement.toFixed(1)}%</span>
+                                    ${this.getPerformanceBadge(am.l3Achievement)}
                                 </div>
-                                <span class="text-xs text-gray-500">Goal: Rp ${(am.goalBulanan / 1000000).toFixed(1)}M</span>
+                                <div class="text-xs text-gray-600 space-y-1">
+                                    <div>L3: Rp ${(am.totalL3Target / 1000000).toFixed(1)}M ${am.gapToL3 > 0 ? '(Gap: ' + (am.gapToL3 / 1000000).toFixed(1) + 'M)' : '✓'}</div>
+                                    <div>L2: ${am.l2Achievement.toFixed(1)}% ${am.gapToL2 > 0 ? '(Gap: ' + (am.gapToL2 / 1000000).toFixed(1) + 'M)' : '✓'}</div>
+                                    <div>L1: ${am.l1Achievement.toFixed(1)}% ${am.gapToL1 > 0 ? '(Gap: ' + (am.gapToL1 / 1000000).toFixed(1) + 'M)' : '✓'}</div>
+                                </div>
                             </div>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
@@ -12245,15 +12296,23 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <div class="flex items-center">
-                                <div class="w-full bg-gray-200 rounded-full h-2 mr-2">
-                                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.forecastPercent))}%"></div>
+                            <div class="space-y-1">
+                                <div class="flex items-center">
+                                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                                        <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.l3Achievement))}%"></div>
+                                    </div>
+                                    <span class="text-sm font-medium">${am.l3Achievement.toFixed(1)}%</span>
+                                    ${this.getPerformanceBadge(am.l3Achievement)}
                                 </div>
-                                <span class="text-sm font-medium">${am.forecastPercent.toFixed(1)}%</span>
+                                <div class="text-xs text-gray-600">
+                                    <div>L3: ${(am.l3Target / 1000000).toFixed(1)}M ${am.gapToL3 > 0 ? '(Gap: ' + (am.gapToL3 / 1000000).toFixed(1) + 'M)' : '✓'}</div>
+                                    <div>L2: ${am.l2Achievement.toFixed(1)}% ${am.gapToL2 > 0 ? '(Gap: ' + (am.gapToL2 / 1000000).toFixed(1) + 'M)' : '✓'}</div>
+                                    <div>L1: ${am.l1Achievement.toFixed(1)}% ${am.gapToL1 > 0 ? '(Gap: ' + (am.gapToL1 / 1000000).toFixed(1) + 'M)' : '✓'}</div>
+                                </div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            ${this.getPerformanceBadge(am.forecastPercent)}
+                            <!-- Performance badge moved inline -->
                         </td>
                     `;
                     
@@ -12319,13 +12378,22 @@
                                 </span>
                             </div>
                             
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-sm text-gray-600">Forecast:</span>
-                                    <span class="text-sm font-medium">${am.forecastPercent.toFixed(1)}%</span>
+                            <div class="space-y-2">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm text-gray-600">L3 Achievement:</span>
+                                        <span class="text-sm font-medium">${am.l3Achievement.toFixed(1)}%</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.l3Achievement))}%"></div>
+                                    </div>
                                 </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.min(100, Math.max(0, am.forecastPercent))}%"></div>
+                                
+                                <div class="text-xs text-gray-600 space-y-1 pt-2 border-t">
+                                    <div class="font-semibold text-gray-700">Target Levels:</div>
+                                    <div>L3: Rp ${(am.l3Target / 1000000).toFixed(1)}M ${am.gapToL3 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL3 / 1000000).toFixed(1) + 'M)</span>' : '<span class="text-green-600">✓</span>'}</div>
+                                    <div>L2: ${am.l2Achievement.toFixed(1)}% ${am.gapToL2 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL2 / 1000000).toFixed(1) + 'M)</span>' : '<span class="text-green-600">✓</span>'}</div>
+                                    <div>L1: ${am.l1Achievement.toFixed(1)}% ${am.gapToL1 > 0 ? '<span class="text-red-600">(Gap: ' + (am.gapToL1 / 1000000).toFixed(1) + 'M)</span>' : '<span class="text-green-600">✓</span>'}</div>
                                 </div>
                             </div>
                         </div>
@@ -12493,7 +12561,7 @@
                 const am = this.overviewData.find(a => a.amName === amName);
                 if (!am) return;
                 
-                alert(`AM Details: ${amName}\n\nOutlets Managed: ${am.outletCount}\nAverage Growth: ${am.avgGrowth.toFixed(1)}%\nGoal Bulanan: Rp ${am.goalBulanan.toLocaleString()}\nGoal Achievement: ${am.goalAchievement.toFixed(1)}%\nTotal Forecast: Rp ${am.totalForecastSales.toLocaleString()}\n\nOutlets:\n${am.outlets.map(o => `• ${o.outlet} (${o.outletName}): Growth ${o.growthPercent.toFixed(1)}%, Forecast ${o.forecastPercent.toFixed(1)}%`).join('\n')}`);
+                alert(`AM Details: ${amName}\n\nOutlets Managed: ${am.outletCount}\nAverage Growth: ${am.avgGrowth.toFixed(1)}%\n\nTargets & Achievement:\nL3 Target: Rp ${am.totalL3Target.toLocaleString()} (${am.l3Achievement.toFixed(1)}%) ${am.gapToL3 > 0 ? 'Gap: Rp ' + am.gapToL3.toLocaleString() : '✓ Achieved'}\nL2 Target: Rp ${am.totalL2Target.toLocaleString()} (${am.l2Achievement.toFixed(1)}%) ${am.gapToL2 > 0 ? 'Gap: Rp ' + am.gapToL2.toLocaleString() : '✓ Achieved'}\nL1 Target: Rp ${am.totalL1Target.toLocaleString()} (${am.l1Achievement.toFixed(1)}%) ${am.gapToL1 > 0 ? 'Gap: Rp ' + am.gapToL1.toLocaleString() : '✓ Achieved'}\n\nTotal Forecast: Rp ${am.totalForecastSales.toLocaleString()}\n\nOutlets:\n${am.outlets.map(o => `• ${o.outlet} (${o.outletName}): Growth ${o.growthPercent.toFixed(1)}%, Forecast ${o.forecastPercent.toFixed(1)}%`).join('\n')}`);
             },
             
             // Filter by specific AM
