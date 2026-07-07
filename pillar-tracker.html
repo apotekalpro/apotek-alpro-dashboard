@@ -48,6 +48,29 @@
   .data-table td { padding: 8px 12px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
   .data-table tr:hover td { background: #F8FAFC; }
 
+  /* Pillar column group headers */
+  .data-table th.th-gpo  { background: #EFF6FF; color: #1D4ED8; border-bottom: 2px solid #3B82F6; }
+  .data-table th.th-gpo:hover  { background: #DBEAFE; }
+  .data-table th.th-mk   { background: #ECFDF5; color: #065F46; border-bottom: 2px solid #10B981; }
+  .data-table th.th-mk:hover   { background: #D1FAE5; }
+  .data-table th.th-rr   { background: #FFFBEB; color: #92400E; border-bottom: 2px solid #F59E0B; }
+  .data-table th.th-rr:hover   { background: #FEF3C7; }
+  .data-table th.th-combo { background: #F5F3FF; color: #5B21B6; border-bottom: 2px solid #8B5CF6; }
+  .data-table th.th-combo:hover { background: #EDE9FE; }
+
+  /* Pillar cell tint - subtle left border */
+  .data-table td.td-gpo  { border-left: 3px solid #BFDBFE; }
+  .data-table td.td-mk   { border-left: 3px solid #A7F3D0; }
+  .data-table td.td-rr   { border-left: 3px solid #FDE68A; }
+  .data-table td.td-combo { border-left: 3px solid #DDD6FE; background: #FAFAFA; font-weight: 600; }
+
+  /* Group divider th */
+  .data-table th.th-group-gpo  { background: #3B82F6; color: white; text-align: center; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; cursor: default; padding: 4px 8px; }
+  .data-table th.th-group-mk   { background: #10B981; color: white; text-align: center; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; cursor: default; padding: 4px 8px; }
+  .data-table th.th-group-rr   { background: #F59E0B; color: white; text-align: center; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; cursor: default; padding: 4px 8px; }
+  .data-table th.th-group-combo { background: #8B5CF6; color: white; text-align: center; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; cursor: default; padding: 4px 8px; }
+  .data-table th.th-group-info  { background: #F8FAFC; cursor: default; padding: 4px 8px; }
+
   /* Pill badge */
   .pct-pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
   .pct-high { background: #D1FAE5; color: #065F46; }
@@ -237,20 +260,29 @@
       <div class="table-wrap">
         <table class="data-table" id="outletTable">
           <thead>
+            <!-- Row 1: group labels -->
             <tr>
-              <th onclick="outletColSort('code')" id="th_code">Code</th>
+              <th colspan="3" class="th-group-info"></th>
+              <th colspan="3" class="th-group-gpo"><i class="fas fa-circle text-xs mr-1"></i> Pillar 1 – GPO</th>
+              <th colspan="3" class="th-group-mk"><i class="fas fa-circle text-xs mr-1"></i> Pillar 2 – MK</th>
+              <th colspan="3" class="th-group-rr"><i class="fas fa-circle text-xs mr-1"></i> Pillar 3 – R.R</th>
+              <th colspan="1" class="th-group-combo">Overall</th>
+            </tr>
+            <!-- Row 2: column headers -->
+            <tr>
+              <th onclick="outletColSort('code')" id="th_code">Outlet Code</th>
               <th onclick="outletColSort('name')" id="th_name">Outlet Name</th>
               <th onclick="outletColSort('am')" id="th_am">Area Manager</th>
-              <th onclick="outletColSort('gpo_target')" id="th_gpo_target">GPO Target</th>
-              <th onclick="outletColSort('gpo_ach')" id="th_gpo_ach">GPO Ach</th>
-              <th onclick="outletColSort('gpo_pct')" id="th_gpo_pct">GPO %</th>
-              <th onclick="outletColSort('mk_target')" id="th_mk_target">MK Target</th>
-              <th onclick="outletColSort('mk_ach')" id="th_mk_ach">MK Ach</th>
-              <th onclick="outletColSort('mk_pct')" id="th_mk_pct">MK %</th>
-              <th onclick="outletColSort('rr_target')" id="th_rr_target">R.R Target</th>
-              <th onclick="outletColSort('rr_pct')" id="th_rr_pct">R.R %</th>
-              <th onclick="outletColSort('rr_ach')" id="th_rr_ach">R.R Ach%</th>
-              <th onclick="outletColSort('combo')" id="th_combo">Combined %</th>
+              <th onclick="outletColSort('gpo_target')" id="th_gpo_target" class="th-gpo">Target</th>
+              <th onclick="outletColSort('gpo_ach')" id="th_gpo_ach" class="th-gpo">Achievement</th>
+              <th onclick="outletColSort('gpo_pct')" id="th_gpo_pct" class="th-gpo">Hit %</th>
+              <th onclick="outletColSort('mk_target')" id="th_mk_target" class="th-mk">Target</th>
+              <th onclick="outletColSort('mk_ach')" id="th_mk_ach" class="th-mk">Achievement</th>
+              <th onclick="outletColSort('mk_pct')" id="th_mk_pct" class="th-mk">Hit %</th>
+              <th onclick="outletColSort('rr_target')" id="th_rr_target" class="th-rr">Target</th>
+              <th onclick="outletColSort('rr_pct')" id="th_rr_pct" class="th-rr">R.R %</th>
+              <th onclick="outletColSort('rr_ach')" id="th_rr_ach" class="th-rr">Hit %</th>
+              <th onclick="outletColSort('combo')" id="th_combo" class="th-combo">Combined %</th>
             </tr>
           </thead>
           <tbody id="outletTableBody"></tbody>
@@ -269,7 +301,7 @@
         <i class="fas fa-user-tie text-yellow-300 text-xl"></i>
         <div>
           <h2 class="text-lg font-bold">Personal Leaderboard by Pillar</h2>
-          <p class="text-blue-200 text-xs">Top 10 & Bottom 10 — excluding outlets with 0 target on that pillar</p>
+          <p class="text-blue-200 text-xs">Top 10 & Bottom 10 per Alproean — excluding records with 0 target on that pillar</p>
         </div>
       </div>
 
@@ -301,7 +333,7 @@
       <div class="filter-bar flex flex-wrap gap-3 mb-4 items-center">
         <div class="flex items-center gap-2 flex-1 min-w-48">
           <i class="fas fa-search text-gray-400"></i>
-          <input type="text" id="personalSearch" placeholder="Search outlet name / code..." class="w-full" oninput="personalTableRender()">
+          <input type="text" id="personalSearch" placeholder="Search alproean / outlet name..." class="w-full" oninput="personalTableRender()">
         </div>
         <select id="personalFilterAM" class="min-w-44" onchange="personalTableRender()">
           <option value="">All Area Managers</option>
@@ -324,19 +356,27 @@
       <div class="table-wrap">
         <table class="data-table" id="personalTable">
           <thead>
+            <!-- Row 1: group labels -->
             <tr>
-              <th onclick="personalColSort('code')" id="pth_code">Code</th>
+              <th colspan="3" class="th-group-info"></th>
+              <th colspan="3" class="th-group-gpo"><i class="fas fa-circle text-xs mr-1"></i> Pillar 1 – GPO</th>
+              <th colspan="3" class="th-group-mk"><i class="fas fa-circle text-xs mr-1"></i> Pillar 2 – MK</th>
+              <th colspan="3" class="th-group-rr"><i class="fas fa-circle text-xs mr-1"></i> Pillar 3 – R.R</th>
+            </tr>
+            <!-- Row 2: column headers -->
+            <tr>
+              <th onclick="personalColSort('code')" id="pth_code">Alproean Name</th>
               <th onclick="personalColSort('name')" id="pth_name">Outlet Name</th>
               <th onclick="personalColSort('am')" id="pth_am">Area Manager</th>
-              <th onclick="personalColSort('gpo_target')" id="pth_gpo_target">GPO Target</th>
-              <th onclick="personalColSort('gpo_ach')" id="pth_gpo_ach">GPO Ach</th>
-              <th onclick="personalColSort('gpo_pct')" id="pth_gpo_pct">GPO %</th>
-              <th onclick="personalColSort('mk_target')" id="pth_mk_target">MK Target</th>
-              <th onclick="personalColSort('mk_ach')" id="pth_mk_ach">MK Ach</th>
-              <th onclick="personalColSort('mk_pct')" id="pth_mk_pct">MK %</th>
-              <th onclick="personalColSort('rr_target')" id="pth_rr_target">R.R Target</th>
-              <th onclick="personalColSort('rr_pct')" id="pth_rr_pct">R.R %</th>
-              <th onclick="personalColSort('rr_ach')" id="pth_rr_ach">R.R Ach%</th>
+              <th onclick="personalColSort('gpo_target')" id="pth_gpo_target" class="th-gpo">Target</th>
+              <th onclick="personalColSort('gpo_ach')" id="pth_gpo_ach" class="th-gpo">Achievement</th>
+              <th onclick="personalColSort('gpo_pct')" id="pth_gpo_pct" class="th-gpo">Hit %</th>
+              <th onclick="personalColSort('mk_target')" id="pth_mk_target" class="th-mk">Target</th>
+              <th onclick="personalColSort('mk_ach')" id="pth_mk_ach" class="th-mk">Achievement</th>
+              <th onclick="personalColSort('mk_pct')" id="pth_mk_pct" class="th-mk">Hit %</th>
+              <th onclick="personalColSort('rr_target')" id="pth_rr_target" class="th-rr">Target</th>
+              <th onclick="personalColSort('rr_pct')" id="pth_rr_pct" class="th-rr">R.R %</th>
+              <th onclick="personalColSort('rr_ach')" id="pth_rr_ach" class="th-rr">Hit %</th>
             </tr>
           </thead>
           <tbody id="personalTableBody"></tbody>
@@ -625,9 +665,9 @@ function renderOutletPillarLb(pillar) {
             <span class="font-bold text-sm ml-2 ${isTop?'text-green-600':'text-red-600'}">${fmtPct(v)}</span>
           </div>
           <div class="flex gap-2 text-xs text-gray-500 mt-0.5">
-            <span>${row.am}</span>
-            <span class="text-gray-300">|</span>
-            <span class="text-gray-400">${row.code}</span>
+            <span class="text-blue-600 font-medium">${row.code}</span>
+            <span class="text-gray-300">·</span>
+            <span>AM: ${row.am}</span>
           </div>
           ${miniBar(v, fillClass)}
         </div>
@@ -688,14 +728,11 @@ function renderPersonalPillarLb(pillar) {
         <div class="rank-badge ${badgeCls}">${medal || (idx+1)}</div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between">
-            <span class="font-medium text-gray-800 text-sm truncate">${row.name}</span>
+            <span class="font-bold text-gray-900 text-sm truncate">${row.code}</span>
             <span class="font-bold text-sm ml-2 ${isTop?'text-green-600':'text-red-600'}">${fmtPct(v)}</span>
           </div>
-          <div class="flex gap-2 text-xs text-gray-500 mt-0.5">
-            <span>${row.am}</span>
-            <span class="text-gray-300">|</span>
-            <span class="text-gray-400">${row.code}</span>
-          </div>
+          <div class="text-xs text-gray-500 mt-0.5 truncate">${row.name}</div>
+          <div class="text-xs text-blue-500 mt-0.5">AM: ${row.am}</div>
           ${miniBar(v, fillClass)}
         </div>
       </div>`;
@@ -777,19 +814,19 @@ function outletTableRender() {
   if (!tbody) return;
   tbody.innerHTML = data.map(r => `
     <tr>
-      <td class="font-mono text-xs text-blue-600">${r.code}</td>
-      <td class="font-medium text-gray-800 text-sm max-w-xs">${r.name}</td>
+      <td class="font-mono text-xs text-blue-600 font-semibold">${r.code}</td>
+      <td class="font-medium text-gray-800 text-sm">${r.name}</td>
       <td class="text-gray-600 text-sm">${r.am}</td>
-      <td class="text-right">${fmtNum(r.gpo_target)}</td>
+      <td class="text-right td-gpo">${fmtNum(r.gpo_target)}</td>
       <td class="text-right">${fmtNum(r.gpo_ach)}</td>
       <td>${pctPill(r.gpo_pct)}</td>
-      <td class="text-right">${fmtNum(r.mk_target)}</td>
+      <td class="text-right td-mk">${fmtNum(r.mk_target)}</td>
       <td class="text-right">${fmtNum(r.mk_ach)}</td>
       <td>${pctPill(r.mk_pct)}</td>
-      <td class="text-right">${r.rr_target !== null ? r.rr_target+'%' : '—'}</td>
+      <td class="text-right td-rr">${r.rr_target !== null ? r.rr_target+'%' : '—'}</td>
       <td class="text-right">${r.rr_pct !== null ? r.rr_pct.toFixed(2)+'%' : '—'}</td>
       <td>${pctPill(r.rr_ach)}</td>
-      <td>${pctPill(r.combo)}</td>
+      <td class="td-combo">${pctPill(r.combo)}</td>
     </tr>`).join('');
 }
 
@@ -821,7 +858,7 @@ function personalTableRender() {
   // Filter
   if (search) data = data.filter(r => r.name.toLowerCase().includes(search) || r.code.toLowerCase().includes(search) || r.am.toLowerCase().includes(search));
   if (filterAM) data = data.filter(r => r.am === filterAM);
-  if (filterOutlet) data = data.filter(r => r.name === filterOutlet);
+  if (filterOutlet) data = data.filter(r => r.name === filterOutlet || r.code === filterOutlet);
 
   // Sort
   const sortMap = {
@@ -854,16 +891,16 @@ function personalTableRender() {
   if (!tbody) return;
   tbody.innerHTML = data.map(r => `
     <tr>
-      <td class="font-mono text-xs text-blue-600">${r.code}</td>
-      <td class="font-medium text-gray-800 text-sm max-w-xs">${r.name}</td>
-      <td class="text-gray-600 text-sm">${r.am}</td>
-      <td class="text-right">${fmtNum(r.gpo_target)}</td>
+      <td class="font-semibold text-gray-900 text-sm">${r.code}</td>
+      <td class="text-gray-600 text-xs">${r.name}</td>
+      <td class="text-gray-500 text-xs">AM: ${r.am}</td>
+      <td class="text-right td-gpo">${fmtNum(r.gpo_target)}</td>
       <td class="text-right">${fmtNum(r.gpo_ach)}</td>
       <td>${pctPill(r.gpo_pct)}</td>
-      <td class="text-right">${fmtNum(r.mk_target)}</td>
+      <td class="text-right td-mk">${fmtNum(r.mk_target)}</td>
       <td class="text-right">${fmtNum(r.mk_ach)}</td>
       <td>${pctPill(r.mk_pct)}</td>
-      <td class="text-right">${r.rr_target !== null ? r.rr_target+'%' : '—'}</td>
+      <td class="text-right td-rr">${r.rr_target !== null ? r.rr_target+'%' : '—'}</td>
       <td class="text-right">${r.rr_pct !== null ? r.rr_pct.toFixed(2)+'%' : '—'}</td>
       <td>${pctPill(r.rr_ach)}</td>
     </tr>`).join('');
@@ -907,21 +944,30 @@ function populatePersonalFilters() {
   }
 }
 
+
 // ============================================================
 // KPI SUMMARY
 // ============================================================
+function avgOf(data, key) {
+  const valid = data.filter(r => r[key] !== null);
+  return valid.length ? valid.reduce((a,b) => a + b[key], 0) / valid.length : null;
+}
+
 function renderKPIs(containerId, data, isPersonal) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
   const total = data.length;
-  const avgGPO = data.filter(r => r.gpo_pct!==null).map(r=>r.gpo_pct).reduce((a,b)=>a+b,0) / (data.filter(r=>r.gpo_pct!==null).length||1);
-  const avgMK  = data.filter(r => r.mk_pct!==null).map(r=>r.mk_pct).reduce((a,b)=>a+b,0)  / (data.filter(r=>r.mk_pct!==null).length||1);
-  const avgRR  = data.filter(r => r.rr_ach!==null).map(r=>r.rr_ach).reduce((a,b)=>a+b,0)  / (data.filter(r=>r.rr_ach!==null).length||1);
-  const above100GPO = data.filter(r => r.gpo_pct !== null && r.gpo_pct >= 100).length;
+
+  // For personal cards, GPO/MK/RR % figures are taken from outlet data
+  // so they reflect the same outlet-level reference (avoids personal markup inflation)
+  const refData = isPersonal ? state.outletData : data;
+  const avgGPO = avgOf(refData, 'gpo_pct');
+  const avgMK  = avgOf(refData, 'mk_pct');
+  const avgRR  = avgOf(refData, 'rr_ach');
 
   const kpis = [
-    { icon: 'fas fa-store', label: isPersonal ? 'Active Personal' : 'Total Outlets', value: total, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { icon: isPersonal ? 'fas fa-users' : 'fas fa-store', label: isPersonal ? 'Active Personal' : 'Total Outlets', value: total, color: 'text-blue-600', bg: 'bg-blue-50' },
     { icon: 'fas fa-circle text-blue-500', label: 'Avg GPO %', value: fmtPct(avgGPO), color: 'text-blue-600', bg: 'bg-blue-50' },
     { icon: 'fas fa-circle text-green-500', label: 'Avg MK %', value: fmtPct(avgMK), color: 'text-green-600', bg: 'bg-green-50' },
     { icon: 'fas fa-circle text-yellow-500', label: 'Avg R.R Ach%', value: fmtPct(avgRR), color: 'text-yellow-600', bg: 'bg-yellow-50' },
