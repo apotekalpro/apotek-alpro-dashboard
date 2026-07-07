@@ -948,18 +948,26 @@ function populatePersonalFilters() {
 // ============================================================
 // KPI SUMMARY
 // ============================================================
+function avgOf(data, key) {
+  const valid = data.filter(r => r[key] !== null);
+  return valid.length ? valid.reduce((a,b) => a + b[key], 0) / valid.length : null;
+}
+
 function renderKPIs(containerId, data, isPersonal) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
   const total = data.length;
-  const avgGPO = data.filter(r => r.gpo_pct!==null).map(r=>r.gpo_pct).reduce((a,b)=>a+b,0) / (data.filter(r=>r.gpo_pct!==null).length||1);
-  const avgMK  = data.filter(r => r.mk_pct!==null).map(r=>r.mk_pct).reduce((a,b)=>a+b,0)  / (data.filter(r=>r.mk_pct!==null).length||1);
-  const avgRR  = data.filter(r => r.rr_ach!==null).map(r=>r.rr_ach).reduce((a,b)=>a+b,0)  / (data.filter(r=>r.rr_ach!==null).length||1);
-  const above100GPO = data.filter(r => r.gpo_pct !== null && r.gpo_pct >= 100).length;
+
+  // For personal cards, GPO/MK/RR % figures are taken from outlet data
+  // so they reflect the same outlet-level reference (avoids personal markup inflation)
+  const refData = isPersonal ? state.outletData : data;
+  const avgGPO = avgOf(refData, 'gpo_pct');
+  const avgMK  = avgOf(refData, 'mk_pct');
+  const avgRR  = avgOf(refData, 'rr_ach');
 
   const kpis = [
-    { icon: 'fas fa-store', label: isPersonal ? 'Active Personal' : 'Total Outlets', value: total, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { icon: isPersonal ? 'fas fa-users' : 'fas fa-store', label: isPersonal ? 'Active Personal' : 'Total Outlets', value: total, color: 'text-blue-600', bg: 'bg-blue-50' },
     { icon: 'fas fa-circle text-blue-500', label: 'Avg GPO %', value: fmtPct(avgGPO), color: 'text-blue-600', bg: 'bg-blue-50' },
     { icon: 'fas fa-circle text-green-500', label: 'Avg MK %', value: fmtPct(avgMK), color: 'text-green-600', bg: 'bg-green-50' },
     { icon: 'fas fa-circle text-yellow-500', label: 'Avg R.R Ach%', value: fmtPct(avgRR), color: 'text-yellow-600', bg: 'bg-yellow-50' },
