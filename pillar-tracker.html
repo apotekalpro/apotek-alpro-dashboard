@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pillar Tracker Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  :root {
+    --pillar1: #3B82F6;
+    --pillar2: #10B981;
+    --pillar3: #F59E0B;
+  }
+  body { font-family: 'Inter', sans-serif; background: #F0F4F8; }
+
+  /* Tab styles */
+  .main-tab { transition: all 0.2s; border-bottom: 3px solid transparent; }
+  .main-tab.active { border-bottom-color: #3B82F6; color: #3B82F6; font-weight: 600; }
+  .main-tab:hover:not(.active) { background: #EFF6FF; }
+
+  /* Metric card */
+  .metric-card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  /* Leaderboard card */
+  .lb-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  /* Badge rank */
+  .rank-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .rank-1 { background: #FEF3C7; color: #92400E; }
+  .rank-2 { background: #F3F4F6; color: #374151; }
+  .rank-3 { background: #FEE2E2; color: #92400E; border: 1px solid #FBBF24; }
+  .rank-top { background: #DBEAFE; color: #1D4ED8; }
+  .rank-bot { background: #FEE2E2; color: #991B1B; }
+
+  /* Progress bar */
+  .prog-bar { height: 6px; border-radius: 99px; background: #E5E7EB; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 99px; transition: width 0.8s ease; }
+  .fill-p1 { background: var(--pillar1); }
+  .fill-p2 { background: var(--pillar2); }
+  .fill-p3 { background: var(--pillar3); }
+  .fill-combo { background: linear-gradient(90deg, var(--pillar1), var(--pillar2)); }
+
+  /* Table styles */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { background: #F8FAFC; padding: 10px 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #E5E7EB; white-space: nowrap; cursor: pointer; }
+  .data-table th:hover { background: #EFF6FF; }
+  .data-table td { padding: 8px 12px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+  .data-table tr:hover td { background: #F8FAFC; }
+
+  /* Pill badge */
+  .pct-pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .pct-high { background: #D1FAE5; color: #065F46; }
+  .pct-mid { background: #FEF3C7; color: #92400E; }
+  .pct-low { background: #FEE2E2; color: #991B1B; }
+
+  /* Search / filter */
+  .filter-bar { background: white; border-radius: 10px; padding: 12px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  input[type="text"], select { border: 1px solid #D1D5DB; border-radius: 8px; padding: 7px 12px; font-size: 13px; outline: none; transition: border 0.2s; }
+  input[type="text"]:focus, select:focus { border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+
+  /* Pillar selector tabs */
+  .pillar-tab { padding: 6px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s; border: 1px solid #D1D5DB; background: white; color: #374151; }
+  .pillar-tab.active-p1 { background: #3B82F6; color: white; border-color: #3B82F6; }
+  .pillar-tab.active-p2 { background: #10B981; color: white; border-color: #10B981; }
+  .pillar-tab.active-p3 { background: #F59E0B; color: white; border-color: #F59E0B; }
+
+  /* Loading spinner */
+  .spinner { width: 36px; height: 36px; border: 3px solid #E5E7EB; border-top-color: #3B82F6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Scrollable table wrapper */
+  .table-wrap { overflow-x: auto; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+  /* Sort arrows */
+  .sort-asc::after { content: ' ↑'; }
+  .sort-desc::after { content: ' ↓'; }
+
+  .section-header { background: linear-gradient(135deg, #1E3A5F, #2563EB); color: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
+
+  .top-indicator { background: linear-gradient(135deg, #065F46, #10B981); }
+  .bot-indicator { background: linear-gradient(135deg, #7F1D1D, #EF4444); }
+
+  .tab-section { display: none; }
+  .tab-section.active { display: block; }
+</style>
+</head>
+<body>
+
+<div id="app" class="min-h-screen">
+
+  <!-- Header -->
+  <div class="bg-white shadow-sm px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+        <i class="fas fa-chart-line text-white text-lg"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold text-gray-800">Pillar Tracker</h1>
+        <p class="text-xs text-gray-500">GPO · MK · R.R Performance Dashboard</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div id="lastUpdated" class="text-xs text-gray-400 flex items-center gap-1">
+        <i class="fas fa-circle text-green-400"></i>
+        <span>Loading...</span>
+      </div>
+      <button onclick="pillarTracker.loadAll()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+        <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Tabs -->
+  <div class="bg-white border-b px-6 flex gap-0">
+    <button class="main-tab active px-6 py-3 text-sm font-medium text-gray-600" onclick="switchMainTab('outlet')" id="tabOutlet">
+      <i class="fas fa-store mr-2"></i>Result Outlet
+    </button>
+    <button class="main-tab px-6 py-3 text-sm font-medium text-gray-600" onclick="switchMainTab('personal')" id="tabPersonal">
+      <i class="fas fa-user mr-2"></i>Result Personal
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loadingState" class="flex flex-col items-center justify-center py-24 gap-4">
+    <div class="spinner"></div>
+    <p class="text-gray-500 text-sm">Loading data from Google Sheets...</p>
+  </div>
+
+  <!-- Error State -->
+  <div id="errorState" class="hidden flex flex-col items-center justify-center py-24 gap-4">
+    <i class="fas fa-exclamation-circle text-red-400 text-4xl"></i>
+    <p class="text-gray-600 font-medium" id="errorMsg">Failed to load data</p>
+    <button onclick="pillarTracker.loadAll()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+      <i class="fas fa-redo mr-2"></i>Try Again
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div id="mainContent" class="hidden p-6">
+
+    <!-- ======================== OUTLET TAB ======================== -->
+    <div id="sectionOutlet" class="tab-section active">
+
+      <!-- Summary KPIs -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="outletKPIs"></div>
+
+      <!-- Leaderboard Section -->
+      <div class="section-header flex items-center gap-3 mb-0">
+        <i class="fas fa-trophy text-yellow-300 text-xl"></i>
+        <div>
+          <h2 class="text-lg font-bold">Area Manager Leaderboard</h2>
+          <p class="text-blue-200 text-xs">Combined % = Total Achievement / Total Target across all pillars</p>
+        </div>
+      </div>
+
+      <!-- AM Leaderboard -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3 mt-4">
+            <div class="top-indicator w-8 h-8 rounded-lg flex items-center justify-center">
+              <i class="fas fa-arrow-up text-white text-xs"></i>
+            </div>
+            <h3 class="font-semibold text-gray-700">Top 5 Area Managers</h3>
+          </div>
+          <div id="outletAmTop5" class="lb-card"></div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 mb-3 mt-4">
+            <div class="bot-indicator w-8 h-8 rounded-lg flex items-center justify-center">
+              <i class="fas fa-arrow-down text-white text-xs"></i>
+            </div>
+            <h3 class="font-semibold text-gray-700">Bottom 5 Area Managers</h3>
+          </div>
+          <div id="outletAmBottom5" class="lb-card"></div>
+        </div>
+      </div>
+
+      <!-- Outlet Leaderboards by Pillar -->
+      <div class="section-header flex items-center gap-3 mb-4">
+        <i class="fas fa-store text-yellow-300 text-xl"></i>
+        <div>
+          <h2 class="text-lg font-bold">Outlet Leaderboard by Pillar</h2>
+          <p class="text-blue-200 text-xs">Each pillar ranked separately</p>
+        </div>
+      </div>
+
+      <!-- Pillar Selector -->
+      <div class="flex flex-wrap gap-2 mb-5">
+        <button class="pillar-tab active-p1" id="outletP1Btn" onclick="outletPillarSwitch(1)">
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 1 – GPO
+        </button>
+        <button class="pillar-tab" id="outletP2Btn" onclick="outletPillarSwitch(2)">
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 2 – MK
+        </button>
+        <button class="pillar-tab" id="outletP3Btn" onclick="outletPillarSwitch(3)">
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 3 – R.R
+        </button>
+      </div>
+
+      <!-- Outlet Pillar Leaderboards -->
+      <div id="outletPillarLb">
+        <!-- Dynamic content -->
+      </div>
+
+      <!-- Full Table -->
+      <div class="section-header flex items-center gap-3 mb-4 mt-8">
+        <i class="fas fa-table text-yellow-300 text-xl"></i>
+        <div>
+          <h2 class="text-lg font-bold">All Outlets – Full Table</h2>
+          <p class="text-blue-200 text-xs">Filter, sort and search all outlet data</p>
+        </div>
+      </div>
+
+      <div class="filter-bar flex flex-wrap gap-3 mb-4 items-center">
+        <div class="flex items-center gap-2 flex-1 min-w-48">
+          <i class="fas fa-search text-gray-400"></i>
+          <input type="text" id="outletSearch" placeholder="Search outlet name / code..." class="w-full" oninput="outletTableRender()">
+        </div>
+        <select id="outletFilterAM" class="min-w-44" onchange="outletTableRender()">
+          <option value="">All Area Managers</option>
+        </select>
+        <select id="outletSort" class="min-w-40" onchange="outletTableRender()">
+          <option value="">Sort by...</option>
+          <option value="gpo_pct_desc">GPO % ↓</option>
+          <option value="gpo_pct_asc">GPO % ↑</option>
+          <option value="mk_pct_desc">MK % ↓</option>
+          <option value="mk_pct_asc">MK % ↑</option>
+          <option value="rr_pct_desc">R.R % ↓</option>
+          <option value="rr_pct_asc">R.R % ↑</option>
+          <option value="combo_desc">Combined % ↓</option>
+          <option value="combo_asc">Combined % ↑</option>
+        </select>
+        <span class="text-xs text-gray-400" id="outletTableCount"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="outletTable">
+          <thead>
+            <tr>
+              <th onclick="outletColSort('code')" id="th_code">Code</th>
+              <th onclick="outletColSort('name')" id="th_name">Outlet Name</th>
+              <th onclick="outletColSort('am')" id="th_am">Area Manager</th>
+              <th onclick="outletColSort('gpo_target')" id="th_gpo_target">GPO Target</th>
+              <th onclick="outletColSort('gpo_ach')" id="th_gpo_ach">GPO Ach</th>
+              <th onclick="outletColSort('gpo_pct')" id="th_gpo_pct">GPO %</th>
+              <th onclick="outletColSort('mk_target')" id="th_mk_target">MK Target</th>
+              <th onclick="outletColSort('mk_ach')" id="th_mk_ach">MK Ach</th>
+              <th onclick="outletColSort('mk_pct')" id="th_mk_pct">MK %</th>
+              <th onclick="outletColSort('rr_target')" id="th_rr_target">R.R Target</th>
+              <th onclick="outletColSort('rr_pct')" id="th_rr_pct">R.R %</th>
+              <th onclick="outletColSort('rr_ach')" id="th_rr_ach">R.R Ach%</th>
+              <th onclick="outletColSort('combo')" id="th_combo">Combined %</th>
+            </tr>
+          </thead>
+          <tbody id="outletTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ======================== PERSONAL TAB ======================== -->
+    <div id="sectionPersonal" class="tab-section">
+
+      <!-- Summary KPIs -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="personalKPIs"></div>
+
+      <!-- Personal Leaderboard by Pillar -->
+      <div class="section-header flex items-center gap-3 mb-4">
+        <i class="fas fa-user-tie text-yellow-300 text-xl"></i>
+        <div>
+          <h2 class="text-lg font-bold">Personal Leaderboard by Pillar</h2>
+          <p class="text-blue-200 text-xs">Top 10 & Bottom 10 — excluding outlets with 0 target on that pillar</p>
+        </div>
+      </div>
+
+      <!-- Pillar Selector -->
+      <div class="flex flex-wrap gap-2 mb-5">
+        <button class="pillar-tab active-p1" id="personalP1Btn" onclick="personalPillarSwitch(1)">
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 1 – GPO
+        </button>
+        <button class="pillar-tab" id="personalP2Btn" onclick="personalPillarSwitch(2)">
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 2 – MK
+        </button>
+        <button class="pillar-tab" id="personalP3Btn" onclick="personalPillarSwitch(3)">
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 3 – R.R
+        </button>
+      </div>
+
+      <!-- Personal Pillar Leaderboards -->
+      <div id="personalPillarLb" class="mb-8"></div>
+
+      <!-- Full Table -->
+      <div class="section-header flex items-center gap-3 mb-4">
+        <i class="fas fa-table text-yellow-300 text-xl"></i>
+        <div>
+          <h2 class="text-lg font-bold">All Personal – Full Table</h2>
+          <p class="text-blue-200 text-xs">Filter, sort and search — rows with all-zero targets excluded</p>
+        </div>
+      </div>
+
+      <div class="filter-bar flex flex-wrap gap-3 mb-4 items-center">
+        <div class="flex items-center gap-2 flex-1 min-w-48">
+          <i class="fas fa-search text-gray-400"></i>
+          <input type="text" id="personalSearch" placeholder="Search outlet name / code..." class="w-full" oninput="personalTableRender()">
+        </div>
+        <select id="personalFilterAM" class="min-w-44" onchange="personalTableRender()">
+          <option value="">All Area Managers</option>
+        </select>
+        <select id="personalFilterOutlet" class="min-w-44" onchange="personalTableRender()">
+          <option value="">All Outlets</option>
+        </select>
+        <select id="personalSort" class="min-w-40" onchange="personalTableRender()">
+          <option value="">Sort by...</option>
+          <option value="gpo_pct_desc">GPO % ↓</option>
+          <option value="gpo_pct_asc">GPO % ↑</option>
+          <option value="mk_pct_desc">MK % ↓</option>
+          <option value="mk_pct_asc">MK % ↑</option>
+          <option value="rr_pct_desc">R.R % ↓</option>
+          <option value="rr_pct_asc">R.R % ↑</option>
+        </select>
+        <span class="text-xs text-gray-400" id="personalTableCount"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table" id="personalTable">
+          <thead>
+            <tr>
+              <th onclick="personalColSort('code')" id="pth_code">Code</th>
+              <th onclick="personalColSort('name')" id="pth_name">Outlet Name</th>
+              <th onclick="personalColSort('am')" id="pth_am">Area Manager</th>
+              <th onclick="personalColSort('gpo_target')" id="pth_gpo_target">GPO Target</th>
+              <th onclick="personalColSort('gpo_ach')" id="pth_gpo_ach">GPO Ach</th>
+              <th onclick="personalColSort('gpo_pct')" id="pth_gpo_pct">GPO %</th>
+              <th onclick="personalColSort('mk_target')" id="pth_mk_target">MK Target</th>
+              <th onclick="personalColSort('mk_ach')" id="pth_mk_ach">MK Ach</th>
+              <th onclick="personalColSort('mk_pct')" id="pth_mk_pct">MK %</th>
+              <th onclick="personalColSort('rr_target')" id="pth_rr_target">R.R Target</th>
+              <th onclick="personalColSort('rr_pct')" id="pth_rr_pct">R.R %</th>
+              <th onclick="personalColSort('rr_ach')" id="pth_rr_ach">R.R Ach%</th>
+            </tr>
+          </thead>
+          <tbody id="personalTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /mainContent -->
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const SHEET_ID = '18QxvJrdARXHuGOeLoqA11x0o4Vy_AIkwdqW0-cgqJMs';
+const OUTLET_GID  = '1852108984';
+const PERSONAL_GID = '341128155';  // Result Personal sheet GID
+
+// Build CSV export URL
+function csvUrl(gid) {
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  outletData: [],
+  personalData: [],
+  outletPillar: 1,
+  personalPillar: 1,
+  outletColSort: null,
+  outletColDir: 'desc',
+  personalColSort: null,
+  personalColDir: 'desc',
+};
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function parsePct(val) {
+  if (!val || val === '#DIV/0!' || val === 'N/A') return null;
+  const s = String(val).replace('%', '').trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+function parseNum(val) {
+  if (!val || val === '#DIV/0!' || val === 'N/A') return null;
+  const n = parseFloat(String(val).replace(/,/g,'').trim());
+  return isNaN(n) ? null : n;
+}
+
+function fmtPct(v, decimals=1) {
+  if (v === null || v === undefined) return '—';
+  return v.toFixed(decimals) + '%';
+}
+
+function fmtNum(v) {
+  if (v === null || v === undefined) return '—';
+  return v.toLocaleString();
+}
+
+function pctPill(v) {
+  if (v === null) return '<span class="text-gray-400 text-xs">—</span>';
+  const cls = v >= 100 ? 'pct-high' : v >= 70 ? 'pct-mid' : 'pct-low';
+  return `<span class="pct-pill ${cls}">${v.toFixed(1)}%</span>`;
+}
+
+function miniBar(v, color='fill-p1') {
+  if (v === null) return '';
+  const w = Math.min(100, Math.max(0, v));
+  return `<div class="prog-bar mt-1"><div class="prog-fill ${color}" style="width:${w}%"></div></div>`;
+}
+
+// ============================================================
+// CSV PARSER
+// ============================================================
+function parseCSV(text) {
+  const lines = text.split('\n');
+  const rows = [];
+  for (let line of lines) {
+    const row = [];
+    let cur = '';
+    let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { row.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    row.push(cur.trim());
+    rows.push(row);
+  }
+  return rows;
+}
+
+// ============================================================
+// FETCH CSV
+// ============================================================
+async function fetchCSV(gid) {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.text();
+}
+
+// ============================================================
+// PARSE OUTLET DATA
+// Sheet: Result Outlet
+// A=code, I(8)=name, J(9)=AM, K(10)=GPO target, L(11)=GPO ach, M(12)=GPO%
+// N(13)=MK target, O(14)=MK ach, P(15)=MK%
+// Q(16)=RR target%, R(17)=RR%, S(18)=RR ach%
+// ============================================================
+function parseOutletRows(rows) {
+  const data = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 10) continue;
+    const code = (r[0] || '').trim();
+    if (!code || code.toLowerCase() === 'outlet code' || code === 'TOTAL') continue;
+    const name = (r[8] || '').trim();
+    const am = (r[9] || '').trim();
+    if (!name && !am) continue;
+
+    const gpo_target = parseNum(r[10]);
+    const gpo_ach    = parseNum(r[11]);
+    const gpo_pct    = parsePct(r[12]);
+    const mk_target  = parseNum(r[13]);
+    const mk_ach     = parseNum(r[14]);
+    const mk_pct     = parsePct(r[15]);
+    const rr_target  = parsePct(r[16]);
+    const rr_pct     = parsePct(r[17]);
+    const rr_ach     = parsePct(r[18]);
+
+    // Combined % = average of the 3 pillar achievements
+    const vals = [gpo_pct, mk_pct, rr_ach].filter(v => v !== null);
+    const combo = vals.length > 0 ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
+
+    data.push({ code, name, am, gpo_target, gpo_ach, gpo_pct, mk_target, mk_ach, mk_pct, rr_target, rr_pct, rr_ach, combo });
+  }
+  return data;
+}
+
+// ============================================================
+// PARSE PERSONAL DATA
+// Sheet: Result Personal
+// A=code, I(8)=name, J(9)=AM
+// L(11)=GPO target, M(12)=GPO ach, N(13)=GPO%
+// O(14)=MK target, P(15)=MK ach, Q(16)=MK%
+// R(17)=RR target, S(18)=RR%, T(19)=RR ach%
+// Exclude if L=0 AND O=0 AND R=0
+// ============================================================
+function parsePersonalRows(rows) {
+  const data = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 12) continue;
+    const code = (r[0] || '').trim();
+    if (!code || code.toLowerCase() === 'outlet code' || code === 'TOTAL') continue;
+    const name = (r[8] || '').trim();
+    const am = (r[9] || '').trim();
+    if (!name && !am) continue;
+
+    const gpo_target = parseNum(r[11]);
+    const gpo_ach    = parseNum(r[12]);
+    const gpo_pct    = parsePct(r[13]);
+    const mk_target  = parseNum(r[14]);
+    const mk_ach     = parseNum(r[15]);
+    const mk_pct     = parsePct(r[16]);
+    const rr_target  = parsePct(r[17]);
+    const rr_pct     = parsePct(r[18]);
+    const rr_ach     = parsePct(r[19]);
+
+    // Exclude if all targets are 0 or null
+    const t1 = gpo_target || 0;
+    const t2 = mk_target || 0;
+    const t3 = rr_target || 0;
+    if (t1 === 0 && t2 === 0 && t3 === 0) continue;
+
+    data.push({ code, name, am, gpo_target, gpo_ach, gpo_pct, mk_target, mk_ach, mk_pct, rr_target, rr_pct, rr_ach });
+  }
+  return data;
+}
+
+// ============================================================
+// AM LEADERBOARD COMPUTATION (Outlet)
+// Combined % = total ach / total target across all 3 pillars
+// Then average the 3 pillar % for final combo
+// ============================================================
+function computeAMLeaderboard(data) {
+  const amMap = {};
+  for (const row of data) {
+    if (!row.am) continue;
+    if (!amMap[row.am]) amMap[row.am] = {
+      am: row.am, outlets: 0,
+      gpo_target: 0, gpo_ach: 0,
+      mk_target: 0, mk_ach: 0,
+      rr_valid: 0, rr_pct_sum: 0, rr_ach_sum: 0
+    };
+    const e = amMap[row.am];
+    e.outlets++;
+    if (row.gpo_target !== null) e.gpo_target += row.gpo_target;
+    if (row.gpo_ach !== null)    e.gpo_ach    += row.gpo_ach;
+    if (row.mk_target !== null)  e.mk_target  += row.mk_target;
+    if (row.mk_ach !== null)     e.mk_ach     += row.mk_ach;
+    if (row.rr_ach !== null) { e.rr_ach_sum += row.rr_ach; e.rr_valid++; }
+  }
+
+  return Object.values(amMap).map(e => {
+    const gpo_pct = e.gpo_target > 0 ? (e.gpo_ach / e.gpo_target * 100) : null;
+    const mk_pct  = e.mk_target  > 0 ? (e.mk_ach  / e.mk_target  * 100) : null;
+    const rr_avg  = e.rr_valid   > 0 ? (e.rr_ach_sum / e.rr_valid)      : null;
+
+    const vals = [gpo_pct, mk_pct, rr_avg].filter(v => v !== null);
+    const combo = vals.length > 0 ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
+    return { ...e, gpo_pct, mk_pct, rr_avg, combo };
+  }).sort((a, b) => (b.combo||0) - (a.combo||0));
+}
+
+// ============================================================
+// RENDER AM LEADERBOARD
+// ============================================================
+function renderAMLeaderboard(list, containerId, isTop) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No data</p>'; return; }
+
+  let html = '';
+  list.forEach((row, idx) => {
+    const rank = isTop ? idx + 1 : idx + 1;
+    const badgeCls = isTop ? 'rank-top' : 'rank-bot';
+    const medal = isTop && rank === 1 ? '🥇' : isTop && rank === 2 ? '🥈' : isTop && rank === 3 ? '🥉' : null;
+
+    html += `
+    <div class="flex items-center gap-3 py-2 ${idx < list.length-1 ? 'border-b border-gray-100' : ''}">
+      <div class="rank-badge ${badgeCls} flex-shrink-0">${medal || rank}</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between">
+          <span class="font-medium text-gray-800 text-sm truncate">${row.am}</span>
+          <span class="font-bold text-sm ml-2 ${isTop ? 'text-green-600' : 'text-red-600'}">${fmtPct(row.combo)}</span>
+        </div>
+        <div class="flex gap-3 text-xs text-gray-500 mt-0.5">
+          <span>GPO: ${fmtPct(row.gpo_pct,0)}</span>
+          <span>MK: ${fmtPct(row.mk_pct,0)}</span>
+          <span>R.R: ${fmtPct(row.rr_avg,0)}</span>
+          <span class="text-gray-400">${row.outlets} outlets</span>
+        </div>
+        ${miniBar(row.combo, isTop ? 'fill-combo' : 'fill-p3')}
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ============================================================
+// RENDER OUTLET PILLAR LEADERBOARD
+// ============================================================
+function renderOutletPillarLb(pillar) {
+  const el = document.getElementById('outletPillarLb');
+  if (!el) return;
+  const data = state.outletData;
+
+  let keyPct, keyTarget, keyAch, label, fillClass;
+  if (pillar === 1) { keyPct='gpo_pct'; keyTarget='gpo_target'; keyAch='gpo_ach'; label='GPO'; fillClass='fill-p1'; }
+  if (pillar === 2) { keyPct='mk_pct';  keyTarget='mk_target';  keyAch='mk_ach';  label='MK';  fillClass='fill-p2'; }
+  if (pillar === 3) { keyPct='rr_ach';  keyTarget='rr_target';  keyAch='rr_pct';  label='R.R'; fillClass='fill-p3'; }
+
+  const valid = data.filter(r => r[keyPct] !== null).sort((a,b) => b[keyPct] - a[keyPct]);
+  const top5 = valid.slice(0, 5);
+  const bot5 = [...valid].reverse().slice(0, 5).reverse();
+
+  const renderList = (list, isTop, N=5) => {
+    if (!list.length) return '<p class="text-gray-400 text-sm text-center py-4">No data</p>';
+    let html = '';
+    list.forEach((row, idx) => {
+      const v = row[keyPct];
+      const medal = isTop && idx===0?'🥇':isTop&&idx===1?'🥈':isTop&&idx===2?'🥉':null;
+      const badgeCls = isTop ? 'rank-top' : 'rank-bot';
+      html += `
+      <div class="flex items-center gap-3 py-2 ${idx < list.length-1 ? 'border-b border-gray-100' : ''}">
+        <div class="rank-badge ${badgeCls}">${medal || (idx+1)}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between">
+            <span class="font-medium text-gray-800 text-sm truncate">${row.name}</span>
+            <span class="font-bold text-sm ml-2 ${isTop?'text-green-600':'text-red-600'}">${fmtPct(v)}</span>
+          </div>
+          <div class="flex gap-2 text-xs text-gray-500 mt-0.5">
+            <span>${row.am}</span>
+            <span class="text-gray-300">|</span>
+            <span class="text-gray-400">${row.code}</span>
+          </div>
+          ${miniBar(v, fillClass)}
+        </div>
+      </div>`;
+    });
+    return html;
+  };
+
+  el.innerHTML = `
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div>
+      <div class="flex items-center gap-2 mb-3">
+        <div class="top-indicator w-8 h-8 rounded-lg flex items-center justify-center">
+          <i class="fas fa-arrow-up text-white text-xs"></i>
+        </div>
+        <h3 class="font-semibold text-gray-700">Top 5 Outlets – ${label}</h3>
+      </div>
+      <div class="lb-card">${renderList(top5, true)}</div>
+    </div>
+    <div>
+      <div class="flex items-center gap-2 mb-3">
+        <div class="bot-indicator w-8 h-8 rounded-lg flex items-center justify-center">
+          <i class="fas fa-arrow-down text-white text-xs"></i>
+        </div>
+        <h3 class="font-semibold text-gray-700">Bottom 5 Outlets – ${label}</h3>
+      </div>
+      <div class="lb-card">${renderList(bot5, false)}</div>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// RENDER PERSONAL PILLAR LEADERBOARD
+// ============================================================
+function renderPersonalPillarLb(pillar) {
+  const el = document.getElementById('personalPillarLb');
+  if (!el) return;
+  const data = state.personalData;
+
+  let keyPct, keyTarget, label, fillClass, excl;
+  if (pillar === 1) { keyPct='gpo_pct'; keyTarget='gpo_target'; label='GPO'; fillClass='fill-p1'; excl = r => (r.gpo_target||0) === 0; }
+  if (pillar === 2) { keyPct='mk_pct';  keyTarget='mk_target';  label='MK';  fillClass='fill-p2'; excl = r => (r.mk_target||0) === 0; }
+  if (pillar === 3) { keyPct='rr_ach';  keyTarget='rr_target';  label='R.R'; fillClass='fill-p3'; excl = r => (r.rr_target||0) === 0; }
+
+  const valid = data.filter(r => !excl(r) && r[keyPct] !== null).sort((a,b) => b[keyPct] - a[keyPct]);
+  const top10 = valid.slice(0, 10);
+  const bot10 = [...valid].reverse().slice(0, 10).reverse();
+
+  const renderList = (list, isTop, N=10) => {
+    if (!list.length) return '<p class="text-gray-400 text-sm text-center py-4">No data</p>';
+    let html = '';
+    list.forEach((row, idx) => {
+      const v = row[keyPct];
+      const medal = isTop && idx===0?'🥇':isTop&&idx===1?'🥈':isTop&&idx===2?'🥉':null;
+      const badgeCls = isTop ? 'rank-top' : 'rank-bot';
+      html += `
+      <div class="flex items-center gap-3 py-2 ${idx < list.length-1 ? 'border-b border-gray-100' : ''}">
+        <div class="rank-badge ${badgeCls}">${medal || (idx+1)}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between">
+            <span class="font-medium text-gray-800 text-sm truncate">${row.name}</span>
+            <span class="font-bold text-sm ml-2 ${isTop?'text-green-600':'text-red-600'}">${fmtPct(v)}</span>
+          </div>
+          <div class="flex gap-2 text-xs text-gray-500 mt-0.5">
+            <span>${row.am}</span>
+            <span class="text-gray-300">|</span>
+            <span class="text-gray-400">${row.code}</span>
+          </div>
+          ${miniBar(v, fillClass)}
+        </div>
+      </div>`;
+    });
+    return html;
+  };
+
+  el.innerHTML = `
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div>
+      <div class="flex items-center gap-2 mb-3">
+        <div class="top-indicator w-8 h-8 rounded-lg flex items-center justify-center">
+          <i class="fas fa-arrow-up text-white text-xs"></i>
+        </div>
+        <h3 class="font-semibold text-gray-700">Top 10 Personal – ${label}</h3>
+        <span class="text-xs text-gray-400">(excl. zero target)</span>
+      </div>
+      <div class="lb-card">${renderList(top10, true)}</div>
+    </div>
+    <div>
+      <div class="flex items-center gap-2 mb-3">
+        <div class="bot-indicator w-8 h-8 rounded-lg flex items-center justify-center">
+          <i class="fas fa-arrow-down text-white text-xs"></i>
+        </div>
+        <h3 class="font-semibold text-gray-700">Bottom 10 Personal – ${label}</h3>
+        <span class="text-xs text-gray-400">(excl. zero target)</span>
+      </div>
+      <div class="lb-card">${renderList(bot10, false)}</div>
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// OUTLET TABLE
+// ============================================================
+function outletTableRender() {
+  const search = (document.getElementById('outletSearch')?.value || '').toLowerCase();
+  const filterAM = document.getElementById('outletFilterAM')?.value || '';
+  const sortVal = document.getElementById('outletSort')?.value || '';
+  const colSort = state.outletColSort;
+  const colDir  = state.outletColDir;
+
+  let data = [...state.outletData];
+
+  // Filter
+  if (search) data = data.filter(r => r.name.toLowerCase().includes(search) || r.code.toLowerCase().includes(search) || r.am.toLowerCase().includes(search));
+  if (filterAM) data = data.filter(r => r.am === filterAM);
+
+  // Sort
+  const sortMap = {
+    gpo_pct_desc: (a,b) => (b.gpo_pct||0)-(a.gpo_pct||0),
+    gpo_pct_asc:  (a,b) => (a.gpo_pct||0)-(b.gpo_pct||0),
+    mk_pct_desc:  (a,b) => (b.mk_pct||0)-(a.mk_pct||0),
+    mk_pct_asc:   (a,b) => (a.mk_pct||0)-(b.mk_pct||0),
+    rr_pct_desc:  (a,b) => (b.rr_ach||0)-(a.rr_ach||0),
+    rr_pct_asc:   (a,b) => (a.rr_ach||0)-(b.rr_ach||0),
+    combo_desc:   (a,b) => (b.combo||0)-(a.combo||0),
+    combo_asc:    (a,b) => (a.combo||0)-(b.combo||0),
+  };
+  if (sortVal && sortMap[sortVal]) data.sort(sortMap[sortVal]);
+
+  // Column sort
+  if (colSort) {
+    const numCols = ['gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_target','rr_pct','rr_ach','combo'];
+    if (numCols.includes(colSort)) {
+      data.sort((a,b) => colDir === 'asc' ? (a[colSort]||0)-(b[colSort]||0) : (b[colSort]||0)-(a[colSort]||0));
+    } else {
+      data.sort((a,b) => {
+        const va = (a[colSort]||'').toLowerCase();
+        const vb = (b[colSort]||'').toLowerCase();
+        return colDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      });
+    }
+  }
+
+  document.getElementById('outletTableCount').textContent = `${data.length} rows`;
+
+  const tbody = document.getElementById('outletTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = data.map(r => `
+    <tr>
+      <td class="font-mono text-xs text-blue-600">${r.code}</td>
+      <td class="font-medium text-gray-800 text-sm max-w-xs">${r.name}</td>
+      <td class="text-gray-600 text-sm">${r.am}</td>
+      <td class="text-right">${fmtNum(r.gpo_target)}</td>
+      <td class="text-right">${fmtNum(r.gpo_ach)}</td>
+      <td>${pctPill(r.gpo_pct)}</td>
+      <td class="text-right">${fmtNum(r.mk_target)}</td>
+      <td class="text-right">${fmtNum(r.mk_ach)}</td>
+      <td>${pctPill(r.mk_pct)}</td>
+      <td class="text-right">${r.rr_target !== null ? r.rr_target+'%' : '—'}</td>
+      <td class="text-right">${r.rr_pct !== null ? r.rr_pct.toFixed(2)+'%' : '—'}</td>
+      <td>${pctPill(r.rr_ach)}</td>
+      <td>${pctPill(r.combo)}</td>
+    </tr>`).join('');
+}
+
+function outletColSort(col) {
+  if (state.outletColSort === col) {
+    state.outletColDir = state.outletColDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.outletColSort = col;
+    state.outletColDir = 'desc';
+  }
+  // Clear dropdown
+  document.getElementById('outletSort').value = '';
+  outletTableRender();
+}
+
+// ============================================================
+// PERSONAL TABLE
+// ============================================================
+function personalTableRender() {
+  const search = (document.getElementById('personalSearch')?.value || '').toLowerCase();
+  const filterAM = document.getElementById('personalFilterAM')?.value || '';
+  const filterOutlet = document.getElementById('personalFilterOutlet')?.value || '';
+  const sortVal = document.getElementById('personalSort')?.value || '';
+  const colSort = state.personalColSort;
+  const colDir  = state.personalColDir;
+
+  let data = [...state.personalData];
+
+  // Filter
+  if (search) data = data.filter(r => r.name.toLowerCase().includes(search) || r.code.toLowerCase().includes(search) || r.am.toLowerCase().includes(search));
+  if (filterAM) data = data.filter(r => r.am === filterAM);
+  if (filterOutlet) data = data.filter(r => r.name === filterOutlet);
+
+  // Sort
+  const sortMap = {
+    gpo_pct_desc: (a,b) => (b.gpo_pct||0)-(a.gpo_pct||0),
+    gpo_pct_asc:  (a,b) => (a.gpo_pct||0)-(b.gpo_pct||0),
+    mk_pct_desc:  (a,b) => (b.mk_pct||0)-(a.mk_pct||0),
+    mk_pct_asc:   (a,b) => (a.mk_pct||0)-(b.mk_pct||0),
+    rr_pct_desc:  (a,b) => (b.rr_ach||0)-(a.rr_ach||0),
+    rr_pct_asc:   (a,b) => (a.rr_ach||0)-(b.rr_ach||0),
+  };
+  if (sortVal && sortMap[sortVal]) data.sort(sortMap[sortVal]);
+
+  // Column sort
+  if (colSort) {
+    const numCols = ['gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_target','rr_pct','rr_ach'];
+    if (numCols.includes(colSort)) {
+      data.sort((a,b) => colDir === 'asc' ? (a[colSort]||0)-(b[colSort]||0) : (b[colSort]||0)-(a[colSort]||0));
+    } else {
+      data.sort((a,b) => {
+        const va = (a[colSort]||'').toLowerCase();
+        const vb = (b[colSort]||'').toLowerCase();
+        return colDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      });
+    }
+  }
+
+  document.getElementById('personalTableCount').textContent = `${data.length} rows`;
+
+  const tbody = document.getElementById('personalTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = data.map(r => `
+    <tr>
+      <td class="font-mono text-xs text-blue-600">${r.code}</td>
+      <td class="font-medium text-gray-800 text-sm max-w-xs">${r.name}</td>
+      <td class="text-gray-600 text-sm">${r.am}</td>
+      <td class="text-right">${fmtNum(r.gpo_target)}</td>
+      <td class="text-right">${fmtNum(r.gpo_ach)}</td>
+      <td>${pctPill(r.gpo_pct)}</td>
+      <td class="text-right">${fmtNum(r.mk_target)}</td>
+      <td class="text-right">${fmtNum(r.mk_ach)}</td>
+      <td>${pctPill(r.mk_pct)}</td>
+      <td class="text-right">${r.rr_target !== null ? r.rr_target+'%' : '—'}</td>
+      <td class="text-right">${r.rr_pct !== null ? r.rr_pct.toFixed(2)+'%' : '—'}</td>
+      <td>${pctPill(r.rr_ach)}</td>
+    </tr>`).join('');
+}
+
+function personalColSort(col) {
+  if (state.personalColSort === col) {
+    state.personalColDir = state.personalColDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.personalColSort = col;
+    state.personalColDir = 'desc';
+  }
+  document.getElementById('personalSort').value = '';
+  personalTableRender();
+}
+
+// ============================================================
+// POPULATE FILTERS
+// ============================================================
+function populateOutletFilters() {
+  const ams = [...new Set(state.outletData.map(r => r.am).filter(Boolean))].sort();
+  const sel = document.getElementById('outletFilterAM');
+  if (sel) {
+    sel.innerHTML = '<option value="">All Area Managers</option>' +
+      ams.map(a => `<option value="${a}">${a}</option>`).join('');
+  }
+}
+
+function populatePersonalFilters() {
+  const ams = [...new Set(state.personalData.map(r => r.am).filter(Boolean))].sort();
+  const outlets = [...new Set(state.personalData.map(r => r.name).filter(Boolean))].sort();
+  const selAM = document.getElementById('personalFilterAM');
+  const selOutlet = document.getElementById('personalFilterOutlet');
+  if (selAM) {
+    selAM.innerHTML = '<option value="">All Area Managers</option>' +
+      ams.map(a => `<option value="${a}">${a}</option>`).join('');
+  }
+  if (selOutlet) {
+    selOutlet.innerHTML = '<option value="">All Outlets</option>' +
+      outlets.map(o => `<option value="${o}">${o}</option>`).join('');
+  }
+}
+
+// ============================================================
+// KPI SUMMARY
+// ============================================================
+function renderKPIs(containerId, data, isPersonal) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  const total = data.length;
+  const avgGPO = data.filter(r => r.gpo_pct!==null).map(r=>r.gpo_pct).reduce((a,b)=>a+b,0) / (data.filter(r=>r.gpo_pct!==null).length||1);
+  const avgMK  = data.filter(r => r.mk_pct!==null).map(r=>r.mk_pct).reduce((a,b)=>a+b,0)  / (data.filter(r=>r.mk_pct!==null).length||1);
+  const avgRR  = data.filter(r => r.rr_ach!==null).map(r=>r.rr_ach).reduce((a,b)=>a+b,0)  / (data.filter(r=>r.rr_ach!==null).length||1);
+  const above100GPO = data.filter(r => r.gpo_pct !== null && r.gpo_pct >= 100).length;
+
+  const kpis = [
+    { icon: 'fas fa-store', label: isPersonal ? 'Active Personal' : 'Total Outlets', value: total, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { icon: 'fas fa-circle text-blue-500', label: 'Avg GPO %', value: fmtPct(avgGPO), color: 'text-blue-600', bg: 'bg-blue-50' },
+    { icon: 'fas fa-circle text-green-500', label: 'Avg MK %', value: fmtPct(avgMK), color: 'text-green-600', bg: 'bg-green-50' },
+    { icon: 'fas fa-circle text-yellow-500', label: 'Avg R.R Ach%', value: fmtPct(avgRR), color: 'text-yellow-600', bg: 'bg-yellow-50' },
+  ];
+
+  el.innerHTML = kpis.map(k => `
+    <div class="metric-card p-4 flex items-center gap-3">
+      <div class="w-10 h-10 ${k.bg} rounded-xl flex items-center justify-center flex-shrink-0">
+        <i class="${k.icon} ${k.color}"></i>
+      </div>
+      <div>
+        <p class="text-xs text-gray-500">${k.label}</p>
+        <p class="text-xl font-bold ${k.color}">${k.value}</p>
+      </div>
+    </div>`).join('');
+}
+
+// ============================================================
+// PILLAR SWITCH HANDLERS
+// ============================================================
+function outletPillarSwitch(p) {
+  state.outletPillar = p;
+  ['outletP1Btn','outletP2Btn','outletP3Btn'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'pillar-tab';
+    if (i+1 === p) el.classList.add(`active-p${p}`);
+  });
+  renderOutletPillarLb(p);
+}
+
+function personalPillarSwitch(p) {
+  state.personalPillar = p;
+  ['personalP1Btn','personalP2Btn','personalP3Btn'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'pillar-tab';
+    if (i+1 === p) el.classList.add(`active-p${p}`);
+  });
+  renderPersonalPillarLb(p);
+}
+
+// ============================================================
+// MAIN TAB SWITCH
+// ============================================================
+function switchMainTab(tab) {
+  document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
+  document.getElementById('section' + tab.charAt(0).toUpperCase() + tab.slice(1))?.classList.add('active');
+}
+
+// ============================================================
+// MAIN LOAD
+// ============================================================
+const pillarTracker = {
+  async loadAll() {
+    document.getElementById('loadingState').classList.remove('hidden');
+    document.getElementById('errorState').classList.add('hidden');
+    document.getElementById('mainContent').classList.add('hidden');
+
+    try {
+      // Try to find personal GID
+      const personalGID = await this.findPersonalGID();
+      
+      // Fetch both sheets in parallel
+      const [outletCSV, personalCSV] = await Promise.all([
+        fetchCSV(OUTLET_GID),
+        fetchCSV(personalGID),
+      ]);
+
+      // Parse
+      const outletRows = parseCSV(outletCSV);
+      const personalRows = parseCSV(personalCSV);
+      state.outletData = parseOutletRows(outletRows);
+      state.personalData = parsePersonalRows(personalRows);
+
+      // Check personal data columns by inspecting header row
+      console.log('Outlet rows sample (row 2):', outletRows[1]);
+      console.log('Personal rows sample (row 2):', personalRows[1]);
+      console.log('Outlet data count:', state.outletData.length);
+      console.log('Personal data count:', state.personalData.length);
+
+      this.render();
+
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('mainContent').classList.remove('hidden');
+      document.getElementById('lastUpdated').innerHTML = '<i class="fas fa-circle text-green-400"></i> <span>Updated ' + new Date().toLocaleTimeString() + '</span>';
+
+    } catch(e) {
+      console.error('Load error:', e);
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('errorState').classList.remove('hidden');
+      document.getElementById('errorMsg').textContent = 'Failed to load data: ' + e.message;
+    }
+  },
+
+  async findPersonalGID() {
+    // GID for "Result Personal" sheet confirmed as 341128155
+    return PERSONAL_GID;
+  },
+
+  render() {
+    // Outlet KPIs
+    renderKPIs('outletKPIs', state.outletData, false);
+
+    // AM Leaderboard
+    const amList = computeAMLeaderboard(state.outletData);
+    renderAMLeaderboard(amList.slice(0, 5), 'outletAmTop5', true);
+    renderAMLeaderboard([...amList].reverse().slice(0, 5).reverse(), 'outletAmBottom5', false);
+
+    // Outlet Pillar LB
+    renderOutletPillarLb(state.outletPillar);
+
+    // Outlet Table
+    populateOutletFilters();
+    outletTableRender();
+
+    // Personal KPIs
+    renderKPIs('personalKPIs', state.personalData, true);
+
+    // Personal Pillar LB
+    renderPersonalPillarLb(state.personalPillar);
+
+    // Personal Table
+    populatePersonalFilters();
+    personalTableRender();
+  }
+};
+
+// ============================================================
+// INIT
+// ============================================================
+pillarTracker.loadAll();
+</script>
+</body>
+</html>
