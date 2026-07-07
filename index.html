@@ -552,10 +552,16 @@
                                 <i class="fas fa-chart-bar mr-2"></i>
                                 AM Performance Tracker
                             </button>
+                            <!-- Elite BM Performance Tracker hidden as per request -->
                             <button onclick="showOperationsSubtab('elite-bm-performance-tracker')" 
-                                    class="subtab-button px-4 py-2">
+                                    class="subtab-button px-4 py-2" style="display:none;">
                                 <i class="fas fa-crown mr-2"></i>
                                 Elite BM Performance Tracker
+                            </button>
+                            <button onclick="showOperationsSubtab('pillar-tracker')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-chart-line mr-2"></i>
+                                Pillar Tracker
                             </button>
                             <button onclick="showOperationsSubtab('biodata-outlet')" 
                                     class="subtab-button px-4 py-2">
@@ -1258,6 +1264,19 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Pillar Tracker Subtab -->
+                <div id="pillarTrackerSubtab" class="operations-subtab hidden">
+                    <div style="width:100%;height:calc(100vh - 240px);min-height:600px;position:relative;">
+                        <iframe 
+                            id="pillarTrackerIframe"
+                            class="lazy-iframe"
+                            data-src="pillar-tracker.html"
+                            style="width:100%;height:100%;border:none;border-radius:12px;"
+                            title="Pillar Tracker Dashboard">
+                        </iframe>
                     </div>
                 </div>
 
@@ -9302,6 +9321,7 @@
                 'opps-ed-project': 'oppsEdProjectSubtab',
                 'am-performance-tracker': 'amPerformanceTrackerSubtab',
                 'elite-bm-performance-tracker': 'eliteBmPerformanceTrackerSubtab',
+                'pillar-tracker': 'pillarTrackerSubtab',
                 'biodata-outlet': 'biodataOutletSubtab',
                 'opex-dashboard': 'opexDashboardSubtab'
             };
