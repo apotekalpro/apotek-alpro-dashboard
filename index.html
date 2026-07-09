@@ -3265,6 +3265,41 @@
                     </div>
                 </div>
 
+                <!-- Delete User Confirmation Modal -->
+                <div id="deleteUserModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+                        <div class="px-6 py-5 border-b border-gray-200 flex items-center gap-3">
+                            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-trash text-red-600"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800">Delete User</h3>
+                                <p class="text-sm text-gray-500">This action is permanent and cannot be undone</p>
+                            </div>
+                        </div>
+                        <div class="px-6 py-5">
+                            <p class="text-gray-700 mb-2">You are about to permanently delete:</p>
+                            <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
+                                <div class="font-semibold text-red-800" id="deleteUserModalName"></div>
+                                <div class="text-sm text-red-600" id="deleteUserModalEmail"></div>
+                            </div>
+                            <p class="text-sm text-gray-500">This will <strong>immediately remove</strong> the user from Supabase. They will no longer be able to log in.</p>
+                        </div>
+                        <div class="px-6 py-4 bg-gray-50 rounded-b-xl flex justify-end gap-3">
+                            <button onclick="closeDeleteUserModal()"
+                                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                                Cancel
+                            </button>
+                            <button onclick="executeDeleteUser()"
+                                    id="deleteUserConfirmBtn"
+                                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center gap-2">
+                                <i class="fas fa-trash"></i>
+                                Delete Permanently
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Password Change Modal -->
                 <div id="passwordChangeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
                     <div class="flex items-center justify-center min-h-screen p-4">
@@ -9887,6 +9922,12 @@
                                 <i class="fas fa-${user.status === 'active' ? 'ban' : 'check'} mr-1"></i>
                                 ${user.status === 'active' ? 'Disable' : 'Enable'}
                             </button>
+                            ${currentUserRole === 'admin' ? `
+                            <button onclick="event.stopPropagation(); confirmDeleteUser('${user.id}', '${user.email}', '${user.name.replace(/'/g, "\\'")}')" 
+                                    class="text-red-700 hover:text-red-900 font-semibold transition-colors">
+                                <i class="fas fa-trash mr-1"></i>Delete
+                            </button>
+                            ` : ''}
                         </div>
                     </td>
                 `;
@@ -10697,44 +10738,89 @@
             autoSyncToCloud('user_updated', updatedUser, false);
         }
         
+        // ===== DELETE USER — modal-based with direct Supabase delete =====
+
+        // State for the pending delete
+        let _pendingDeleteUserId = null;
+
+        // Called from table row Delete button
+        function confirmDeleteUser(userId, email, name) {
+            _pendingDeleteUserId = userId;
+            document.getElementById('deleteUserModalName').textContent = name;
+            document.getElementById('deleteUserModalEmail').textContent = email;
+            document.getElementById('deleteUserModal').classList.remove('hidden');
+        }
+
+        function closeDeleteUserModal() {
+            _pendingDeleteUserId = null;
+            document.getElementById('deleteUserModal').classList.add('hidden');
+            const btn = document.getElementById('deleteUserConfirmBtn');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash"></i> Delete Permanently';
+        }
+
+        async function executeDeleteUser() {
+            if (!_pendingDeleteUserId) return;
+
+            const userIndex = userManagementData.users.findIndex(u => u.id === _pendingDeleteUserId);
+            if (userIndex === -1) {
+                showConfigStatus('User not found', 'error');
+                closeDeleteUserModal();
+                return;
+            }
+
+            const user = userManagementData.users[userIndex];
+            const btn = document.getElementById('deleteUserConfirmBtn');
+
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+
+            try {
+                // 1. Delete directly from Supabase immediately
+                if (_mode && _db) {
+                    const { error } = await _db
+                        .from('users')
+                        .delete()
+                        .eq('email', user.email.toLowerCase());
+
+                    if (error) throw error;
+                    console.log('✅ User deleted from Supabase:', user.email);
+                }
+
+                // 2. Remove from local data
+                const deletedUser = {...user};
+                userManagementData.users.splice(userIndex, 1);
+                saveUserManagementData();
+
+                // 3. Log activity
+                logUserActivity(currentUser, 'user_deleted', {
+                    targetUser: user.email,
+                    deletedUserData: { name: user.name, role: user.role, status: user.status }
+                });
+
+                // 4. Close modal & refresh UI
+                closeDeleteUserModal();
+                closeUserEditModal(); // close edit modal too if open
+                refreshUserList();
+                showConfigStatus(`✅ User "${user.name}" permanently deleted from Supabase`, 'success');
+
+            } catch (err) {
+                console.error('❌ Failed to delete user from Supabase:', err);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-trash"></i> Delete Permanently';
+                showConfigStatus(`❌ Delete failed: ${err.message || 'Unknown error'}`, 'error');
+            }
+        }
+
+        // Legacy deleteUser() called from edit modal footer — now routes through confirmDeleteUser
         function deleteUser() {
             const userId = document.getElementById('editUserId').value;
             const userIndex = userManagementData.users.findIndex(u => u.id === userId);
-            
-            if (userIndex === -1) {
-                showConfigStatus('User not found', 'error');
-                return;
-            }
-            
+            if (userIndex === -1) { showConfigStatus('User not found', 'error'); return; }
             const user = userManagementData.users[userIndex];
-            
-            if (confirm(`Are you sure you want to delete user ${user.name} (${user.email})? This action cannot be undone.`)) {
-                // Store user data for cloud deletion
-                const deletedUser = {...user};
-                
-                // Remove from local data
-                userManagementData.users.splice(userIndex, 1);
-                saveUserManagementData();
-                
-                // Immediate UI updates
-                closeUserEditModal();
-                refreshUserList();
-                
-                // Log the user deletion
-                logUserActivity(currentUser, 'user_deleted', {
-                    targetUser: user.email,
-                    deletedUserData: {
-                        name: user.name,
-                        role: user.role,
-                        status: user.status
-                    }
-                });
-                
-                showConfigStatus(`User ${user.name} deleted successfully`, 'success');
-                
-                // Auto-sync deletion to cloud in background
-                autoSyncToCloud('user_deleted', deletedUser, false);
-            }
+            closeUserEditModal();
+            confirmDeleteUser(user.id, user.email, user.name);
         }
         
         function toggleUserStatus(userId) {
