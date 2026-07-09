@@ -583,8 +583,28 @@
                                     Open in New Tab
                                 </button>
                             </div>
-                            <div class="iframe-container">
-                                <iframe data-src="https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                            <!-- Google Script cannot be embedded in iframe due to X-Frame-Options restrictions -->
+                            <!-- Instead, provide a seamless navigation option -->
+                            <div class="bg-white rounded-lg shadow-md p-8">
+                                <div class="text-center">
+                                    <div class="mb-6">
+                                        <i class="fas fa-chart-line text-6xl text-blue-500 mb-4"></i>
+                                    </div>
+                                    <h4 class="text-2xl font-semibold text-gray-800 mb-3">Outlet Dashboard</h4>
+                                    <p class="text-gray-600 mb-6 max-w-2xl mx-auto">
+                                        Due to Google's security policies, the Outlet Dashboard cannot be embedded directly. 
+                                        Click the button below to access the full dashboard in a new tab.
+                                    </p>
+                                    <button onclick="window.open('https://script.google.com/macros/s/AKfycbyE1R2ogJa1mJ2GXGFB_cZeiX86H8LbBRiy03Umj6Gr_xnvdlT7KytPhwiLueviYvaXFg/exec', '_blank')" 
+                                            class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-lg shadow-lg transform transition hover:scale-105">
+                                        <i class="fas fa-external-link-alt mr-2"></i>
+                                        Launch Outlet Dashboard
+                                    </button>
+                                    <div class="mt-6 text-sm text-gray-500">
+                                        <p>📊 Real-time operational metrics and monitoring</p>
+                                        <p>🔒 Secure access via Google Apps Script</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
