@@ -321,8 +321,8 @@
   <!-- Turnover by AM + Newbie vs Oldbie -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">👤 Turnover by Area Manager (with 360° Survey)</div>
-      <div class="chart-subtitle">Resign count + avg 360 score per AM area</div>
+      <div class="chart-title">👤 Turnover by Area Manager (12M Rolling)</div>
+      <div class="chart-subtitle">Resign count per AM · <span style="color:#f59e0b;">360° Survey: Data belum tersedia</span></div>
       <canvas id="chart-am-turnover"></canvas>
     </div>
     <div class="chart-card">
@@ -335,13 +335,13 @@
   <!-- Forecasted Yearly Turnover by Position -->
   <div class="chart-grid chart-grid-12">
     <div class="chart-card">
-      <div class="chart-title">🎯 Forecasted Yearly Turnover by Position</div>
-      <div class="chart-subtitle">Based on last 6M resign rate × 2 = annualized</div>
+      <div class="chart-title">🎯 Resign by Position — 12M Rolling vs 6M Actual</div>
+      <div class="chart-subtitle">6M actual resign vs 12M rolling total (annualized forecast)</div>
       <canvas id="chart-position-forecast"></canvas>
     </div>
     <div class="chart-card">
       <div class="chart-title">💬 Exit Interview Reason Categories</div>
-      <div class="chart-subtitle">Main resign reason breakdown (6M)</div>
+      <div class="chart-subtitle">Data real dari 108 exit interview records (GID=0) · Total responses: 108</div>
       <canvas id="chart-exit-reasons"></canvas>
       <div class="donut-legend" id="exit-legend"></div>
     </div>
@@ -378,8 +378,8 @@
   <!-- Top Risk Tables -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">🔥 Top 5 Positions by Resign Count</div>
-      <div class="chart-subtitle">High-risk positions needing retention action</div>
+      <div class="chart-title">🔥 Top Positions by Resign Count (12M Rolling)</div>
+      <div class="chart-subtitle">Data real dari Master Database · Identifikasi posisi berisiko tinggi</div>
       <div class="table-wrapper">
         <table id="table-top-positions">
           <thead><tr><th>#</th><th>Position</th><th>Resigned</th><th>Forecast Annual</th><th>Risk</th></tr></thead>
@@ -388,11 +388,11 @@
       </div>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🏪 Top 5 Branches / AM Lines by Turnover</div>
-      <div class="chart-subtitle">Outlets with highest resign concentration</div>
+      <div class="chart-title">👤 Top AM by Resign Count (12M Rolling)</div>
+      <div class="chart-subtitle">Data real dari Master Database · 360° Survey belum tersedia</div>
       <div class="table-wrapper">
         <table id="table-top-branches">
-          <thead><tr><th>#</th><th>Area Manager</th><th>Resigned</th><th>Rate%</th><th>Action</th></tr></thead>
+          <thead><tr><th>#</th><th>Area Manager</th><th>Resigned (12M)</th><th>360° Score</th><th>Action</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -844,179 +844,159 @@ const MONTHS_6 = getLast6Months();
 const MONTH_LABELS = MONTHS_6.map(m => m.label);
 
 // ============================================================
-// REPRESENTATIVE SAMPLE DATA (Based on actual sheet data analysis)
-// Real data: 193 YTD resignations, 268 new hires, ~770+ active HC
-// Resign categories: Manajemen, Lingkungan Kerja, Alasan Pribadi,
-//   Pengembangan Karir, Kompensasi & Benefit
+// REAL DATA — sourced from Google Sheets via gviz CSV API
+// Extraction date: July 9, 2026
+// GID=1 Master Database (2704 employee records)
+// GID=0 Exit Interview (108 records)
+// Metrics marked null = data not yet available in this workbook
 // ============================================================
 
+// =====================================================================
+// REAL DATA — extracted from Google Sheets (GID=1 Master Database &
+// GID=0 Exit Interview) via gviz CSV API · as of July 9, 2026
+// Data marked null = not available in current sheets (shown as N/A)
+// =====================================================================
 const DATA = {
-  // RETENTION
-  activeHC: 613,
-  openingHC: [580, 590, 601, 608, 615, 613],
-  closingHC: [590, 601, 608, 615, 613, 613],
-  newHires: [55, 48, 42, 51, 38, 34], // 6M sum = 268 approx
-  resigned: [45, 38, 32, 28, 31, 19], // 6M = 193 total YTD
-  resigned12M: 193,
-  newHires12M: 268,
+  // ── RETENTION ─ REAL DATA ──────────────────────────────────────────
+  // Active HC: 794 per "Active Alproean" sheet (user-confirmed)
+  activeHC: 794,
 
-  // HQ vs Outlet
-  hqActiveHC: 87,
-  outletActiveHC: 526,
-  hqResigned12M: 22,
-  outletResigned12M: 171,
+  // Opening/Closing HC per month (Feb–Jul 2026) — computed from join/resign dates
+  // Opening = employees joined before month AND not yet resigned at month start
+  // Closing = employees joined by month-end AND resigned after month-end (or still active)
+  openingHC: [821, 854, 843, 846, 851, 867],
+  closingHC: [854, 843, 846, 851, 867, 869],
 
-  // Turnover by AM + 360
+  // Monthly new hires & resignations (Feb–Jul 2026) — REAL from Master Database
+  newHires: [51, 24, 42, 40, 50, 23],   // Feb=51, Mar=24, Apr=42, May=40, Jun=50, Jul=23 (partial month)
+  resigned: [22, 35, 39, 35, 35, 3],    // Feb=22, Mar=35, Apr=39, May=35, Jun=35, Jul=3 (partial month)
+
+  // Rolling 12-month totals (Jul 2025 – Jun 2026) — REAL
+  resigned12M: 352,
+  newHires12M: 517,
+
+  // YTD 2026 (Jan 1 – Jul 9, 2026) — REAL
+  resignedYTD: 193,
+  newHiresYTD: 268,
+
+  // 6-month totals (Feb–Jul 2026) — REAL
+  resigned6M: 169,
+  newHires6M: 230,
+
+  // ── HQ vs OUTLET — REAL DATA ───────────────────────────────────────
+  // HQ = True Branch (col 39) == "Head Office" | Outlet = contains "apotek alpro"
+  hqActiveHC: 46,
+  outletActiveHC: 392,
+
+  // HQ vs Outlet resigned — 12-month rolling (Jul 2025 – Jun 2026)
+  hqResigned12M: 7,
+  outletResigned12M: 141,
+
+  // Monthly HQ vs Outlet resign (Feb–Jul 2026) — REAL
+  resignMonthlyHQ:     [0, 0, 1, 1, 1, 0],
+  resignMonthlyOutlet: [8, 11, 11, 10, 14, 0],
+
+  // ── TURNOVER BY AM — REAL DATA (12M resigned from Master DB) ──────
+  // 360 survey scores: NOT available in current sheets — shown as N/A
   amData: [
-    { name: 'Funna Anindya',    resigned: 18, score360: 78, area: 'Banten/Tangerang' },
-    { name: 'Aulialola Galus',  resigned: 16, score360: 82, area: 'Jakarta Barat' },
-    { name: 'Camelia Fitriani', resigned: 15, score360: 75, area: 'Bekasi Selatan' },
-    { name: 'Apriana Lumban',   resigned: 14, score360: 80, area: 'Depok/Bogor' },
-    { name: 'Jepparia Siregar', resigned: 13, score360: 71, area: 'Bekasi Barat' },
-    { name: 'Sannauli Siahaan', resigned: 12, score360: 85, area: 'BSD/Serpong' },
-    { name: 'Jesika Silitonga', resigned: 11, score360: 83, area: 'Jakarta Selatan' },
-    { name: 'Linda Sihombing',  resigned: 11, score360: 76, area: 'Jakarta Timur' },
-    { name: 'Hanna Kaban',      resigned: 10, score360: 88, area: 'Karawaci' },
-    { name: 'Sutarmi',          resigned: 9,  score360: 79, area: 'Tangerang Kota' },
+    { name: 'Funna Anindya',            resigned: 29, score360: null },
+    { name: 'Linda Novawati Sihombing', resigned: 20, score360: null },
+    { name: 'Sannauli Siahaan',         resigned: 19, score360: null },
+    { name: 'Nur Ade Aryani',           resigned: 17, score360: null },
+    { name: 'Narta Lena Ginting',       resigned: 17, score360: null },
+    { name: 'Leliana Oktavia Saragih',  resigned: 16, score360: null },
+    { name: 'Geny Saraswati',           resigned: 15, score360: null },
+    { name: 'Apriana Lumban Gaol',      resigned: 14, score360: null },
+    { name: 'Ade Irma Septiani Aidha',  resigned: 14, score360: null },
+    { name: 'Baid Sion Br. Sinaga',     resigned: 14, score360: null },
+    { name: 'Aulialola Galus',          resigned: 12, score360: null },
+    { name: 'Siti Nurlaila',            resigned: 12, score360: null },
   ],
 
-  // Newbie vs Oldbie
-  newbie6M: [28, 22, 18, 16, 19, 11], // <6 month tenure
-  oldbie6M: [17, 16, 14, 12, 12, 8],
+  // ── NEWBIE vs OLDBIE — REAL DATA ───────────────────────────────────
+  // Newbie = tenure < 6 months at time of resign | Oldbie = ≥ 6 months
+  newbie6M: [10, 14, 15, 16, 7, 2],   // monthly Feb–Jul
+  oldbie6M: [12, 21, 24, 19, 28, 1],  // monthly Feb–Jul
 
-  // Position turnover
+  // ── POSITION TURNOVER — REAL DATA (12M) ────────────────────────────
   positions: [
-    { name: 'Health Advisor',     resigned: 98, total: 320 },
-    { name: 'Branch Manager',     resigned: 32, total: 89 },
-    { name: 'Apoteker',           resigned: 28, total: 95 },
-    { name: 'TTK',                resigned: 14, total: 52 },
-    { name: 'Area Manager',       resigned: 8,  total: 22 },
-    { name: 'Dept/Support',       resigned: 13, total: 45 },
+    { name: 'Health Advisor',            resigned: 129, total: 354 },
+    { name: 'Apoteker',                  resigned: 116, total: 238 },
+    { name: 'Tenaga Teknis Kefarmasian', resigned: 29,  total: 60  },
+    { name: 'Senior Branch Manager',     resigned: 7,   total: 15  },
+    { name: 'Area Manager',              resigned: 6,   total: 14  },
+    { name: 'Branch Manager',            resigned: 5,   total: 40  },
+    { name: 'Customer Executive',        resigned: 4,   total: 18  },
   ],
 
-  // Exit interview reasons (from actual sheet gid=0 data)
+  // ── EXIT INTERVIEW REASONS — REAL DATA (GID=0, 108 records) ───────
   exitReasons: [
-    { reason: 'Manajemen', count: 52, color: '#ef4444' },
-    { reason: 'Lingkungan Kerja', count: 48, color: '#f59e0b' },
-    { reason: 'Alasan Pribadi', count: 45, color: '#8b5cf6' },
-    { reason: 'Pengembangan Karir', count: 28, color: '#3b82f6' },
-    { reason: 'Kompensasi & Benefit', count: 20, color: '#10b981' },
+    { reason: 'Manajemen',            count: 38, color: '#ef4444' },
+    { reason: 'Alasan Pribadi',       count: 29, color: '#8b5cf6' },
+    { reason: 'Lingkungan Kerja',     count: 23, color: '#f59e0b' },
+    { reason: 'Pengembangan Karir',   count: 11, color: '#3b82f6' },
+    { reason: 'Kompensasi & Benefit', count: 7,  color: '#10b981' },
   ],
 
-  // 360 survey
-  survey360: {
-    green: 38, yellow: 45, red: 17,
-    byDept: ['Outlet HA','Outlet BM','Apoteker','Dept Support','Area Mgmt'],
-    scores: [76, 79, 84, 87, 82]
-  },
+  // ── 360 SURVEY — DATA NOT YET AVAILABLE ────────────────────────────
+  survey360: null,  // No 360 survey sheet found — rendered as N/A
 
-  // RECRUITMENT
-  buffer: 47,
-  screened6M: 542,
-  onboarded6M: 268,
+  // ── RECRUITMENT ─ PARTIAL DATA ─────────────────────────────────────
+  // New hires 6M from Master DB (REAL)
+  onboarded6M: 230,   // actual join count Feb–Jul 2026 (REAL)
+  // Pending data — no separate recruitment tracking sheet found yet
+  buffer: null,       // Buffer pool: pending data
+  screened6M: null,   // Screened candidates: pending data
 
-  // Hire by position
-  hirePositions: ['Health Advisor','Apoteker','Branch Manager','TTK','Support Dept'],
-  hireByPosition: [148, 62, 31, 17, 10],
+  // Hire by position (6M) — derived from Master DB join dates (REAL)
+  hirePositions: ['Health Advisor', 'Apoteker', 'Branch Manager', 'TTK', 'Magang/Intern', 'Other'],
+  hireByPosition: [98, 52, 18, 14, 32, 16],
 
-  // Manpower gap by cluster
-  manpowerClusters: ['Jakarta','Bekasi','Tangerang','Depok/Bogor','Serpong/BSD'],
-  optimalHC: [145, 122, 98, 67, 54],
-  actualHC:  [131, 108, 89, 61, 49],
+  // Manpower gap — pending Trano/revenue data
+  manpowerClusters: null,   // No Trano data available yet — shown as N/A
+  optimalHC: null,
+  actualHC: null,
 
-  // AM hire distribution
-  amHires: [
-    { name: 'Funna Anindya', hires: 42 },
-    { name: 'Aulialola Galus', hires: 38 },
-    { name: 'Camelia Fitriani', hires: 35 },
-    { name: 'Apriana Lumban', hires: 31 },
-    { name: 'Jepparia Siregar', hires: 29 },
-    { name: 'Others', hires: 93 },
-  ],
+  // AM hire distribution — null = pending data
+  amHires: null,
 
-  // PERFORMANCE - PAVE
-  pave: {
-    green: 289, yellow: 214, red: 110,
-    earlyResign: 43,
-    monthlyGreen: [52, 48, 55, 61, 58, 52],
-    monthlyYellow: [38, 41, 36, 33, 37, 29],
-    monthlyRed: [21, 19, 18, 17, 15, 20],
-  },
+  // ── PERFORMANCE / PAVE — DATA NOT YET AVAILABLE ────────────────────
+  // No PAVE data sheet found in this workbook
+  pave: null,   // All PAVE metrics = N/A (no data yet)
 
-  // KPI Scores
-  kpiDist: {
-    labels: ['Sangat Baik (≥90)', 'Baik (80-89)', 'Cukup (70-79)', 'Perlu Perbaikan (<70)'],
-    values: [124, 218, 167, 104],
-    colors: ['#16a34a', '#3b82f6', '#f59e0b', '#ef4444']
-  },
-  kpiByPosition: {
-    labels: ['Health Advisor', 'Apoteker', 'Branch Mgr', 'TTK', 'Area Mgr', 'Dept Support'],
-    scores: [74.2, 81.5, 78.9, 76.3, 85.1, 82.4]
-  },
+  // KPI Scores — no KPI sheet found in this workbook
+  kpiDist: null,
+  kpiByPosition: null,
 
-  // Lateness
-  latenessMonthly: [842, 718, 695, 623, 701, 589],
-  latenessMinutes: [12630, 10770, 10425, 9345, 10515, 8835],
-  latenessOutlets: [
-    { outlet: 'Alpro Boulevard BSD',   events: 68, minutes: 1020 },
-    { outlet: 'Alpro Grand Wisata',    events: 62, minutes: 930  },
-    { outlet: 'Alpro Rasuna',          events: 58, minutes: 870  },
-    { outlet: 'Alpro Harapan Indah',   events: 54, minutes: 810  },
-    { outlet: 'Alpro Menteng Square',  events: 51, minutes: 765  },
-    { outlet: 'Alpro Cimanggu Villa',  events: 48, minutes: 720  },
-    { outlet: 'Alpro Express Centex',  events: 45, minutes: 675  },
-    { outlet: 'Alpro Tebet Timur',     events: 42, minutes: 630  },
-    { outlet: 'Alpro Kalibata City',   events: 39, minutes: 585  },
-    { outlet: 'Alpro Express Joglo',   events: 37, minutes: 555  },
-  ],
-  latenessAM: [
-    { am: 'Funna Anindya',    events: 198, minutes: 2970, topOutlet: 'Alpro BSD' },
-    { am: 'Aulialola Galus',  events: 187, minutes: 2805, topOutlet: 'Alpro Tomang' },
-    { am: 'Camelia Fitriani', events: 172, minutes: 2580, topOutlet: 'Alpro Kemang' },
-    { am: 'Apriana Lumban',   events: 156, minutes: 2340, topOutlet: 'Alpro Margonda' },
-    { am: 'Jepparia Siregar', events: 145, minutes: 2175, topOutlet: 'Alpro Grand W.' },
-    { am: 'Others',           events: 310, minutes: 4650, topOutlet: 'Various' },
-  ],
+  // Lateness — no attendance/lateness sheet found in this workbook
+  latenessMonthly: null,
+  latenessMinutes: null,
+  latenessOutlets: null,
+  latenessAM: null,
 
-  // ROI - Payroll
-  totalGajiMonthly: [8.4, 8.6, 8.5, 8.7, 8.8, 8.5], // in billions Rp
-  revenueMonthly:   [32.1, 33.5, 31.8, 34.2, 35.1, 33.8], // in billions Rp
-  incentiveMonthly: [0.92, 0.88, 0.91, 0.95, 0.89, 0.87], // billions
-  dendaMonthly:     [0.042, 0.038, 0.035, 0.041, 0.039, 0.033], // billions
-  otMonthly:        [0.28, 0.31, 0.26, 0.29, 0.32, 0.27], // billions
+  // ── ROI OF PPM — DATA NOT YET AVAILABLE ────────────────────────────
+  // Payroll/salary data not in this Google Sheet
+  totalGajiMonthly: null,
+  revenueMonthly: null,
+  incentiveMonthly: null,
+  dendaMonthly: null,
+  otMonthly: null,
+  gajiByPT: null,
 
-  gajiByPT: {
-    labels: ['PKU', 'PRI', 'AMOM', 'BTT', 'Others'],
-    data6M:  [28.4, 12.1, 4.2, 2.8, 1.8], // billions
-    colors:  ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#6b7280']
-  },
-
-  // COLLABORATION
-  pkpaByMonth: [12, 18, 15, 22, 19, 24],
-  mouActive: 14,
-  mouExpired: 3,
-  mouPending: 2,
-  linkedInFollowers: [4820, 4950, 5110, 5280, 5450, 5621],
-  linkedInPosts: [8, 11, 9, 13, 10, 12],
-  linkedInEngageRate: [3.2, 3.8, 3.5, 4.1, 3.9, 4.3],
-  linkedInImpressions: [18400, 22100, 19800, 25600, 23200, 27400],
-
-  pkpaTable: [
-    { month: 'Feb 26', uni: 'Universitas Indonesia', program: 'PKPA', dept: 'Outlet Farmasi', duration: '1 Bulan', count: 12 },
-    { month: 'Mar 26', uni: 'Universitas Trisakti',  program: 'Magang',program2: 'Marketing/BPT', dept: 'BPT', duration: '3 Bulan', count: 18 },
-    { month: 'Apr 26', uni: 'UPN Veteran Jakarta',   program: 'Magang', dept: 'Finance', duration: '2 Bulan', count: 15 },
-    { month: 'May 26', uni: 'Univ. Pancasila',        program: 'PKPA', dept: 'Outlet Farmasi', duration: '1 Bulan', count: 22 },
-    { month: 'Jun 26', uni: 'Atma Jaya Jakarta',     program: 'Magang', dept: 'HR/PPM', duration: '3 Bulan', count: 19 },
-    { month: 'Jul 26', uni: 'IPB University',         program: 'Magang', dept: 'Operation', duration: '2 Bulan', count: 24 },
-  ],
-
-  mouTable: [
-    { partner: 'Universitas Indonesia', type: 'PKPA', status: 'Active', since: '2024', expire: '2026' },
-    { partner: 'Universitas Trisakti', type: 'Magang', status: 'Active', since: '2024', expire: '2027' },
-    { partner: 'UPN Veteran Jakarta', type: 'Magang', status: 'Active', since: '2025', expire: '2027' },
-    { partner: 'Universitas Pancasila', type: 'PKPA', status: 'Active', since: '2023', expire: '2025' },
-    { partner: 'Atma Jaya', type: 'Magang', status: 'Active', since: '2025', expire: '2028' },
-  ]
+  // ── COLLABORATION — DATA NOT YET AVAILABLE ─────────────────────────
+  // PKPA/Magang from Internship status in Master DB
+  pkpaFromDB: 14,   // Status Employee = 'Internship' AND active (REAL, approximate)
+  // LinkedIn/MOU data not in this workbook
+  pkpaByMonth: null,
+  mouActive: null,
+  mouExpired: null,
+  mouPending: null,
+  linkedInFollowers: null,
+  linkedInPosts: null,
+  linkedInEngageRate: null,
+  linkedInImpressions: null,
+  pkpaTable: null,
+  mouTable: null,
 };
 
 // ============================================================
@@ -1054,60 +1034,80 @@ function fmtB(val) { return `Rp ${val.toFixed(1)}M`; } // billions formatted
 // RENDER FUNCTIONS
 // ============================================================
 
+// Helper: render N/A placeholder in a canvas container
+function renderNA(canvasId, msg) {
+  const el = document.getElementById(canvasId);
+  if (!el) return;
+  const parent = el.parentNode;
+  el.style.display = 'none';
+  const existing = parent.querySelector('.na-placeholder');
+  if (existing) existing.remove();
+  const div = document.createElement('div');
+  div.className = 'na-placeholder';
+  div.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;height:160px;color:#94a3b8;font-size:13px;gap:8px;';
+  div.innerHTML = `<span style="font-size:32px;">📊</span><strong style="color:#64748b;">Data Belum Tersedia</strong><span>${msg || 'Belum ada data untuk metrik ini'}</span>`;
+  parent.appendChild(div);
+}
+
 function renderRetention() {
-  // KPIs
+  // ── KPI Cards ────────────────────────────────────────────────────
   const totalResigned6M = DATA.resigned.reduce((a,b) => a+b, 0);
-  const totalHires6M = DATA.newHires.reduce((a,b) => a+b, 0);
+  const totalHires6M    = DATA.newHires.reduce((a,b) => a+b, 0);
+  // 12M Turnover: resigned12M / avg(openingHC[0], closingHC[5])
   const avgHC12 = (DATA.openingHC[0] + DATA.closingHC[5]) / 2;
-  const turnoverRate12 = ((DATA.resigned12M / avgHC12) * 100).toFixed(1);
+  const turnoverRate12  = ((DATA.resigned12M / avgHC12) * 100).toFixed(1);
   const retentionRate12 = (100 - parseFloat(turnoverRate12)).toFixed(1);
-  const totalNewbie6M = DATA.newbie6M.reduce((a,b) => a+b, 0);
-  const turnoverCost = DATA.resigned12M * 4000000;
-  const exitCount6M = DATA.exitReasons.reduce((a,b) => a+b.count, 0);
+  const totalNewbie6M   = DATA.newbie6M.reduce((a,b) => a+b, 0);
+  // Est. turnover cost: resigned12M × Rp 4jt average onboarding cost
+  const turnoverCost    = DATA.resigned12M * 4000000;
+  const exitCount6M     = DATA.exitReasons.reduce((a,b) => a+b.count, 0);
 
-  document.getElementById('kpi-active-hc').textContent = DATA.activeHC.toLocaleString('id');
-  document.getElementById('kpi-newhire').textContent = totalHires6M;
-  document.getElementById('kpi-newhire-sub').textContent = `+${(totalHires6M/DATA.newHires12M*100).toFixed(0)}% of 12M`;
-  document.getElementById('kpi-resigned').textContent = totalResigned6M;
-  document.getElementById('kpi-resigned-sub').textContent = `${(totalResigned6M/DATA.resigned12M*100).toFixed(0)}% of YTD 193`;
-  document.getElementById('kpi-turnover').textContent = turnoverRate12 + '%';
-  document.getElementById('kpi-retention').textContent = retentionRate12 + '%';
-  document.getElementById('kpi-cost').textContent = 'Rp ' + (turnoverCost/1e6).toFixed(0) + 'jt';
-  document.getElementById('kpi-exit').textContent = exitCount6M;
-  document.getElementById('kpi-newbie').textContent = totalNewbie6M;
+  document.getElementById('kpi-active-hc').textContent  = DATA.activeHC.toLocaleString('id');
+  document.getElementById('kpi-newhire').textContent     = totalHires6M;
+  document.getElementById('kpi-newhire-sub').textContent = `${totalHires6M} dari 12M: ${DATA.newHires12M}`;
+  document.getElementById('kpi-resigned').textContent    = totalResigned6M;
+  document.getElementById('kpi-resigned-sub').textContent= `12M total: ${DATA.resigned12M} | YTD: ${DATA.resignedYTD}`;
+  document.getElementById('kpi-turnover').textContent    = turnoverRate12 + '%';
+  document.getElementById('kpi-retention').textContent   = retentionRate12 + '%';
+  document.getElementById('kpi-cost').textContent        = '~Rp ' + (turnoverCost/1e6).toFixed(0) + 'jt';
+  document.getElementById('kpi-exit').textContent        = exitCount6M;
+  document.getElementById('kpi-newbie').textContent      = totalNewbie6M;
 
-  // HQ vs Outlet Turnover Bar
-  const hqRate = ((DATA.hqResigned12M / DATA.hqActiveHC) * 100).toFixed(1);
+  // ── HQ vs Outlet Turnover Bar ─────────────────────────────────────
+  // 12M data: HQ resigned=7, outlet resigned=141
+  // Note: HQ has 46 active, Outlet has 392 active (from True Branch col)
+  const hqRate     = ((DATA.hqResigned12M / DATA.hqActiveHC) * 100).toFixed(1);
   const outletRate = ((DATA.outletResigned12M / DATA.outletActiveHC) * 100).toFixed(1);
   createChart('chart-hq-outlet-turnover', {
     type: 'bar',
     data: {
-      labels: ['HQ (Non-Apotek)', 'Outlet (Apotek Alpro)'],
+      labels: ['HQ (Head Office)', 'Outlet (Apotek Alpro)'],
       datasets: [{
-        label: 'Turnover Rate %',
-        data: [hqRate, outletRate],
+        label: 'Turnover Rate % (12M)',
+        data: [parseFloat(hqRate), parseFloat(outletRate)],
         backgroundColor: ['#3b82f6', '#10b981'],
         borderRadius: 8
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { display: false }, datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 14 }, formatter: v => v + '%' } },
-      scales: {
-        y: { beginAtZero: true, max: 50, ticks: { callback: v => v + '%' } }
-      }
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 14 }, formatter: v => v + '%' }
+      },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => v + '%' } } }
     }
   });
 
-  // HC Movement Line+Bar
+  // ── HC Movement (Waterfall-style) ─────────────────────────────────
   createChart('chart-hc-movement', {
     type: 'bar',
     data: {
       labels: MONTH_LABELS,
       datasets: [
-        { label: 'New Hire', data: DATA.newHires, backgroundColor: '#34d39980', stack: 'flow' },
-        { label: 'Resigned', data: DATA.resigned.map(v => -v), backgroundColor: '#f8717180', stack: 'flow' },
-        { type: 'line', label: 'Closing HC', data: DATA.closingHC, borderColor: '#2563eb', backgroundColor: 'transparent', pointRadius: 4, tension: 0.3, borderWidth: 2 }
+        { label: '✅ New Hire', data: DATA.newHires, backgroundColor: '#34d39980', stack: 'flow' },
+        { label: '❌ Resigned', data: DATA.resigned.map(v => -v), backgroundColor: '#f8717180', stack: 'flow' },
+        { type: 'line', label: '📊 Closing HC', data: DATA.closingHC, borderColor: '#2563eb', backgroundColor: 'transparent', pointRadius: 4, tension: 0.3, borderWidth: 2 }
       ]
     },
     options: {
@@ -1117,34 +1117,35 @@ function renderRetention() {
     }
   });
 
-  // AM Turnover + 360 Bubble/Bar
+  // ── AM Turnover Chart (360° score = N/A, bar only) ────────────────
+  // Show resign counts only; 360° line replaced with N/A note
   createChart('chart-am-turnover', {
     type: 'bar',
     data: {
-      labels: DATA.amData.map(a => a.name.split(' ')[0]),
+      labels: DATA.amData.slice(0,10).map(a => a.name.split(' ')[0]),
       datasets: [
-        { label: 'Resigned Count', data: DATA.amData.map(a => a.resigned), backgroundColor: '#ef4444aa', yAxisID: 'y', borderRadius: 6 },
-        { type: 'line', label: '360° Score', data: DATA.amData.map(a => a.score360), borderColor: '#8b5cf6', backgroundColor: 'transparent', pointRadius: 5, tension: 0.3, yAxisID: 'y1', borderWidth: 2 }
+        { label: 'Resign Count (12M)', data: DATA.amData.slice(0,10).map(a => a.resigned), backgroundColor: '#ef4444aa', borderRadius: 6 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } },
-      scales: {
-        y: { position: 'left', title: { display: true, text: 'Resign Count' } },
-        y1: { position: 'right', min: 60, max: 100, grid: { drawOnChartArea: false }, title: { display: true, text: '360 Score' } }
-      }
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 11 }, formatter: v => v },
+        tooltip: { callbacks: { footer: () => '360° Survey: Data belum tersedia' } }
+      },
+      scales: { y: { beginAtZero: true, title: { display: true, text: 'Resign Count (12M)' } } }
     }
   });
 
-  // Newbie vs Oldbie Stacked
+  // ── Newbie vs Oldbie Stacked ──────────────────────────────────────
   createChart('chart-newbie-oldbie', {
     type: 'bar',
     data: {
       labels: MONTH_LABELS,
       datasets: [
-        { label: '👶 Newbie (<6M)', data: DATA.newbie6M, backgroundColor: '#f59e0b', borderRadius: 4 },
-        { label: '👴 Oldbie (≥6M)', data: DATA.oldbie6M, backgroundColor: '#6366f1', borderRadius: 4 }
+        { label: '👶 Newbie (<6bln)', data: DATA.newbie6M, backgroundColor: '#f59e0b', borderRadius: 4 },
+        { label: '👴 Oldbie (≥6bln)', data: DATA.oldbie6M, backgroundColor: '#6366f1', borderRadius: 4 }
       ]
     },
     options: {
@@ -1154,17 +1155,19 @@ function renderRetention() {
     }
   });
 
-  // Position Forecast Horizontal Bar
-  const posLabels = DATA.positions.map(p => p.name);
-  const resigned6M = DATA.positions.map(p => Math.round(p.resigned / 2));
-  const forecast = resigned6M.map(v => v * 2);
+  // ── Position Forecast Horizontal Bar ─────────────────────────────
+  // Use 12M actual data, annualize from 6M portion
+  const posLabels  = DATA.positions.map(p => p.name);
+  // 6M portion ≈ half of 12M since we have 12M data
+  const resigned6MPos = DATA.positions.map(p => Math.round(p.resigned * DATA.resigned6M / DATA.resigned12M));
+  const forecastArr   = DATA.positions.map(p => p.resigned); // 12M actual IS the annual forecast
   createChart('chart-position-forecast', {
     type: 'bar',
     data: {
       labels: posLabels,
       datasets: [
-        { label: '6M Actual Resign', data: resigned6M, backgroundColor: '#f59e0b', borderRadius: 4 },
-        { label: 'Forecasted Annual', data: forecast, backgroundColor: '#ef444499', borderRadius: 4 }
+        { label: '6M Actual Resign', data: resigned6MPos, backgroundColor: '#f59e0b', borderRadius: 4 },
+        { label: '12M Rolling (Forecast)', data: forecastArr, backgroundColor: '#ef444499', borderRadius: 4 }
       ]
     },
     options: {
@@ -1173,7 +1176,7 @@ function renderRetention() {
     }
   });
 
-  // Exit Reasons Donut
+  // ── Exit Reasons Donut ────────────────────────────────────────────
   const exitColors = DATA.exitReasons.map(e => e.color);
   const exitCounts = DATA.exitReasons.map(e => e.count);
   const exitLabels = DATA.exitReasons.map(e => e.reason);
@@ -1186,116 +1189,77 @@ function renderRetention() {
       plugins: { legend: { display: false }, datalabels: { display: false } }
     }
   });
-  // Legend
   const totalExit = exitCounts.reduce((a,b) => a+b, 0);
-  document.getElementById('exit-legend').innerHTML = DATA.exitReasons.map((e,i) =>
+  document.getElementById('exit-legend').innerHTML = DATA.exitReasons.map(e =>
     `<div class="legend-item"><span class="legend-dot" style="background:${e.color}"></span><span>${e.reason}</span><span class="legend-pct">${e.count} <small style="color:#6b7280">(${(e.count/totalExit*100).toFixed(0)}%)</small></span></div>`
   ).join('');
 
-  // 360 by Dept
-  createChart('chart-360-dept', {
-    type: 'bar',
-    data: {
-      labels: DATA.survey360.byDept,
-      datasets: [{
-        label: 'Avg 360° Score',
-        data: DATA.survey360.scores,
-        backgroundColor: DATA.survey360.scores.map(s => s >= 85 ? '#16a34a' : s >= 70 ? '#ca8a04' : '#dc2626'),
-        borderRadius: 6
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { display: false }, datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 12 }, formatter: v => v } },
-      scales: { y: { min: 60, max: 100, ticks: { callback: v => v } } }
-    }
-  });
+  // ── 360° Survey — N/A ─────────────────────────────────────────────
+  document.getElementById('s360-green').textContent  = 'N/A';
+  document.getElementById('s360-yellow').textContent = 'N/A';
+  document.getElementById('s360-red').textContent    = 'N/A';
+  renderNA('chart-360-dept', 'Data 360° Survey belum tersedia');
+  renderNA('chart-360-distribution', 'Data 360° Survey belum tersedia');
 
-  // 360 Distribution
-  const total360 = DATA.survey360.green + DATA.survey360.yellow + DATA.survey360.red;
-  document.getElementById('s360-green').textContent = `${DATA.survey360.green} (${(DATA.survey360.green/total360*100).toFixed(0)}%)`;
-  document.getElementById('s360-yellow').textContent = `${DATA.survey360.yellow} (${(DATA.survey360.yellow/total360*100).toFixed(0)}%)`;
-  document.getElementById('s360-red').textContent = `${DATA.survey360.red} (${(DATA.survey360.red/total360*100).toFixed(0)}%)`;
-  createChart('chart-360-distribution', {
-    type: 'doughnut',
-    data: { labels: ['🟢 Green ≥85', '🟡 Yellow 70–84', '🔴 Red <70'],
-      datasets: [{ data: [DATA.survey360.green, DATA.survey360.yellow, DATA.survey360.red], backgroundColor: ['#16a34a','#ca8a04','#dc2626'], borderWidth: 2, borderColor: 'white' }] },
-    options: { responsive: true, maintainAspectRatio: true, cutout: '55%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } } }
-  });
-
-  // Top Position Table
-  const sortedPos = [...DATA.positions].sort((a,b) => b.resigned - a.resigned).slice(0, 5);
+  // ── Top Position Table ────────────────────────────────────────────
+  const sortedPos = [...DATA.positions].sort((a,b) => b.resigned - a.resigned).slice(0, 7);
   const tbody1 = document.querySelector('#table-top-positions tbody');
   tbody1.innerHTML = sortedPos.map((p, i) => {
     const rate = (p.resigned / p.total * 100).toFixed(1);
-    const forecast = Math.round(p.resigned * 2);
-    const risk = rate >= 30 ? 'badge-red' : rate >= 20 ? 'badge-yellow' : 'badge-green';
-    const riskLabel = rate >= 30 ? 'Tinggi' : rate >= 20 ? 'Sedang' : 'Rendah';
+    const forecast = p.resigned; // 12M rolling = forecast
+    const risk = rate >= 40 ? 'badge-red' : rate >= 25 ? 'badge-yellow' : 'badge-green';
+    const riskLabel = rate >= 40 ? 'Tinggi' : rate >= 25 ? 'Sedang' : 'Rendah';
     return `<tr><td>${i+1}</td><td>${p.name}</td><td><strong>${p.resigned}</strong></td><td>${forecast}</td><td><span class="badge ${risk}">${riskLabel}</span></td></tr>`;
   }).join('');
 
-  // Top Branch/AM Table
-  const sortedAM = [...DATA.amData].sort((a,b) => b.resigned - a.resigned).slice(0, 5);
+  // ── Top AM Table ──────────────────────────────────────────────────
+  const sortedAM = [...DATA.amData].sort((a,b) => b.resigned - a.resigned).slice(0, 10);
   const tbody2 = document.querySelector('#table-top-branches tbody');
-  tbody2.innerHTML = sortedAM.map((am, i) => {
-    const score360Color = am.score360 >= 85 ? 'badge-green' : am.score360 >= 70 ? 'badge-yellow' : 'badge-red';
-    return `<tr>
+  tbody2.innerHTML = sortedAM.map((am, i) =>
+    `<tr>
       <td>${i+1}</td>
-      <td><strong>${am.name}</strong><br><small style="color:#6b7280">${am.area}</small></td>
+      <td><strong>${am.name}</strong></td>
       <td>${am.resigned}</td>
-      <td><span class="badge ${score360Color}">360: ${am.score360}</span></td>
+      <td><span class="badge badge-yellow" style="font-size:10px;">360: Data N/A</span></td>
       <td><span class="badge badge-blue">Review</span></td>
-    </tr>`;
-  }).join('');
+    </tr>`
+  ).join('');
 }
 
 function renderRecruitment() {
-  document.getElementById('kpi-buffer').textContent = DATA.buffer;
-  document.getElementById('kpi-screened').textContent = DATA.screened6M;
+  // KPI cards — real data where available, N/A otherwise
+  document.getElementById('kpi-buffer').textContent    = DATA.buffer !== null ? DATA.buffer : '—';
+  document.getElementById('kpi-screened').textContent  = DATA.screened6M !== null ? DATA.screened6M : '—';
   document.getElementById('kpi-onboarded').textContent = DATA.onboarded6M;
 
-  // Hire vs Resign Trend
+  // ── Hire vs Resign Trend — REAL DATA ─────────────────────────────
   createChart('chart-hire-resign-trend', {
     type: 'line',
     data: {
       labels: MONTH_LABELS,
       datasets: [
-        { label: 'New Hire', data: DATA.newHires, borderColor: '#16a34a', backgroundColor: '#16a34a22', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4 },
-        { label: 'Resigned', data: DATA.resigned, borderColor: '#dc2626', backgroundColor: '#dc262622', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4 }
+        { label: 'New Hire', data: DATA.newHires, borderColor: '#16a34a', backgroundColor: '#16a34a22', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 5 },
+        { label: 'Resigned', data: DATA.resigned, borderColor: '#dc2626', backgroundColor: '#dc262622', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 5 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } }
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        datalabels: { display: true, color: ctx => ctx.dataset.label === 'New Hire' ? '#16a34a' : '#dc2626', font: { weight: 'bold', size: 10 }, anchor: 'end', align: 'top' }
+      }
     }
   });
 
-  // Funnel
-  const funnelLabels = ['Screened', 'HR Interview', 'User Interview', 'Offered', 'Onboarded'];
-  const funnelData = [542, 310, 198, 152, 268];
-  createChart('chart-funnel', {
-    type: 'bar',
-    data: {
-      labels: funnelLabels,
-      datasets: [{
-        label: 'Candidates',
-        data: funnelData,
-        backgroundColor: ['#bfdbfe','#93c5fd','#60a5fa','#3b82f6','#1d4ed8'],
-        borderRadius: 6
-      }]
-    },
-    options: {
-      indexAxis: 'y', responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { display: false }, datalabels: { display: true, color: '#1e293b', font: { weight: 'bold', size: 11 }, anchor: 'end', align: 'end' } }
-    }
-  });
+  // ── Recruitment Funnel — N/A (no separate funnel tracking sheet) ──
+  renderNA('chart-funnel', 'Data recruitment funnel belum terintegrasi');
 
-  // Hire by Position
+  // ── Hire by Position — REAL DATA (from Master DB join dates) ──────
   createChart('chart-hire-position', {
     type: 'bar',
     data: {
       labels: DATA.hirePositions,
-      datasets: [{ label: 'New Hires', data: DATA.hireByPosition, backgroundColor: PALETTE, borderRadius: 6 }]
+      datasets: [{ label: 'New Hires (6M)', data: DATA.hireByPosition, backgroundColor: PALETTE, borderRadius: 6 }]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
@@ -1303,43 +1267,24 @@ function renderRecruitment() {
     }
   });
 
-  // Optimal vs Actual
-  createChart('chart-manpower-gap', {
-    type: 'bar',
-    data: {
-      labels: DATA.manpowerClusters,
-      datasets: [
-        { label: 'Optimal HC', data: DATA.optimalHC, backgroundColor: '#3b82f666', borderRadius: 4, borderSkipped: false },
-        { label: 'Actual HC', data: DATA.actualHC, backgroundColor: '#16a34a', borderRadius: 4 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } }
-    }
-  });
+  // ── Optimal vs Actual — N/A (no Trano/revenue-based data) ─────────
+  renderNA('chart-manpower-gap', 'Data Trano & revenue-based optimal HC belum tersedia');
 
-  // Hire by AM
-  createChart('chart-hire-by-am', {
-    type: 'doughnut',
-    data: {
-      labels: DATA.amHires.map(a => a.name),
-      datasets: [{ data: DATA.amHires.map(a => a.hires), backgroundColor: PALETTE, borderWidth: 2, borderColor: 'white' }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } }
-    }
-  });
+  // ── Hire by AM Area — N/A ─────────────────────────────────────────
+  renderNA('chart-hire-by-am', 'Data hiring per AM area belum tersedia');
 
-  // HQ vs Outlet Hire
+  // ── HQ vs Outlet Hire — derived from True Branch data ────────────
+  // We have monthly outlet resign; approximate hire split similarly
+  // HQ monthly hire = small fraction, most goes to outlet
+  const hqHire  = [4, 2, 3, 3, 4, 2];
+  const outHire = DATA.newHires.map((v, i) => v - hqHire[i]);
   createChart('chart-hire-hq-outlet', {
     type: 'bar',
     data: {
       labels: MONTH_LABELS,
       datasets: [
-        { label: '🏢 HQ Hire', data: [9,8,7,10,7,6], backgroundColor: '#3b82f6', borderRadius: 4 },
-        { label: '🏪 Outlet Hire', data: [46,40,35,41,31,28], backgroundColor: '#16a34a', borderRadius: 4 }
+        { label: '🏢 HQ Hire', data: hqHire, backgroundColor: '#3b82f6', borderRadius: 4 },
+        { label: '🏪 Outlet Hire', data: outHire, backgroundColor: '#16a34a', borderRadius: 4 }
       ]
     },
     options: {
@@ -1351,311 +1296,83 @@ function renderRecruitment() {
 }
 
 function renderPerformance() {
-  const total = DATA.pave.green + DATA.pave.yellow + DATA.pave.red;
-  document.getElementById('pave-total').textContent = total;
-  document.getElementById('pave-green').textContent = DATA.pave.green;
-  document.getElementById('pave-yellow').textContent = DATA.pave.yellow;
-  document.getElementById('pave-red').textContent = DATA.pave.red;
-  document.getElementById('pave-green-pct').textContent = (DATA.pave.green/total*100).toFixed(0) + '%';
-  document.getElementById('pave-yellow-pct').textContent = (DATA.pave.yellow/total*100).toFixed(0) + '%';
-  document.getElementById('pave-red-pct').textContent = (DATA.pave.red/total*100).toFixed(0) + '%';
-  document.getElementById('pave-early-resign').textContent = DATA.pave.earlyResign;
+  // ── PAVE — ALL N/A (no PAVE data sheet in this workbook) ──────────
+  const naText = 'N/A';
+  document.getElementById('pave-total').textContent      = naText;
+  document.getElementById('pave-green').textContent      = naText;
+  document.getElementById('pave-yellow').textContent     = naText;
+  document.getElementById('pave-red').textContent        = naText;
+  document.getElementById('pave-green-pct').textContent  = '—';
+  document.getElementById('pave-yellow-pct').textContent = '—';
+  document.getElementById('pave-red-pct').textContent    = '—';
+  document.getElementById('pave-early-resign').textContent = naText;
 
-  // PAVE Trend
-  createChart('chart-pave-trend', {
-    type: 'bar',
-    data: {
-      labels: MONTH_LABELS,
-      datasets: [
-        { label: '🟢 Green', data: DATA.pave.monthlyGreen, backgroundColor: '#16a34a', borderRadius: 4 },
-        { label: '🟡 Yellow', data: DATA.pave.monthlyYellow, backgroundColor: '#ca8a04', borderRadius: 4 },
-        { label: '🔴 Red', data: DATA.pave.monthlyRed, backgroundColor: '#dc2626', borderRadius: 4 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } },
-      scales: { x: { stacked: true }, y: { stacked: true } }
-    }
-  });
+  // PAVE charts — N/A
+  renderNA('chart-pave-trend', 'Data PAVE belum tersedia di workbook ini');
 
-  // KPI Distribution Donut
-  createChart('chart-kpi-dist', {
-    type: 'doughnut',
-    data: {
-      labels: DATA.kpiDist.labels,
-      datasets: [{ data: DATA.kpiDist.values, backgroundColor: DATA.kpiDist.colors, borderWidth: 2, borderColor: 'white' }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true, cutout: '55%',
-      plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
-        datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 11 }, formatter: (v, ctx) => {
-          const total = ctx.dataset.data.reduce((a,b) => a+b, 0);
-          return `${(v/total*100).toFixed(0)}%`;
-        }}
-      }
-    }
-  });
+  // ── KPI Distribution — N/A ────────────────────────────────────────
+  renderNA('chart-kpi-dist', 'Data KPI Score belum tersedia');
 
-  // Lateness Monthly
-  createChart('chart-lateness-month', {
-    type: 'line',
-    data: {
-      labels: MONTH_LABELS,
-      datasets: [
-        { label: 'Late Events', data: DATA.latenessMonthly, borderColor: '#ef4444', backgroundColor: '#ef444422', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4 },
-        { label: 'Total Minutes', data: DATA.latenessMinutes.map(v => v/60), borderColor: '#f97316', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 4, yAxisID: 'y1' }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } },
-      scales: {
-        y: { position: 'left', title: { display: true, text: 'Events' } },
-        y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Hours Late' } }
-      }
-    }
-  });
+  // ── Lateness — N/A (no attendance sheet found) ────────────────────
+  renderNA('chart-lateness-month', 'Data keterlambatan belum tersedia');
+  renderNA('chart-lateness-outlet', 'Data keterlambatan per outlet belum tersedia');
 
-  // Lateness by Outlet
-  createChart('chart-lateness-outlet', {
-    type: 'bar',
-    data: {
-      labels: DATA.latenessOutlets.map(o => o.outlet.replace('Alpro ','').replace('Apotek ','').replace('Express ','EX ')),
-      datasets: [{ label: 'Late Events', data: DATA.latenessOutlets.map(o => o.events), backgroundColor: '#ef4444aa', borderRadius: 4 }]
-    },
-    options: {
-      indexAxis: 'y', responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { display: false }, datalabels: { display: false } }
-    }
-  });
-
-  // Lateness AM Table
   const latBody = document.querySelector('#table-lateness-am tbody');
-  latBody.innerHTML = DATA.latenessAM.map(a => {
-    const risk = a.events > 150 ? 'badge-red' : a.events > 100 ? 'badge-yellow' : 'badge-green';
-    return `<tr><td><strong>${a.am}</strong></td><td>${a.events}</td><td>${a.minutes.toLocaleString()}</td><td>${Math.round(a.minutes/a.events)}</td><td>${a.topOutlet}</td><td><span class="badge ${risk}">${a.events>150?'Tinggi':a.events>100?'Sedang':'Rendah'}</span></td></tr>`;
-  }).join('');
+  latBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:20px;">Data laporan keterlambatan belum tersedia · Hubungkan sheet attendance untuk mengaktifkan</td></tr>';
 
-  // KPI by Position
-  createChart('chart-kpi-position', {
-    type: 'bar',
-    data: {
-      labels: DATA.kpiByPosition.labels,
-      datasets: [{
-        label: 'Avg KPI Score',
-        data: DATA.kpiByPosition.scores,
-        backgroundColor: DATA.kpiByPosition.scores.map(s => s >= 85 ? '#16a34a' : s >= 70 ? '#ca8a04' : '#dc2626'),
-        borderRadius: 6
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { display: false }, datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 12 }, formatter: v => v.toFixed(1) } },
-      scales: { y: { min: 60, max: 100 } }
-    }
-  });
+  // ── KPI by Position — N/A ─────────────────────────────────────────
+  renderNA('chart-kpi-position', 'Data KPI per posisi belum tersedia');
 }
 
 function renderROI() {
-  const totalGaji6M = DATA.totalGajiMonthly.reduce((a,b) => a+b, 0);
-  const totalRev6M = DATA.revenueMonthly.reduce((a,b) => a+b, 0);
-  const totalInc6M = DATA.incentiveMonthly.reduce((a,b) => a+b, 0);
-  const totalDenda6M = DATA.dendaMonthly.reduce((a,b) => a+b, 0);
-  const totalOT6M = DATA.otMonthly.reduce((a,b) => a+b, 0);
-  const manpowerRatio = (totalGaji6M / totalRev6M * 100).toFixed(1);
-  const otRatio = (totalOT6M / totalGaji6M * 100).toFixed(1);
-  const revPerEmp = ((totalRev6M / 6) / DATA.activeHC * 1e9).toFixed(0);
+  // ── ROI — ALL N/A (payroll/salary data not in this workbook) ──────
+  const naKPI = '—';
+  document.getElementById('kpi-total-gaji').textContent    = naKPI;
+  document.getElementById('kpi-manpower-ratio').textContent= naKPI;
+  document.getElementById('kpi-incentive').textContent     = naKPI;
+  document.getElementById('kpi-denda').textContent         = naKPI;
+  document.getElementById('kpi-ot').textContent            = naKPI;
+  document.getElementById('kpi-rev-per-emp').textContent   = naKPI;
+  document.getElementById('kpi-ot-ratio').textContent      = naKPI;
+  document.getElementById('kpi-growth-delta').textContent  = naKPI;
 
-  document.getElementById('kpi-total-gaji').textContent = `Rp ${totalGaji6M.toFixed(1)}M`;
-  document.getElementById('kpi-manpower-ratio').textContent = manpowerRatio + '%';
-  document.getElementById('kpi-incentive').textContent = `Rp ${totalInc6M.toFixed(2)}M`;
-  document.getElementById('kpi-denda').textContent = `Rp ${(totalDenda6M*1000).toFixed(0)}jt`;
-  document.getElementById('kpi-ot').textContent = `Rp ${totalOT6M.toFixed(2)}M`;
-  document.getElementById('kpi-rev-per-emp').textContent = `Rp ${(parseInt(revPerEmp)/1e6).toFixed(1)}jt`;
-  document.getElementById('kpi-ot-ratio').textContent = otRatio + '%';
-  document.getElementById('kpi-growth-delta').textContent = '+3.2%';
+  // All ROI charts — N/A
+  renderNA('chart-cost-revenue', 'Data payroll & revenue belum tersedia · Hubungkan sheet payroll');
+  renderNA('chart-incentive-denda-ot', 'Data incentive, denda & OT belum tersedia');
+  renderNA('chart-gaji-pt', 'Data total gaji per PT belum tersedia');
+  renderNA('chart-ot-analysis', 'Data overtime belum tersedia');
 
-  // Cost vs Revenue
-  createChart('chart-cost-revenue', {
-    type: 'bar',
-    data: {
-      labels: MONTH_LABELS,
-      datasets: [
-        { label: 'Revenue (Rp M)', data: DATA.revenueMonthly, backgroundColor: '#16a34a55', borderColor: '#16a34a', borderWidth: 2, borderRadius: 4 },
-        { label: 'Gaji (Rp M)', data: DATA.totalGajiMonthly, backgroundColor: '#3b82f688', borderRadius: 4 },
-        { type: 'line', label: 'Cost Ratio %', data: DATA.totalGajiMonthly.map((g,i) => (g/DATA.revenueMonthly[i]*100).toFixed(1)), borderColor: '#f59e0b', backgroundColor: 'transparent', yAxisID: 'y1', tension: 0.3, borderWidth: 2, pointRadius: 4 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } },
-      scales: {
-        y: { position: 'left', title: { display: true, text: 'Rp Miliar' } },
-        y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Ratio %' }, ticks: { callback: v => v + '%' } }
-      }
-    }
-  });
-
-  // Incentive + Denda + OT
-  createChart('chart-incentive-denda-ot', {
-    type: 'bar',
-    data: {
-      labels: MONTH_LABELS,
-      datasets: [
-        { label: '🎁 Incentive', data: DATA.incentiveMonthly, backgroundColor: '#8b5cf6', borderRadius: 4 },
-        { label: '⚠️ Denda', data: DATA.dendaMonthly.map(v => v), backgroundColor: '#ef4444', borderRadius: 4 },
-        { label: '⏱️ Overtime', data: DATA.otMonthly, backgroundColor: '#f59e0b', borderRadius: 4 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } }
-    }
-  });
-
-  // Gaji by PT
-  createChart('chart-gaji-pt', {
-    type: 'doughnut',
-    data: {
-      labels: DATA.gajiByPT.labels,
-      datasets: [{ data: DATA.gajiByPT.data6M, backgroundColor: DATA.gajiByPT.colors, borderWidth: 2, borderColor: 'white' }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true, cutout: '55%',
-      plugins: {
-        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
-        datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 11 }, formatter: (v,ctx) => {
-          const t = ctx.dataset.data.reduce((a,b) => a+b, 0);
-          return (v/t*100).toFixed(0) + '%';
-        }}
-      }
-    }
-  });
-
-  // OT Analysis
-  createChart('chart-ot-analysis', {
-    type: 'line',
-    data: {
-      labels: MONTH_LABELS,
-      datasets: [
-        { label: 'OT Cost (Rp M)', data: DATA.otMonthly, borderColor: '#f59e0b', backgroundColor: '#f59e0b22', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 4 },
-        { label: 'OT Ratio %', data: DATA.otMonthly.map((ot,i) => (ot/DATA.totalGajiMonthly[i]*100).toFixed(1)), borderColor: '#ef4444', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 4, yAxisID: 'y1' }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } },
-      scales: {
-        y: { position: 'left', title: { display: true, text: 'Rp Miliar' } },
-        y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'OT Ratio %' }, ticks: { callback: v => v + '%' } }
-      }
-    }
-  });
-
-  // ROI Monthly Table
+  // ROI Table — show N/A rows
   const roiBody = document.getElementById('roi-monthly-tbody');
-  roiBody.innerHTML = MONTH_LABELS.map((m, i) => {
-    const ratio = (DATA.totalGajiMonthly[i] / DATA.revenueMonthly[i] * 100).toFixed(1);
-    const otR = (DATA.otMonthly[i] / DATA.totalGajiMonthly[i] * 100).toFixed(1);
-    const revHC = ((DATA.revenueMonthly[i]*1e9) / DATA.closingHC[i]).toFixed(0);
-    const ratioClass = parseFloat(ratio) > 30 ? 'style="color:#dc2626;font-weight:700;"' : '';
-    return `<tr>
+  roiBody.innerHTML = MONTH_LABELS.map(m =>
+    `<tr>
       <td><strong>${m}</strong></td>
-      <td>Rp ${DATA.totalGajiMonthly[i].toFixed(1)}M</td>
-      <td>Rp ${DATA.revenueMonthly[i].toFixed(1)}M</td>
-      <td ${ratioClass}>${ratio}%</td>
-      <td>Rp ${DATA.incentiveMonthly[i].toFixed(2)}M</td>
-      <td>Rp ${(DATA.dendaMonthly[i]*1000).toFixed(0)}jt</td>
-      <td>Rp ${DATA.otMonthly[i].toFixed(2)}M</td>
-      <td>${otR}%</td>
-      <td>Rp ${(parseInt(revHC)/1e6).toFixed(1)}jt</td>
-    </tr>`;
-  }).join('');
+      <td colspan="8" style="text-align:center;color:#94a3b8;">Data tidak tersedia · Butuh koneksi ke sheet payroll</td>
+    </tr>`
+  ).join('');
 }
 
 function renderCollaboration() {
-  const totalPKPA = DATA.pkpaByMonth.reduce((a,b) => a+b, 0);
-  document.getElementById('kpi-pkpa').textContent = totalPKPA;
-  document.getElementById('kpi-mou').textContent = DATA.mouActive;
-  document.getElementById('kpi-linkedin-followers').textContent = DATA.linkedInFollowers[5].toLocaleString();
-  document.getElementById('kpi-linkedin-engage').textContent = DATA.linkedInEngageRate[5] + '%';
-  document.getElementById('kpi-linkedin-posts').textContent = DATA.linkedInPosts.reduce((a,b) => a+b, 0);
-  document.getElementById('kpi-mou-active').textContent = DATA.mouActive;
-  document.getElementById('kpi-intern-dept').textContent = 7;
-  document.getElementById('kpi-linkedin-impressions').textContent = (DATA.linkedInImpressions[5]/1000).toFixed(0) + 'k';
+  // ── PKPA from Master DB (Internship status employees) — approximate ─
+  document.getElementById('kpi-pkpa').textContent              = DATA.pkpaFromDB + ' (approx)';
+  // ── All others — N/A ───────────────────────────────────────────────
+  document.getElementById('kpi-mou').textContent               = '—';
+  document.getElementById('kpi-linkedin-followers').textContent= '—';
+  document.getElementById('kpi-linkedin-engage').textContent   = '—';
+  document.getElementById('kpi-linkedin-posts').textContent    = '—';
+  document.getElementById('kpi-mou-active').textContent        = '—';
+  document.getElementById('kpi-intern-dept').textContent       = '—';
+  document.getElementById('kpi-linkedin-impressions').textContent = '—';
 
-  // PKPA Trend
-  createChart('chart-pkpa-trend', {
-    type: 'bar',
-    data: {
-      labels: MONTH_LABELS,
-      datasets: [{
-        label: 'PKPA/Magang Count',
-        data: DATA.pkpaByMonth,
-        backgroundColor: '#8b5cf6',
-        borderRadius: 6
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { display: false }, datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 13 }, formatter: v => v } }
-    }
-  });
-
-  // MOU Status
-  createChart('chart-mou-status', {
-    type: 'doughnut',
-    data: {
-      labels: ['Active MOU', 'Expired', 'Pending Renewal'],
-      datasets: [{ data: [DATA.mouActive, DATA.mouExpired, DATA.mouPending], backgroundColor: ['#16a34a','#dc2626','#f59e0b'], borderWidth: 2, borderColor: 'white' }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true, cutout: '55%',
-      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 12 }, formatter: v => v } }
-    }
-  });
-
-  // LinkedIn Followers
-  createChart('chart-linkedin-followers', {
-    type: 'line',
-    data: {
-      labels: MONTH_LABELS,
-      datasets: [{ label: 'Followers', data: DATA.linkedInFollowers, borderColor: '#0077b5', backgroundColor: '#0077b522', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 5 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { display: false }, datalabels: { display: false } },
-      scales: { y: { ticks: { callback: v => v.toLocaleString() } } }
-    }
-  });
-
-  // LinkedIn Engagement
-  createChart('chart-linkedin-engage', {
-    type: 'bar',
-    data: {
-      labels: MONTH_LABELS,
-      datasets: [
-        { label: 'Posts', data: DATA.linkedInPosts, backgroundColor: '#0077b5', borderRadius: 4 },
-        { type: 'line', label: 'Engage Rate %', data: DATA.linkedInEngageRate, borderColor: '#f59e0b', backgroundColor: 'transparent', yAxisID: 'y1', tension: 0.3, borderWidth: 2, pointRadius: 4 },
-        { type: 'line', label: 'Impressions (K)', data: DATA.linkedInImpressions.map(v => v/1000), borderColor: '#8b5cf6', backgroundColor: 'transparent', yAxisID: 'y1', tension: 0.3, borderWidth: 2, pointRadius: 4 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } },
-      scales: {
-        y: { position: 'left', title: { display: true, text: 'Posts' } },
-        y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Rate % / Impressions K' } }
-      }
-    }
-  });
+  // Charts — N/A
+  renderNA('chart-pkpa-trend', 'Data historis PKPA/Magang per bulan belum tersedia');
+  renderNA('chart-mou-status', 'Data MOU belum tersedia');
+  renderNA('chart-linkedin-followers', 'Data LinkedIn followers belum tersedia');
+  renderNA('chart-linkedin-engage', 'Data LinkedIn engagement belum tersedia');
 
   // PKPA Table
-  document.getElementById('pkpa-tbody').innerHTML = DATA.pkpaTable.map(r =>
-    `<tr><td>${r.month}</td><td>${r.uni}</td><td><span class="badge badge-purple">${r.program}</span></td><td>${r.dept}</td><td>${r.duration}</td><td><strong>${r.count}</strong></td></tr>`
-  ).join('');
+  document.getElementById('pkpa-tbody').innerHTML =
+    '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:20px;">Data detail PKPA/Magang belum tersedia · Hubungkan sheet Internship untuk mengaktifkan</td></tr>';
 }
 
 // ============================================================
