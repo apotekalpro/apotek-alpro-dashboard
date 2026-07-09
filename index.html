@@ -1370,19 +1370,19 @@
                         
                         <!-- PPM Dashboard Subtab -->
                         <div id="ppmDashboardSubtab" class="ppm-subtab">
-                            <div class="flex justify-between items-center mb-4">
+                            <div class="flex justify-between items-center mb-2">
                                 <div>
                                     <h3 class="text-xl font-semibold text-gray-800">PPM Dashboard</h3>
-                                    <p class="text-gray-600">Project and performance management system</p>
+                                    <p class="text-gray-600">People Performance Management · Comprehensive Overview</p>
                                 </div>
-                                <button onclick="openInNewTab('https://script.google.com/macros/s/AKfycbzaRaZPlsmOGgKRGssxuMPvYx9FQabDshXkwkfkJyIpoZQ4OHz7TYr7wtccK2DAnlho/exec')" 
+                                <button onclick="openInNewTab('ppm-dashboard.html')" 
                                         class="btn-primary text-white px-4 py-2 rounded-lg">
                                     <i class="fas fa-external-link-alt mr-2"></i>
-                                    Open in New Tab
+                                    Open Full Screen
                                 </button>
                             </div>
-                            <div class="iframe-container">
-                                <iframe data-src="https://script.google.com/macros/s/AKfycbzaRaZPlsmOGgKRGssxuMPvYx9FQabDshXkwkfkJyIpoZQ4OHz7TYr7wtccK2DAnlho/exec" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                            <div class="iframe-container" style="height:calc(100vh - 180px);min-height:700px;">
+                                <iframe src="ppm-dashboard.html" class="iframe-full" style="width:100%;height:100%;border:none;border-radius:12px;" allow="scripts"></iframe>
                             </div>
                         </div>
                         
