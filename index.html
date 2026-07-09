@@ -558,11 +558,6 @@
                                 <i class="fas fa-crown mr-2"></i>
                                 Elite BM Performance Tracker
                             </button>
-                            <button onclick="showOperationsSubtab('pillar-tracker')" 
-                                    class="subtab-button px-4 py-2">
-                                <i class="fas fa-chart-line mr-2"></i>
-                                Pillar Tracker
-                            </button>
                             <button onclick="showOperationsSubtab('biodata-outlet')" 
                                     class="subtab-button px-4 py-2">
                                 <i class="fas fa-map-marked-alt mr-2"></i>
@@ -1267,19 +1262,6 @@
                     </div>
                 </div>
 
-                <!-- Pillar Tracker Subtab -->
-                <div id="pillarTrackerSubtab" class="operations-subtab hidden">
-                    <div style="width:100%;height:calc(100vh - 240px);min-height:600px;position:relative;">
-                        <iframe 
-                            id="pillarTrackerIframe"
-                            class="lazy-iframe"
-                            data-src="pillar-tracker.html"
-                            style="width:100%;height:100%;border:none;border-radius:12px;"
-                            title="Pillar Tracker Dashboard">
-                        </iframe>
-                    </div>
-                </div>
-
                 <!-- Biodata Outlet Subtab -->
                 <div id="biodataOutletSubtab" class="operations-subtab hidden">
                     <div id="bo-main-container" class="bo-container">
@@ -1308,6 +1290,38 @@
                     </div>
                     <div class="iframe-container">
                         <iframe data-src="opex-dashboard.html" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                    </div>
+                </div>
+
+                <!-- Operation Sales Content -->
+                <div id="opsalesContent" class="tab-content hidden">
+                    <div class="mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center mb-4">
+                            <i class="fas fa-chart-line mr-3 text-indigo-600"></i>
+                            Operation Sales
+                        </h2>
+
+                        <!-- Operation Sales Subtabs -->
+                        <div class="flex flex-wrap gap-2 mb-6">
+                            <button onclick="showOpsalesSubtab('pillar-tracker')"
+                                    class="subtab-button active px-4 py-2">
+                                <i class="fas fa-chart-line mr-2"></i>
+                                Pillar Tracker
+                            </button>
+                        </div>
+
+                        <!-- Pillar Tracker Subtab -->
+                        <div id="opsalesPillarTrackerSubtab" class="opsales-subtab">
+                            <div style="width:100%;height:calc(100vh - 240px);min-height:600px;position:relative;">
+                                <iframe
+                                    id="pillarTrackerIframe"
+                                    class="lazy-iframe"
+                                    data-src="pillar-tracker.html"
+                                    style="width:100%;height:100%;border:none;border-radius:12px;"
+                                    title="Pillar Tracker Dashboard">
+                                </iframe>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -3168,6 +3182,7 @@
                                             <option value="chief">Chief</option>
                                             <option value="strategy">Strategy</option>
                                             <option value="operations">Operations</option>
+                                            <option value="opsales">Operation Sales</option>
                                             <option value="ppm">PPM</option>
                                             <option value="finance">Finance</option>
                                             <option value="bpt">BPT</option>
@@ -4141,6 +4156,7 @@
                                                 <option value="chief">Chief</option>
                                                 <option value="strategy">Strategy</option>
                                                 <option value="operations">Operations</option>
+                                                <option value="opsales">Operation Sales</option>
                                                 <option value="ppm">PPM</option>
                                                 <option value="finance">Finance</option>
                                                 <option value="bpt">BPT</option>
@@ -4259,6 +4275,7 @@
                                                 <option value="chief">Chief</option>
                                                 <option value="strategy">Strategy</option>
                                                 <option value="operations">Operations</option>
+                                                <option value="opsales">Operation Sales</option>
                                                 <option value="ppm">PPM</option>
                                                 <option value="finance">Finance</option>
                                                 <option value="bpt">BPT</option>
@@ -4944,6 +4961,7 @@
         // Global tabs definition
         let allTabs = [
             { id: 'operations', name: 'Operations', icon: 'fas fa-cogs' },
+            { id: 'opsales', name: 'Operation Sales', icon: 'fas fa-chart-line' },
             { id: 'ppm', name: 'PPM', icon: 'fas fa-chart-line' },
             { id: 'strategy', name: 'Strategy', icon: 'fas fa-chess' },
             { id: 'finance', name: 'Finance', icon: 'fas fa-dollar-sign' },
@@ -4959,10 +4977,11 @@
         
         // Default department access configuration
         let department_accessConfig = {
-            admin: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife', 'adminConfig'],
-            chief: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife'],
+            admin: ['operations', 'opsales', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife', 'adminConfig'],
+            chief: ['operations', 'opsales', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife'],
             strategy: ['ppm', 'strategy', 'operations', 'sgm'],
             operations: ['operations', 'warehouseApd', 'sgm'],
+            opsales: ['opsales'],
             ppm: ['ppm'],
             finance: ['finance'],
             bpt: ['bpt'],
@@ -6602,6 +6621,8 @@
                     return ['sgm'];
                 case 'powerlife':
                     return ['powerlife'];
+                case 'opsales':
+                    return ['opsales'];
                 default:
                     return ['operations'];
             }
@@ -6635,7 +6656,8 @@
                 'academy': 'academy',
                 'sgm': 'sgm',
                 'admin': 'adminConfig',
-                'chief': 'operations'
+                'chief': 'operations',
+                'opsales': 'opsales'
             };
             
             const roleDefault = roleDefaultMap[role];
@@ -6703,6 +6725,12 @@
                 switchUserManagementTab('userList');
             }
             
+            // Initialize Operation Sales tab if opened
+            if (tabId === 'opsales') {
+                console.log('📊 Operation Sales tab opened, initializing Pillar Tracker...');
+                showOpsalesSubtab('pillar-tracker');
+            }
+
             // Initialize SGM tab if opened
             if (tabId === 'sgm') {
                 console.log('🏪 SGM tab opened, initializing Grand Opening Dashboard...');
@@ -6734,7 +6762,8 @@
                 const buttons = document.querySelectorAll('.tab-button');
                 buttons.forEach(button => {
                     if (button.textContent.toLowerCase().includes(tabId.toLowerCase()) || 
-                        (tabId === 'adminConfig' && button.textContent.toLowerCase().includes('admin config'))) {
+                        (tabId === 'adminConfig' && button.textContent.toLowerCase().includes('admin config')) ||
+                        (tabId === 'opsales' && button.textContent.toLowerCase().includes('operation sales'))) {
                         button.classList.add('active');
                     }
                 });
@@ -9303,6 +9332,41 @@
             renderPowerlifeProductsTable(products);
         }
 
+        // Operation Sales Subtab Functions
+        function showOpsalesSubtab(subtabId) {
+            // Hide all Operation Sales subtabs
+            document.querySelectorAll('.opsales-subtab').forEach(subtab => {
+                subtab.classList.add('hidden');
+            });
+
+            // Remove active class from all Operation Sales subtab buttons
+            document.querySelectorAll('#opsalesContent .subtab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Show selected subtab
+            const subtabMap = {
+                'pillar-tracker': 'opsalesPillarTrackerSubtab'
+            };
+
+            const targetSubtab = document.getElementById(subtabMap[subtabId]);
+            if (targetSubtab) {
+                targetSubtab.classList.remove('hidden');
+
+                // Lazy-load iframe
+                const iframe = targetSubtab.querySelector('iframe.lazy-iframe');
+                if (iframe && !iframe.src && iframe.dataset.src) {
+                    console.log('Loading iframe for opsales subtab:', subtabId);
+                    iframe.src = iframe.dataset.src;
+                }
+            }
+
+            // Add active class to clicked button
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+        }
+
         // Operations Subtab Functions
         function showOperationsSubtab(subtabId) {
             // Hide all Operations subtabs
@@ -9321,7 +9385,6 @@
                 'opps-ed-project': 'oppsEdProjectSubtab',
                 'am-performance-tracker': 'amPerformanceTrackerSubtab',
                 'elite-bm-performance-tracker': 'eliteBmPerformanceTrackerSubtab',
-                'pillar-tracker': 'pillarTrackerSubtab',
                 'biodata-outlet': 'biodataOutletSubtab',
                 'opex-dashboard': 'opexDashboardSubtab'
             };
@@ -9463,9 +9526,10 @@
             if (!container) return;
             
             // Get all available departments
-            const allDepartments = ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm'];
+            const allDepartments = ['operations', 'opsales', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm'];
             const departmentLabels = {
                 'operations': 'Operations',
+                'opsales': 'Operation Sales',
                 'ppm': 'PPM',
                 'strategy': 'Strategy',
                 'finance': 'Finance',
@@ -9478,9 +9542,10 @@
             };
             
             // Get all available roles (excluding admin and chief which have full access)
-            const editableRoles = ['operations', 'strategy', 'finance', 'bpt', 'procurement', 'warehouse', 'ppr', 'academy', 'sgm', 'user'];
+            const editableRoles = ['operations', 'opsales', 'strategy', 'finance', 'bpt', 'procurement', 'warehouse', 'ppr', 'academy', 'sgm', 'user'];
             const roleLabels = {
                 'operations': 'Operations',
+                'opsales': 'Operation Sales',
                 'strategy': 'Strategy',
                 'finance': 'Finance',
                 'bpt': 'BPT',

@@ -68,9 +68,10 @@ CREATE TRIGGER update_department_config_updated_at BEFORE UPDATE ON department_c
 
 -- Insert default department configuration
 INSERT INTO department_config (role, departments) VALUES
-('admin', ARRAY['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife', 'adminConfig']),
-('chief', ARRAY['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife']),
+('admin', ARRAY['operations', 'opsales', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife', 'adminConfig']),
+('chief', ARRAY['operations', 'opsales', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife']),
 ('manager', ARRAY['operations', 'ppm', 'strategy', 'finance']),
+('opsales', ARRAY['opsales']),
 ('powerlife', ARRAY['powerlife']),
 ('user', ARRAY['operations']);
 
