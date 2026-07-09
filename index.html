@@ -4110,22 +4110,85 @@
                             <!-- Add New Department -->
                             <div class="mb-6">
                                 <h4 class="text-lg font-medium text-gray-800 mb-4">Add New Department:</h4>
-                                <div class="flex gap-4 items-end">
-                                    <div class="flex-1">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Department ID:</label>
                                         <input type="text" id="newDepartmentId" placeholder="e.g., marketing" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     </div>
-                                    <div class="flex-1">
+                                    <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Department Name:</label>
                                         <input type="text" id="newDepartmentName" placeholder="e.g., Marketing" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     </div>
-                                    <div class="flex-1">
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Icon Class:</label>
-                                        <input type="text" id="newDepartmentIcon" placeholder="e.g., fas fa-bullhorn" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Icon:</label>
+                                        <!-- Icon Picker Trigger -->
+                                        <div class="flex gap-2">
+                                            <button type="button" onclick="openIconPicker()"
+                                                    id="iconPickerTrigger"
+                                                    class="flex items-center gap-2 px-3 py-2 border-2 border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all w-full text-left">
+                                                <span id="iconPickerPreview" class="w-6 h-6 flex items-center justify-center text-gray-400">
+                                                    <i class="fas fa-question-circle text-lg"></i>
+                                                </span>
+                                                <span id="iconPickerLabel" class="text-sm text-gray-500 flex-1">Click to choose icon…</span>
+                                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                                            </button>
+                                        </div>
+                                        <!-- Hidden input carries the actual value -->
+                                        <input type="hidden" id="newDepartmentIcon" value="">
                                     </div>
+                                </div>
+                                <div class="flex justify-end">
                                     <button onclick="addNewDepartment()" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                                         <i class="fas fa-plus mr-2"></i>Add Department
                                     </button>
+                                </div>
+                            </div>
+
+                            <!-- Icon Picker Modal -->
+                            <div id="iconPickerModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
+                                <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col" style="max-height:85vh;">
+                                    <!-- Header -->
+                                    <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                                        <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                            <i class="fas fa-icons text-blue-600"></i> Choose an Icon
+                                        </h3>
+                                        <button onclick="closeIconPicker()" class="text-gray-400 hover:text-gray-600 text-xl">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <!-- Search -->
+                                    <div class="px-5 py-3 border-b border-gray-100 flex-shrink-0">
+                                        <div class="relative">
+                                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                                            <input type="text" id="iconSearchInput"
+                                                   placeholder="Search icons… e.g. chart, store, users"
+                                                   oninput="filterIcons(this.value)"
+                                                   class="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <!-- Category tabs -->
+                                    <div class="px-5 py-2 border-b border-gray-100 flex gap-2 flex-wrap flex-shrink-0" id="iconCategoryTabs"></div>
+                                    <!-- Icon grid -->
+                                    <div class="flex-1 overflow-y-auto px-5 py-4">
+                                        <div id="iconGrid" class="grid gap-2" style="grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));"></div>
+                                        <p id="iconNoResults" class="hidden text-center text-gray-400 py-10">No icons found. Try a different keyword.</p>
+                                    </div>
+                                    <!-- Selected preview -->
+                                    <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between flex-shrink-0 bg-gray-50 rounded-b-xl">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                <i id="iconPickerSelectedPreview" class="fas fa-question-circle text-blue-500 text-xl"></i>
+                                            </div>
+                                            <div>
+                                                <div class="text-xs text-gray-500">Selected</div>
+                                                <div id="iconPickerSelectedLabel" class="text-sm font-medium text-gray-700">None</div>
+                                            </div>
+                                        </div>
+                                        <button onclick="confirmIconSelection()"
+                                                class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                            <i class="fas fa-check mr-2"></i>Use This Icon
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -11574,6 +11637,198 @@
             }
         }
         
+        // =====================================================
+        // ICON PICKER
+        // =====================================================
+        const ICON_CATEGORIES = {
+            'Business': [
+                'fas fa-briefcase','fas fa-building','fas fa-chart-bar','fas fa-chart-line',
+                'fas fa-chart-pie','fas fa-chart-area','fas fa-coins','fas fa-dollar-sign',
+                'fas fa-handshake','fas fa-industry','fas fa-landmark','fas fa-money-bill-wave',
+                'fas fa-piggy-bank','fas fa-receipt','fas fa-store','fas fa-store-alt',
+                'fas fa-tag','fas fa-tags','fas fa-percent','fas fa-file-invoice-dollar',
+                'fas fa-cash-register','fas fa-wallet'
+            ],
+            'Operations': [
+                'fas fa-cogs','fas fa-tools','fas fa-wrench','fas fa-hammer','fas fa-truck',
+                'fas fa-shipping-fast','fas fa-warehouse','fas fa-boxes','fas fa-box',
+                'fas fa-clipboard-list','fas fa-clipboard-check','fas fa-tasks','fas fa-project-diagram',
+                'fas fa-sitemap','fas fa-network-wired','fas fa-conveyor-belt','fas fa-industry',
+                'fas fa-hard-hat','fas fa-flask','fas fa-vials'
+            ],
+            'People': [
+                'fas fa-users','fas fa-user','fas fa-user-tie','fas fa-users-cog',
+                'fas fa-user-graduate','fas fa-user-md','fas fa-user-shield','fas fa-user-check',
+                'fas fa-chalkboard-teacher','fas fa-graduation-cap','fas fa-id-badge',
+                'fas fa-id-card','fas fa-address-book','fas fa-person-booth'
+            ],
+            'Analytics': [
+                'fas fa-analytics','fas fa-tachometer-alt','fas fa-poll','fas fa-poll-h',
+                'fas fa-search','fas fa-binoculars','fas fa-crosshairs','fas fa-bullseye',
+                'fas fa-chess','fas fa-brain','fas fa-lightbulb','fas fa-microscope',
+                'fas fa-satellite-dish','fas fa-signal','fas fa-filter','fas fa-sort-amount-up'
+            ],
+            'Health & Medical': [
+                'fas fa-heartbeat','fas fa-heart','fas fa-hospital','fas fa-pills',
+                'fas fa-capsules','fas fa-syringe','fas fa-stethoscope','fas fa-ambulance',
+                'fas fa-medkit','fas fa-notes-medical','fas fa-prescription-bottle',
+                'fas fa-prescription-bottle-alt','fas fa-first-aid','fas fa-dna'
+            ],
+            'Finance': [
+                'fas fa-university','fas fa-credit-card','fas fa-money-check','fas fa-file-invoice',
+                'fas fa-calculator','fas fa-balance-scale','fas fa-exchange-alt',
+                'fas fa-donate','fas fa-hand-holding-usd','fas fa-funnel-dollar',
+                'fas fa-file-contract','fas fa-stamp'
+            ],
+            'Tech': [
+                'fas fa-laptop','fas fa-desktop','fas fa-server','fas fa-database',
+                'fas fa-cloud','fas fa-code','fas fa-bug','fas fa-wifi',
+                'fas fa-shield-alt','fas fa-lock','fas fa-key','fas fa-qrcode',
+                'fas fa-barcode','fas fa-microchip','fas fa-robot','fas fa-satellite'
+            ],
+            'Communication': [
+                'fas fa-bullhorn','fas fa-comments','fas fa-comment-alt','fas fa-envelope',
+                'fas fa-bell','fas fa-rss','fas fa-broadcast-tower','fas fa-phone',
+                'fas fa-headset','fas fa-paper-plane','fas fa-at','fas fa-share-alt',
+                'fas fa-globe','fas fa-map-marked-alt','fas fa-map-marker-alt'
+            ],
+            'General': [
+                'fas fa-star','fas fa-trophy','fas fa-medal','fas fa-crown',
+                'fas fa-flag','fas fa-bookmark','fas fa-thumbs-up','fas fa-fire',
+                'fas fa-bolt','fas fa-magic','fas fa-puzzle-piece','fas fa-layer-group',
+                'fas fa-th','fas fa-th-large','fas fa-grip-horizontal','fas fa-infinity',
+                'fas fa-circle','fas fa-square','fas fa-home','fas fa-leaf'
+            ]
+        };
+
+        let _iconPickerSelected = '';
+        let _iconPickerCurrentCategory = 'All';
+
+        function openIconPicker() {
+            document.getElementById('iconPickerModal').classList.remove('hidden');
+            document.getElementById('iconSearchInput').value = '';
+            _buildCategoryTabs();
+            _renderIconGrid(null); // show all
+            document.getElementById('iconSearchInput').focus();
+        }
+
+        function closeIconPicker() {
+            document.getElementById('iconPickerModal').classList.add('hidden');
+        }
+
+        function _buildCategoryTabs() {
+            const tabsEl = document.getElementById('iconCategoryTabs');
+            const categories = ['All', ...Object.keys(ICON_CATEGORIES)];
+            tabsEl.innerHTML = categories.map(cat => `
+                <button onclick="switchIconCategory('${cat}')"
+                        id="iconCatTab_${cat.replace(/\s/g,'_')}"
+                        class="icon-cat-tab px-3 py-1 text-xs font-medium rounded-full border transition-colors
+                               ${cat === 'All' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600'}">
+                    ${cat}
+                </button>
+            `).join('');
+            _iconPickerCurrentCategory = 'All';
+        }
+
+        function switchIconCategory(cat) {
+            _iconPickerCurrentCategory = cat;
+            document.getElementById('iconSearchInput').value = '';
+            // Update tab styles
+            document.querySelectorAll('.icon-cat-tab').forEach(btn => {
+                btn.className = btn.className.replace('bg-blue-600 text-white border-blue-600', 'bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600');
+            });
+            const active = document.getElementById('iconCatTab_' + cat.replace(/\s/g,'_'));
+            if (active) active.className = active.className.replace('bg-white text-gray-600 border-gray-300 hover:border-blue-400 hover:text-blue-600', 'bg-blue-600 text-white border-blue-600');
+            _renderIconGrid(null);
+        }
+
+        function filterIcons(query) {
+            _renderIconGrid(query.trim().toLowerCase());
+        }
+
+        function _renderIconGrid(query) {
+            const grid = document.getElementById('iconGrid');
+            const noResults = document.getElementById('iconNoResults');
+
+            // Collect icons to show
+            let icons = [];
+            if (_iconPickerCurrentCategory === 'All') {
+                Object.values(ICON_CATEGORIES).forEach(arr => icons.push(...arr));
+                // Deduplicate
+                icons = [...new Set(icons)];
+            } else {
+                icons = ICON_CATEGORIES[_iconPickerCurrentCategory] || [];
+            }
+
+            // Filter by query
+            if (query) {
+                icons = icons.filter(ic => ic.replace(/fas fa-|fab fa-|far fa-/g,'').replace(/-/g,' ').includes(query));
+            }
+
+            if (icons.length === 0) {
+                grid.innerHTML = '';
+                noResults.classList.remove('hidden');
+                return;
+            }
+            noResults.classList.add('hidden');
+
+            grid.innerHTML = icons.map(ic => {
+                const isSelected = ic === _iconPickerSelected;
+                return `
+                <button type="button" onclick="selectIcon('${ic}')" title="${ic}"
+                        class="icon-picker-btn flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all hover:border-blue-400 hover:bg-blue-50 gap-1
+                               ${isSelected ? 'border-blue-500 bg-blue-100' : 'border-transparent bg-gray-50'}"
+                        style="min-height:64px;">
+                    <i class="${ic} text-xl ${isSelected ? 'text-blue-600' : 'text-gray-600'}"></i>
+                    <span class="text-gray-400 leading-tight text-center" style="font-size:9px; word-break:break-all; max-width:60px;">${ic.replace('fas fa-','').replace('fab fa-','').replace('far fa-','')}</span>
+                </button>`;
+            }).join('');
+        }
+
+        function selectIcon(iconClass) {
+            _iconPickerSelected = iconClass;
+            // Update preview in footer
+            const prev = document.getElementById('iconPickerSelectedPreview');
+            prev.className = iconClass + ' text-blue-500 text-xl';
+            document.getElementById('iconPickerSelectedLabel').textContent = iconClass;
+            // Highlight selected tile
+            document.querySelectorAll('.icon-picker-btn').forEach(btn => {
+                const isThis = btn.getAttribute('title') === iconClass;
+                btn.className = btn.className
+                    .replace('border-blue-500 bg-blue-100','border-transparent bg-gray-50')
+                    .replace('border-transparent bg-gray-50','border-transparent bg-gray-50');
+                if (isThis) btn.className = btn.className.replace('border-transparent bg-gray-50','border-blue-500 bg-blue-100');
+                const icon = btn.querySelector('i');
+                if (icon) icon.className = (isThis ? iconClass + ' text-blue-600' : iconClass.replace(iconClass,'') + ' text-gray-600').trim();
+            });
+            // Properly re-colour all icons
+            document.querySelectorAll('.icon-picker-btn').forEach(btn => {
+                const ic = btn.getAttribute('title');
+                const isThis = ic === iconClass;
+                btn.style.outline = isThis ? '2px solid #3B82F6' : '';
+                btn.style.background = isThis ? '#DBEAFE' : '';
+                const iEl = btn.querySelector('i');
+                if (iEl) { iEl.className = ic + (isThis ? ' text-xl text-blue-600' : ' text-xl text-gray-600'); }
+            });
+        }
+
+        function confirmIconSelection() {
+            if (!_iconPickerSelected) {
+                alert('Please click an icon to select it first.');
+                return;
+            }
+            // Write to hidden input
+            document.getElementById('newDepartmentIcon').value = _iconPickerSelected;
+            // Update trigger button
+            document.getElementById('iconPickerPreview').innerHTML = `<i class="${_iconPickerSelected} text-blue-600 text-lg"></i>`;
+            document.getElementById('iconPickerLabel').textContent = _iconPickerSelected.replace('fas fa-','').replace('fab fa-','').replace('far fa-','');
+            document.getElementById('iconPickerLabel').className = 'text-sm text-gray-800 flex-1 font-medium';
+            closeIconPicker();
+        }
+        // =====================================================
+        // END ICON PICKER
+        // =====================================================
+
         function addNewDepartment() {
             const id = document.getElementById('newDepartmentId').value.trim();
             const name = document.getElementById('newDepartmentName').value.trim();
@@ -11603,6 +11858,11 @@
             document.getElementById('newDepartmentId').value = '';
             document.getElementById('newDepartmentName').value = '';
             document.getElementById('newDepartmentIcon').value = '';
+            // Reset icon picker trigger button
+            _iconPickerSelected = '';
+            document.getElementById('iconPickerPreview').innerHTML = '<i class="fas fa-question-circle text-lg text-gray-400"></i>';
+            document.getElementById('iconPickerLabel').textContent = 'Click to choose icon…';
+            document.getElementById('iconPickerLabel').className = 'text-sm text-gray-500 flex-1';
             
             // Refresh UI
             updateCurrentDepartmentsList();
