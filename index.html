@@ -886,6 +886,8 @@
                                             <option value="growth-asc">Growth % (Low to High)</option>
                                             <option value="forecast-desc">Forecast % (High to Low)</option>
                                             <option value="forecast-asc">Forecast % (Low to High)</option>
+                                            <option value="revenue-desc">Best Forecasted Revenue (High to Low)</option>
+                                            <option value="revenue-asc">Best Forecasted Revenue (Low to High)</option>
                                             <option value="name-asc">AM Name (A to Z)</option>
                                             <option value="name-desc">AM Name (Z to A)</option>
                                         </select>
@@ -12991,6 +12993,10 @@
                             return b.forecastPercent - a.forecastPercent;
                         case 'forecast-asc':
                             return a.forecastPercent - b.forecastPercent;
+                        case 'revenue-desc':
+                            return b.forecastSalesEndOfMonth - a.forecastSalesEndOfMonth;
+                        case 'revenue-asc':
+                            return a.forecastSalesEndOfMonth - b.forecastSalesEndOfMonth;
                         case 'name-asc':
                             return a.amName.localeCompare(b.amName);
                         case 'name-desc':
