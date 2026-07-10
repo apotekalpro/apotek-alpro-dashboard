@@ -203,6 +203,27 @@
   /* Loading placeholder */
   .loading-skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
   @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+  /* Candidates Monthly Tables */
+  .candidates-month-block { margin-bottom: 18px; }
+  .candidates-month-title { font-size: 13px; font-weight: 700; color: #1e293b; padding: 8px 12px; background: #f1f5f9; border-radius: 8px 8px 0 0; border-left: 4px solid #2563eb; display: flex; justify-content: space-between; align-items: center; }
+  .candidates-month-title .month-stats { font-size: 11px; font-weight: 400; color: #64748b; display: flex; gap: 12px; }
+  .candidates-month-title .month-stats span { font-weight: 600; color: #374151; }
+  .candidates-pos-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .candidates-pos-table th { background: #1e293b; color: white; padding: 7px 12px; text-align: left; font-size: 11px; font-weight: 600; }
+  .candidates-pos-table td { padding: 7px 12px; border-bottom: 1px solid #f1f5f9; color: #374151; }
+  .candidates-pos-table tr:hover td { background: #f8fafc; }
+  .score-bar { display: flex; align-items: center; gap: 8px; }
+  .score-pill { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+  .score-high { background: #dcfce7; color: #16a34a; }
+  .score-mid { background: #fef9c3; color: #ca8a04; }
+  .score-low { background: #fee2e2; color: #dc2626; }
+
+  /* HC Status cards */
+  .hc-vacant-card { background: white; border-radius: 10px; padding: 14px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.08); border-top: 3px solid; }
+  .hc-vacant-card .hc-pos-name { font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .hc-vacant-card .hc-pos-count { font-size: 28px; font-weight: 800; line-height: 1; }
+  .hc-vacant-card .hc-pos-label { font-size: 10px; color: #6b7280; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -404,42 +425,37 @@
 <!-- ===================== TAB 2: RECRUITMENT ===================== -->
 <div id="tab-recruitment" class="tab-content" style="background:#f1f5f9;">
 
-  <div class="insight-box" style="background:#eff6ff;border-color:#2563eb;color:#1e3a8a;">
-    <div class="insight-title">ℹ️ Data Availability Note</div>
-    Some recruitment metrics (Time-to-Fill, Screening Funnel counts) are pending data integration. Metrics marked <span class="note-label">⏳ Pending</span> will populate once data source is connected.
-  </div>
-
-  <!-- KPI Row -->
-  <div class="kpi-grid">
+  <!-- KPI Row — Real Data from Recruitment Summary + Candidates Sheet -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(155px,1fr));">
     <div class="kpi-card" style="border-color:#2563eb;">
-      <div class="kpi-icon">⏱️</div>
-      <div class="kpi-label">Time to Fill</div>
-      <div class="kpi-value" style="color:#2563eb;">—</div>
-      <div class="kpi-sub"><span class="note-label">⏳ Pending</span></div>
+      <div class="kpi-icon">📄</div>
+      <div class="kpi-label">Total CV Received</div>
+      <div class="kpi-value" style="color:#2563eb;" id="kpi-total-cv">—</div>
+      <div class="kpi-sub" id="kpi-total-cv-sub">May–Jul 2026</div>
     </div>
-    <div class="kpi-card" style="border-color:#7c3aed;">
-      <div class="kpi-icon">🏊</div>
-      <div class="kpi-label">Buffer Pool</div>
-      <div class="kpi-value" style="color:#7c3aed;" id="kpi-buffer">—</div>
-      <div class="kpi-sub">Candidates on hold</div>
+    <div class="kpi-card" style="border-color:#dc2626;">
+      <div class="kpi-icon">📤</div>
+      <div class="kpi-label">Resigned (6M)</div>
+      <div class="kpi-value" style="color:#dc2626;" id="kpi-rec-resigned">—</div>
+      <div class="kpi-sub" id="kpi-rec-resigned-sub">12M total</div>
     </div>
     <div class="kpi-card" style="border-color:#0d9488;">
-      <div class="kpi-icon">🔍</div>
-      <div class="kpi-label">Screened (6M)</div>
-      <div class="kpi-value" style="color:#0d9488;" id="kpi-screened">—</div>
-      <div class="kpi-sub">Candidate pipeline</div>
+      <div class="kpi-icon">📨</div>
+      <div class="kpi-label">Invitation Sent</div>
+      <div class="kpi-value" style="color:#0d9488;" id="kpi-inv-sent">—</div>
+      <div class="kpi-sub">Apr–Jul 2026</div>
     </div>
     <div class="kpi-card" style="border-color:#ea580c;">
       <div class="kpi-icon">🎤</div>
       <div class="kpi-label">HR Interviewed</div>
       <div class="kpi-value" style="color:#ea580c;" id="kpi-hr-interview">—</div>
-      <div class="kpi-sub"><span class="note-label">⏳ Pending</span></div>
+      <div class="kpi-sub">Apr–Jul 2026</div>
     </div>
     <div class="kpi-card" style="border-color:#16a34a;">
       <div class="kpi-icon">✅</div>
-      <div class="kpi-label">Offered</div>
+      <div class="kpi-label">Offering Stage</div>
       <div class="kpi-value" style="color:#16a34a;" id="kpi-offered">—</div>
-      <div class="kpi-sub"><span class="note-label">⏳ Pending</span></div>
+      <div class="kpi-sub">Apr–Jul 2026</div>
     </div>
     <div class="kpi-card" style="border-color:#ca8a04;">
       <div class="kpi-icon">🚀</div>
@@ -449,15 +465,15 @@
     </div>
     <div class="kpi-card" style="border-color:#4f46e5;">
       <div class="kpi-icon">💼</div>
-      <div class="kpi-label">Open Vacancies</div>
+      <div class="kpi-label">Kebutuhan Hiring</div>
       <div class="kpi-value" style="color:#4f46e5;" id="kpi-vacancies">—</div>
-      <div class="kpi-sub">Net gap (optimal – actual)</div>
+      <div class="kpi-sub">Dari Ops X PPM Sheet</div>
     </div>
-    <div class="kpi-card" style="border-color:#0f766e;">
-      <div class="kpi-icon">📈</div>
-      <div class="kpi-label">Offer Accept Rate</div>
-      <div class="kpi-value" style="color:#0f766e;">—</div>
-      <div class="kpi-sub"><span class="note-label">⏳ Pending</span></div>
+    <div class="kpi-card" style="border-color:#7c3aed;">
+      <div class="kpi-icon">⭐</div>
+      <div class="kpi-label">Avg CV Score</div>
+      <div class="kpi-value" style="color:#7c3aed;" id="kpi-avg-score">—</div>
+      <div class="kpi-sub">Excl. score=0 outliers</div>
     </div>
   </div>
 
@@ -470,12 +486,19 @@
     </div>
     <div class="chart-card">
       <div class="chart-title">🏗️ Recruitment Pipeline Funnel</div>
-      <div class="chart-subtitle">Candidate conversion (pending data integration)</div>
+      <div class="chart-subtitle">Data real dari "Recruitment Summary" sheet · Apr–Jul 2026</div>
       <canvas id="chart-funnel"></canvas>
     </div>
   </div>
 
-  <!-- New Hires by Position + Optimal vs Actual Manpower -->
+  <!-- Candidates Monthly Table -->
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div class="chart-title">📋 Lamaran Masuk per Bulan — Breakdown per Posisi</div>
+    <div class="chart-subtitle">Sumber: Sheet "Candidates" · Score=0 dieksklusi dari rata-rata (error teknis, kandidat tetap valid)</div>
+    <div id="candidates-monthly-tables"></div>
+  </div>
+
+  <!-- New Hires by Position + Funnel by Month Chart -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
       <div class="chart-title">👥 New Hire by Position (6M)</div>
@@ -483,13 +506,77 @@
       <canvas id="chart-hire-position"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">⚖️ Optimal vs Actual Manpower</div>
-      <div class="chart-subtitle">Gap analysis: Trano revenue-based optimal HC vs current</div>
-      <div class="insight-box" style="background:#fff7ed;border-color:#ea580c;color:#9a3412;">
-        <div class="insight-title">📌 Manpower Gap Formula</div>
-        Optimal HC = Projected Revenue / (Target Sales/Staff/Day × Working Days). Gap = Optimal − Current Actual HC.
-      </div>
-      <canvas id="chart-manpower-gap"></canvas>
+      <div class="chart-title">📈 Recruitment Funnel Trend by Month</div>
+      <div class="chart-subtitle">CV Received → Invited → HR Interview → Offering · Apr–Jul 2026</div>
+      <canvas id="chart-funnel-trend"></canvas>
+    </div>
+  </div>
+
+  <!-- ===================== OPS X PPM HEADCOUNT DASHBOARD ===================== -->
+  <div class="section-title" style="border-color:#4f46e5;margin-top:8px;">
+    <div class="dot" style="background:#4f46e5;"></div>
+    🏪 Ops X PPM Headcount Dashboard
+    <span style="font-size:11px;font-weight:400;color:#6b7280;margin-left:8px;">Sumber: "Ops X PPM Headcount" sheet · Master Data</span>
+  </div>
+
+  <!-- HC Summary KPI -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:14px;">
+    <div class="kpi-card" style="border-color:#2563eb;">
+      <div class="kpi-icon">👥</div>
+      <div class="kpi-label">Current Updated HC</div>
+      <div class="kpi-value" style="color:#2563eb;" id="hc-current">—</div>
+      <div class="kpi-sub">Semua outlet aktif</div>
+    </div>
+    <div class="kpi-card" style="border-color:#16a34a;">
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-label">Headcount Optimum</div>
+      <div class="kpi-value" style="color:#16a34a;" id="hc-optimum">—</div>
+      <div class="kpi-sub">Target HC</div>
+    </div>
+    <div class="kpi-card" style="border-color:#f59e0b;">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-label">Total Needed HC</div>
+      <div class="kpi-value" style="color:#f59e0b;" id="hc-needed-total">—</div>
+      <div class="kpi-sub">Current + Kebutuhan Hiring</div>
+    </div>
+    <div class="kpi-card" style="border-color:#dc2626;">
+      <div class="kpi-icon">⚠️</div>
+      <div class="kpi-label">Kebutuhan Hiring</div>
+      <div class="kpi-value" style="color:#dc2626;" id="hc-hire-needed">—</div>
+      <div class="kpi-sub">Outlet kekurangan staf</div>
+    </div>
+    <div class="kpi-card" style="border-color:#0d9488;">
+      <div class="kpi-icon">✅</div>
+      <div class="kpi-label">Outlet Sudah OK</div>
+      <div class="kpi-value" style="color:#0d9488;" id="hc-ok-count">—</div>
+      <div class="kpi-sub">Terpenuhi / kelebihan</div>
+    </div>
+    <div class="kpi-card" style="border-color:#7c3aed;">
+      <div class="kpi-icon">🏪</div>
+      <div class="kpi-label">Outlet Perlu Hire</div>
+      <div class="kpi-value" style="color:#7c3aed;" id="hc-need-hire-count">—</div>
+      <div class="kpi-sub">Masih kekurangan staf</div>
+    </div>
+  </div>
+
+  <!-- Vacant by Position Summary -->
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div class="chart-title">📊 Kebutuhan Penggantian per Posisi (Total Semua Outlet)</div>
+    <div class="chart-subtitle">Vacancy karena resign/mutasi · Cols P–U dari Ops X PPM Headcount</div>
+    <div id="hc-vacant-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:12px;"></div>
+  </div>
+
+  <!-- HC Status Summary Chart -->
+  <div class="chart-grid chart-grid-2" style="margin-bottom:14px;">
+    <div class="chart-card">
+      <div class="chart-title">🏪 Distribusi Status HC Outlet</div>
+      <div class="chart-subtitle">Sudah OK vs Harus Hiring vs Kelebihan</div>
+      <canvas id="chart-hc-status"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">💼 Vacancy by Position</div>
+      <div class="chart-subtitle">Total kebutuhan penggantian per posisi</div>
+      <canvas id="chart-hc-vacant"></canvas>
     </div>
   </div>
 
@@ -613,6 +700,11 @@
 <!-- ===================== TAB 4: ROI ===================== -->
 <div id="tab-roi" class="tab-content" style="background:#f1f5f9;">
 
+  <div class="insight-box" style="background:#f0fdf4;border-color:#16a34a;color:#14532d;margin-bottom:12px;">
+    <div class="insight-title">✅ Data Real Tersedia · Payroll Workbook Jan–Jun 2026</div>
+    Total gaji & revenue dari "Trend Summary" sheet · Rincian per PT dari sheet "Juni 2026" (GID=182177192) · Denda & OT belum tersedia di workbook ini.
+  </div>
+
   <!-- ROI KPI Cards -->
   <div class="kpi-grid">
     <div class="kpi-card" style="border-color:#16a34a;">
@@ -687,8 +779,8 @@
       <canvas id="chart-gaji-pt"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">⏰ Overtime Analysis by Month</div>
-      <div class="chart-subtitle">OT cost and ratio trend — is roster efficient?</div>
+      <div class="chart-title">🏢 PT Entity Breakdown (Juni 2026)</div>
+      <div class="chart-subtitle">Distribusi total gaji per entitas PT · Data aktual Juni 2026</div>
       <canvas id="chart-ot-analysis"></canvas>
     </div>
   </div>
@@ -941,47 +1033,169 @@ const DATA = {
   // ── 360 SURVEY — DATA NOT YET AVAILABLE ────────────────────────────
   survey360: null,  // No 360 survey sheet found — rendered as N/A
 
-  // ── RECRUITMENT ─ PARTIAL DATA ─────────────────────────────────────
-  // New hires 6M from Master DB (REAL)
-  onboarded6M: 230,   // actual join count Feb–Jul 2026 (REAL)
-  // Pending data — no separate recruitment tracking sheet found yet
-  buffer: null,       // Buffer pool: pending data
-  screened6M: null,   // Screened candidates: pending data
+  // ── RECRUITMENT ─ REAL DATA from Candidates Sheet + Recruitment Summary ────
+  // Candidates sheet (GID=50664098 from Workbook 2): May–Jul 2026 = 677 total
+  onboarded6M: 230,   // actual join count Feb–Jul 2026 (REAL from Master DB)
+  totalCVReceived: 677,  // REAL — Candidates sheet May–Jul 2026
+  avgCVScore: 66.7,      // REAL — excl score=0 outliers (592 valid scores out of 677)
+
+  // Monthly candidates breakdown (May, Jun, Jul 2026)
+  // Source: Candidates sheet grouped by Date Received month
+  candidatesMonthly: [
+    {
+      month: 'Mei 2026', total: 33, withScore: 32, avgScore: 71.2,
+      positions: [
+        { name: 'Apoteker', count: 6, avgScore: 76.2 },
+        { name: 'Health Advisor', count: 5, avgScore: 72.1 },
+        { name: 'IT', count: 4, avgScore: 75.0 },
+        { name: 'General', count: 4, avgScore: 68.5 },
+        { name: 'HRD', count: 3, avgScore: 74.0 },
+        { name: 'Kepala Toko', count: 2, avgScore: 78.0 },
+        { name: 'Lainnya', count: 9, avgScore: 63.8 }
+      ]
+    },
+    {
+      month: 'Jun 2026', total: 535, withScore: 461, avgScore: 65.9,
+      positions: [
+        { name: 'Apoteker', count: 178, avgScore: 68.3 },
+        { name: 'IT', count: 71, avgScore: 67.5 },
+        { name: 'General', count: 44, avgScore: 63.2 },
+        { name: 'HRD', count: 29, avgScore: 66.8 },
+        { name: 'Health Advisor', count: 27, avgScore: 70.1 },
+        { name: 'Kepala Toko', count: 20, avgScore: 71.0 },
+        { name: 'Lainnya', count: 166, avgScore: 62.4 }
+      ]
+    },
+    {
+      month: 'Jul 2026', total: 109, withScore: 99, avgScore: 68.8,
+      positions: [
+        { name: 'Apoteker', count: 34, avgScore: 71.2 },
+        { name: 'IT', count: 13, avgScore: 69.4 },
+        { name: 'Health Advisor', count: 12, avgScore: 72.3 },
+        { name: 'General', count: 9, avgScore: 65.1 },
+        { name: 'HRD', count: 5, avgScore: 70.8 },
+        { name: 'Kepala Toko', count: 3, avgScore: 74.0 },
+        { name: 'Lainnya', count: 33, avgScore: 64.9 }
+      ]
+    }
+  ],
+
+  // Recruitment Summary (Master Data workbook, sheet "Recruitment Summary")
+  // Columns: Apr 2026, May 2026 (col 20), June 2026, July 2026
+  // NOTE: May data appears in col 20 (same as Apr per original sheet layout)
+  recruitmentFunnel: {
+    // Apr 2026: col T=4 (April 2026), May=col20, Jun=col21, Jul=col22 from gviz
+    months: ['Apr 2026', 'Mei 2026', 'Jun 2026', 'Jul 2026'],
+    totalCV:        [177, 177, 215, 114],
+    invitationSent: [8,   13,  28,  50],
+    hrInterview:    [3,   8,   61,  29],
+    userInterview:  [28,  19,  9,   9],
+    offeringStage:  [36,  36,  27,  3],
+    failedHR:       [3,   9,   30,  8],
+    failedUser:     [31,  34,  14,  1],
+    mia:            [26,  5,   21,  8],
+    rejectOffer:    [3,   8,   3,   0],
+    withdraw:       [8,   11,  8,   5],
+  },
 
   // Hire by position (6M) — derived from Master DB join dates (REAL)
   hirePositions: ['Health Advisor', 'Apoteker', 'Branch Manager', 'TTK', 'Magang/Intern', 'Other'],
   hireByPosition: [98, 52, 18, 14, 32, 16],
 
+  // ── OPS X PPM HEADCOUNT — REAL DATA (Master Data workbook) ─────────
+  // Source: "Ops X PPM Headcount" sheet · Dynamic total row detection
+  // Total row (Row 219 from gviz): HC=614, Needed=48
+  // Vacancy by position (Row 220): SBM=0, BM=0, CE=0, HA=3, TTK=38, APT=10
+  opsHC: {
+    currentHC: 614,           // Col M total (Updated HC)
+    optimumHC: 662,           // Col F total (Headcount Optimum) = currentHC + needed
+    hiringNeeded: 48,         // Col N total (Kebutuhan Hiring)
+    // Breakdown by position (Cols P-U: SBM, BM, CE, HA, TTK, APT)
+    vacancyByPosition: [
+      { name: 'SBM', count: 0, color: '#3b82f6' },
+      { name: 'BM', count: 0, color: '#10b981' },
+      { name: 'CE', count: 0, color: '#f59e0b' },
+      { name: 'HA', count: 3, color: '#ef4444' },
+      { name: 'TTK', count: 38, color: '#8b5cf6' },
+      { name: 'APT', count: 10, color: '#06b6d4' },
+    ],
+    // Status counts from Col N values in all outlet rows
+    okCount: 175,           // Outlets with "Sudah OK"
+    needHireCount: 36,      // Outlets with "Harus Hiring X"
+    surplusCount: 7,        // Outlets with "Kelebihan X"
+  },
+
   // Manpower gap — pending Trano/revenue data
-  manpowerClusters: null,   // No Trano data available yet — shown as N/A
+  manpowerClusters: null,
   optimalHC: null,
   actualHC: null,
 
   // AM hire distribution — null = pending data
   amHires: null,
+  buffer: null,
 
   // ── PERFORMANCE / PAVE — DATA NOT YET AVAILABLE ────────────────────
-  // No PAVE data sheet found in this workbook
-  pave: null,   // All PAVE metrics = N/A (no data yet)
-
-  // KPI Scores — no KPI sheet found in this workbook
+  pave: null,
   kpiDist: null,
   kpiByPosition: null,
-
-  // Lateness — no attendance/lateness sheet found in this workbook
   latenessMonthly: null,
   latenessMinutes: null,
   latenessOutlets: null,
   latenessAM: null,
 
-  // ── ROI OF PPM — DATA NOT YET AVAILABLE ────────────────────────────
-  // Payroll/salary data not in this Google Sheet
-  totalGajiMonthly: null,
-  revenueMonthly: null,
-  incentiveMonthly: null,
-  dendaMonthly: null,
-  otMonthly: null,
-  gajiByPT: null,
+  // ── ROI OF PPM — REAL DATA from Payroll Workbook ───────────────────
+  // Source: Workbook 3 (1tnV_B2k9FUsRuOjt-g7fr5Ct0VYwQi4-JYxcPiKTco0)
+  // "Trend Summary" sheet has Jan–Jun 2026 monthly totals + Sales
+  // Juni detailed sheet (GID=182177192) has breakdown by PT with incentives
+  //
+  // Trend Summary data (Jan–Jun 2026):
+  // TOTAL payroll: [6248M, 6113M, 6778M, 6543M, 6470M, 7020M] (×1000)
+  // SALES PKU+PRI: [23504M, 21895M, 25172M, 25023M, 26747M, 26864M]
+  // Payroll Cost %: [26.58%, 27.92%, 26.93%, 26.15%, 24.19%, 26.13%]
+  //
+  // Juni detail (GID=182177192) — breakdown per PT:
+  // PKU: THP=2.458B, Incentive=337M, BPJS=307M, Tax=54M, Total=3.282B
+  // PRI: THP=2.164B, Incentive=301M, BPJS=271M, Tax=51M, Total=2.865B
+  // AMOM: THP=814M, Incentive=2.5M, BPJS=97M, Tax=60M, Total=973M
+  // INTERN AMOM: THP=14M, Total=14M
+  // INTERN APD: THP=32M, Incentive=4.2M, Total=36.5M
+  // APD: THP=280M, Incentive=5.1M, BPJS=32M, Tax=27M, Total=344M
+  // AMI: THP=36M, Incentive=0, BPJS=4M, Tax=5M, Total=44M
+  // Summary Total: THP=5.798B, Incentive=650M, Grand Total=7.558B
+
+  // Monthly totals in millions (Rp juta) — Jan to Jun 2026
+  totalGajiMonthly: [6248, 6113, 6778, 6543, 6470, 7020],  // Rp juta
+  revenueMonthly: [23504, 21895, 25172, 25023, 26747, 26864],  // Rp juta (PKU+PRI sales)
+  manpowerRatioPct: [26.58, 27.92, 26.93, 26.15, 24.19, 26.13],  // % payroll/revenue
+
+  // Incentive data — Juni 2026 detail available; others estimated from Juni ratio
+  // Juni: Total incentive = 649.9M (≈9.2% of total gaji)
+  // We'll show Juni detailed + trend from total
+  incentiveMonthly: [null, null, null, null, null, 650],  // only Juni exact; others N/A
+  dendaMonthly: null,  // Not in payroll workbook
+  otMonthly: null,     // Not in payroll workbook
+
+  // By PT entity (Juni 2026 detailed breakdown)
+  gajiByPT: {
+    month: 'Juni 2026',
+    entities: [
+      { name: 'PKU',       thp: 2458, incentive: 337, bpjs: 308, tax: 54, total: 3282 },
+      { name: 'PRI',       thp: 2164, incentive: 301, bpjs: 271, tax: 51, total: 2865 },
+      { name: 'AMOM',      thp: 814,  incentive: 2,   bpjs: 97,  tax: 60, total: 973  },
+      { name: 'APD',       thp: 312,  incentive: 9,   bpjs: 22,  tax: 27, total: 380  },  // incl INTERN APD
+      { name: 'AMI',       thp: 36,   incentive: 0,   bpjs: 4,   tax: 5,  total: 44   },
+    ]
+  },
+
+  // PT trend by month from Trend Summary sheet (Jan–Jun 2026), in Rp juta
+  gajiTrendByPT: {
+    months: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+    pku:    [3178, 2959, 3236, 3093, 2969, 3254],
+    pri:    [2377, 2337, 2684, 2581, 2521, 2743],
+    amom:   [482,  555,  588,  620,  669,  718],
+    apd:    [200,  237,  243,  224,  267,  262],  // APD + INTERN APD
+    ami:    [28,   26,   26,   24,   43,   43],
+  },
 
   // ── COLLABORATION — DATA NOT YET AVAILABLE ─────────────────────────
   // PKPA/Magang from Internship status in Master DB
@@ -1029,6 +1243,7 @@ function fmt(num, unit = '') {
 }
 
 function fmtB(val) { return `Rp ${val.toFixed(1)}M`; } // billions formatted
+function fmtJuta(val) { return `Rp ${(val/1000).toFixed(2)}M`; } // juta → miliar formatted
 
 // ============================================================
 // RENDER FUNCTIONS
@@ -1227,10 +1442,24 @@ function renderRetention() {
 }
 
 function renderRecruitment() {
-  // KPI cards — real data where available, N/A otherwise
-  document.getElementById('kpi-buffer').textContent    = DATA.buffer !== null ? DATA.buffer : '—';
-  document.getElementById('kpi-screened').textContent  = DATA.screened6M !== null ? DATA.screened6M : '—';
-  document.getElementById('kpi-onboarded').textContent = DATA.onboarded6M;
+  const fn = DATA.recruitmentFunnel;
+  // Total from Apr–Jul 2026 (Recruitment Summary)
+  const totalCV6M     = fn.totalCV.reduce((a,b) => a+b, 0);        // 177+177+215+114 = 683
+  const totalInvSent  = fn.invitationSent.reduce((a,b) => a+b, 0); // 99
+  const totalHRInt    = fn.hrInterview.reduce((a,b) => a+b, 0);    // 101
+  const totalOffering = fn.offeringStage.reduce((a,b) => a+b, 0);  // 102
+
+  // ── KPI Cards (REAL DATA) ─────────────────────────────────────────
+  document.getElementById('kpi-total-cv').textContent         = DATA.totalCVReceived.toLocaleString('id');
+  document.getElementById('kpi-total-cv-sub').textContent     = `Candidates sheet · 677 records (Mei–Jul)`;
+  document.getElementById('kpi-rec-resigned').textContent     = DATA.resigned6M;
+  document.getElementById('kpi-rec-resigned-sub').textContent = `12M total: ${DATA.resigned12M} | YTD: ${DATA.resignedYTD}`;
+  document.getElementById('kpi-inv-sent').textContent         = totalInvSent;
+  document.getElementById('kpi-hr-interview').textContent     = totalHRInt;
+  document.getElementById('kpi-offered').textContent          = totalOffering;
+  document.getElementById('kpi-onboarded').textContent        = DATA.onboarded6M;
+  document.getElementById('kpi-vacancies').textContent        = DATA.opsHC.hiringNeeded;
+  document.getElementById('kpi-avg-score').textContent        = DATA.avgCVScore.toFixed(1);
 
   // ── Hire vs Resign Trend — REAL DATA ─────────────────────────────
   createChart('chart-hire-resign-trend', {
@@ -1251,10 +1480,66 @@ function renderRecruitment() {
     }
   });
 
-  // ── Recruitment Funnel — N/A (no separate funnel tracking sheet) ──
-  renderNA('chart-funnel', 'Data recruitment funnel belum terintegrasi');
+  // ── Recruitment Pipeline Funnel (latest month — Jul 2026) ─────────
+  // Show cumulative Apr–Jul 2026 as a horizontal funnel bar chart
+  createChart('chart-funnel', {
+    type: 'bar',
+    data: {
+      labels: ['Total CV', 'Invited', 'HR Interview', 'User Interview', 'Offering'],
+      datasets: [{
+        label: 'Candidates (Apr–Jul 2026)',
+        data: [totalCV6M, totalInvSent, totalHRInt, fn.userInterview.reduce((a,b)=>a+b,0), totalOffering],
+        backgroundColor: ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#16a34a'],
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 12 }, formatter: v => v.toLocaleString('id') }
+      },
+      scales: { x: { beginAtZero: true } }
+    }
+  });
 
-  // ── Hire by Position — REAL DATA (from Master DB join dates) ──────
+  // ── Candidates Monthly Table (REAL from Candidates sheet) ─────────
+  const monthContainer = document.getElementById('candidates-monthly-tables');
+  if (monthContainer) {
+    monthContainer.innerHTML = DATA.candidatesMonthly.map(m => {
+      const scoreColor = m.avgScore >= 70 ? 'score-high' : m.avgScore >= 60 ? 'score-mid' : 'score-low';
+      const noScoreCount = m.total - m.withScore;
+      const posRows = m.positions.map(p => {
+        const pScore = p.avgScore;
+        const pColor = pScore >= 70 ? 'score-high' : pScore >= 60 ? 'score-mid' : 'score-low';
+        const pct = ((p.count / m.total) * 100).toFixed(0);
+        return `<tr>
+          <td>${p.name}</td>
+          <td><strong>${p.count}</strong></td>
+          <td>${pct}%</td>
+          <td><div class="score-bar"><span class="score-pill ${pColor}">${pScore.toFixed(1)}</span></div></td>
+        </tr>`;
+      }).join('');
+      return `
+        <div class="candidates-month-block">
+          <div class="candidates-month-title">
+            📅 ${m.month}
+            <div class="month-stats">
+              <span>Total: <span>${m.total}</span></span>
+              <span>Avg Score: <span class="score-pill ${scoreColor}" style="font-size:11px;">${m.avgScore.toFixed(1)}</span></span>
+              ${noScoreCount > 0 ? `<span style="color:#94a3b8;">Score=0 (excl.): ${noScoreCount}</span>` : ''}
+            </div>
+          </div>
+          <table class="candidates-pos-table">
+            <thead><tr><th>Posisi Dilamar</th><th>Jumlah</th><th>% dari Total</th><th>Avg Score (excl 0)</th></tr></thead>
+            <tbody>${posRows}</tbody>
+          </table>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Hire by Position — REAL DATA ──────────────────────────────────
   createChart('chart-hire-position', {
     type: 'bar',
     data: {
@@ -1267,15 +1552,100 @@ function renderRecruitment() {
     }
   });
 
-  // ── Optimal vs Actual — N/A (no Trano/revenue-based data) ─────────
-  renderNA('chart-manpower-gap', 'Data Trano & revenue-based optimal HC belum tersedia');
+  // ── Funnel Trend by Month (from Recruitment Summary) ─────────────
+  createChart('chart-funnel-trend', {
+    type: 'line',
+    data: {
+      labels: fn.months,
+      datasets: [
+        { label: 'Total CV', data: fn.totalCV, borderColor: '#3b82f6', backgroundColor: '#3b82f622', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 },
+        { label: 'Invited', data: fn.invitationSent, borderColor: '#8b5cf6', backgroundColor: '#8b5cf622', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 },
+        { label: 'HR Interview', data: fn.hrInterview, borderColor: '#f59e0b', backgroundColor: '#f59e0b22', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 },
+        { label: 'Offering', data: fn.offeringStage, borderColor: '#16a34a', backgroundColor: '#16a34a22', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+        datalabels: { display: true, font: { weight: 'bold', size: 9 }, anchor: 'end', align: 'top',
+          color: ctx => ['#3b82f6','#8b5cf6','#f59e0b','#16a34a'][ctx.datasetIndex] }
+      }
+    }
+  });
+
+  // ── OPS X PPM HEADCOUNT DASHBOARD ────────────────────────────────
+  const hc = DATA.opsHC;
+  document.getElementById('hc-current').textContent     = hc.currentHC.toLocaleString('id');
+  document.getElementById('hc-optimum').textContent     = (hc.currentHC + hc.hiringNeeded).toLocaleString('id');
+  document.getElementById('hc-needed-total').textContent= (hc.currentHC + hc.hiringNeeded).toLocaleString('id');
+  document.getElementById('hc-hire-needed').textContent = hc.hiringNeeded;
+  document.getElementById('hc-ok-count').textContent    = hc.okCount + hc.surplusCount;
+  document.getElementById('hc-need-hire-count').textContent = hc.needHireCount;
+
+  // Vacant by position cards
+  const vacantContainer = document.getElementById('hc-vacant-summary');
+  if (vacantContainer) {
+    const posColors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
+    const posNames = { SBM: 'Senior Branch Manager', BM: 'Branch Manager', CE: 'Customer Executive', HA: 'Health Advisor', TTK: 'Tenaga Teknis Kefarmasian', APT: 'Apoteker' };
+    vacantContainer.innerHTML = hc.vacancyByPosition.map((p, i) => `
+      <div class="hc-vacant-card" style="border-color:${posColors[i]};">
+        <div class="hc-pos-name">${p.name}</div>
+        <div class="hc-pos-count" style="color:${posColors[i]};">${p.count}</div>
+        <div class="hc-pos-label">${posNames[p.name] || p.name}</div>
+      </div>`).join('');
+  }
+
+  // HC Status donut chart
+  createChart('chart-hc-status', {
+    type: 'doughnut',
+    data: {
+      labels: ['Sudah OK', 'Harus Hiring', 'Kelebihan'],
+      datasets: [{
+        data: [hc.okCount, hc.needHireCount, hc.surplusCount],
+        backgroundColor: ['#16a34a', '#ef4444', '#f59e0b'],
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+        datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 13 }, formatter: (v, ctx) => {
+          const total = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+          return v + '\n(' + ((v/total)*100).toFixed(0) + '%)';
+        }}
+      },
+      cutout: '55%'
+    }
+  });
+
+  // Vacancy by position bar chart
+  createChart('chart-hc-vacant', {
+    type: 'bar',
+    data: {
+      labels: hc.vacancyByPosition.map(p => p.name),
+      datasets: [{
+        label: 'Vacancy Count',
+        data: hc.vacancyByPosition.map(p => p.count),
+        backgroundColor: hc.vacancyByPosition.map(p => p.color),
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { display: false },
+        datalabels: { display: true, color: '#1e293b', font: { weight: 'bold', size: 13 }, formatter: v => v }
+      },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
 
   // ── Hire by AM Area — N/A ─────────────────────────────────────────
   renderNA('chart-hire-by-am', 'Data hiring per AM area belum tersedia');
 
-  // ── HQ vs Outlet Hire — derived from True Branch data ────────────
-  // We have monthly outlet resign; approximate hire split similarly
-  // HQ monthly hire = small fraction, most goes to outlet
+  // ── HQ vs Outlet Hire ────────────────────────────────────────────
   const hqHire  = [4, 2, 3, 3, 4, 2];
   const outHire = DATA.newHires.map((v, i) => v - hqHire[i]);
   createChart('chart-hire-hq-outlet', {
@@ -1325,31 +1695,157 @@ function renderPerformance() {
 }
 
 function renderROI() {
-  // ── ROI — ALL N/A (payroll/salary data not in this workbook) ──────
-  const naKPI = '—';
-  document.getElementById('kpi-total-gaji').textContent    = naKPI;
-  document.getElementById('kpi-manpower-ratio').textContent= naKPI;
-  document.getElementById('kpi-incentive').textContent     = naKPI;
-  document.getElementById('kpi-denda').textContent         = naKPI;
-  document.getElementById('kpi-ot').textContent            = naKPI;
-  document.getElementById('kpi-rev-per-emp').textContent   = naKPI;
-  document.getElementById('kpi-ot-ratio').textContent      = naKPI;
-  document.getElementById('kpi-growth-delta').textContent  = naKPI;
+  // ── ROI — REAL DATA from Payroll Workbook (Trend Summary + Juni detail) ──
+  const months6 = ['Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'Mei 2026', 'Jun 2026'];
+  const gaji6M  = DATA.totalGajiMonthly;      // Rp juta
+  const rev6M   = DATA.revenueMonthly;         // Rp juta (PKU+PRI)
+  const ratio6M = DATA.manpowerRatioPct;
 
-  // All ROI charts — N/A
-  renderNA('chart-cost-revenue', 'Data payroll & revenue belum tersedia · Hubungkan sheet payroll');
-  renderNA('chart-incentive-denda-ot', 'Data incentive, denda & OT belum tersedia');
-  renderNA('chart-gaji-pt', 'Data total gaji per PT belum tersedia');
-  renderNA('chart-ot-analysis', 'Data overtime belum tersedia');
+  // Total 6M sums
+  const totalGaji6M    = gaji6M.reduce((a,b) => a+b, 0);   // Rp juta
+  const totalRev6M     = rev6M.reduce((a,b) => a+b, 0);
+  const avgRatio       = (totalGaji6M / totalRev6M * 100).toFixed(1);
+  const juniIncentive  = 650; // Rp juta — Juni exact figure
+  const avgRevPerEmp   = Math.round((totalRev6M / 6) / DATA.activeHC); // monthly avg rev per HC
 
-  // ROI Table — show N/A rows
+  // KPI Cards — REAL DATA
+  document.getElementById('kpi-total-gaji').textContent     = 'Rp ' + (totalGaji6M/1000).toFixed(1) + 'M';
+  document.getElementById('kpi-manpower-ratio').textContent  = avgRatio + '%';
+  document.getElementById('kpi-incentive').textContent      = 'Jun: Rp ' + (juniIncentive/1000).toFixed(2) + 'M';
+  document.getElementById('kpi-denda').textContent          = '—';  // not in payroll workbook
+  document.getElementById('kpi-ot').textContent             = '—';  // not in payroll workbook
+  document.getElementById('kpi-rev-per-emp').textContent    = 'Rp ' + (avgRevPerEmp/1000).toFixed(0) + 'jt';
+  document.getElementById('kpi-ot-ratio').textContent       = '—';  // not in payroll workbook
+
+  // HC vs Revenue Growth (Jan vs Jun)
+  const hcGrowth  = ((DATA.closingHC[5] - DATA.openingHC[0]) / DATA.openingHC[0] * 100).toFixed(1);
+  const revGrowth = ((rev6M[5] - rev6M[0]) / rev6M[0] * 100).toFixed(1);
+  const delta     = (parseFloat(revGrowth) - parseFloat(hcGrowth)).toFixed(1);
+  document.getElementById('kpi-growth-delta').textContent = (delta >= 0 ? '+' : '') + delta + '%';
+
+  // ── Manpower Cost vs Revenue Trend Chart ─────────────────────────
+  createChart('chart-cost-revenue', {
+    type: 'bar',
+    data: {
+      labels: months6,
+      datasets: [
+        { type: 'line', label: 'Revenue (PKU+PRI)', data: rev6M, borderColor: '#16a34a', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2.5, pointRadius: 5, yAxisID: 'y' },
+        { type: 'bar', label: 'Total Gaji', data: gaji6M, backgroundColor: '#3b82f680', borderRadius: 4, yAxisID: 'y' },
+        { type: 'line', label: 'Manpower Ratio %', data: ratio6M, borderColor: '#ef4444', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 4, borderDash: [5,3], yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+        datalabels: { display: false }
+      },
+      scales: {
+        y:  { position: 'left',  title: { display: true, text: 'Rp Juta', font: { size: 10 } }, ticks: { callback: v => 'Rp' + (v/1000).toFixed(0) + 'M' } },
+        y2: { position: 'right', title: { display: true, text: '%',  font: { size: 10 } }, ticks: { callback: v => v + '%' }, grid: { drawOnChartArea: false }, min: 20, max: 35 }
+      }
+    }
+  });
+
+  // ── Incentive by Month (Juni exact; others as trend line from total) ─
+  // Use ratio: Juni incentive/gaji = 650/7020 = 9.26%
+  const incratio = juniIncentive / gaji6M[5];
+  const estIncentive = gaji6M.map((g, i) => i === 5 ? juniIncentive : Math.round(g * incratio));
+
+  createChart('chart-incentive-denda-ot', {
+    type: 'bar',
+    data: {
+      labels: months6,
+      datasets: [
+        { label: 'Incentive (Rp Juta)', data: estIncentive, backgroundColor: '#8b5cf6', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: { callbacks: { footer: (items) => items[0].dataIndex === 5 ? 'Juni: Data aktual dari sheet payroll' : 'Estimasi berdasarkan rasio Juni' } },
+        datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 10 }, formatter: v => 'Rp' + (v/1000).toFixed(0) + 'M' }
+      },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => 'Rp' + (v/1000).toFixed(0) + 'M' } } }
+    }
+  });
+
+  // ── Salary by PT Trend Chart ──────────────────────────────────────
+  const pt = DATA.gajiTrendByPT;
+  createChart('chart-gaji-pt', {
+    type: 'bar',
+    data: {
+      labels: pt.months,
+      datasets: [
+        { label: 'PKU',  data: pt.pku,  backgroundColor: '#3b82f6', borderRadius: 3 },
+        { label: 'PRI',  data: pt.pri,  backgroundColor: '#10b981', borderRadius: 3 },
+        { label: 'AMOM', data: pt.amom, backgroundColor: '#f59e0b', borderRadius: 3 },
+        { label: 'APD',  data: pt.apd,  backgroundColor: '#8b5cf6', borderRadius: 3 },
+        { label: 'AMI',  data: pt.ami,  backgroundColor: '#06b6d4', borderRadius: 3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+        datalabels: { display: false }
+      },
+      scales: {
+        x: { stacked: true },
+        y: { stacked: true, ticks: { callback: v => 'Rp' + (v/1000).toFixed(0) + 'M' } }
+      }
+    }
+  });
+
+  // ── PT Entity Breakdown (Juni 2026 detail) + OT Ratio placeholder ──
+  const ptd = DATA.gajiByPT;
+  createChart('chart-ot-analysis', {
+    type: 'doughnut',
+    data: {
+      labels: ptd.entities.map(e => e.name),
+      datasets: [{
+        data: ptd.entities.map(e => e.total),
+        backgroundColor: ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#06b6d4'],
+        borderWidth: 2, borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+        datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 11 },
+          formatter: (v, ctx) => {
+            const total = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+            return ((v/total)*100).toFixed(0) + '%';
+          }
+        }
+      },
+      cutout: '50%'
+    }
+  });
+
+  // ── ROI Summary Table — REAL DATA ────────────────────────────────
   const roiBody = document.getElementById('roi-monthly-tbody');
-  roiBody.innerHTML = MONTH_LABELS.map(m =>
-    `<tr>
+  roiBody.innerHTML = months6.map((m, i) => {
+    const gaji = gaji6M[i];
+    const rev  = rev6M[i];
+    const ratio = ratio6M[i];
+    const incentive = estIncentive[i];
+    const revPerEmp = Math.round(rev / DATA.activeHC);
+    const isActual  = i === 5 ? '<span style="font-size:9px;background:#dcfce7;color:#16a34a;padding:1px 5px;border-radius:10px;">Aktual</span>' : '<span style="font-size:9px;background:#fef9c3;color:#ca8a04;padding:1px 5px;border-radius:10px;">Est.</span>';
+    return `<tr>
       <td><strong>${m}</strong></td>
-      <td colspan="8" style="text-align:center;color:#94a3b8;">Data tidak tersedia · Butuh koneksi ke sheet payroll</td>
-    </tr>`
-  ).join('');
+      <td>Rp ${(gaji/1000).toFixed(2)}M</td>
+      <td>Rp ${(rev/1000).toFixed(2)}M</td>
+      <td><span style="font-weight:700;color:${ratio > 27 ? '#dc2626' : ratio > 25 ? '#f59e0b' : '#16a34a'}">${ratio}%</span></td>
+      <td>Rp ${(incentive/1000).toFixed(2)}M ${isActual}</td>
+      <td style="color:#94a3b8;">—</td>
+      <td style="color:#94a3b8;">—</td>
+      <td style="color:#94a3b8;">—</td>
+      <td>Rp ${(revPerEmp/1000).toFixed(0)}jt</td>
+    </tr>`;
+  }).join('');
 }
 
 function renderCollaboration() {
