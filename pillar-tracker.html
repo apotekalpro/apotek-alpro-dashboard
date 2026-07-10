@@ -199,6 +199,56 @@
         </div>
       </div>
 
+      <!-- AM Full Table -->
+      <div class="section-header flex items-center gap-3 mb-4 mt-8">
+        <i class="fas fa-users text-yellow-300 text-xl"></i>
+        <div>
+          <h2 class="text-lg font-bold">All Area Managers – Full Table</h2>
+          <p class="text-blue-200 text-xs">Search, sort and compare all AM performance</p>
+        </div>
+      </div>
+
+      <div class="filter-bar flex flex-wrap gap-3 mb-4 items-center">
+        <div class="flex items-center gap-2 flex-1 min-w-48">
+          <i class="fas fa-search text-gray-400"></i>
+          <input type="text" id="amSearch" placeholder="Search area manager name..." class="w-full" oninput="amTableRender()">
+        </div>
+        <div class="flex items-center gap-2 text-sm text-gray-500">
+          <i class="fas fa-list-ol text-gray-400"></i>
+          <span id="amTableCount" class="font-medium text-gray-700">— AMs</span>
+        </div>
+      </div>
+
+      <div class="table-wrap bg-white mb-8">
+        <table class="data-table" id="amTable">
+          <thead>
+            <tr>
+              <th colspan="4" class="th-group-info"></th>
+              <th colspan="3" class="th-group-gpo">Pillar 1 – GPO</th>
+              <th colspan="3" class="th-group-mk">Pillar 2 – MK</th>
+              <th colspan="2" class="th-group-rr">Pillar 3 – R.R</th>
+              <th colspan="1" class="th-group-combo">Overall</th>
+            </tr>
+            <tr>
+              <th onclick="amColSort('rank')"   id="amth_rank"   style="width:48px">Rank</th>
+              <th onclick="amColSort('am')"     id="amth_am">Area Manager</th>
+              <th onclick="amColSort('outlets')" id="amth_outlets" style="width:70px">Outlets</th>
+              <th style="width:8px; padding:0; cursor:default;"></th>
+              <th onclick="amColSort('gpo_target')" id="amth_gpo_target" class="th-gpo text-right">Target</th>
+              <th onclick="amColSort('gpo_ach')"    id="amth_gpo_ach"    class="th-gpo text-right">Ach.</th>
+              <th onclick="amColSort('gpo_pct')"    id="amth_gpo_pct"    class="th-gpo">Hit %</th>
+              <th onclick="amColSort('mk_target')"  id="amth_mk_target"  class="th-mk text-right">Target</th>
+              <th onclick="amColSort('mk_ach')"     id="amth_mk_ach"     class="th-mk text-right">Ach.</th>
+              <th onclick="amColSort('mk_pct')"     id="amth_mk_pct"     class="th-mk">Hit %</th>
+              <th onclick="amColSort('rr_avg')"     id="amth_rr_avg"     class="th-rr">Avg Ach%</th>
+              <th onclick="amColSort('rr_valid')"   id="amth_rr_valid"   class="th-rr" style="width:64px">Outlets</th>
+              <th onclick="amColSort('combo')"      id="amth_combo"      class="th-combo">Combined %</th>
+            </tr>
+          </thead>
+          <tbody id="amTableBody"></tbody>
+        </table>
+      </div>
+
       <!-- Outlet Leaderboards by Pillar -->
       <div class="section-header flex items-center gap-3 mb-4">
         <i class="fas fa-store text-yellow-300 text-xl"></i>
@@ -412,6 +462,8 @@ const state = {
   outletColDir: 'desc',
   personalColSort: null,
   personalColDir: 'desc',
+  amColSort: 'combo',
+  amColDir: 'desc',
 };
 
 // ============================================================
@@ -843,6 +895,93 @@ function outletColSort(col) {
 }
 
 // ============================================================
+// AM ALL TABLE
+// ============================================================
+function amTableRender() {
+  const search = (document.getElementById('amSearch')?.value || '').toLowerCase();
+  const colSort = state.amColSort || 'combo';
+  const colDir  = state.amColDir  || 'desc';
+
+  // Build AM list from outletData
+  let amList = computeAMLeaderboard(state.outletData);
+
+  // Assign rank BEFORE filtering (rank = position in sorted list by combo desc)
+  amList.forEach((row, i) => { row._rank = i + 1; });
+
+  // Apply search filter
+  if (search) amList = amList.filter(r => r.am.toLowerCase().includes(search));
+
+  // Column sort
+  const numCols = ['outlets','gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_avg','rr_valid','combo','_rank'];
+  if (colSort) {
+    if (numCols.includes(colSort)) {
+      amList.sort((a,b) => colDir === 'asc' ? (a[colSort]||0)-(b[colSort]||0) : (b[colSort]||0)-(a[colSort]||0));
+    } else {
+      amList.sort((a,b) => {
+        const va = (a[colSort]||'').toLowerCase();
+        const vb = (b[colSort]||'').toLowerCase();
+        return colDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      });
+    }
+  }
+
+  // Reassign display rank = original _rank
+  document.getElementById('amTableCount').textContent = `${amList.length} AMs`;
+
+  // Update sort indicators
+  document.querySelectorAll('[id^="amth_"]').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    const thCol = th.id.replace('amth_','');
+    if (thCol === colSort) th.classList.add(colDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  });
+
+  const tbody = document.getElementById('amTableBody');
+  if (!tbody) return;
+
+  if (!amList.length) {
+    tbody.innerHTML = '<tr><td colspan="13" class="text-center text-gray-400 py-8">No area managers found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = amList.map((r, i) => {
+    // Rank badge style
+    const rank = r._rank;
+    const medalHtml = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `<span class="text-xs font-bold text-gray-500">${rank}</span>`;
+    const rankBg = rank <= 3 ? 'background:#FEF3C7;color:#92400E;' : rank <= 5 ? 'background:#DBEAFE;color:#1D4ED8;' : '';
+
+    return `<tr>
+      <td style="text-align:center;">
+        <span class="rank-badge" style="${rankBg} margin:0 auto;">${medalHtml}</span>
+      </td>
+      <td class="font-semibold text-gray-800 text-sm">${r.am}</td>
+      <td class="text-center text-gray-600 text-xs">
+        <span class="inline-block bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 font-medium">${r.outlets}</span>
+      </td>
+      <td style="width:8px; padding:0;"></td>
+      <td class="text-right td-gpo text-xs text-gray-600">${fmtNum(r.gpo_target)}</td>
+      <td class="text-right text-xs text-gray-600">${fmtNum(r.gpo_ach)}</td>
+      <td class="td-gpo">${pctPill(r.gpo_pct)}</td>
+      <td class="text-right td-mk text-xs text-gray-600">${fmtNum(r.mk_target)}</td>
+      <td class="text-right text-xs text-gray-600">${fmtNum(r.mk_ach)}</td>
+      <td class="td-mk">${pctPill(r.mk_pct)}</td>
+      <td class="td-rr">${pctPill(r.rr_avg)}</td>
+      <td class="text-center text-xs text-gray-500 td-rr">${r.rr_valid}</td>
+      <td class="td-combo">${pctPill(r.combo)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function amColSort(col) {
+  if (state.amColSort === col) {
+    state.amColDir = state.amColDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.amColSort = col;
+    state.amColDir = col === 'am' ? 'asc' : 'desc';
+  }
+  amTableRender();
+}
+
+// ============================================================
 // PERSONAL TABLE
 // ============================================================
 function personalTableRender() {
@@ -1081,6 +1220,9 @@ const pillarTracker = {
 
     // Outlet Pillar LB
     renderOutletPillarLb(state.outletPillar);
+
+    // AM All Table
+    amTableRender();
 
     // Outlet Table
     populateOutletFilters();
