@@ -1,0 +1,101 @@
+{
+  "activeHC": 889,
+  "hqActiveHC": 480,
+  "outletActiveHC": 409,
+  "resigned6M": 189,
+  "resigned12M": 354,
+  "resignedYTD": 193,
+  "newHire6M": 243,
+  "newHire12M": 504,
+  "newHireYTD": 268,
+  "resignMonthly": [
+    22,
+    35,
+    39,
+    35,
+    35,
+    17
+  ],
+  "hireMonthly": [
+    51,
+    24,
+    42,
+    40,
+    50,
+    25
+  ],
+  "hqResigned12M": 203,
+  "outletResigned12M": 151,
+  "newbieTurnover6M": 86,
+  "oldbieTurnover6M": 103,
+  "newbieMonthly": [
+    10,
+    21,
+    17,
+    18,
+    12,
+    6
+  ],
+  "oldbieMonthly": [
+    12,
+    14,
+    22,
+    17,
+    23,
+    11
+  ],
+  "exitInterviewCount": 55,
+  "positionActive": {
+    "HEALTH ADVISOR": 354,
+    "APOTEKER": 238,
+    "TENAGA TEKNIS KEFARMASIAN": 60,
+    "BRANCH MANAGER": 40,
+    "CUSTOMER EXECUTIVE": 18,
+    "SENIOR BRANCH MANAGER": 15,
+    "AREA MANAGER": 14,
+    "WAREHOUSE INTERN": 8,
+    "GENERAL AFFAIR ASSOCIATE": 6,
+    "FINANCE AND ACCOUNTING": 6
+  },
+  "positionResigned12M": {
+    "HEALTH ADVISOR": 130,
+    "APOTEKER": 116,
+    "TENAGA TEKNIS KEFARMASIAN": 30,
+    "SENIOR BRANCH MANAGER": 7,
+    "FINANCE & ACCOUNTING INTERN": 7,
+    "OPERATION EXCELLENCE INTERN": 7,
+    "WAREHOUSE INTERN": 7,
+    "AREA MANAGER": 6,
+    "BRANCH MANAGER": 5,
+    "CUSTOMER EXECUTIVE": 4
+  },
+  "amResigned12M": {
+    "FUNNA ANINDYA": 29,
+    "LINDA NOVAWATI SIHOMBING": 20,
+    "SANNAULI SIAHAAN": 19,
+    "NUR ADE ARYANI": 17,
+    "NARTA LENA GINTING": 17,
+    "LELIANA OKTAVIA SARAGIH": 16,
+    "GENY SARASWATI": 15,
+    "APRIANA LUMBAN GAOL": 14,
+    "ADE IRMA SEPTIANI AIDHA": 14,
+    "BAID SION BR. SINAGA": 14,
+    "AULIALOLA GALUS": 13,
+    "SITI NURLAILA": 13
+  },
+  "resignReasons": {
+    "Manajemen": 30,
+    "Alasan Pribadi": 22,
+    "Lingkungan Kerja": 19,
+    "Pengembangan Karir": 11,
+    "Kompensasi & Benefit": 5
+  },
+  "monthLabels": [
+    "Feb 26",
+    "Mar 26",
+    "Apr 26",
+    "May 26",
+    "Jun 26",
+    "Jul 26"
+  ]
+}
