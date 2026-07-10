@@ -315,7 +315,7 @@ const MONTHS = [
   { key:'apr2026', label:'April 2026',    short:'Apr',  sheet:'April 2026',    active:true  },
   { key:'mei2026', label:'Mei 2026',      short:'Mei',  sheet:'Mei 2026',      active:true  },
   { key:'jun2026', label:'Juni 2026',     short:'Jun',  sheet:'Juni 2026',     active:true  },
-  { key:'jul2026', label:'Juli 2026',     short:'Jul',  sheet:'Juli 2026',     active:false },
+  { key:'jul2026', label:'Juli 2026',     short:'Jul',  sheet:'Juli 2026',     active:true  },
   { key:'ags2026', label:'Agustus 2026',  short:'Ags',  sheet:'Agustus 2026',  active:false },
   { key:'sep2026', label:'September 2026',short:'Sep',  sheet:'September 2026',active:false },
   { key:'okt2026', label:'Oktober 2026',  short:'Okt',  sheet:'Oktober 2026',  active:false },
@@ -360,8 +360,29 @@ function pPct(v) { if (!v) return 0; return parseFloat(v.toString().trim().repla
 const MONTH_NAMES_ID = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-function followerSheetName(monthIndex, year) {
-  return `${MONTH_NAMES_ID[monthIndex]} ${year} Follower`;
+// Some months use 'Follower' (singular), some use 'Followers' (plural)
+// Map each month explicitly; fallback tries both variants
+const FOLLOWER_SHEET_MAP = {
+  // key: month index (1-based) → exact sheet name
+  2:  'Februari 2026 Follower',
+  3:  'Maret 2026 Follower',
+  4:  'April 2026 Follower',
+  5:  'Mei 2026 Follower',
+  6:  'Juni 2026 Follower',
+  7:  'Juli 2026 Followers',   // plural — confirmed from GSheet tab name
+};
+
+function followerSheetCandidates(monthIndex, year) {
+  // Returns array of sheet name candidates to try (known name first, then variants)
+  const known = FOLLOWER_SHEET_MAP[monthIndex];
+  const name  = MONTH_NAMES_ID[monthIndex];
+  const base  = `${name} ${year}`;
+  const candidates = [];
+  if (known) candidates.push(known);
+  // Always add both variants as fallback
+  if (!known || !known.endsWith('Followers')) candidates.push(`${base} Followers`);
+  if (!known || !known.endsWith('r'))         candidates.push(`${base} Follower`);
+  return [...new Set(candidates)];
 }
 
 async function parseFollowerCsv(csv) {
@@ -395,21 +416,26 @@ async function fetchFollowerData() {
   let mo = now.getMonth() + 1; // 1-based
   let yr = now.getFullYear();
 
-  // Try current month first, then fall back up to 3 previous months
-  for (let attempt = 0; attempt < 4; attempt++) {
+  // Try current month first, then fall back up to 4 previous months
+  for (let attempt = 0; attempt < 5; attempt++) {
     let m = mo - attempt;
     let y = yr;
     if (m <= 0) { m += 12; y -= 1; }
-    const sheetName = followerSheetName(m, y);
-    try {
-      const csv = await fetchSheet(sheetName);
-      const lastRow = await parseFollowerCsv(csv);
-      if (lastRow) {
-        return { ...lastRow, igTarget: IG_FOLLOWER_TARGET, sheetName };
+    // Try all name variants for this month (handles 'Follower' vs 'Followers')
+    const candidates = followerSheetCandidates(m, y);
+    for (const sheetName of candidates) {
+      try {
+        const csv = await fetchSheet(sheetName);
+        // Reject if it's the dashboard fallback (sheet doesn't really exist)
+        if (csv.includes('Social Media Performance Dashboard')) continue;
+        const lastRow = await parseFollowerCsv(csv);
+        if (lastRow) {
+          console.log('[Follower] Found data in:', sheetName);
+          return { ...lastRow, igTarget: IG_FOLLOWER_TARGET, sheetName };
+        }
+      } catch(e) {
+        // This variant doesn't exist, try next
       }
-      // Sheet exists but no data rows yet → try previous month
-    } catch(e) {
-      // Sheet doesn't exist → try previous month
     }
   }
   console.warn('No follower data found for current or recent months.');
