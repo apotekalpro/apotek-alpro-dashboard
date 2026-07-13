@@ -471,6 +471,61 @@
                 </div>
             </div>
 
+            <!-- Bank-Specific Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <!-- BCA Statistics -->
+                <div class="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-building text-2xl text-blue-600 mr-3"></i>
+                        <h3 class="font-bold text-blue-800">BCA Reconciliation</h3>
+                    </div>
+                    <div class="text-sm space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Total Records:</span>
+                            <span class="font-bold text-blue-800" id="bca-total-records">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Matched:</span>
+                            <span class="font-bold text-green-600" id="bca-matched-count">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Unmatched:</span>
+                            <span class="font-bold text-red-600" id="bca-unmatched-count">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Match Rate:</span>
+                            <span class="font-bold text-blue-800" id="bca-match-rate">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BRI Statistics -->
+                <div class="p-4 bg-cyan-50 rounded-lg border-2 border-cyan-200">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-university text-2xl text-cyan-600 mr-3"></i>
+                        <h3 class="font-bold text-cyan-800">BRI Reconciliation</h3>
+                    </div>
+                    <div class="text-sm space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Total Records:</span>
+                            <span class="font-bold text-cyan-800" id="bri-total-records">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Matched:</span>
+                            <span class="font-bold text-green-600" id="bri-matched-count">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Unmatched:</span>
+                            <span class="font-bold text-red-600" id="bri-unmatched-count">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Match Rate:</span>
+                            <span class="font-bold text-cyan-800" id="bri-match-rate">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Result Tabs -->
             <div class="flex flex-wrap gap-2 mb-4">
                 <button class="tab-button active" onclick="showResultTab('all')">
@@ -481,6 +536,12 @@
                 </button>
                 <button class="tab-button" onclick="showResultTab('unmatched')">
                     <i class="fas fa-exclamation-circle mr-2"></i>Unmatched
+                </button>
+                <button class="tab-button" onclick="showResultTab('bca')">
+                    <i class="fas fa-building mr-2"></i>BCA Only
+                </button>
+                <button class="tab-button" onclick="showResultTab('bri')">
+                    <i class="fas fa-university mr-2"></i>BRI Only
                 </button>
             </div>
 
@@ -494,6 +555,12 @@
                 </button>
                 <button onclick="exportResults('unmatched')" class="btn-secondary">
                     <i class="fas fa-times mr-2"></i>Export Unmatched
+                </button>
+                <button onclick="exportResults('bca')" class="btn-secondary" style="background: #3b82f6; color: white;">
+                    <i class="fas fa-building mr-2"></i>Export BCA Only
+                </button>
+                <button onclick="exportResults('bri')" class="btn-secondary" style="background: #06b6d4; color: white;">
+                    <i class="fas fa-university mr-2"></i>Export BRI Only
                 </button>
                 <button onclick="exportJournal()" class="btn-secondary" style="background: #10b981; color: white;">
                     <i class="fas fa-file-invoice mr-2"></i>Export Journal
@@ -2537,6 +2604,30 @@
             document.getElementById('unmatched-count').textContent = unmatched;
             document.getElementById('match-rate').textContent = `${matchRate}% (Cash: ${reconciliationStatistics.cashMatchRate}%, Non-Cash: ${reconciliationStatistics.nonCashTotalMatchRate}%, Grand Total: ${reconciliationStatistics.grandTotalMatchRate}%)`;
 
+            // Calculate BCA-specific statistics
+            const bcaResults = [...bcaOnlyResults.cash, ...bcaOnlyResults.nonCash];
+            const bcaTotalRecords = bcaResults.length;
+            const bcaMatched = bcaResults.filter(r => r.status === 'MATCHED').length;
+            const bcaUnmatched = bcaTotalRecords - bcaMatched;
+            const bcaMatchRate = bcaTotalRecords > 0 ? ((bcaMatched / bcaTotalRecords) * 100).toFixed(1) : 0;
+
+            document.getElementById('bca-total-records').textContent = bcaTotalRecords;
+            document.getElementById('bca-matched-count').textContent = bcaMatched;
+            document.getElementById('bca-unmatched-count').textContent = bcaUnmatched;
+            document.getElementById('bca-match-rate').textContent = `${bcaMatchRate}%`;
+
+            // Calculate BRI-specific statistics (NON-CASH only, no CASH in BRI)
+            const briResults = [...briOnlyResults.nonCash];
+            const briTotalRecords = briResults.length;
+            const briMatched = briResults.filter(r => r.status === 'MATCHED').length;
+            const briUnmatched = briTotalRecords - briMatched;
+            const briMatchRate = briTotalRecords > 0 ? ((briMatched / briTotalRecords) * 100).toFixed(1) : 0;
+
+            document.getElementById('bri-total-records').textContent = briTotalRecords;
+            document.getElementById('bri-matched-count').textContent = briMatched;
+            document.getElementById('bri-unmatched-count').textContent = briUnmatched;
+            document.getElementById('bri-match-rate').textContent = `${briMatchRate}%`;
+
             // Update mode banner and fraud alert card
             const modeBanner = document.getElementById('mode-result-banner');
             const modeBannerIcon = document.getElementById('mode-banner-icon');
@@ -2589,13 +2680,25 @@
             const tbody = document.getElementById('results-tbody');
             tbody.innerHTML = '';
 
-            // Combine cash, non-cash, and grand total results
-            let filteredResults = [...cashReconciliationResults, ...nonCashTotalReconciliationResults, ...grandTotalReconciliationResults];
-
-            if (currentTab === 'matched') {
-                filteredResults = filteredResults.filter(r => r.status === 'MATCHED');
-            } else if (currentTab === 'unmatched') {
-                filteredResults = filteredResults.filter(r => r.status !== 'MATCHED');
+            // Select data source based on current tab
+            let filteredResults;
+            
+            if (currentTab === 'bca') {
+                // BCA Only: Use bcaOnlyResults (CASH + NON-CASH)
+                filteredResults = [...bcaOnlyResults.cash, ...bcaOnlyResults.nonCash];
+            } else if (currentTab === 'bri') {
+                // BRI Only: Use briOnlyResults (NON-CASH only, no CASH in BRI)
+                filteredResults = [...briOnlyResults.nonCash];
+            } else {
+                // All, Matched, Unmatched: Use combined results
+                filteredResults = [...cashReconciliationResults, ...nonCashTotalReconciliationResults, ...grandTotalReconciliationResults];
+                
+                // Filter by status
+                if (currentTab === 'matched') {
+                    filteredResults = filteredResults.filter(r => r.status === 'MATCHED');
+                } else if (currentTab === 'unmatched') {
+                    filteredResults = filteredResults.filter(r => r.status !== 'MATCHED');
+                }
             }
 
             if (filteredResults.length === 0) {
@@ -2684,24 +2787,43 @@
                 return;
             }
             
-            // Export all three files
+            // Export based on type
             const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0];
             const yearMonth = new Date().toISOString().substring(0, 7).replace('-', '');
             
-            // Export BCA reconciliation
-            if (bcaOnlyResults.cash.length > 0 || bcaOnlyResults.nonCash.length > 0) {
-                exportReconciliationFile('BCA', bcaOnlyResults, yearMonth, type);
+            if (type === 'bca') {
+                // Export BCA only
+                if (bcaOnlyResults.cash.length > 0 || bcaOnlyResults.nonCash.length > 0) {
+                    exportReconciliationFile('BCA', bcaOnlyResults, yearMonth, 'all');
+                    console.log('Exported BCA reconciliation file');
+                } else {
+                    alert('No BCA data to export');
+                }
+            } else if (type === 'bri') {
+                // Export BRI only
+                if (briOnlyResults.cash.length > 0 || briOnlyResults.nonCash.length > 0) {
+                    exportReconciliationFile('BRI', briOnlyResults, yearMonth, 'all');
+                    console.log('Exported BRI reconciliation file');
+                } else {
+                    alert('No BRI data to export');
+                }
+            } else {
+                // Export all three files (original behavior)
+                // Export BCA reconciliation
+                if (bcaOnlyResults.cash.length > 0 || bcaOnlyResults.nonCash.length > 0) {
+                    exportReconciliationFile('BCA', bcaOnlyResults, yearMonth, type);
+                }
+                
+                // Export BRI reconciliation
+                if (briOnlyResults.cash.length > 0 || briOnlyResults.nonCash.length > 0) {
+                    exportReconciliationFile('BRI', briOnlyResults, yearMonth, type);
+                }
+                
+                // Export COMBINED reconciliation
+                exportReconciliationFile('COMBINED', combinedResults, yearMonth, type);
+                
+                console.log(`Exported reconciliation files for ${type}`);
             }
-            
-            // Export BRI reconciliation
-            if (briOnlyResults.cash.length > 0 || briOnlyResults.nonCash.length > 0) {
-                exportReconciliationFile('BRI', briOnlyResults, yearMonth, type);
-            }
-            
-            // Export COMBINED reconciliation
-            exportReconciliationFile('COMBINED', combinedResults, yearMonth, type);
-            
-            console.log(`Exported reconciliation files for ${type}`);
         }
         
         function exportReconciliationFile(bankName, results, yearMonth, type = 'all') {
