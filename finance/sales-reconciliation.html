@@ -2034,35 +2034,34 @@
                             // PERIOD MODE: Standard matching with 500 tolerance
                             status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
                         } else {
-                            // DAILY MODE: Smart CASH matching with 50rb rounding
-                            // Logic: Round down both ACMM and Bank to nearest 50rb, then check if they match
-                            // This accounts for daily banking OR 2-3 day accumulation patterns
+                            // DAILY MODE: CORRECT CASH matching logic
+                            // Rule: Round down ACMM CASH ONLY to nearest 50rb
+                            // Bank deposit should EXACTLY match the rounded ACMM amount
+                            // Example: ACMM 2,843,500 → rounds to 2,800,000 → Bank MUST be 2,800,000
+                            // NO rounding of bank deposit amount
                             
                             const acmmRounded = roundDownTo50k(acmmCashTotal);
-                            const bankRounded = roundDownTo50k(bcaCashTotal);
-                            const roundedDiff = Math.abs(bankRounded - acmmRounded);
                             
-                            // Check if rounded amounts match (within 50rb tolerance for multi-day banking)
-                            // Allow up to 3x 50rb = 150k variance for 2-3 day banking patterns
-                            const maxAccumulationVariance = 150000; // 3 days * 50rb
-                            
-                            if (roundedDiff <= maxAccumulationVariance) {
-                                // Rounded amounts match - CASH is properly banked (daily, 2-day, or 3-day pattern)
+                            // Bank should EXACTLY equal the rounded ACMM (no rounding of bank)
+                            if (bcaCashTotal === acmmRounded) {
+                                // Perfect match - outlet banked the correct rounded amount
                                 status = 'MATCHED';
-                                
-                                // Log banking pattern if detected
-                                if (roundedDiff > 50000 && roundedDiff <= 100000) {
-                                    console.log(`💡 ${outletCode}: Possible 2-day banking pattern detected (variance: ${roundedDiff.toFixed(0)})`);
-                                } else if (roundedDiff > 100000 && roundedDiff <= 150000) {
-                                    console.log(`💡 ${outletCode}: Possible 3-day banking pattern detected (variance: ${roundedDiff.toFixed(0)})`);
-                                }
                             } else {
-                                // Rounded amounts don't match - potential fraud/missout
+                                // Bank doesn't match the rounded ACMM
+                                // TODO: Implement multi-day banking accumulation logic
+                                // - Detect if outlet has no bank-in for next 1-2 days
+                                // - Accumulate 2-3 days of bank deposits (no rounding)
+                                // - Sum 2-3 days of ACMM CASH, THEN round down the total
+                                // - Compare accumulated bank vs rounded accumulated ACMM
+                                // - If still no match after 3 days → FRAUD_ALERT
+                                
+                                // For now: Flag as fraud alert (multi-day accumulation not yet implemented)
                                 status = 'FRAUD_ALERT';
                                 fraudAlert = true;
                                 
                                 // Log for investigation
-                                console.log(`🚨 ${outletCode} CASH FRAUD ALERT: ACMM ${acmmRounded.toFixed(0)}, Bank ${bankRounded.toFixed(0)}, Diff ${roundedDiff.toFixed(0)}`);
+                                const variance = bcaCashTotal - acmmRounded;
+                                console.log(`🚨 ${outletCode} CASH FRAUD ALERT: ACMM ${acmmCashTotal.toFixed(2)} → Rounded ${acmmRounded.toFixed(0)}, Bank ${bcaCashTotal.toFixed(0)}, Variance ${variance.toFixed(0)}`);
                             }
                             
                             // Additional check: Very large variance is always fraud
