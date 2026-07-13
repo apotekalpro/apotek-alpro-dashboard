@@ -328,61 +328,42 @@
             </div>
         </div>
 
-        <!-- Matching Mode Selection -->
+        <!-- Matching Info -->
         <div class="card">
             <h2 class="text-xl font-bold text-gray-800 mb-4">
-                <i class="fas fa-cog mr-2 text-indigo-600"></i>
-                Matching Mode Configuration
+                <i class="fas fa-info-circle mr-2 text-indigo-600"></i>
+                Dual Mode Reconciliation
             </h2>
             <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-indigo-200">
-                <label class="block text-sm font-semibold text-gray-700 mb-3">
-                    Select Reconciliation Mode:
-                </label>
-                <div class="space-y-3">
-                    <!-- Period Matching Mode -->
-                    <label class="flex items-start p-4 bg-white rounded-lg border-2 cursor-pointer transition-all hover:border-indigo-400" 
-                           onclick="setMatchingMode('period')" id="mode-period-label">
-                        <input type="radio" name="matching-mode" value="period" id="mode-period" checked 
-                               class="mt-1 mr-3" onchange="updateModeDescription()">
-                        <div class="flex-1">
-                            <div class="font-bold text-gray-800 mb-1">
-                                <i class="fas fa-calendar-check mr-2 text-green-600"></i>
-                                Period Matching (Full Reconciliation)
-                            </div>
-                            <p class="text-sm text-gray-600">
-                                Full accuracy mode for final reconciliation. Matches 100% of amounts across entire uploaded period. 
-                                Includes manual bank-in corrections. Best for monthly/weekly closing.
-                            </p>
+                <p class="text-sm text-gray-700 mb-3">
+                    The system will automatically generate <strong>TWO separate reports</strong> for comprehensive analysis:
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Period Mode Info -->
+                    <div class="p-3 bg-white rounded-lg border-2 border-green-400">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-calendar-check text-xl text-green-600 mr-2"></i>
+                            <h3 class="font-bold text-green-800">Period Matching</h3>
                         </div>
-                    </label>
+                        <ul class="text-xs text-gray-600 space-y-1">
+                            <li>✅ 100% accuracy matching</li>
+                            <li>✅ Includes manual bank-in</li>
+                            <li>✅ For monthly/weekly closing</li>
+                        </ul>
+                    </div>
                     
-                    <!-- Daily Matching Mode -->
-                    <label class="flex items-start p-4 bg-white rounded-lg border-2 cursor-pointer transition-all hover:border-indigo-400" 
-                           onclick="setMatchingMode('daily')" id="mode-daily-label">
-                        <input type="radio" name="matching-mode" value="daily" id="mode-daily" 
-                               class="mt-1 mr-3" onchange="updateModeDescription()">
-                        <div class="flex-1">
-                            <div class="font-bold text-gray-800 mb-1">
-                                <i class="fas fa-shield-alt mr-2 text-yellow-600"></i>
-                                Daily Matching (Fraud Detection)
-                            </div>
-                            <p class="text-sm text-gray-600">
-                                Early warning mode for fraud/missout detection. Excludes manual bank-in. 
-                                CASH: 95% tolerance, NON-CASH: 100% match required. H-1 daily tracking. Best for daily monitoring.
-                            </p>
+                    <!-- Daily Mode Info -->
+                    <div class="p-3 bg-white rounded-lg border-2 border-yellow-400">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-shield-alt text-xl text-yellow-600 mr-2"></i>
+                            <h3 class="font-bold text-yellow-800">Daily Matching (Fraud Detection)</h3>
                         </div>
-                    </label>
-                </div>
-                
-                <!-- Mode Details -->
-                <div class="mt-4 p-3 bg-white rounded-lg border border-gray-300" id="mode-details">
-                    <div class="text-sm">
-                        <p class="font-semibold text-gray-700 mb-2">📋 Current Mode: <span id="current-mode-name">Period Matching</span></p>
-                        <ul class="list-disc list-inside space-y-1 text-gray-600" id="mode-features">
-                            <li>Matches full period amounts (100% accuracy)</li>
-                            <li>Includes manual bank-in transactions</li>
-                            <li>BCA standard amount parsing</li>
-                            <li>Suitable for final reconciliation reports</li>
+                        <ul class="text-xs text-gray-600 space-y-1">
+                            <li>🔽 Round-down to 50rb (ACMM + Bank)</li>
+                            <li>✅ CASH: Exact match after rounding</li>
+                            <li>✅ Allows 2-3 day banking patterns</li>
+                            <li>🚨 NON-CASH: 100% match required</li>
+                            <li>🚫 Excludes manual bank-in</li>
                         </ul>
                     </div>
                 </div>
@@ -526,6 +507,16 @@
                 </div>
             </div>
 
+            <!-- Mode Selection Tabs -->
+            <div class="flex flex-wrap gap-2 mb-4 pb-4 border-b-2 border-gray-300">
+                <button class="tab-button active" onclick="switchViewMode('period')" id="view-mode-period">
+                    <i class="fas fa-calendar-check mr-2"></i>📋 Period Mode (Full)
+                </button>
+                <button class="tab-button" onclick="switchViewMode('daily')" id="view-mode-daily">
+                    <i class="fas fa-shield-alt mr-2"></i>🚨 Daily Mode (Fraud)
+                </button>
+            </div>
+
             <!-- Result Tabs -->
             <div class="flex flex-wrap gap-2 mb-4">
                 <button class="tab-button active" onclick="showResultTab('all')">
@@ -547,8 +538,11 @@
 
             <!-- Export Buttons -->
             <div class="flex flex-wrap gap-2 mb-4">
-                <button onclick="exportResults('all')" class="btn-secondary">
-                    <i class="fas fa-download mr-2"></i>Export All Reconciliation
+                <button onclick="exportCurrentMode('all')" class="btn-secondary">
+                    <i class="fas fa-download mr-2"></i>Export Current View
+                </button>
+                <button onclick="exportBothModes()" class="btn-secondary" style="background: #7c3aed; color: white;">
+                    <i class="fas fa-download mr-2"></i>Export Both Modes (Period + Daily)
                 </button>
                 <button onclick="exportResults('matched')" class="btn-secondary">
                     <i class="fas fa-check mr-2"></i>Export Matched
@@ -1442,17 +1436,41 @@
         // WEEKLY AGGREGATION AND MATCHING FUNCTIONS
         // ============================================================================
         
-        // Global variables for weekly results
+        // Global variables for weekly results - DUAL MODE (Period + Daily)
+        let periodResults = {
+            cash: [],
+            nonCash: [],
+            grandTotal: [],
+            bcaOnly: { cash: [], nonCash: [], grandTotal: [] },
+            briOnly: { cash: [], nonCash: [], grandTotal: [] },
+            combined: { cash: [], nonCash: [], grandTotal: [] },
+            statistics: {}
+        };
+        
+        let dailyResults = {
+            cash: [],
+            nonCash: [],
+            grandTotal: [],
+            bcaOnly: { cash: [], nonCash: [], grandTotal: [] },
+            briOnly: { cash: [], nonCash: [], grandTotal: [] },
+            combined: { cash: [], nonCash: [], grandTotal: [] },
+            statistics: {}
+        };
+        
+        // For backward compatibility (defaults to Period mode results)
         let cashReconciliationResults = [];
         let nonCashReconciliationResults = [];
         let nonCashTotalReconciliationResults = [];
-        let grandTotalReconciliationResults = [];  // NEW: Grand total (CASH + NON-CASH)
+        let grandTotalReconciliationResults = [];
         let bcaOnlyResults = { cash: [], nonCash: [], grandTotal: [] };
         let briOnlyResults = { cash: [], nonCash: [], grandTotal: [] };
         let combinedResults = { cash: [], nonCash: [], grandTotal: [] };
         let pettyCashResults = [];
         let exceptionsResults = [];
         let reconciliationStatistics = {};
+        
+        // Current viewing mode
+        let currentViewMode = 'period'; // 'period' or 'daily'
         
         function aggregateACMMByWeek(pivotMap) {
             const weeklyACMM = new Map();
@@ -2016,22 +2034,41 @@
                             // PERIOD MODE: Standard matching with 500 tolerance
                             status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
                         } else {
-                            // DAILY MODE: 95% tolerance for CASH (fraud detection)
-                            const matchPercentage = (bcaCashTotal / acmmCashTotal) * 100;
-                            const reverseMatchPercentage = (acmmCashTotal / bcaCashTotal) * 100;
-                            const bestMatch = Math.max(matchPercentage, reverseMatchPercentage);
+                            // DAILY MODE: CORRECT CASH matching logic
+                            // Rule: Round down ACMM CASH ONLY to nearest 50rb
+                            // Bank deposit should EXACTLY match the rounded ACMM amount
+                            // Example: ACMM 2,843,500 → rounds to 2,800,000 → Bank MUST be 2,800,000
+                            // NO rounding of bank deposit amount
                             
-                            // 95% tolerance: If bank deposit is >= 95% of ACMM, it's acceptable
-                            if (bestMatch >= 95) {
+                            const acmmRounded = roundDownTo50k(acmmCashTotal);
+                            
+                            // Bank should EXACTLY equal the rounded ACMM (no rounding of bank)
+                            if (bcaCashTotal === acmmRounded) {
+                                // Perfect match - outlet banked the correct rounded amount
                                 status = 'MATCHED';
                             } else {
+                                // Bank doesn't match the rounded ACMM
+                                // TODO: Implement multi-day banking accumulation logic
+                                // - Detect if outlet has no bank-in for next 1-2 days
+                                // - Accumulate 2-3 days of bank deposits (no rounding)
+                                // - Sum 2-3 days of ACMM CASH, THEN round down the total
+                                // - Compare accumulated bank vs rounded accumulated ACMM
+                                // - If still no match after 3 days → FRAUD_ALERT
+                                
+                                // For now: Flag as fraud alert (multi-day accumulation not yet implemented)
                                 status = 'FRAUD_ALERT';
                                 fraudAlert = true;
+                                
+                                // Log for investigation
+                                const variance = bcaCashTotal - acmmRounded;
+                                console.log(`🚨 ${outletCode} CASH FRAUD ALERT: ACMM ${acmmCashTotal.toFixed(2)} → Rounded ${acmmRounded.toFixed(0)}, Bank ${bcaCashTotal.toFixed(0)}, Variance ${variance.toFixed(0)}`);
                             }
                             
-                            // Flag for review if variance is large (potential fraud/missout)
-                            if (Math.abs(difference) > 1000000) { // > 1M variance
+                            // Additional check: Very large variance is always fraud
+                            if (Math.abs(difference) > 5000000) { // > 5M variance (excessive)
+                                status = 'FRAUD_ALERT';
                                 fraudAlert = true;
+                                console.log(`🚨 ${outletCode} EXCESSIVE VARIANCE: ${difference.toFixed(0)}`);
                             }
                         }
                     } else if (acmmCashTotal === 0) {
@@ -2151,15 +2188,17 @@
                         } else {
                             // DAILY MODE: 100% match required for NON-CASH (fraud detection)
                             // Non-cash (QRIS/CC/DC) should match exactly (with small rounding tolerance)
-                            if (Math.abs(difference) <= 10) {
-                                status = 'MATCHED';
-                            } else {
+                            
+                            // Check for large variance first
+                            if (Math.abs(difference) > 100000) { // > 100K variance
                                 status = 'FRAUD_ALERT';
                                 fraudAlert = true;
                             }
-                            
-                            // Flag significant discrepancies for review
-                            if (Math.abs(difference) > 100000) { // > 100K variance
+                            // Then check exact match tolerance
+                            else if (Math.abs(difference) <= 10) {
+                                status = 'MATCHED';
+                            } else {
+                                status = 'FRAUD_ALERT';
                                 fraudAlert = true;
                             }
                         }
@@ -2536,27 +2575,85 @@
                     briWeekly = aggregateBRIByWeek(briData, lookups, referenceYear);
                 }
                 
-                document.getElementById('processing-text').textContent = 'Performing weekly matching...';
+                // ============================================================================
+                // RUN MODE 1: PERIOD MATCHING (Full Reconciliation)
+                // ============================================================================
+                document.getElementById('processing-text').textContent = 'Running Period Matching (Full Reconciliation)...';
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
-                const matchResults = matchWeeklyData(acmmWeekly, bcaWeekly, briWeekly, pivotMap, lookups);
+                matchingMode = 'period';
+                console.log('\n🟢 ========== PERIOD MODE (Full Reconciliation) ==========');
                 
-                cashReconciliationResults = matchResults.cashResults;
-                nonCashTotalReconciliationResults = matchResults.nonCashTotalResults;
-                grandTotalReconciliationResults = matchResults.grandTotalResults;  // NEW
-                reconciliationStatistics = matchResults.statistics;
+                const periodMatchResults = matchWeeklyData(acmmWeekly, bcaWeekly, briWeekly, pivotMap, lookups);
                 
-                // Separate results by bank for individual reports
-                const separated = separateResultsByBank(
-                    cashReconciliationResults, 
-                    nonCashTotalReconciliationResults,
-                    grandTotalReconciliationResults,  // NEW
+                periodResults.cash = periodMatchResults.cashResults;
+                periodResults.nonCash = periodMatchResults.nonCashTotalResults;
+                periodResults.grandTotal = periodMatchResults.grandTotalResults;
+                periodResults.statistics = periodMatchResults.statistics;
+                
+                const periodSeparated = separateResultsByBank(
+                    periodResults.cash,
+                    periodResults.nonCash,
+                    periodResults.grandTotal,
                     bcaWeekly,
                     briWeekly
                 );
-                bcaOnlyResults = separated.bcaOnly;
-                briOnlyResults = separated.briOnly;
-                combinedResults = separated.combined;
+                periodResults.bcaOnly = periodSeparated.bcaOnly;
+                periodResults.briOnly = periodSeparated.briOnly;
+                periodResults.combined = periodSeparated.combined;
+                
+                console.log(`✅ Period Mode: ${periodResults.cash.length} CASH, ${periodResults.nonCash.length} NON-CASH`);
+                
+                // ============================================================================
+                // RUN MODE 2: DAILY MATCHING (Fraud Detection)
+                // ============================================================================
+                document.getElementById('processing-text').textContent = 'Running Daily Matching (Fraud Detection)...';
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                matchingMode = 'daily';
+                console.log('\n🟡 ========== DAILY MODE (Fraud Detection) ==========');
+                
+                // Re-aggregate BCA with daily mode (excludes manual bank-in, round-down)
+                let bcaWeeklyDaily = null;
+                if (bcaData) {
+                    bcaWeeklyDaily = aggregateBCAByWeek(bcaData, lookups, referenceYear);
+                } else {
+                    bcaWeeklyDaily = { weeklyBCA: new Map(), weeklySummary: new Map() };
+                }
+                
+                const dailyMatchResults = matchWeeklyData(acmmWeekly, bcaWeeklyDaily, briWeekly, pivotMap, lookups);
+                
+                dailyResults.cash = dailyMatchResults.cashResults;
+                dailyResults.nonCash = dailyMatchResults.nonCashTotalResults;
+                dailyResults.grandTotal = dailyMatchResults.grandTotalResults;
+                dailyResults.statistics = dailyMatchResults.statistics;
+                
+                const dailySeparated = separateResultsByBank(
+                    dailyResults.cash,
+                    dailyResults.nonCash,
+                    dailyResults.grandTotal,
+                    bcaWeeklyDaily,
+                    briWeekly
+                );
+                dailyResults.bcaOnly = dailySeparated.bcaOnly;
+                dailyResults.briOnly = dailySeparated.briOnly;
+                dailyResults.combined = dailySeparated.combined;
+                
+                console.log(`✅ Daily Mode: ${dailyResults.cash.length} CASH, ${dailyResults.nonCash.length} NON-CASH`);
+                
+                // Count fraud alerts in daily mode
+                const fraudAlerts = [...dailyResults.cash, ...dailyResults.nonCash].filter(r => r.fraudAlert === true);
+                console.log(`🚨 Daily Mode: ${fraudAlerts.length} fraud alerts detected`);
+                
+                // Set default view to Period mode
+                currentViewMode = 'period';
+                cashReconciliationResults = periodResults.cash;
+                nonCashTotalReconciliationResults = periodResults.nonCash;
+                grandTotalReconciliationResults = periodResults.grandTotal;
+                bcaOnlyResults = periodResults.bcaOnly;
+                briOnlyResults = periodResults.briOnly;
+                combinedResults = periodResults.combined;
+                reconciliationStatistics = periodResults.statistics;
                 
                 // Store petty cash results and exceptions if BRI data exists
                 if (briWeekly && briWeekly.pettyCashTransactions) {
@@ -2628,13 +2725,13 @@
             document.getElementById('bri-unmatched-count').textContent = briUnmatched;
             document.getElementById('bri-match-rate').textContent = `${briMatchRate}%`;
 
-            // Update mode banner and fraud alert card
+            // Update mode banner and fraud alert card based on current VIEW mode
             const modeBanner = document.getElementById('mode-result-banner');
             const modeBannerIcon = document.getElementById('mode-banner-icon');
             const modeBannerTitle = document.getElementById('mode-banner-title');
             const modeBannerDescription = document.getElementById('mode-banner-description');
             
-            if (matchingMode === 'daily') {
+            if (currentViewMode === 'daily') {
                 const fraudAlerts = [...cashReconciliationResults, ...nonCashTotalReconciliationResults]
                     .filter(r => r.fraudAlert === true);
                 
@@ -2646,8 +2743,8 @@
                 modeBannerIcon.className = 'fas fa-shield-alt text-2xl mr-3 mt-1 text-yellow-600';
                 modeBannerTitle.textContent = '🛡️ Daily Matching Mode (Fraud Detection)';
                 modeBannerDescription.innerHTML = `
-                    <strong>Active Configuration:</strong> Manual bank-in excluded • ATM amounts rounded to nearest 50rb • 
-                    CASH: 95% tolerance • NON-CASH: 100% match required • 
+                    <strong>Active Configuration:</strong> Manual bank-in excluded • Both ACMM & Bank rounded to 50rb • 
+                    CASH: Exact match after rounding (allows 2-3 day banking) • NON-CASH: 100% match required • 
                     ${fraudAlerts.length > 0 ? `<span class="text-red-600 font-bold">⚠️ ${fraudAlerts.length} fraud alert(s) detected!</span>` : '<span class="text-green-600 font-bold">✓ No fraud alerts</span>'}
                 `;
                 
@@ -2766,12 +2863,47 @@
             });
         }
 
+        // Switch between Period and Daily view modes
+        function switchViewMode(mode) {
+            currentViewMode = mode;
+            
+            // Update mode tab buttons
+            document.getElementById('view-mode-period').classList.remove('active');
+            document.getElementById('view-mode-daily').classList.remove('active');
+            document.getElementById(`view-mode-${mode}`).classList.add('active');
+            
+            // Load appropriate results
+            if (mode === 'period') {
+                cashReconciliationResults = periodResults.cash;
+                nonCashTotalReconciliationResults = periodResults.nonCash;
+                grandTotalReconciliationResults = periodResults.grandTotal;
+                bcaOnlyResults = periodResults.bcaOnly;
+                briOnlyResults = periodResults.briOnly;
+                combinedResults = periodResults.combined;
+                reconciliationStatistics = periodResults.statistics;
+                console.log('📋 Switched to Period Mode view');
+            } else {
+                cashReconciliationResults = dailyResults.cash;
+                nonCashTotalReconciliationResults = dailyResults.nonCash;
+                grandTotalReconciliationResults = dailyResults.grandTotal;
+                bcaOnlyResults = dailyResults.bcaOnly;
+                briOnlyResults = dailyResults.briOnly;
+                combinedResults = dailyResults.combined;
+                reconciliationStatistics = dailyResults.statistics;
+                console.log('🚨 Switched to Daily Mode view');
+            }
+            
+            // Refresh display
+            displayResults();
+        }
+        
         // Show specific result tab
         function showResultTab(tab) {
             currentTab = tab;
             
-            // Update tab buttons
-            document.querySelectorAll('.tab-button').forEach(btn => {
+            // Update tab buttons (only result tabs, not mode tabs)
+            const resultTabs = document.querySelectorAll('.tab-button:not([id^="view-mode"])');
+            resultTabs.forEach(btn => {
                 btn.classList.remove('active');
             });
             event.target.classList.add('active');
@@ -2780,6 +2912,41 @@
             updateResultsTable();
         }
 
+        // Export current view mode
+        function exportCurrentMode(type = 'all') {
+            const modeLabel = currentViewMode === 'period' ? 'PERIOD' : 'DAILY';
+            console.log(`Exporting ${modeLabel} mode results`);
+            exportResults(type);
+        }
+        
+        // Export both Period and Daily modes
+        function exportBothModes() {
+            const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0];
+            const yearMonth = new Date().toISOString().substring(0, 7).replace('-', '');
+            
+            console.log('📋 Exporting PERIOD MODE results...');
+            // Export Period mode
+            if (periodResults.bcaOnly.cash.length > 0 || periodResults.bcaOnly.nonCash.length > 0) {
+                exportReconciliationFile('BCA_PERIOD', periodResults.bcaOnly, yearMonth, 'all');
+            }
+            if (periodResults.briOnly.cash.length > 0 || periodResults.briOnly.nonCash.length > 0) {
+                exportReconciliationFile('BRI_PERIOD', periodResults.briOnly, yearMonth, 'all');
+            }
+            exportReconciliationFile('COMBINED_PERIOD', periodResults.combined, yearMonth, 'all');
+            
+            console.log('🚨 Exporting DAILY MODE results...');
+            // Export Daily mode
+            if (dailyResults.bcaOnly.cash.length > 0 || dailyResults.bcaOnly.nonCash.length > 0) {
+                exportReconciliationFile('BCA_DAILY', dailyResults.bcaOnly, yearMonth, 'all');
+            }
+            if (dailyResults.briOnly.cash.length > 0 || dailyResults.briOnly.nonCash.length > 0) {
+                exportReconciliationFile('BRI_DAILY', dailyResults.briOnly, yearMonth, 'all');
+            }
+            exportReconciliationFile('COMBINED_DAILY', dailyResults.combined, yearMonth, 'all');
+            
+            alert('✅ Exported 6 files:\n\n📋 Period Mode (3 files):\n- BCA_PERIOD\n- BRI_PERIOD\n- COMBINED_PERIOD\n\n🚨 Daily Mode (3 files):\n- BCA_DAILY\n- BRI_DAILY\n- COMBINED_DAILY');
+        }
+        
         // Export results to Excel - DUAL SHEET VERSION
         function exportResults(type = 'all') {
             if (cashReconciliationResults.length === 0 && nonCashTotalReconciliationResults.length === 0) {
