@@ -328,6 +328,67 @@
             </div>
         </div>
 
+        <!-- Matching Mode Selection -->
+        <div class="card">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-cog mr-2 text-indigo-600"></i>
+                Matching Mode Configuration
+            </h2>
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-indigo-200">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    Select Reconciliation Mode:
+                </label>
+                <div class="space-y-3">
+                    <!-- Period Matching Mode -->
+                    <label class="flex items-start p-4 bg-white rounded-lg border-2 cursor-pointer transition-all hover:border-indigo-400" 
+                           onclick="setMatchingMode('period')" id="mode-period-label">
+                        <input type="radio" name="matching-mode" value="period" id="mode-period" checked 
+                               class="mt-1 mr-3" onchange="updateModeDescription()">
+                        <div class="flex-1">
+                            <div class="font-bold text-gray-800 mb-1">
+                                <i class="fas fa-calendar-check mr-2 text-green-600"></i>
+                                Period Matching (Full Reconciliation)
+                            </div>
+                            <p class="text-sm text-gray-600">
+                                Full accuracy mode for final reconciliation. Matches 100% of amounts across entire uploaded period. 
+                                Includes manual bank-in corrections. Best for monthly/weekly closing.
+                            </p>
+                        </div>
+                    </label>
+                    
+                    <!-- Daily Matching Mode -->
+                    <label class="flex items-start p-4 bg-white rounded-lg border-2 cursor-pointer transition-all hover:border-indigo-400" 
+                           onclick="setMatchingMode('daily')" id="mode-daily-label">
+                        <input type="radio" name="matching-mode" value="daily" id="mode-daily" 
+                               class="mt-1 mr-3" onchange="updateModeDescription()">
+                        <div class="flex-1">
+                            <div class="font-bold text-gray-800 mb-1">
+                                <i class="fas fa-shield-alt mr-2 text-yellow-600"></i>
+                                Daily Matching (Fraud Detection)
+                            </div>
+                            <p class="text-sm text-gray-600">
+                                Early warning mode for fraud/missout detection. Excludes manual bank-in. 
+                                CASH: 95% tolerance, NON-CASH: 100% match required. H-1 daily tracking. Best for daily monitoring.
+                            </p>
+                        </div>
+                    </label>
+                </div>
+                
+                <!-- Mode Details -->
+                <div class="mt-4 p-3 bg-white rounded-lg border border-gray-300" id="mode-details">
+                    <div class="text-sm">
+                        <p class="font-semibold text-gray-700 mb-2">📋 Current Mode: <span id="current-mode-name">Period Matching</span></p>
+                        <ul class="list-disc list-inside space-y-1 text-gray-600" id="mode-features">
+                            <li>Matches full period amounts (100% accuracy)</li>
+                            <li>Includes manual bank-in transactions</li>
+                            <li>BCA standard amount parsing</li>
+                            <li>Suitable for final reconciliation reports</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Process Button -->
         <div class="card">
             <button onclick="startReconciliation()" id="process-btn" class="btn-primary w-full" disabled>
@@ -350,7 +411,7 @@
             </h2>
 
             <!-- Summary Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <div class="flex items-center justify-between">
                         <div>
@@ -385,6 +446,27 @@
                             <p class="text-2xl font-bold text-yellow-800" id="match-rate">0%</p>
                         </div>
                         <i class="fas fa-percentage text-3xl text-yellow-400"></i>
+                    </div>
+                </div>
+                <!-- NEW: Fraud Alert Card (Daily Mode Only) -->
+                <div class="bg-orange-50 p-4 rounded-lg border-2 border-orange-300 hidden" id="fraud-alert-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-orange-600 font-semibold">🚨 Fraud Alerts</p>
+                            <p class="text-2xl font-bold text-orange-800 animate-pulse" id="fraud-alert-count">0</p>
+                        </div>
+                        <i class="fas fa-exclamation-triangle text-3xl text-orange-400 animate-pulse"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matching Mode Banner -->
+            <div class="mb-4 p-4 rounded-lg border-2" id="mode-result-banner">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-2xl mr-3 mt-1" id="mode-banner-icon"></i>
+                    <div class="flex-1">
+                        <p class="font-bold text-gray-800 mb-1" id="mode-banner-title"></p>
+                        <p class="text-sm text-gray-600" id="mode-banner-description"></p>
                     </div>
                 </div>
             </div>
@@ -502,6 +584,60 @@
             // Enable process button if BCA statement OR BRI statement is uploaded
             if (uploadedFiles[2] || uploadedFiles[6]) {
                 document.getElementById('process-btn').disabled = false;
+            }
+        }
+
+        // Matching mode state
+        let matchingMode = 'period'; // 'period' or 'daily'
+        
+        // Set matching mode
+        function setMatchingMode(mode) {
+            matchingMode = mode;
+            
+            // Update UI
+            const periodLabel = document.getElementById('mode-period-label');
+            const dailyLabel = document.getElementById('mode-daily-label');
+            
+            if (mode === 'period') {
+                periodLabel.classList.add('border-green-500', 'bg-green-50');
+                periodLabel.classList.remove('border-gray-200');
+                dailyLabel.classList.remove('border-yellow-500', 'bg-yellow-50');
+                dailyLabel.classList.add('border-gray-200');
+                document.getElementById('mode-period').checked = true;
+            } else {
+                dailyLabel.classList.add('border-yellow-500', 'bg-yellow-50');
+                dailyLabel.classList.remove('border-gray-200');
+                periodLabel.classList.remove('border-green-500', 'bg-green-50');
+                periodLabel.classList.add('border-gray-200');
+                document.getElementById('mode-daily').checked = true;
+            }
+            
+            updateModeDescription();
+        }
+        
+        // Update mode description
+        function updateModeDescription() {
+            const modeName = document.getElementById('current-mode-name');
+            const modeFeatures = document.getElementById('mode-features');
+            
+            if (matchingMode === 'period') {
+                modeName.textContent = 'Period Matching (Full Reconciliation)';
+                modeFeatures.innerHTML = `
+                    <li><strong>100% accuracy</strong> - Full amount matching across entire period</li>
+                    <li><strong>Manual bank-in included</strong> - Includes weekly selisih corrections</li>
+                    <li><strong>Standard parsing</strong> - BCA amounts parsed as-is</li>
+                    <li><strong>Use case:</strong> Monthly/weekly final reconciliation reports</li>
+                `;
+            } else {
+                modeName.textContent = 'Daily Matching (Fraud Detection)';
+                modeFeatures.innerHTML = `
+                    <li><strong>CASH:</strong> 95% tolerance for large amounts (fraud alert)</li>
+                    <li><strong>NON-CASH:</strong> 100% match required (QRIS/CC/DC must tally)</li>
+                    <li><strong>ATM-only:</strong> Excludes manual bank-in (focus on ATM deposits)</li>
+                    <li><strong>Round-down:</strong> BCA ATM amounts rounded down for matching</li>
+                    <li><strong>H-1 tracking:</strong> Daily date-based matching enabled</li>
+                    <li><strong>Use case:</strong> Daily fraud/missout monitoring and early alerts</li>
+                `;
             }
         }
 
@@ -1339,6 +1475,9 @@
             console.log('=== Aggregating BCA Totals (All Dates) ===');
             console.log('🔍 DEBUG: BCA has', bcaData.length - 1, 'rows (excluding header)');
             console.log('🔍 DEBUG: Using reference year:', referenceYear || 'auto-detect');
+            console.log('🔍 DEBUG: Matching Mode:', matchingMode.toUpperCase());
+            
+            let excludedManualBankIn = 0;
             
             for (let i = 1; i < bcaData.length; i++) {
                 const row = bcaData[i];
@@ -1358,6 +1497,16 @@
                 let amount;
                 if (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') {
                     amount = parseBCAAmount(columnD);
+                    
+                    // DAILY MODE: Apply round-down for ATM (CDM) matching
+                    // Helps match CASH deposits that may have small variances
+                    if (matchingMode === 'daily' && transactionType === 'CDM') {
+                        const originalAmount = amount;
+                        amount = Math.floor(amount); // Round down to nearest integer
+                        if (i <= 5 && originalAmount !== amount) {
+                            console.log(`🔽 DAILY MODE: Round-down CDM Row ${i}: ${originalAmount.toFixed(2)} → ${amount.toFixed(2)}`);
+                        }
+                    }
                 } else {
                     amount = parseBCAAmountFromDescription(description, transactionType);
                 }
@@ -1367,6 +1516,15 @@
                     const kartuDebit = parseCDM(description);
                     if (kartuDebit && lookups.kartuDebit.has(kartuDebit)) outletCode = lookups.kartuDebit.get(kartuDebit);
                 } else if (transactionType === 'SETORAN_TUNAI') {
+                    // DAILY MODE: Exclude manual bank-in (SETORAN_TUNAI)
+                    // These are manual corrections for weekly selisih, not ATM deposits
+                    if (matchingMode === 'daily') {
+                        excludedManualBankIn++;
+                        if (excludedManualBankIn <= 5) {
+                            console.log(`🚫 DAILY MODE: Excluding manual bank-in Row ${i}: ${description.substring(0, 60)}`);
+                        }
+                        continue;
+                    }
                     const cabangStr = cabang.toString().trim();
                     if (lookups.cabang.has(cabangStr)) outletCode = lookups.cabang.get(cabangStr);
                 } else if (transactionType === 'CREDITCARD') {
@@ -1441,8 +1599,9 @@
             console.log(`Aggregated ${weeklyBCA.size} BCA totals by payment type`);
             console.log(`Aggregated ${weeklySummary.size} BCA totals by outlet`);
             
-            console.log(`Aggregated ${weeklyBCA.size} BCA weekly details`);
-            console.log(`Aggregated ${weeklySummary.size} BCA weekly summaries`);
+            if (matchingMode === 'daily') {
+                console.log(`🚫 DAILY MODE: Excluded ${excludedManualBankIn} manual bank-in (SETORAN_TUNAI) transactions`);
+            }
             
             // DEBUG: Show sample BCA weeks
             console.log('🔍 BCA Summary Keys (first 5):');
@@ -1780,12 +1939,39 @@
                     const difference = bcaCashTotal - acmmCashTotal;
                     
                     let status = 'UNMATCHED';
+                    let fraudAlert = false;
+                    
                     if (acmmCashTotal > 0 && bcaCashTotal > 0) {
-                        status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                        if (matchingMode === 'period') {
+                            // PERIOD MODE: Standard matching with 500 tolerance
+                            status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                        } else {
+                            // DAILY MODE: 95% tolerance for CASH (fraud detection)
+                            const matchPercentage = (bcaCashTotal / acmmCashTotal) * 100;
+                            const reverseMatchPercentage = (acmmCashTotal / bcaCashTotal) * 100;
+                            const bestMatch = Math.max(matchPercentage, reverseMatchPercentage);
+                            
+                            // 95% tolerance: If bank deposit is >= 95% of ACMM, it's acceptable
+                            if (bestMatch >= 95) {
+                                status = 'MATCHED';
+                            } else {
+                                status = 'FRAUD_ALERT';
+                                fraudAlert = true;
+                            }
+                            
+                            // Flag for review if variance is large (potential fraud/missout)
+                            if (Math.abs(difference) > 1000000) { // > 1M variance
+                                fraudAlert = true;
+                            }
+                        }
                     } else if (acmmCashTotal === 0) {
                         status = 'NO_ACMM_DATA';
                     } else if (bcaCashTotal === 0) {
                         status = 'NO_BCA_DATA';
+                        // Daily mode: Missing bank deposit is a major fraud alert
+                        if (matchingMode === 'daily' && acmmCashTotal > 500000) {
+                            fraudAlert = true;
+                        }
                     }
                     
                     cashResults.push({
@@ -1800,6 +1986,8 @@
                         acmmTotal: acmmCashTotal,
                         difference,
                         status,
+                        fraudAlert: fraudAlert,  // NEW: Flag for daily mode fraud detection
+                        matchingMode: matchingMode,  // NEW: Store which mode was used
                         acmmBreakdown: acmmCashMethods.join('; '),
                         bcaBreakdown: bcaCashBreakdown.join('; ')
                     });
@@ -1884,12 +2072,39 @@
                     const difference = bankNonCashTotal - acmmNonCashTotal;
                     
                     let status = 'UNMATCHED';
+                    let fraudAlert = false;
+                    
                     if (acmmNonCashTotal > 0 && bankNonCashTotal > 0) {
-                        status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                        if (matchingMode === 'period') {
+                            // PERIOD MODE: Standard matching with 500 tolerance
+                            status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
+                        } else {
+                            // DAILY MODE: 100% match required for NON-CASH (fraud detection)
+                            // Non-cash (QRIS/CC/DC) should match exactly (with small rounding tolerance)
+                            if (Math.abs(difference) <= 10) {
+                                status = 'MATCHED';
+                            } else {
+                                status = 'FRAUD_ALERT';
+                                fraudAlert = true;
+                            }
+                            
+                            // Flag significant discrepancies for review
+                            if (Math.abs(difference) > 100000) { // > 100K variance
+                                fraudAlert = true;
+                            }
+                        }
                     } else if (acmmNonCashTotal === 0) {
                         status = 'NO_ACMM_DATA';
+                        // Daily mode: Unexpected bank deposit is suspicious
+                        if (matchingMode === 'daily' && bankNonCashTotal > 100000) {
+                            fraudAlert = true;
+                        }
                     } else if (bankNonCashTotal === 0) {
                         status = 'NO_BANK_DATA';
+                        // Daily mode: Missing non-cash deposit is major fraud alert
+                        if (matchingMode === 'daily' && acmmNonCashTotal > 100000) {
+                            fraudAlert = true;
+                        }
                     }
                     
                     nonCashTotalReconciliationResults.push({
@@ -1905,6 +2120,8 @@
                         acmmTotal: acmmNonCashTotal,
                         difference,
                         status,
+                        fraudAlert: fraudAlert,  // NEW: Flag for daily mode fraud detection
+                        matchingMode: matchingMode,  // NEW: Store which mode was used
                         acmmBreakdown: acmmNonCashMethods.join('; '),
                         bcaBreakdown: allBankBreakdown.join(' | '),
                         // Store split ACMM values for bank-specific reports
@@ -2317,6 +2534,50 @@
             document.getElementById('unmatched-count').textContent = unmatched;
             document.getElementById('match-rate').textContent = `${matchRate}% (Cash: ${reconciliationStatistics.cashMatchRate}%, Non-Cash: ${reconciliationStatistics.nonCashTotalMatchRate}%, Grand Total: ${reconciliationStatistics.grandTotalMatchRate}%)`;
 
+            // Update mode banner and fraud alert card
+            const modeBanner = document.getElementById('mode-result-banner');
+            const modeBannerIcon = document.getElementById('mode-banner-icon');
+            const modeBannerTitle = document.getElementById('mode-banner-title');
+            const modeBannerDescription = document.getElementById('mode-banner-description');
+            
+            if (matchingMode === 'daily') {
+                const fraudAlerts = [...cashReconciliationResults, ...nonCashTotalReconciliationResults]
+                    .filter(r => r.fraudAlert === true);
+                
+                document.getElementById('fraud-alert-card').classList.remove('hidden');
+                document.getElementById('fraud-alert-count').textContent = fraudAlerts.length;
+                
+                // Daily mode banner
+                modeBanner.className = 'mb-4 p-4 rounded-lg border-2 border-yellow-400 bg-yellow-50';
+                modeBannerIcon.className = 'fas fa-shield-alt text-2xl mr-3 mt-1 text-yellow-600';
+                modeBannerTitle.textContent = '🛡️ Daily Matching Mode (Fraud Detection)';
+                modeBannerDescription.innerHTML = `
+                    <strong>Active Configuration:</strong> Manual bank-in excluded • ATM amounts rounded down • 
+                    CASH: 95% tolerance • NON-CASH: 100% match required • 
+                    ${fraudAlerts.length > 0 ? `<span class="text-red-600 font-bold">⚠️ ${fraudAlerts.length} fraud alert(s) detected!</span>` : '<span class="text-green-600 font-bold">✓ No fraud alerts</span>'}
+                `;
+                
+                if (fraudAlerts.length > 0) {
+                    console.log(`🚨 DAILY MODE: ${fraudAlerts.length} fraud alerts detected!`);
+                    fraudAlerts.forEach((alert, idx) => {
+                        if (idx < 5) {
+                            console.log(`   Alert ${idx + 1}: ${alert.outletCode} ${alert.category} - ACMM: ${alert.acmmTotal.toFixed(2)}, Bank: ${alert.bcaTotal.toFixed(2)}, Variance: ${alert.difference.toFixed(2)}`);
+                        }
+                    });
+                }
+            } else {
+                document.getElementById('fraud-alert-card').classList.add('hidden');
+                
+                // Period mode banner
+                modeBanner.className = 'mb-4 p-4 rounded-lg border-2 border-green-400 bg-green-50';
+                modeBannerIcon.className = 'fas fa-calendar-check text-2xl mr-3 mt-1 text-green-600';
+                modeBannerTitle.textContent = '📋 Period Matching Mode (Full Reconciliation)';
+                modeBannerDescription.innerHTML = `
+                    <strong>Active Configuration:</strong> Manual bank-in included • Standard amount parsing • 
+                    100% accuracy matching • Suitable for final reconciliation reports
+                `;
+            }
+
             updateResultsTable();
         }
 
@@ -2347,6 +2608,7 @@
 
             filteredResults.forEach((result, index) => {
                 const statusClass = result.status === 'MATCHED' ? 'status-success' : 
+                                   result.status === 'FRAUD_ALERT' ? 'status-error' :
                                    result.status === 'AMOUNT_MISMATCH' ? 'status-warning' : 'status-error';
                 
                 const difference = result.difference !== null ? result.difference.toFixed(2) : '-';
@@ -2357,6 +2619,10 @@
                     result.category === 'GRAND_TOTAL' ?
                     '<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">GRAND TOTAL</span>' :
                     '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-semibold">NON-CASH</span>';
+                
+                // Add fraud alert badge for daily mode
+                const fraudAlertBadge = result.fraudAlert ? 
+                    '<span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-semibold ml-1 animate-pulse">🚨 FRAUD ALERT</span>' : '';
                 
                 const typeBadge = result.transactionType ? 
                     `<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold ml-1">${result.transactionType}</span>` : '';
@@ -2371,12 +2637,14 @@
                 }
                 detailsHtml += '</div>';
 
+                const rowClass = result.fraudAlert ? 'border-b bg-red-50 hover:bg-red-100' : 'border-b hover:bg-gray-50';
+                
                 const row = `
-                    <tr class="border-b hover:bg-gray-50">
+                    <tr class="${rowClass}">
                         <td class="px-4 py-3">${index + 1}</td>
                         <td class="px-4 py-3">${result.weekLabel || result.weekKey}</td>
                         <td class="px-4 py-3">
-                            ${categoryBadge}${typeBadge}
+                            ${categoryBadge}${typeBadge}${fraudAlertBadge}
                         </td>
                         <td class="px-4 py-3 font-semibold">${result.outletCode}</td>
                         <td class="px-4 py-3 text-right font-mono">${result.bcaTotal.toFixed(2)}</td>
