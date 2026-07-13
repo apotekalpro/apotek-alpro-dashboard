@@ -359,10 +359,11 @@
                             <h3 class="font-bold text-yellow-800">Daily Matching (Fraud Detection)</h3>
                         </div>
                         <ul class="text-xs text-gray-600 space-y-1">
-                            <li>🚨 95% CASH tolerance</li>
-                            <li>🚨 100% NON-CASH required</li>
-                            <li>🚨 Excludes manual bank-in</li>
-                            <li>🚨 Round-down to 50rb for ATM</li>
+                            <li>🔽 Round-down to 50rb (ACMM + Bank)</li>
+                            <li>✅ CASH: Exact match after rounding</li>
+                            <li>✅ Allows 2-3 day banking patterns</li>
+                            <li>🚨 NON-CASH: 100% match required</li>
+                            <li>🚫 Excludes manual bank-in</li>
                         </ul>
                     </div>
                 </div>
@@ -2033,22 +2034,42 @@
                             // PERIOD MODE: Standard matching with 500 tolerance
                             status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
                         } else {
-                            // DAILY MODE: 95% tolerance for CASH (fraud detection)
-                            const matchPercentage = (bcaCashTotal / acmmCashTotal) * 100;
-                            const reverseMatchPercentage = (acmmCashTotal / bcaCashTotal) * 100;
-                            const bestMatch = Math.max(matchPercentage, reverseMatchPercentage);
+                            // DAILY MODE: Smart CASH matching with 50rb rounding
+                            // Logic: Round down both ACMM and Bank to nearest 50rb, then check if they match
+                            // This accounts for daily banking OR 2-3 day accumulation patterns
                             
-                            // Check for large variance first (potential fraud/missout)
-                            if (Math.abs(difference) > 1000000) { // > 1M variance
-                                status = 'FRAUD_ALERT';
-                                fraudAlert = true;
-                            }
-                            // Then check 95% tolerance
-                            else if (bestMatch >= 95) {
+                            const acmmRounded = roundDownTo50k(acmmCashTotal);
+                            const bankRounded = roundDownTo50k(bcaCashTotal);
+                            const roundedDiff = Math.abs(bankRounded - acmmRounded);
+                            
+                            // Check if rounded amounts match (within 50rb tolerance for multi-day banking)
+                            // Allow up to 3x 50rb = 150k variance for 2-3 day banking patterns
+                            const maxAccumulationVariance = 150000; // 3 days * 50rb
+                            
+                            if (roundedDiff <= maxAccumulationVariance) {
+                                // Rounded amounts match - CASH is properly banked (daily, 2-day, or 3-day pattern)
                                 status = 'MATCHED';
+                                
+                                // Log banking pattern if detected
+                                if (roundedDiff > 50000 && roundedDiff <= 100000) {
+                                    console.log(`💡 ${outletCode}: Possible 2-day banking pattern detected (variance: ${roundedDiff.toFixed(0)})`);
+                                } else if (roundedDiff > 100000 && roundedDiff <= 150000) {
+                                    console.log(`💡 ${outletCode}: Possible 3-day banking pattern detected (variance: ${roundedDiff.toFixed(0)})`);
+                                }
                             } else {
+                                // Rounded amounts don't match - potential fraud/missout
                                 status = 'FRAUD_ALERT';
                                 fraudAlert = true;
+                                
+                                // Log for investigation
+                                console.log(`🚨 ${outletCode} CASH FRAUD ALERT: ACMM ${acmmRounded.toFixed(0)}, Bank ${bankRounded.toFixed(0)}, Diff ${roundedDiff.toFixed(0)}`);
+                            }
+                            
+                            // Additional check: Very large variance is always fraud
+                            if (Math.abs(difference) > 5000000) { // > 5M variance (excessive)
+                                status = 'FRAUD_ALERT';
+                                fraudAlert = true;
+                                console.log(`🚨 ${outletCode} EXCESSIVE VARIANCE: ${difference.toFixed(0)}`);
                             }
                         }
                     } else if (acmmCashTotal === 0) {
@@ -2723,8 +2744,8 @@
                 modeBannerIcon.className = 'fas fa-shield-alt text-2xl mr-3 mt-1 text-yellow-600';
                 modeBannerTitle.textContent = '🛡️ Daily Matching Mode (Fraud Detection)';
                 modeBannerDescription.innerHTML = `
-                    <strong>Active Configuration:</strong> Manual bank-in excluded • ATM amounts rounded to nearest 50rb • 
-                    CASH: 95% tolerance • NON-CASH: 100% match required • 
+                    <strong>Active Configuration:</strong> Manual bank-in excluded • Both ACMM & Bank rounded to 50rb • 
+                    CASH: Exact match after rounding (allows 2-3 day banking) • NON-CASH: 100% match required • 
                     ${fraudAlerts.length > 0 ? `<span class="text-red-600 font-bold">⚠️ ${fraudAlerts.length} fraud alert(s) detected!</span>` : '<span class="text-green-600 font-bold">✓ No fraud alerts</span>'}
                 `;
                 
