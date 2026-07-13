@@ -99,10 +99,11 @@ Early warning system for fraud, theft, or missout detection
    - No cash handling variances
    - Any mismatch indicates potential fraud or system error
 
-4. **Round-Down ATM Amounts**
-   - Helps match CASH deposits with small coin differences
-   - Example: 2,800,500.50 → 2,800,500 for matching
-   - Reduces false positives from minor rounding
+4. **Round-Down ATM Amounts to Nearest 50,000 (50rb)**
+   - Helps match CASH deposits with small variances (coins, petty cash)
+   - Example: 2,843,500 → 2,800,000 (nearest 50rb)
+   - Example: 5,123,456 → 5,100,000 (nearest 50rb)
+   - Reduces false positives from minor rounding and daily variance
 
 ### Use Cases
 - Daily fraud monitoring
@@ -160,12 +161,12 @@ if (transactionType === 'SETORAN_TUNAI') {
     }
 }
 
-// Round-down ATM amounts
+// Round-down ATM amounts to nearest 50,000 (50rb)
 if (transactionType === 'CDM') {
     amount = parseBCAAmount(columnD);
     if (matchingMode === 'daily') {
-        // 🔽 Round down: 2,800,500.50 → 2,800,500
-        amount = Math.floor(amount);
+        // 🔽 Round down to nearest 50rb: 2,843,500 → 2,800,000
+        amount = roundDownTo50k(amount);
     }
 }
 ```
@@ -182,8 +183,16 @@ if (matchingMode === 'period') {
 
 #### Daily Mode - CASH
 ```javascript
+// Round down CDM amounts to nearest 50,000
+if (transactionType === 'CDM') {
+    amount = parseBCAAmount(columnD);
+    if (matchingMode === 'daily') {
+        amount = roundDownTo50k(amount); // 2,843,500 → 2,800,000
+    }
+}
+
+// Match with 95% tolerance
 if (matchingMode === 'daily') {
-    // 95% tolerance for CASH
     const matchPercentage = (bcaCashTotal / acmmCashTotal) * 100;
     
     if (matchPercentage >= 95) {

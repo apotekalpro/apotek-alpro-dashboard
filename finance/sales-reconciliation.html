@@ -634,7 +634,7 @@
                     <li><strong>CASH:</strong> 95% tolerance for large amounts (fraud alert)</li>
                     <li><strong>NON-CASH:</strong> 100% match required (QRIS/CC/DC must tally)</li>
                     <li><strong>ATM-only:</strong> Excludes manual bank-in (focus on ATM deposits)</li>
-                    <li><strong>Round-down:</strong> BCA ATM amounts rounded down for matching</li>
+                    <li><strong>Round-down 50rb:</strong> ATM amounts rounded to nearest 50,000 (e.g., 2,843,500 → 2,800,000)</li>
                     <li><strong>H-1 tracking:</strong> Daily date-based matching enabled</li>
                     <li><strong>Use case:</strong> Daily fraud/missout monitoring and early alerts</li>
                 `;
@@ -838,7 +838,9 @@
             };
         }
 
-        // Round down to nearest 50,000 (DEPRECATED - keeping for backward compatibility but not used in weekly matching)
+        // Round down to nearest 50,000 (50rb)
+        // Used in Daily Matching Mode for CDM amount matching
+        // Example: 2,843,500 → 2,800,000
         function roundDownTo50k(amount) {
             return Math.floor(amount / 50000) * 50000;
         }
@@ -1498,13 +1500,14 @@
                 if (transactionType === 'CDM' || transactionType === 'SETORAN_TUNAI') {
                     amount = parseBCAAmount(columnD);
                     
-                    // DAILY MODE: Apply round-down for ATM (CDM) matching
-                    // Helps match CASH deposits that may have small variances
+                    // DAILY MODE: Apply round-down to nearest 50,000 for ATM (CDM) matching
+                    // Helps match CASH deposits that may have small variances (coins, petty cash)
+                    // Example: 2,843,500 → 2,800,000 (rounded down to nearest 50rb)
                     if (matchingMode === 'daily' && transactionType === 'CDM') {
                         const originalAmount = amount;
-                        amount = Math.floor(amount); // Round down to nearest integer
+                        amount = roundDownTo50k(amount); // Round down to nearest 50,000
                         if (i <= 5 && originalAmount !== amount) {
-                            console.log(`🔽 DAILY MODE: Round-down CDM Row ${i}: ${originalAmount.toFixed(2)} → ${amount.toFixed(2)}`);
+                            console.log(`🔽 DAILY MODE: Round-down CDM Row ${i}: ${originalAmount.toFixed(2)} → ${amount.toFixed(2)} (nearest 50k)`);
                         }
                     }
                 } else {
@@ -2552,7 +2555,7 @@
                 modeBannerIcon.className = 'fas fa-shield-alt text-2xl mr-3 mt-1 text-yellow-600';
                 modeBannerTitle.textContent = '🛡️ Daily Matching Mode (Fraud Detection)';
                 modeBannerDescription.innerHTML = `
-                    <strong>Active Configuration:</strong> Manual bank-in excluded • ATM amounts rounded down • 
+                    <strong>Active Configuration:</strong> Manual bank-in excluded • ATM amounts rounded to nearest 50rb • 
                     CASH: 95% tolerance • NON-CASH: 100% match required • 
                     ${fraudAlerts.length > 0 ? `<span class="text-red-600 font-bold">⚠️ ${fraudAlerts.length} fraud alert(s) detected!</span>` : '<span class="text-green-600 font-bold">✓ No fraud alerts</span>'}
                 `;

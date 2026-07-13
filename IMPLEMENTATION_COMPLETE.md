@@ -80,7 +80,7 @@ Daily mode provides detailed logging:
 ```
 🔍 DEBUG: Matching Mode: DAILY
 🚫 DAILY MODE: Excluded 15 manual bank-in (SETORAN_TUNAI) transactions
-🔽 DAILY MODE: Round-down CDM Row 8: 2800500.50 → 2800500.00
+🔽 DAILY MODE: Round-down CDM Row 8: 2843500.00 → 2800000.00 (nearest 50k)
 🚨 DAILY MODE: 3 fraud alerts detected!
    Alert 1: JKJSTT1 CASH - ACMM: 50000000.00, Bank: 47000000.00, Variance: -3000000.00
 ```
@@ -149,7 +149,7 @@ Daily mode provides detailed logging:
 3. Click "Start Reconciliation Process"
 4. Verify:
    - ✅ Manual bank-in (SETORAN_TUNAI) is excluded
-   - ✅ CDM amounts are rounded down
+   - ✅ CDM amounts are rounded down to nearest 50,000 (50rb)
    - ✅ Yellow banner shows "Daily Matching Mode"
    - ✅ Fraud alert card visible (shows count)
    - ✅ CASH matches with 95% tolerance
@@ -173,7 +173,7 @@ Open browser console (F12) and verify logging:
 ```
 🔍 DEBUG: Matching Mode: DAILY
 🚫 DAILY MODE: Excluding manual bank-in Row 15...
-🔽 DAILY MODE: Round-down CDM Row 8: 2800500.50 → 2800500.00
+🔽 DAILY MODE: Round-down CDM Row 8: 2843500.00 → 2800000.00 (nearest 50k)
 🚨 DAILY MODE: 3 fraud alerts detected!
 ```
 
