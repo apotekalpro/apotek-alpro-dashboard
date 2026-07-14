@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Rekonsiliasi Splitter - Finance</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 100%);
+            min-height: 100vh;
+        }
+
+        /* ─── Tabs ─── */
+        .tab-btn {
+            position: relative;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            transition: all 0.25s;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .tab-btn:hover { color: #4f46e5; }
+        .tab-btn.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+
+        /* ─── Upload Zone ─── */
+        .upload-zone {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 140px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1.5rem;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+        .upload-zone.has-file {
+            border-color: #10b981;
+            background: #ecfdf5;
+        }
+        .upload-zone.error {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        /* ─── Cards ─── */
+        .glass-card {
+            background: rgba(255,255,255,0.97);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        }
+
+        .stat-card {
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            color: white;
+        }
+        .stat-blue   { background: linear-gradient(135deg,#4f46e5,#7c3aed); }
+        .stat-green  { background: linear-gradient(135deg,#059669,#10b981); }
+        .stat-amber  { background: linear-gradient(135deg,#d97706,#f59e0b); }
+        .stat-rose   { background: linear-gradient(135deg,#e11d48,#f43f5e); }
+
+        /* ─── Button ─── */
+        .btn-primary {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 0.65rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.25s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79,70,229,0.35);
+        }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-success {
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+            padding: 0.65rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.25s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(5,150,105,0.35);
+        }
+        .btn-success:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-outline {
+            border: 2px solid #4f46e5;
+            color: #4f46e5;
+            padding: 0.55rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.25s;
+            background: transparent;
+            cursor: pointer;
+        }
+        .btn-outline:hover { background: #eef2ff; }
+
+        /* ─── Table ─── */
+        .result-table { max-height: 420px; overflow: auto; border-radius: 8px; }
+        .result-table table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+        .result-table th {
+            position: sticky; top: 0;
+            background: #4f46e5; color: white;
+            padding: 0.6rem 1rem; text-align: left;
+        }
+        .result-table td { padding: 0.5rem 1rem; border-bottom: 1px solid #f3f4f6; }
+        .result-table tr:hover td { background: #f5f3ff; }
+
+        /* ─── GL badge ─── */
+        .gl-badge {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            background: #eef2ff; color: #4338ca;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+            margin: 0.2rem;
+        }
+
+        /* ─── Spinner ─── */
+        .spinner {
+            border: 3px solid #e5e7eb;
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            width: 32px; height: 32px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── Progress ─── */
+        .progress-track {
+            background: #e5e7eb; border-radius: 999px; height: 8px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; border-radius: 999px;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            transition: width 0.4s ease;
+        }
+
+        /* ─── File type pill ─── */
+        .file-type-acmm { background:#dbeafe; color:#1d4ed8; }
+        .file-type-2    { background:#d1fae5; color:#065f46; }
+        .file-type-3    { background:#fef3c7; color:#92400e; }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════ TOP HEADER ══ -->
+<div class="py-6 px-6">
+    <div class="max-w-6xl mx-auto flex items-center gap-4">
+        <a href="../index.html" class="text-white/70 hover:text-white transition-colors">
+            <i class="fas fa-arrow-left text-lg"></i>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-scissors"></i>
+                File Rekonsiliasi Splitter
+            </h1>
+            <p class="text-white/70 text-sm mt-0.5">Finance &rsaquo; File Rekonsiliasi Splitter</p>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════ MAIN ══ -->
+<div class="max-w-6xl mx-auto px-6 pb-12">
+
+    <!-- ── Sub-tab navigation ── -->
+    <div class="glass-card mb-6 overflow-hidden">
+        <div class="flex border-b border-gray-200 overflow-x-auto px-4">
+            <button class="tab-btn active" onclick="switchTab('acmm')" id="tab-acmm">
+                <i class="fas fa-file-excel mr-2 text-blue-600"></i>ACMM Sales File
+            </button>
+            <button class="tab-btn" onclick="switchTab('file2')" id="tab-file2">
+                <i class="fas fa-university mr-2 text-green-600"></i>BRI Statement
+            </button>
+            <button class="tab-btn" onclick="switchTab('file3')" id="tab-file3">
+                <i class="fas fa-file-alt mr-2 text-amber-600"></i>File 3
+                <span class="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Coming Soon</span>
+            </button>
+        </div>
+
+        <!-- ── ACMM Sales File Tab ── -->
+        <div id="panel-acmm" class="p-6">
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">ACMM Sales File Splitter</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">
+                        Upload the <code class="bg-gray-100 px-1 rounded">Transaction Summary Details</code> export.
+                        Rows will be split by <strong>GL Account Code (Column M)</strong> into separate sheets.
+                    </p>
+                </div>
+                <span class="file-type-acmm text-xs font-semibold px-3 py-1 rounded-full">.xlsx</span>
+            </div>
+
+            <!-- Upload area -->
+            <div
+                class="upload-zone mb-5"
+                id="dropzone-acmm"
+                onclick="document.getElementById('fileInput-acmm').click()"
+                ondragover="handleDragOver(event,'acmm')"
+                ondragleave="handleDragLeave(event,'acmm')"
+                ondrop="handleDrop(event,'acmm')"
+            >
+                <input type="file" id="fileInput-acmm" accept=".xlsx,.xls" class="hidden"
+                       onchange="handleFileSelect(event,'acmm')">
+
+                <div id="upload-idle-acmm">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-indigo-400 mb-3"></i>
+                    <p class="font-semibold text-gray-700">Drop your ACMM Sales File here</p>
+                    <p class="text-sm text-gray-400 mt-1">or click to browse &nbsp;·&nbsp; .xlsx / .xls</p>
+                </div>
+
+                <div id="upload-loaded-acmm" class="hidden flex-col items-center">
+                    <i class="fas fa-check-circle text-4xl text-emerald-500 mb-2"></i>
+                    <p class="font-semibold text-gray-800" id="acmm-filename">—</p>
+                    <p class="text-sm text-gray-400" id="acmm-filesize">—</p>
+                    <button class="mt-3 text-xs text-red-500 hover:text-red-700 underline"
+                            onclick="clearFile(event,'acmm')">Remove file</button>
+                </div>
+            </div>
+
+            <!-- Process button -->
+            <div class="flex items-center gap-3">
+                <button id="btn-process-acmm" class="btn-primary" onclick="processACMM()" disabled>
+                    <i class="fas fa-cogs mr-2"></i>Process & Split
+                </button>
+                <span class="text-sm text-gray-400" id="acmm-ready-msg">Upload a file to enable processing</span>
+            </div>
+
+            <!-- Progress -->
+            <div id="progress-acmm" class="hidden mt-5">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="spinner"></div>
+                    <span class="text-sm font-medium text-gray-600" id="progress-label-acmm">Processing…</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" id="progress-bar-acmm" style="width:0%"></div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="results-acmm" class="hidden mt-6">
+
+                <!-- Stats row -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="stat-card stat-blue">
+                        <p class="text-xs text-indigo-200 mb-1">Total Rows</p>
+                        <p class="text-2xl font-bold" id="stat-total-rows">0</p>
+                    </div>
+                    <div class="stat-card stat-green">
+                        <p class="text-xs text-emerald-200 mb-1">GL Sheets</p>
+                        <p class="text-2xl font-bold" id="stat-gl-count">0</p>
+                    </div>
+                    <div class="stat-card stat-amber">
+                        <p class="text-xs text-amber-200 mb-1">Unique Kode Rekon</p>
+                        <p class="text-2xl font-bold" id="stat-kode-count">0</p>
+                    </div>
+                    <div class="stat-card stat-rose">
+                        <p class="text-xs text-rose-200 mb-1">Date Range</p>
+                        <p class="text-base font-bold" id="stat-date-range">—</p>
+                    </div>
+                </div>
+
+                <!-- GL codes found -->
+                <div class="mb-5">
+                    <p class="text-sm font-semibold text-gray-600 mb-2">GL Account Codes detected:</p>
+                    <div id="gl-badges"></div>
+                </div>
+
+                <!-- Preview table -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-semibold text-gray-700">
+                            Preview – Kode Rekon Summary
+                            <span class="text-gray-400 font-normal ml-1">(first 200 rows)</span>
+                        </p>
+                        <select id="preview-gl-filter" class="text-sm border border-gray-300 rounded px-2 py-1"
+                                onchange="renderPreview()">
+                            <option value="">All GL Codes</option>
+                        </select>
+                    </div>
+                    <div class="result-table border border-gray-200 rounded-lg">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Kode Rekon</th>
+                                    <th>GL Account Code</th>
+                                    <th>Debit Total</th>
+                                    <th>Credit Total</th>
+                                    <th class="text-right">Net Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="preview-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Download -->
+                <div class="flex items-center gap-3 pt-2">
+                    <button class="btn-success" onclick="downloadOutput()">
+                        <i class="fas fa-download mr-2"></i>Download Split File (.xlsx)
+                    </button>
+                    <button class="btn-outline" onclick="resetACMM()">
+                        <i class="fas fa-redo mr-2"></i>Reset
+                    </button>
+                    <span class="text-sm text-gray-400" id="output-info"></span>
+                </div>
+            </div><!-- /results-acmm -->
+        </div><!-- /panel-acmm -->
+
+        <!-- ── BRI Statement Tab ── -->
+        <div id="panel-file2" class="hidden p-6">
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">BRI Statement Splitter</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">
+                        Upload the <code class="bg-gray-100 px-1 rounded">BRI Statement CSV</code> + <code class="bg-gray-100 px-1 rounded">BRI Master MID XLSX</code>.
+                        Only <strong>Cr (Credit)</strong> rows processed. MID from description matched to outlet code, grouped by Kode Rekon.
+                    </p>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-green-100 text-green-800">.csv + .xlsx</span>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-4 mb-5">
+                <!-- BRI CSV -->
+                <div>
+                    <p class="text-sm font-semibold text-gray-600 mb-2"><i class="fas fa-file-csv text-green-600 mr-1"></i>BRI Statement CSV</p>
+                    <div class="upload-zone" id="dropzone-bri-csv"
+                        onclick="document.getElementById('fileInput-bri-csv').click()"
+                        ondragover="handleDragOver(event,'bri-csv')"
+                        ondragleave="handleDragLeave(event,'bri-csv')"
+                        ondrop="handleDrop(event,'bri-csv')">
+                        <input type="file" id="fileInput-bri-csv" accept=".csv,.txt" class="hidden"
+                               onchange="handleFileSelect(event,'bri-csv')">
+                        <div id="upload-idle-bri-csv">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-green-400 mb-2"></i>
+                            <p class="font-semibold text-gray-700 text-sm">Drop BRI Statement CSV</p>
+                            <p class="text-xs text-gray-400 mt-1">PKUTAMA_...csv</p>
+                        </div>
+                        <div id="upload-loaded-bri-csv" class="hidden flex-col items-center">
+                            <i class="fas fa-check-circle text-3xl text-emerald-500 mb-1"></i>
+                            <p class="font-semibold text-gray-800 text-sm" id="bri-csv-filename">—</p>
+                            <p class="text-xs text-gray-400" id="bri-csv-filesize">—</p>
+                            <button class="mt-2 text-xs text-red-500 hover:text-red-700 underline"
+                                    onclick="clearFile(event,'bri-csv')">Remove</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- BRI Master MID -->
+                <div>
+                    <p class="text-sm font-semibold text-gray-600 mb-2"><i class="fas fa-table text-blue-600 mr-1"></i>BRI Master MID (XLSX)</p>
+                    <div class="upload-zone" id="dropzone-bri-mid"
+                        onclick="document.getElementById('fileInput-bri-mid').click()"
+                        ondragover="handleDragOver(event,'bri-mid')"
+                        ondragleave="handleDragLeave(event,'bri-mid')"
+                        ondrop="handleDrop(event,'bri-mid')">
+                        <input type="file" id="fileInput-bri-mid" accept=".xlsx,.xls" class="hidden"
+                               onchange="handleFileSelect(event,'bri-mid')">
+                        <div id="upload-idle-bri-mid">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-blue-400 mb-2"></i>
+                            <p class="font-semibold text-gray-700 text-sm">Drop BRI Master MID</p>
+                            <p class="text-xs text-gray-400 mt-1">MID → Outlet Code mapping</p>
+                        </div>
+                        <div id="upload-loaded-bri-mid" class="hidden flex-col items-center">
+                            <i class="fas fa-check-circle text-3xl text-emerald-500 mb-1"></i>
+                            <p class="font-semibold text-gray-800 text-sm" id="bri-mid-filename">—</p>
+                            <p class="text-xs text-gray-400" id="bri-mid-filesize">—</p>
+                            <button class="mt-2 text-xs text-red-500 hover:text-red-700 underline"
+                                    onclick="clearFile(event,'bri-mid')">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="btn-process-bri" class="btn-primary" onclick="processBRI()" disabled>
+                    <i class="fas fa-cogs mr-2"></i>Process BRI Statement
+                </button>
+                <span class="text-sm text-gray-400" id="bri-ready-msg">Upload both files to enable processing</span>
+            </div>
+
+            <div id="progress-bri" class="hidden mt-5">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="spinner"></div>
+                    <span class="text-sm font-medium text-gray-600" id="progress-label-bri">Processing…</span>
+                </div>
+                <div class="progress-track"><div class="progress-fill" id="progress-bar-bri" style="width:0%"></div></div>
+            </div>
+
+            <div id="results-bri" class="hidden mt-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="stat-card stat-blue">
+                        <p class="text-xs text-indigo-200 mb-1">Cr Rows Processed</p>
+                        <p class="text-2xl font-bold" id="bri-stat-cr-rows">0</p>
+                    </div>
+                    <div class="stat-card stat-green">
+                        <p class="text-xs text-emerald-200 mb-1">Matched Outlets</p>
+                        <p class="text-2xl font-bold" id="bri-stat-matched">0</p>
+                    </div>
+                    <div class="stat-card stat-amber">
+                        <p class="text-xs text-amber-200 mb-1">Unique Kode Rekon</p>
+                        <p class="text-2xl font-bold" id="bri-stat-kode">0</p>
+                    </div>
+                    <div class="stat-card stat-rose">
+                        <p class="text-xs text-rose-200 mb-1">Unmatched MIDs</p>
+                        <p class="text-2xl font-bold" id="bri-stat-unmatched">0</p>
+                    </div>
+                </div>
+
+                <div id="bri-unmatched-warn" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                    <p class="text-sm font-semibold text-amber-800 mb-1"><i class="fas fa-exclamation-triangle mr-1"></i>Unmatched MIDs (not in Master MID file)</p>
+                    <p class="text-xs text-amber-700" id="bri-unmatched-list"></p>
+                    <p class="text-xs text-amber-600 mt-1">These rows appear as <code>UNKNOWN_[MID]</code> in the output. Add them to the BRI Master MID file to resolve.</p>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-semibold text-gray-700">Preview – Kode Rekon Summary <span class="text-gray-400 font-normal ml-1">(max 200 rows)</span></p>
+                        <select id="bri-preview-filter" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="renderBRIPreview()">
+                            <option value="">All Dates</option>
+                        </select>
+                    </div>
+                    <div class="result-table border border-gray-200 rounded-lg">
+                        <table>
+                            <thead><tr>
+                                <th>Kode Rekon</th><th>Outlet Code</th><th>Date</th><th>MID</th><th class="text-right">Gross Amount</th>
+                            </tr></thead>
+                            <tbody id="bri-preview-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button class="btn-success" onclick="downloadBRIOutput()">
+                        <i class="fas fa-download mr-2"></i>Download BRI Split File (.xlsx)
+                    </button>
+                    <button class="btn-outline" onclick="resetBRI()">
+                        <i class="fas fa-redo mr-2"></i>Reset
+                    </button>
+                    <span class="text-sm text-gray-400" id="bri-output-info"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── File 3 Placeholder ── -->
+        <div id="panel-file3" class="hidden p-6">
+            <div class="flex flex-col items-center justify-center py-16 text-center">
+                <i class="fas fa-tools text-5xl text-gray-300 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-500">File 3 Splitter</h3>
+                <p class="text-gray-400 mt-2 max-w-md">
+                    This splitter is reserved for the third reconciliation file type.
+                    Upload logic and processing rules will be configured here.
+                </p>
+                <div class="upload-zone mt-6 w-full max-w-md opacity-50 pointer-events-none">
+                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-300 mb-2"></i>
+                    <p class="text-gray-400 font-medium">Drop File 3 here</p>
+                    <p class="text-sm text-gray-300">Configuration coming soon</p>
+                </div>
+            </div>
+        </div>
+    </div><!-- /glass-card tabs -->
+
+    <!-- ── How it works ── -->
+    <div class="glass-card p-6">
+        <div class="flex gap-6 mb-4">
+            <button onclick="showGuide('acmm')" id="guide-btn-acmm"
+                class="text-sm font-semibold px-3 py-1 rounded-full bg-indigo-600 text-white">ACMM Guide</button>
+            <button onclick="showGuide('bri')" id="guide-btn-bri"
+                class="text-sm font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-green-100">BRI Statement Guide</button>
+        </div>
+
+        <!-- ACMM guide -->
+        <div id="guide-acmm">
+            <p class="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-3">How the ACMM Sales File Splitter works</p>
+            <div class="grid md:grid-cols-4 gap-4 text-sm">
+                <div class="bg-indigo-50 rounded-lg p-4">
+                    <div class="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold mb-2">1</div>
+                    <p class="font-semibold text-gray-700 mb-1">Upload ACMM File</p>
+                    <p class="text-gray-500">Upload the <em>Transaction Summary Details</em> Excel export from ACMM system.</p>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-4">
+                    <div class="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold mb-2">2</div>
+                    <p class="font-semibold text-gray-700 mb-1">Split by GL Code</p>
+                    <p class="text-gray-500">Each unique <strong>GL Account Code (Col M)</strong> becomes its own sheet. Original sheet is preserved.</p>
+                </div>
+                <div class="bg-emerald-50 rounded-lg p-4">
+                    <div class="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center font-bold mb-2">3</div>
+                    <p class="font-semibold text-gray-700 mb-1">Net per Kode Rekon</p>
+                    <p class="text-gray-500"><strong>Kode Rekon</strong> = Day + Store Code (from brackets). Debit summed; Credit subtracted.</p>
+                </div>
+                <div class="bg-amber-50 rounded-lg p-4">
+                    <div class="w-8 h-8 bg-amber-600 text-white rounded-full flex items-center justify-center font-bold mb-2">4</div>
+                    <p class="font-semibold text-gray-700 mb-1">Download Output</p>
+                    <p class="text-gray-500">Each GL sheet: <strong>Col A = Kode Rekon</strong>, <strong>Col B = Net Amount</strong>. Original sheet preserved.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- BRI guide -->
+        <div id="guide-bri" class="hidden">
+            <p class="text-xs font-semibold text-green-600 uppercase tracking-wide mb-3">How the BRI Statement Splitter works</p>
+            <div class="grid md:grid-cols-4 gap-4 text-sm">
+                <div class="bg-green-50 rounded-lg p-4">
+                    <div class="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center font-bold mb-2">1</div>
+                    <p class="font-semibold text-gray-700 mb-1">Upload 2 Files</p>
+                    <p class="text-gray-500">BRI Statement CSV (PKUTAMA_...) + BRI Master MID XLSX (MID → Outlet Code mapping).</p>
+                </div>
+                <div class="bg-teal-50 rounded-lg p-4">
+                    <div class="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-bold mb-2">2</div>
+                    <p class="font-semibold text-gray-700 mb-1">Filter Cr Only</p>
+                    <p class="text-gray-500">Only rows where <strong>GLSIGN = Cr</strong> (Col L) are processed. Db rows are ignored.</p>
+                </div>
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold mb-2">3</div>
+                    <p class="font-semibold text-gray-700 mb-1">MID → Outlet + Kode Rekon</p>
+                    <p class="text-gray-500">MID (001999xxxxxx) extracted from DESK_TRAN, matched to Outlet Code. <strong>Kode Rekon</strong> = Day + OutletCode (e.g. 1JKJSTT1).</p>
+                </div>
+                <div class="bg-amber-50 rounded-lg p-4">
+                    <div class="w-8 h-8 bg-amber-600 text-white rounded-full flex items-center justify-center font-bold mb-2">4</div>
+                    <p class="font-semibold text-gray-700 mb-1">Sum Gross Amount</p>
+                    <p class="text-gray-500">AMT from description (e.g. AMT:4.127.551,00 → 4127551) summed per Kode Rekon. Output: Col A = Kode Rekon, Col B = Total Gross.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function showGuide(tab) {
+        ['acmm','bri'].forEach(t => {
+            document.getElementById(`guide-${t}`).classList.toggle('hidden', t !== tab);
+            const btn = document.getElementById(`guide-btn-${t}`);
+            btn.className = t === tab
+                ? 'text-sm font-semibold px-3 py-1 rounded-full ' + (t==='acmm'?'bg-indigo-600 text-white':'bg-green-600 text-white')
+                : 'text-sm font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200';
+        });
+    }
+    </script>
+
+</div><!-- /max-w container -->
+
+<!-- ════════════════════════════════════════════════ JAVASCRIPT ══ -->
+<script>
+/* ─────────────────────────────────────────────────────────────── */
+/*  STATE                                                          */
+/* ─────────────────────────────────────────────────────────────── */
+const state = {
+    acmm:    { file: null, workbook: null, processed: null },
+    'bri-csv': { file: null },
+    'bri-mid': { file: null },
+    bri:     { processed: null }
+};
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  TAB SWITCHING                                                  */
+/* ─────────────────────────────────────────────────────────────── */
+function switchTab(name) {
+    ['acmm','file2','file3'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
+        document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== name);
+    });
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  DRAG & DROP / FILE SELECTION                                   */
+/* ─────────────────────────────────────────────────────────────── */
+function handleDragOver(e, key) {
+    e.preventDefault();
+    document.getElementById(`dropzone-${key}`).classList.add('dragover');
+}
+function handleDragLeave(e, key) {
+    document.getElementById(`dropzone-${key}`).classList.remove('dragover');
+}
+function handleDrop(e, key) {
+    e.preventDefault();
+    const dz = document.getElementById(`dropzone-${key}`);
+    dz.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) loadFile(file, key);
+}
+function handleFileSelect(e, key) {
+    const file = e.target.files[0];
+    if (file) loadFile(file, key);
+}
+
+function loadFile(file, key) {
+    state[key].file = file;
+    const dz = document.getElementById(`dropzone-${key}`);
+    if (dz) dz.classList.add('has-file');
+    const idleEl   = document.getElementById(`upload-idle-${key}`);
+    const loadedEl = document.getElementById(`upload-loaded-${key}`);
+    const fnEl     = document.getElementById(`${key}-filename`);
+    const szEl     = document.getElementById(`${key}-filesize`);
+    if (idleEl)   idleEl.classList.add('hidden');
+    if (loadedEl) loadedEl.classList.remove('hidden');
+    if (fnEl)     fnEl.textContent = file.name;
+    if (szEl)     szEl.textContent = formatBytes(file.size);
+    if (key === 'acmm') {
+        document.getElementById('btn-process-acmm').disabled = false;
+        document.getElementById('acmm-ready-msg').textContent = `✓ ${file.name} ready to process`;
+        document.getElementById('acmm-ready-msg').style.color = '#059669';
+        document.getElementById('results-acmm').classList.add('hidden');
+    }
+    if (key === 'bri-csv' || key === 'bri-mid') {
+        updateBRIReadyState();
+        document.getElementById('results-bri').classList.add('hidden');
+    }
+}
+
+function clearFile(e, key) {
+    e.stopPropagation();
+    if (state[key]) {
+        state[key].file = null;
+        if ('workbook'  in state[key]) state[key].workbook  = null;
+        if ('processed' in state[key]) state[key].processed = null;
+    }
+    const dz  = document.getElementById(`dropzone-${key}`);
+    if (dz) dz.classList.remove('has-file','dragover','error');
+    const idleEl   = document.getElementById(`upload-idle-${key}`);
+    const loadedEl = document.getElementById(`upload-loaded-${key}`);
+    const inp      = document.getElementById(`fileInput-${key}`);
+    if (idleEl)   idleEl.classList.remove('hidden');
+    if (loadedEl) loadedEl.classList.add('hidden');
+    if (inp)      inp.value = '';
+    if (key === 'acmm') {
+        document.getElementById('btn-process-acmm').disabled = true;
+        document.getElementById('acmm-ready-msg').textContent = 'Upload a file to enable processing';
+        document.getElementById('acmm-ready-msg').style.color = '';
+        document.getElementById('results-acmm').classList.add('hidden');
+    }
+    if (key === 'bri-csv' || key === 'bri-mid') updateBRIReadyState();
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  MAIN PROCESSING – ACMM                                        */
+/* ─────────────────────────────────────────────────────────────── */
+async function processACMM() {
+    const file = state.acmm.file;
+    if (!file) return;
+
+    // Show progress
+    document.getElementById('progress-acmm').classList.remove('hidden');
+    document.getElementById('results-acmm').classList.add('hidden');
+    document.getElementById('btn-process-acmm').disabled = true;
+    setProgress('acmm', 5, 'Reading file…');
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        setProgress('acmm', 20, 'Parsing workbook…');
+
+        const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+        state.acmm.workbook = wb;
+
+        // Find the main sheet
+        const sheetName = wb.SheetNames.find(n =>
+            n.toLowerCase().includes('transaction') || n === wb.SheetNames[0]
+        );
+        const ws = wb.Sheets[sheetName];
+        const rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, dateNF: 'yyyy-mm-dd' });
+
+        setProgress('acmm', 40, 'Identifying header row…');
+
+        // Find data header row (row with "Tanggal" in col A)
+        let headerRowIdx = -1;
+        for (let i = 0; i < rawRows.length; i++) {
+            if (rawRows[i][0] === 'Tanggal') { headerRowIdx = i; break; }
+        }
+        if (headerRowIdx === -1) throw new Error('Cannot find header row. Ensure column A has "Tanggal".');
+
+        const headers = rawRows[headerRowIdx];
+        const dataRows = rawRows.slice(headerRowIdx + 1).filter(r => r[0]); // skip empty rows
+
+        setProgress('acmm', 60, `Processing ${dataRows.length} rows…`);
+
+        // Column indices (0-based)
+        const COL_DATE     = 0;   // A – Tanggal
+        const COL_STORE    = 1;   // B – Store (code)
+        const COL_STORNAME = 2;   // C – Store Name  ← kode toko in brackets
+        const COL_TYPE     = 11;  // L – Type (Debit/Credit)
+        const COL_GL       = 12;  // M – GL Account Code
+        const COL_AMOUNT   = 13;  // N – Amount
+
+        // Collect unique GL codes
+        const glCodeSet = new Set();
+        dataRows.forEach(r => { if (r[COL_GL]) glCodeSet.add(String(r[COL_GL]).trim()); });
+        const glCodes = [...glCodeSet].sort();
+
+        // Helper: extract Kode Rekon
+        function getKodeRekon(row) {
+            const dateVal = row[COL_DATE];
+            const storeName = String(row[COL_STORNAME] || '');
+            // Day from date string (format yyyy-mm-dd or Date obj)
+            let day = '';
+            if (dateVal) {
+                const match = String(dateVal).match(/(\d{4})-(\d{2})-(\d{2})/);
+                if (match) day = parseInt(match[3], 10).toString();
+                else {
+                    // Try direct day extraction
+                    const d = new Date(dateVal);
+                    if (!isNaN(d)) day = d.getDate().toString();
+                }
+            }
+            // Kode toko from brackets
+            const bracketMatch = storeName.match(/\(([^)]+)\)/);
+            const kode = bracketMatch ? bracketMatch[1] : String(row[COL_STORE] || '');
+            return day + kode;
+        }
+
+        // Group by GL Code → then by Kode Rekon → sum Debit/Credit
+        // Structure: { glCode: { kodeRekon: { debit:0, credit:0 } } }
+        const glData = {};
+        const allDates = new Set();
+
+        dataRows.forEach(r => {
+            const gl     = String(r[COL_GL] || '').trim();
+            if (!gl) return;
+            const type   = String(r[COL_TYPE] || '').trim().toLowerCase();
+            const amount = parseFloat(String(r[COL_AMOUNT] || '0').replace(/,/g,'')) || 0;
+            const kodeRekon = getKodeRekon(r);
+            const dateStr = String(r[COL_DATE] || '');
+            if (dateStr) allDates.add(dateStr.slice(0,10));
+
+            if (!glData[gl]) glData[gl] = {};
+            if (!glData[gl][kodeRekon]) glData[gl][kodeRekon] = { debit: 0, credit: 0 };
+
+            if (type === 'debit')       glData[gl][kodeRekon].debit  += amount;
+            else if (type === 'credit') glData[gl][kodeRekon].credit += amount;
+        });
+
+        setProgress('acmm', 80, 'Building preview…');
+
+        // Build flat preview list
+        const previewRows = [];
+        Object.keys(glData).sort().forEach(gl => {
+            Object.keys(glData[gl]).sort().forEach(kr => {
+                const { debit, credit } = glData[gl][kr];
+                previewRows.push({ gl, kr, debit, credit, net: debit - credit });
+            });
+        });
+
+        // Populate filter
+        const filterSel = document.getElementById('preview-gl-filter');
+        filterSel.innerHTML = '<option value="">All GL Codes</option>';
+        glCodes.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g; opt.textContent = g;
+            filterSel.appendChild(opt);
+        });
+
+        // Store processed data
+        state.acmm.processed = {
+            originalSheetName: sheetName,
+            originalRows: rawRows,
+            headerRowIdx,
+            headers,
+            dataRows,
+            glCodes,
+            glData,
+            previewRows,
+            allDates: [...allDates].sort()
+        };
+
+        setProgress('acmm', 100, 'Done!');
+
+        // Update stats
+        const uniqueKodes = new Set(previewRows.map(r => r.kr));
+        document.getElementById('stat-total-rows').textContent = dataRows.length.toLocaleString();
+        document.getElementById('stat-gl-count').textContent = glCodes.length;
+        document.getElementById('stat-kode-count').textContent = uniqueKodes.size;
+        const dates = state.acmm.processed.allDates;
+        document.getElementById('stat-date-range').textContent =
+            dates.length ? (dates[0] === dates[dates.length-1] ? dates[0] : `${dates[0]} – ${dates[dates.length-1]}`) : '—';
+
+        // GL badges
+        const badgeContainer = document.getElementById('gl-badges');
+        badgeContainer.innerHTML = glCodes.map(g => `<span class="gl-badge"><i class="fas fa-tag"></i>${g}</span>`).join('');
+
+        renderPreview();
+        document.getElementById('output-info').textContent =
+            `Will generate 1 workbook with ${glCodes.length + 1} sheets (${glCodes.length} GL sheets + 1 reference sheet)`;
+
+        setTimeout(() => {
+            document.getElementById('progress-acmm').classList.add('hidden');
+            document.getElementById('results-acmm').classList.remove('hidden');
+            document.getElementById('btn-process-acmm').disabled = false;
+        }, 500);
+
+    } catch (err) {
+        document.getElementById('progress-acmm').classList.add('hidden');
+        document.getElementById('btn-process-acmm').disabled = false;
+        document.getElementById('dropzone-acmm').classList.add('error');
+        alert('Error processing file:\n' + err.message);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  RENDER PREVIEW TABLE                                           */
+/* ─────────────────────────────────────────────────────────────── */
+function renderPreview() {
+    const filterGL = document.getElementById('preview-gl-filter').value;
+    const pr = state.acmm.processed;
+    if (!pr) return;
+
+    let rows = pr.previewRows;
+    if (filterGL) rows = rows.filter(r => r.gl === filterGL);
+    rows = rows.slice(0, 200);
+
+    const tbody = document.getElementById('preview-tbody');
+    tbody.innerHTML = rows.map(r => `
+        <tr>
+            <td class="font-mono font-semibold text-indigo-700">${r.kr}</td>
+            <td class="text-gray-600 text-xs">${r.gl}</td>
+            <td class="text-emerald-700">${fmtNum(r.debit)}</td>
+            <td class="text-rose-600">${fmtNum(r.credit)}</td>
+            <td class="text-right font-semibold ${r.net >= 0 ? 'text-gray-800' : 'text-red-600'}">${fmtNum(r.net)}</td>
+        </tr>
+    `).join('');
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  DOWNLOAD OUTPUT WORKBOOK                                       */
+/* ─────────────────────────────────────────────────────────────── */
+function downloadOutput() {
+    const pr = state.acmm.processed;
+    if (!pr) return;
+
+    const outWb = XLSX.utils.book_new();
+
+    /* ── Sheet 1: Original Reference Sheet ── */
+    const refWs = XLSX.utils.aoa_to_sheet(pr.originalRows);
+    // Auto-width hint
+    const refColWidths = pr.headers.map((h, i) => {
+        const maxLen = Math.max(
+            String(h || '').length,
+            ...pr.dataRows.slice(0, 100).map(r => String(r[i] || '').length)
+        );
+        return { wch: Math.min(maxLen + 2, 40) };
+    });
+    refWs['!cols'] = refColWidths;
+    XLSX.utils.book_append_sheet(outWb, refWs, 'Reference (Original)');
+
+    /* ── GL Sheets ── */
+    pr.glCodes.forEach(gl => {
+        const glRows = pr.glData[gl];
+
+        // Build output rows: Col A = Kode Rekon, Col B = Net Amount
+        const sheetData = [['Kode Rekon', 'Gross Amount', 'Debit Total', 'Credit Total']];
+
+        Object.keys(glRows).sort().forEach(kr => {
+            const { debit, credit } = glRows[kr];
+            const net = debit - credit;
+            sheetData.push([kr, net, debit, credit]);
+        });
+
+        // Add totals row
+        const totDebit  = Object.values(glRows).reduce((s, v) => s + v.debit, 0);
+        const totCredit = Object.values(glRows).reduce((s, v) => s + v.credit, 0);
+        sheetData.push(['TOTAL', totDebit - totCredit, totDebit, totCredit]);
+
+        const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+        // Style header row (manual cell formatting)
+        const headerStyle = { font: { bold: true }, fill: { fgColor: { rgb: '4F46E5' } } };
+        ['A1','B1','C1','D1'].forEach(cell => {
+            if (ws[cell]) ws[cell].s = headerStyle;
+        });
+
+        // Style totals row
+        const totRowIdx = sheetData.length;
+        ['A','B','C','D'].forEach(col => {
+            const cell = col + totRowIdx;
+            if (ws[cell]) ws[cell].s = { font: { bold: true } };
+        });
+
+        ws['!cols'] = [{ wch: 20 }, { wch: 18 }, { wch: 16 }, { wch: 16 }];
+
+        // Sheet name: use GL code (truncate to 31 chars, sanitize)
+        const sheetName = sanitizeSheetName(gl);
+        XLSX.utils.book_append_sheet(outWb, ws, sheetName);
+    });
+
+    /* ── Generate file name ── */
+    const dates = pr.allDates;
+    const dateTag = dates.length ? dates[0].replace(/-/g,'') : 'output';
+    const fileName = `Rekon_Split_${dateTag}.xlsx`;
+
+    XLSX.writeFile(outWb, fileName);
+    document.getElementById('output-info').textContent = `✓ Downloaded: ${fileName}`;
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  RESET                                                          */
+/* ─────────────────────────────────────────────────────────────── */
+function resetACMM() {
+    clearFile(new Event('click'), 'acmm');
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  BRI READY STATE CHECK                                          */
+/* ─────────────────────────────────────────────────────────────── */
+function updateBRIReadyState() {
+    const csvReady = !!(state['bri-csv'] && state['bri-csv'].file);
+    const midReady = !!(state['bri-mid'] && state['bri-mid'].file);
+    const btn = document.getElementById('btn-process-bri');
+    const msg = document.getElementById('bri-ready-msg');
+    if (csvReady && midReady) {
+        btn.disabled = false;
+        msg.textContent = '✓ Both files ready – click to process';
+        msg.style.color = '#059669';
+    } else if (csvReady) {
+        btn.disabled = true;
+        msg.textContent = 'Still need: BRI Master MID (.xlsx)';
+        msg.style.color = '#d97706';
+    } else if (midReady) {
+        btn.disabled = true;
+        msg.textContent = 'Still need: BRI Statement CSV';
+        msg.style.color = '#d97706';
+    } else {
+        btn.disabled = true;
+        msg.textContent = 'Upload both files to enable processing';
+        msg.style.color = '';
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  CSV PARSER (quoted fields, comma-delimited)                    */
+/* ─────────────────────────────────────────────────────────────── */
+function parseCSV(text) {
+    const rows = [];
+    let row = [], field = '', inQuote = false;
+    for (let i = 0; i < text.length; i++) {
+        const ch = text[i], next = text[i+1];
+        if (inQuote) {
+            if (ch === '"' && next === '"') { field += '"'; i++; }
+            else if (ch === '"') { inQuote = false; }
+            else { field += ch; }
+        } else {
+            if      (ch === '"') { inQuote = true; }
+            else if (ch === ',') { row.push(field); field = ''; }
+            else if (ch === '\n' || (ch === '\r' && next === '\n')) {
+                row.push(field); field = '';
+                if (row.some(c => c !== '')) rows.push(row);
+                row = []; if (ch === '\r') i++;
+            } else if (ch === '\r') {
+                row.push(field); field = '';
+                if (row.some(c => c !== '')) rows.push(row);
+                row = [];
+            } else { field += ch; }
+        }
+    }
+    if (field || row.length) { row.push(field); if (row.some(c => c !== '')) rows.push(row); }
+    return rows;
+}
+
+function cleanCell(v) { return v === undefined || v === null ? '' : String(v).replace(/^"|"$/g,'').trim(); }
+function readFileAsText(file) {
+    return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload  = e => res(e.target.result);
+        r.onerror = () => rej(new Error('Failed to read file'));
+        r.readAsText(file, 'utf-8');
+    });
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  MAIN PROCESSING – BRI STATEMENT                               */
+/* ─────────────────────────────────────────────────────────────── */
+async function processBRI() {
+    const csvFile = state['bri-csv'].file;
+    const midFile = state['bri-mid'].file;
+    if (!csvFile || !midFile) return;
+
+    document.getElementById('progress-bri').classList.remove('hidden');
+    document.getElementById('results-bri').classList.add('hidden');
+    document.getElementById('btn-process-bri').disabled = true;
+    setProgress('bri', 5, 'Reading BRI Master MID…');
+
+    try {
+        /* ── Step 1: Parse Master MID XLSX ── */
+        const midBuffer = await midFile.arrayBuffer();
+        const midWb = XLSX.read(midBuffer, { type: 'array' });
+        const midWs = midWb.Sheets[midWb.SheetNames[0]];
+        const midRows = XLSX.utils.sheet_to_json(midWs, { header: 1, raw: true });
+        const midMap = {};  // '1999xxxxxx' → outcode
+        for (let i = 1; i < midRows.length; i++) {
+            const r = midRows[i];
+            if (r[0] && r[1]) midMap[String(r[0]).trim()] = String(r[1]).trim();
+        }
+        setProgress('bri', 20, `Loaded ${Object.keys(midMap).length} MID mappings. Reading CSV…`);
+
+        /* ── Step 2: Parse BRI CSV ── */
+        const csvText = await readFileAsText(csvFile);
+        setProgress('bri', 40, 'Parsing CSV rows…');
+        const csvRows = parseCSV(csvText);
+        if (csvRows.length < 2) throw new Error('CSV appears empty or invalid.');
+
+        // Build column-index map from header row
+        const csvHeaders = csvRows[0];
+        const colIdx = {};
+        csvHeaders.forEach((h, i) => { colIdx[cleanCell(h)] = i; });
+
+        const IDX_DATE = colIdx['TGL_TRAN']  ?? 2;
+        const IDX_DESK = colIdx['DESK_TRAN'] ?? 6;
+        const IDX_SIGN = colIdx['GLSIGN']    ?? 11;
+
+        const MID_RE = /00(1\d{9})/;         // matches 001999xxxxxx  → group(0)[2:] = 1999xxxxxx
+        const AMT_RE = /AMT:([\d.,]+)/;      // AMT:4.127.551,00
+
+        setProgress('bri', 55, 'Filtering Cr rows…');
+
+        const processedRows = [];
+        const unmatchedMIDSet = new Set();
+        let matchedCount = 0, crCount = 0;
+
+        for (const row of csvRows.slice(1)) {
+            if (row.length < 2) continue;
+            const sign = cleanCell(row[IDX_SIGN]);
+            if (sign !== 'Cr') continue;
+            crCount++;
+
+            const dateStr  = cleanCell(row[IDX_DATE]);   // '2026-07-01 03:22:44'
+            const desk     = cleanCell(row[IDX_DESK]);
+
+            // Day from date
+            const dateParts = dateStr.split(' ')[0].split('-');   // ['2026','07','01']
+            const day       = dateParts.length === 3 ? parseInt(dateParts[2], 10).toString() : '?';
+            const dateOnly  = dateParts.length === 3 ? dateParts.join('-') : dateStr;
+
+            // MID extraction
+            const midMatch = MID_RE.exec(desk);
+            const mid10    = midMatch ? midMatch[0].slice(2) : null;   // strip leading '00'
+
+            // Outlet code lookup
+            let outcode = 'UNKNOWN';
+            if (mid10) {
+                if (midMap[mid10]) { outcode = midMap[mid10]; matchedCount++; }
+                else               { outcode = `UNKNOWN_${mid10}`; unmatchedMIDSet.add(mid10); }
+            } else { unmatchedMIDSet.add('NO_MID'); }
+
+            // AMT – Indonesian format 4.127.551,00 → 4127551
+            const amtMatch = AMT_RE.exec(desk);
+            let amt = 0;
+            if (amtMatch) amt = parseFloat(amtMatch[1].replace(/\./g,'').replace(',','.')) || 0;
+
+            const kodeRekon = day + outcode;
+            processedRows.push({ kodeRekon, outcode, mid: mid10 || 'N/A', date: dateOnly, day, amt });
+        }
+
+        setProgress('bri', 75, 'Aggregating by Kode Rekon…');
+
+        /* ── Step 3: Aggregate ── */
+        const kodeMap = {};
+        for (const r of processedRows) {
+            if (!kodeMap[r.kodeRekon]) {
+                kodeMap[r.kodeRekon] = { kodeRekon: r.kodeRekon, outcode: r.outcode,
+                                         date: r.date, day: r.day, mid: r.mid,
+                                         totalAmt: 0, rowCount: 0 };
+            }
+            kodeMap[r.kodeRekon].totalAmt += r.amt;
+            kodeMap[r.kodeRekon].rowCount += 1;
+        }
+        const summaryRows = Object.values(kodeMap).sort((a,b) => a.kodeRekon.localeCompare(b.kodeRekon));
+
+        /* ── Step 4: Date filter options ── */
+        const allDates = [...new Set(processedRows.map(r => r.date))].sort();
+        const filterSel = document.getElementById('bri-preview-filter');
+        filterSel.innerHTML = '<option value="">All Dates</option>';
+        allDates.forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; filterSel.appendChild(o); });
+
+        setProgress('bri', 95, 'Finalising…');
+
+        state.bri.processed = { summaryRows, processedRows, allDates, crCount, matchedCount, unmatchedMIDSet, midMap, csvHeaders, csvRows };
+
+        // Stats
+        document.getElementById('bri-stat-cr-rows').textContent  = crCount.toLocaleString();
+        document.getElementById('bri-stat-matched').textContent  = matchedCount.toLocaleString();
+        document.getElementById('bri-stat-kode').textContent     = summaryRows.length.toLocaleString();
+        document.getElementById('bri-stat-unmatched').textContent= unmatchedMIDSet.size.toLocaleString();
+
+        const warnEl = document.getElementById('bri-unmatched-warn');
+        if (unmatchedMIDSet.size > 0) {
+            warnEl.classList.remove('hidden');
+            document.getElementById('bri-unmatched-list').textContent = [...unmatchedMIDSet].sort().join(', ');
+        } else { warnEl.classList.add('hidden'); }
+
+        document.getElementById('bri-output-info').textContent =
+            `Will generate 1 workbook: ${summaryRows.length} Kode Rekon rows + Cr detail sheet`;
+
+        renderBRIPreview();
+        setProgress('bri', 100, 'Done!');
+        setTimeout(() => {
+            document.getElementById('progress-bri').classList.add('hidden');
+            document.getElementById('results-bri').classList.remove('hidden');
+            document.getElementById('btn-process-bri').disabled = false;
+        }, 400);
+
+    } catch (err) {
+        document.getElementById('progress-bri').classList.add('hidden');
+        document.getElementById('btn-process-bri').disabled = false;
+        alert('Error processing BRI files:\n' + err.message);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  RENDER BRI PREVIEW                                             */
+/* ─────────────────────────────────────────────────────────────── */
+function renderBRIPreview() {
+    const filterDate = document.getElementById('bri-preview-filter').value;
+    const pr = state.bri.processed;
+    if (!pr) return;
+    let rows = pr.summaryRows;
+    if (filterDate) rows = rows.filter(r => r.date === filterDate);
+    rows = rows.slice(0, 200);
+    document.getElementById('bri-preview-tbody').innerHTML = rows.map(r => `
+        <tr>
+            <td class="font-mono font-semibold text-green-700">${r.kodeRekon}</td>
+            <td class="text-gray-600">${r.outcode}</td>
+            <td class="text-gray-500 text-xs">${r.date}</td>
+            <td class="text-gray-400 text-xs font-mono">${r.mid}</td>
+            <td class="text-right font-semibold text-gray-800">${fmtNum(r.totalAmt)}</td>
+        </tr>`).join('');
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  DOWNLOAD BRI OUTPUT                                            */
+/* ─────────────────────────────────────────────────────────────── */
+function downloadBRIOutput() {
+    const pr = state.bri.processed;
+    if (!pr) return;
+    const outWb = XLSX.utils.book_new();
+
+    // Sheet 1: Summary – Kode Rekon → Gross Amount
+    const sumData = [['Kode Rekon', 'Gross Amount', 'Outlet Code', 'Date', 'Tx Count']];
+    pr.summaryRows.forEach(r => sumData.push([r.kodeRekon, r.totalAmt, r.outcode, r.date, r.rowCount]));
+    sumData.push(['TOTAL', pr.summaryRows.reduce((s,r)=>s+r.totalAmt,0), '', '', pr.crCount]);
+    const sumWs = XLSX.utils.aoa_to_sheet(sumData);
+    sumWs['!cols'] = [{ wch:20 },{ wch:18 },{ wch:16 },{ wch:14 },{ wch:10 }];
+    XLSX.utils.book_append_sheet(outWb, sumWs, 'BRI Kode Rekon Summary');
+
+    // Sheet 2: Detail – each Cr row
+    const detData = [['Kode Rekon','Outlet Code','Date','MID','Gross Amount']];
+    pr.processedRows.forEach(r => detData.push([r.kodeRekon, r.outcode, r.date, r.mid, r.amt]));
+    const detWs = XLSX.utils.aoa_to_sheet(detData);
+    detWs['!cols'] = [{ wch:20 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:16 }];
+    XLSX.utils.book_append_sheet(outWb, detWs, 'BRI Detail (Cr Only)');
+
+    // Sheet 3: Original CSV data as reference
+    if (pr.csvRows && pr.csvRows.length > 0) {
+        const refWs = XLSX.utils.aoa_to_sheet(pr.csvRows);
+        // Auto column widths based on header names
+        const hdrRow = pr.csvRows[0] || [];
+        refWs['!cols'] = hdrRow.map(h => ({ wch: Math.min(String(h || '').length + 4, 40) }));
+        XLSX.utils.book_append_sheet(outWb, refWs, 'Reference (Original)');
+    }
+
+    const dateTag  = pr.allDates.length ? pr.allDates[0].replace(/-/g,'') : 'output';
+    const fileName = `BRI_Rekon_Split_${dateTag}.xlsx`;
+    XLSX.writeFile(outWb, fileName);
+    document.getElementById('bri-output-info').textContent = `✓ Downloaded: ${fileName}`;
+}
+
+function resetBRI() {
+    clearFile(new Event('click'), 'bri-csv');
+    clearFile(new Event('click'), 'bri-mid');
+    state.bri.processed = null;
+    document.getElementById('results-bri').classList.add('hidden');
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  HELPERS                                                        */
+/* ─────────────────────────────────────────────────────────────── */
+function setProgress(key, pct, label) {
+    document.getElementById(`progress-bar-${key}`).style.width = pct + '%';
+    document.getElementById(`progress-label-${key}`).textContent = label;
+}
+
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function fmtNum(n) {
+    return n.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function sanitizeSheetName(name) {
+    // Excel sheet name: max 31 chars, no special chars
+    return name.replace(/[\\\/\*\?\[\]:]/g, '_').substring(0, 31);
+}
+</script>
+</body>
+</html>
