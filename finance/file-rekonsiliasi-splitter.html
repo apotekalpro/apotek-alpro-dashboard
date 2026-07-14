@@ -165,6 +165,29 @@
         .file-type-2    { background:#d1fae5; color:#065f46; }
         .file-type-3    { background:#fef3c7; color:#92400e; }
 
+        /* ─── Rekon comparison rows ─── */
+        .row-match   { background:#f0fdf4; }
+        .row-diff    { background:#fff7ed; }
+        .row-bri-only{ background:#eff6ff; }
+        .row-acmm-only{ background:#fdf4ff; }
+        .badge-match  { background:#d1fae5; color:#065f46; }
+        .badge-diff   { background:#fed7aa; color:#92400e; }
+        .badge-bri    { background:#dbeafe; color:#1e40af; }
+        .badge-acmm   { background:#f3e8ff; color:#6b21a8; }
+        .badge-pill { display:inline-block; padding:0.15rem 0.6rem; border-radius:999px;
+                      font-size:0.72rem; font-weight:700; }
+
+        /* ─── Rekon ready banner ─── */
+        .rekon-ready-banner {
+            background: linear-gradient(135deg,#4f46e5,#7c3aed);
+            border-radius:12px; color:white; padding:1rem 1.25rem;
+            display:flex; align-items:center; gap:0.75rem; cursor:pointer;
+            transition:opacity 0.2s;
+        }
+        .rekon-ready-banner:hover { opacity:0.9; }
+        .rekon-not-ready { background:#f3f4f6; border-radius:12px; color:#9ca3af;
+                           padding:1rem 1.25rem; display:flex; align-items:center; gap:0.75rem; }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -201,6 +224,10 @@
             <button class="tab-btn" onclick="switchTab('file3')" id="tab-file3">
                 <i class="fas fa-file-alt mr-2 text-amber-600"></i>File 3
                 <span class="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Coming Soon</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('rekon')" id="tab-rekon">
+                <i class="fas fa-balance-scale mr-2 text-purple-600"></i>BRI × ACMM Rekonsiliasi
+                <span class="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full" id="rekon-tab-badge">Not Ready</span>
             </button>
         </div>
 
@@ -467,6 +494,109 @@
             </div>
         </div>
 
+        <!-- ── BRI × ACMM Rekonsiliasi Tab ── -->
+        <div id="panel-rekon" class="hidden p-6">
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">BRI &times; ACMM Rekonsiliasi</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">
+                        Compares <strong>BRI Kode Rekon Gross Amount</strong> against
+                        <strong>ACMM GL&nbsp;11201013 (PIUTANG KARTU KREDIT&nbsp;&ndash;&nbsp;BRI)</strong>
+                        Gross Amount per matching Kode Rekon.
+                    </p>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-purple-100 text-purple-800">Auto</span>
+            </div>
+
+            <!-- Readiness status -->
+            <div id="rekon-not-ready-box" class="rekon-not-ready mb-5">
+                <i class="fas fa-lock text-gray-400 text-xl"></i>
+                <div>
+                    <p class="font-semibold text-gray-500">Both files must be processed first</p>
+                    <p class="text-sm text-gray-400" id="rekon-missing-msg">Process the ACMM file and the BRI Statement to unlock this panel.</p>
+                </div>
+            </div>
+
+            <div id="rekon-ready-box" class="hidden">
+                <!-- Run button -->
+                <div class="flex items-center gap-3 mb-6">
+                    <button id="btn-run-rekon" class="btn-primary" onclick="runRekon()">
+                        <i class="fas fa-play mr-2"></i>Run Rekonsiliasi
+                    </button>
+                    <button class="btn-outline" onclick="resetRekon()" id="btn-reset-rekon">
+                        <i class="fas fa-redo mr-2"></i>Reset
+                    </button>
+                    <span class="text-sm text-gray-400" id="rekon-info-msg"></span>
+                </div>
+
+                <!-- Results -->
+                <div id="results-rekon" class="hidden">
+                    <!-- Stats -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                        <div class="stat-card stat-green">
+                            <p class="text-xs text-emerald-200 mb-1">Matched &amp; Equal</p>
+                            <p class="text-2xl font-bold" id="rk-stat-match">0</p>
+                        </div>
+                        <div class="stat-card stat-amber">
+                            <p class="text-xs text-amber-200 mb-1">Matched, Diff Amount</p>
+                            <p class="text-2xl font-bold" id="rk-stat-diff">0</p>
+                        </div>
+                        <div class="stat-card stat-blue">
+                            <p class="text-xs text-indigo-200 mb-1">BRI Only</p>
+                            <p class="text-2xl font-bold" id="rk-stat-bri">0</p>
+                        </div>
+                        <div class="stat-card stat-rose">
+                            <p class="text-xs text-rose-200 mb-1">ACMM Only</p>
+                            <p class="text-2xl font-bold" id="rk-stat-acmm">0</p>
+                        </div>
+                    </div>
+
+                    <!-- Tolerance input -->
+                    <div class="flex items-center gap-3 mb-3">
+                        <label class="text-sm font-semibold text-gray-600">Tolerance (Rp):</label>
+                        <input type="number" id="rekon-tolerance" value="1" min="0" step="1"
+                            class="border border-gray-300 rounded px-2 py-1 text-sm w-28"
+                            onchange="runRekon()">
+                        <span class="text-xs text-gray-400">Amounts within this range are treated as equal</span>
+                        <div class="ml-auto flex items-center gap-2">
+                            <label class="text-sm font-semibold text-gray-600">Filter:</label>
+                            <select id="rekon-filter" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="renderRekonTable()">
+                                <option value="">All</option>
+                                <option value="MATCH">Matched Equal</option>
+                                <option value="DIFF">Amount Diff</option>
+                                <option value="BRI_ONLY">BRI Only</option>
+                                <option value="ACMM_ONLY">ACMM Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Comparison table -->
+                    <div class="result-table border border-gray-200 rounded-lg mb-4" style="max-height:500px">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Kode Rekon</th>
+                                    <th class="text-right">BRI Gross</th>
+                                    <th class="text-right">ACMM Gross (GL 11201013)</th>
+                                    <th class="text-right">Difference</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rekon-tbody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Download -->
+                    <div class="flex items-center gap-3">
+                        <button class="btn-success" onclick="downloadRekonOutput()">
+                            <i class="fas fa-download mr-2"></i>Download Rekonsiliasi Report (.xlsx)
+                        </button>
+                        <span class="text-sm text-gray-400" id="rekon-dl-info"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ── File 3 Placeholder ── -->
         <div id="panel-file3" class="hidden p-6">
             <div class="flex flex-col items-center justify-center py-16 text-center">
@@ -572,17 +702,19 @@ const state = {
     acmm:    { file: null, workbook: null, processed: null },
     'bri-csv': { file: null },
     'bri-mid': { file: null },
-    bri:     { processed: null }
+    bri:     { processed: null },
+    rekon:   null   // populated by runRekon()
 };
 
 /* ─────────────────────────────────────────────────────────────── */
 /*  TAB SWITCHING                                                  */
 /* ─────────────────────────────────────────────────────────────── */
 function switchTab(name) {
-    ['acmm','file2','file3'].forEach(t => {
+    ['acmm','file2','file3','rekon'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
         document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== name);
     });
+    if (name === 'rekon') checkRekonReadiness();
 }
 
 /* ─────────────────────────────────────────────────────────────── */
@@ -807,6 +939,7 @@ async function processACMM() {
             document.getElementById('progress-acmm').classList.add('hidden');
             document.getElementById('results-acmm').classList.remove('hidden');
             document.getElementById('btn-process-acmm').disabled = false;
+            checkRekonReadiness();
         }, 500);
 
     } catch (err) {
@@ -1126,6 +1259,7 @@ async function processBRI() {
             document.getElementById('progress-bri').classList.add('hidden');
             document.getElementById('results-bri').classList.remove('hidden');
             document.getElementById('btn-process-bri').disabled = false;
+            checkRekonReadiness();
         }, 400);
 
     } catch (err) {
@@ -1198,6 +1332,199 @@ function resetBRI() {
     clearFile(new Event('click'), 'bri-mid');
     state.bri.processed = null;
     document.getElementById('results-bri').classList.add('hidden');
+    checkRekonReadiness();
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  REKONSILIASI – READINESS CHECK                                 */
+/* ─────────────────────────────────────────────────────────────── */
+function checkRekonReadiness() {
+    const acmmOk = !!(state.acmm.processed);
+    const briOk  = !!(state.bri.processed);
+    const badge  = document.getElementById('rekon-tab-badge');
+    const notBox = document.getElementById('rekon-not-ready-box');
+    const rdyBox = document.getElementById('rekon-ready-box');
+    const missMsg= document.getElementById('rekon-missing-msg');
+
+    if (acmmOk && briOk) {
+        badge.textContent = 'Ready!';
+        badge.className = 'ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold';
+        notBox.classList.add('hidden');
+        rdyBox.classList.remove('hidden');
+    } else {
+        const missing = [];
+        if (!acmmOk) missing.push('ACMM Sales File');
+        if (!briOk)  missing.push('BRI Statement');
+        badge.textContent = 'Not Ready';
+        badge.className = 'ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full';
+        notBox.classList.remove('hidden');
+        rdyBox.classList.add('hidden');
+        missMsg.textContent = `Still need to process: ${missing.join(' and ')}.`;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  REKONSILIASI – RUN COMPARISON                                  */
+/* ─────────────────────────────────────────────────────────────── */
+function runRekon() {
+    const briPr  = state.bri.processed;
+    const acmmPr = state.acmm.processed;
+    if (!briPr || !acmmPr) return;
+
+    // Find the BRI GL code in ACMM data (11201013)
+    const BRI_GL_KEY = Object.keys(acmmPr.glData).find(k => k.startsWith('11201013'));
+    if (!BRI_GL_KEY) {
+        alert('Could not find GL code starting with 11201013 in ACMM file.\nMake sure the ACMM file contains BRI PIUTANG KARTU KREDIT data.');
+        return;
+    }
+    const acmmGL = acmmPr.glData[BRI_GL_KEY]; // { kodeRekon: { debit, credit } }
+
+    // Build ACMM map: kodeRekon → net (debit - credit)
+    const acmmMap = {};
+    Object.keys(acmmGL).forEach(kr => {
+        const { debit, credit } = acmmGL[kr];
+        acmmMap[kr] = debit - credit;
+    });
+
+    // Build BRI map: kodeRekon → totalAmt
+    const briMap = {};
+    briPr.summaryRows.forEach(r => { briMap[r.kodeRekon] = r.totalAmt; });
+
+    const tolerance = parseFloat(document.getElementById('rekon-tolerance').value) || 0;
+
+    // Union of all kode rekons
+    const allKeys = [...new Set([...Object.keys(briMap), ...Object.keys(acmmMap)])].sort();
+
+    const rows = allKeys.map(kr => {
+        const bri  = briMap[kr]  ?? null;
+        const acmm = acmmMap[kr] ?? null;
+        const diff = (bri !== null && acmm !== null) ? bri - acmm : null;
+        let status;
+        if (bri !== null && acmm !== null) {
+            status = Math.abs(diff) <= tolerance ? 'MATCH' : 'DIFF';
+        } else if (bri !== null) {
+            status = 'BRI_ONLY';
+        } else {
+            status = 'ACMM_ONLY';
+        }
+        return { kr, bri, acmm, diff, status };
+    });
+
+    state.rekon = { rows, briGLKey: BRI_GL_KEY };
+
+    // Stats
+    const cnts = { MATCH:0, DIFF:0, BRI_ONLY:0, ACMM_ONLY:0 };
+    rows.forEach(r => cnts[r.status]++);
+    document.getElementById('rk-stat-match').textContent = cnts.MATCH;
+    document.getElementById('rk-stat-diff').textContent  = cnts.DIFF;
+    document.getElementById('rk-stat-bri').textContent   = cnts.BRI_ONLY;
+    document.getElementById('rk-stat-acmm').textContent  = cnts.ACMM_ONLY;
+
+    document.getElementById('rekon-info-msg').textContent =
+        `GL used: ${BRI_GL_KEY} · ${rows.length} Kode Rekon compared`;
+
+    renderRekonTable();
+    document.getElementById('results-rekon').classList.remove('hidden');
+}
+
+function renderRekonTable() {
+    if (!state.rekon) return;
+    const filter = document.getElementById('rekon-filter').value;
+    let rows = state.rekon.rows;
+    if (filter) rows = rows.filter(r => r.status === filter);
+
+    const statusMeta = {
+        MATCH:    { label: 'Match',     cls: 'badge-match'  },
+        DIFF:     { label: 'Diff',      cls: 'badge-diff'   },
+        BRI_ONLY: { label: 'BRI Only',  cls: 'badge-bri'    },
+        ACMM_ONLY:{ label: 'ACMM Only', cls: 'badge-acmm'   }
+    };
+    const rowCls = { MATCH:'row-match', DIFF:'row-diff', BRI_ONLY:'row-bri-only', ACMM_ONLY:'row-acmm-only' };
+
+    document.getElementById('rekon-tbody').innerHTML = rows.map(r => {
+        const m = statusMeta[r.status];
+        return `<tr class="${rowCls[r.status]}">
+            <td class="font-mono font-semibold text-gray-800">${r.kr}</td>
+            <td class="text-right">${r.bri  !== null ? fmtNum(r.bri)  : '<span class="text-gray-300">—</span>'}</td>
+            <td class="text-right">${r.acmm !== null ? fmtNum(r.acmm) : '<span class="text-gray-300">—</span>'}</td>
+            <td class="text-right font-semibold ${r.diff !== null && r.diff !== 0 ? 'text-orange-600' : 'text-gray-500'}">
+                ${r.diff !== null ? fmtNum(r.diff) : '<span class="text-gray-300">—</span>'}
+            </td>
+            <td class="text-center"><span class="badge-pill ${m.cls}">${m.label}</span></td>
+        </tr>`;
+    }).join('');
+}
+
+function resetRekon() {
+    state.rekon = null;
+    document.getElementById('results-rekon').classList.add('hidden');
+    document.getElementById('rekon-info-msg').textContent = '';
+    document.getElementById('rekon-dl-info').textContent = '';
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  REKONSILIASI – DOWNLOAD REPORT                                 */
+/* ─────────────────────────────────────────────────────────────── */
+function downloadRekonOutput() {
+    if (!state.rekon) return;
+    const { rows, briGLKey } = state.rekon;
+    const outWb = XLSX.utils.book_new();
+
+    // Sheet 1: Full comparison
+    const compData = [[
+        'Kode Rekon',
+        'BRI Gross Amount',
+        `ACMM Gross Amount (${briGLKey})`,
+        'Difference (BRI - ACMM)',
+        'Status'
+    ]];
+    rows.forEach(r => compData.push([
+        r.kr,
+        r.bri  ?? '',
+        r.acmm ?? '',
+        r.diff ?? '',
+        r.status === 'MATCH' ? 'Match' :
+        r.status === 'DIFF'  ? 'Amount Diff' :
+        r.status === 'BRI_ONLY' ? 'BRI Only (missing in ACMM)' :
+        'ACMM Only (missing in BRI)'
+    ]));
+    // Totals
+    const totalBRI  = rows.reduce((s,r) => s + (r.bri  ?? 0), 0);
+    const totalACMM = rows.reduce((s,r) => s + (r.acmm ?? 0), 0);
+    compData.push(['TOTAL', totalBRI, totalACMM, totalBRI - totalACMM, '']);
+
+    const compWs = XLSX.utils.aoa_to_sheet(compData);
+    compWs['!cols'] = [{ wch:22 },{ wch:22 },{ wch:32 },{ wch:26 },{ wch:28 }];
+    XLSX.utils.book_append_sheet(outWb, compWs, 'BRI x ACMM Rekon');
+
+    // Sheet 2: Mismatches only (DIFF + BRI_ONLY + ACMM_ONLY)
+    const mismatch = rows.filter(r => r.status !== 'MATCH');
+    if (mismatch.length > 0) {
+        const mmData = [['Kode Rekon','BRI Gross','ACMM Gross','Difference','Status']];
+        mismatch.forEach(r => mmData.push([
+            r.kr, r.bri ?? '', r.acmm ?? '', r.diff ?? '',
+            r.status === 'DIFF' ? 'Amount Diff' :
+            r.status === 'BRI_ONLY' ? 'BRI Only' : 'ACMM Only'
+        ]));
+        const mmWs = XLSX.utils.aoa_to_sheet(mmData);
+        mmWs['!cols'] = [{ wch:22 },{ wch:20 },{ wch:20 },{ wch:22 },{ wch:22 }];
+        XLSX.utils.book_append_sheet(outWb, mmWs, 'Exceptions');
+    }
+
+    // Sheet 3: Matched only
+    const matched = rows.filter(r => r.status === 'MATCH');
+    if (matched.length > 0) {
+        const mData = [['Kode Rekon','BRI Gross','ACMM Gross']];
+        matched.forEach(r => mData.push([r.kr, r.bri, r.acmm]));
+        const mWs = XLSX.utils.aoa_to_sheet(mData);
+        mWs['!cols'] = [{ wch:22 },{ wch:20 },{ wch:20 }];
+        XLSX.utils.book_append_sheet(outWb, mWs, 'Matched');
+    }
+
+    const dateTag = (state.bri.processed?.allDates?.[0] ?? 'output').replace(/-/g,'');
+    const fileName = `BRI_ACMM_Rekon_${dateTag}.xlsx`;
+    XLSX.writeFile(outWb, fileName);
+    document.getElementById('rekon-dl-info').textContent = `✓ Downloaded: ${fileName}`;
 }
 
 /* ─────────────────────────────────────────────────────────────── */
