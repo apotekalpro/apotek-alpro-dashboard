@@ -1653,6 +1653,7 @@
                         transactionType,
                         totalAmount: 0,
                         transactionCount: 0,
+                        transactions: [],  // NEW: Store individual transaction details
                         weekKey: 'ALL',
                         weekLabel: 'All Dates',
                         weekStart: null,
@@ -1663,6 +1664,27 @@
                 const bcaDetail = weeklyBCA.get(detailKey);
                 bcaDetail.totalAmount += amount;
                 bcaDetail.transactionCount++;
+                
+                // NEW: Store individual transaction details for traceability
+                // Extract reference number from description
+                let reference = '';
+                if (transactionType === 'CDM') {
+                    const cdmMatch = description.match(/SETORAN VIA CDM.*?(\d{12,})/i);
+                    reference = cdmMatch ? cdmMatch[1].slice(-12) : '';
+                } else if (transactionType === 'CREDITCARD' || transactionType === 'DEBITCARD' || transactionType === 'QRIS') {
+                    const midMatch = description.match(/MID\s*:\s*(\d+)/i);
+                    reference = midMatch ? midMatch[1].slice(-7) : '';
+                } else if (transactionType === 'SETORAN_TUNAI') {
+                    // Use cabang as reference
+                    reference = cabang.toString().trim();
+                }
+                
+                bcaDetail.transactions.push({
+                    date: formatDate(tglTransaksi),
+                    amount: amount,
+                    reference: reference,
+                    description: description.substring(0, 100)  // First 100 chars for context
+                });
                 
                 // Summary by outlet only
                 const summaryKey = outletCode;
@@ -1922,6 +1944,7 @@
                         transactionType,
                         totalAmount: 0,
                         transactionCount: 0,
+                        transactions: [],  // NEW: Store individual transaction details
                         weekKey: 'ALL',
                         weekLabel: 'All Dates',
                         weekStart: null,
@@ -1932,6 +1955,14 @@
                 const briDetail = weeklyBRI.get(detailKey);
                 briDetail.totalAmount += amount;
                 briDetail.transactionCount++;
+                
+                // NEW: Store individual transaction details for traceability
+                briDetail.transactions.push({
+                    date: formatDate(tglTran),
+                    amount: amount,
+                    reference: mid || '',  // Use MID as reference
+                    description: description.substring(0, 100)  // First 100 chars for context
+                });
                 
                 // Summary by outlet only
                 const summaryKey = outletCode;
@@ -2005,6 +2036,7 @@
                 // Get BCA CASH total (CDM + SETORAN_TUNAI)
                 let bcaCashTotal = 0;
                 const bcaCashBreakdown = [];
+                const bcaCashTransactionDetails = [];  // NEW: Store individual transaction details
                 
                 // Add CDM
                 const cdmKey = `${outletCode}|CDM`;
@@ -2012,6 +2044,15 @@
                     const cdmDetail = bcaData.weeklyBCA.get(cdmKey);
                     bcaCashTotal += cdmDetail.totalAmount;
                     bcaCashBreakdown.push(`CDM: ${cdmDetail.totalAmount.toFixed(2)} (${cdmDetail.transactionCount} txns)`);
+                    
+                    // NEW: Add individual transaction details
+                    if (cdmDetail.transactions && cdmDetail.transactions.length > 0) {
+                        cdmDetail.transactions.forEach((txn, idx) => {
+                            bcaCashTransactionDetails.push(
+                                `[CDM ${idx + 1}] ${txn.date} | Rp ${txn.amount.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})} | Ref: ${txn.reference}`
+                            );
+                        });
+                    }
                 }
                 
                 // Add SETORAN_TUNAI
@@ -2020,6 +2061,15 @@
                     const setoranDetail = bcaData.weeklyBCA.get(setoranKey);
                     bcaCashTotal += setoranDetail.totalAmount;
                     bcaCashBreakdown.push(`SETORAN: ${setoranDetail.totalAmount.toFixed(2)} (${setoranDetail.transactionCount} txns)`);
+                    
+                    // NEW: Add individual transaction details
+                    if (setoranDetail.transactions && setoranDetail.transactions.length > 0) {
+                        setoranDetail.transactions.forEach((txn, idx) => {
+                            bcaCashTransactionDetails.push(
+                                `[SETORAN ${idx + 1}] ${txn.date} | Rp ${txn.amount.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})} | Ref: ${txn.reference}`
+                            );
+                        });
+                    }
                 }
                 
                 // Only add to results if there's data from either side
@@ -2096,7 +2146,8 @@
                         fraudAlert: fraudAlert,  // NEW: Flag for daily mode fraud detection
                         matchingMode: matchingMode,  // NEW: Store which mode was used
                         acmmBreakdown: acmmCashMethods.join('; '),
-                        bcaBreakdown: bcaCashBreakdown.join('; ')
+                        bcaBreakdown: bcaCashBreakdown.join('; '),
+                        transactionDetails: bcaCashTransactionDetails.join('\n')  // NEW: Individual transaction details
                     });
                 }
             }
@@ -2142,18 +2193,29 @@
                 // Get BCA NON-CASH total
                 let bcaNonCashTotal = 0;
                 const bcaNonCashBreakdown = [];
+                const bcaNonCashTransactionDetails = [];  // NEW: Store individual transaction details
                 for (const transactionType of nonCashTypes) {
                     const key = `${outletCode}|${transactionType}`;
                     if (bcaData.weeklyBCA.has(key)) {
                         const detail = bcaData.weeklyBCA.get(key);
                         bcaNonCashTotal += detail.totalAmount;
                         bcaNonCashBreakdown.push(`${transactionType}: ${detail.totalAmount.toFixed(2)} (${detail.transactionCount} txns)`);
+                        
+                        // NEW: Add individual transaction details
+                        if (detail.transactions && detail.transactions.length > 0) {
+                            detail.transactions.forEach((txn, idx) => {
+                                bcaNonCashTransactionDetails.push(
+                                    `[${transactionType} ${idx + 1}] ${txn.date} | Rp ${txn.amount.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})} | Ref: ${txn.reference}`
+                                );
+                            });
+                        }
                     }
                 }
                 
                 // Get BRI NON-CASH total
                 let briNonCashTotal = 0;
                 const briNonCashBreakdown = [];
+                const briNonCashTransactionDetails = [];  // NEW: Store individual transaction details
                 if (briData) {
                     for (const transactionType of nonCashTypes) {
                         const key = `${outletCode}|${transactionType}`;
@@ -2161,6 +2223,15 @@
                             const detail = briData.weeklyBRI.get(key);
                             briNonCashTotal += detail.totalAmount;
                             briNonCashBreakdown.push(`${transactionType}: ${detail.totalAmount.toFixed(2)} (${detail.transactionCount} txns)`);
+                            
+                            // NEW: Add individual transaction details
+                            if (detail.transactions && detail.transactions.length > 0) {
+                                detail.transactions.forEach((txn, idx) => {
+                                    briNonCashTransactionDetails.push(
+                                        `[${transactionType} ${idx + 1}] ${txn.date} | Rp ${txn.amount.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})} | Ref: ${txn.reference}`
+                                    );
+                                });
+                            }
                         }
                     }
                 }
@@ -2216,6 +2287,17 @@
                         }
                     }
                     
+                    // NEW: Combine BCA and BRI transaction details
+                    const allTransactionDetails = [];
+                    if (bcaNonCashTransactionDetails.length > 0) {
+                        allTransactionDetails.push('=== BCA Transactions ===');
+                        allTransactionDetails.push(...bcaNonCashTransactionDetails);
+                    }
+                    if (briNonCashTransactionDetails.length > 0) {
+                        allTransactionDetails.push('=== BRI Transactions ===');
+                        allTransactionDetails.push(...briNonCashTransactionDetails);
+                    }
+                    
                     nonCashTotalReconciliationResults.push({
                         weekKey: 'ALL',
                         weekLabel: 'All Dates',
@@ -2233,6 +2315,7 @@
                         matchingMode: matchingMode,  // NEW: Store which mode was used
                         acmmBreakdown: acmmNonCashMethods.join('; '),
                         bcaBreakdown: allBankBreakdown.join(' | '),
+                        transactionDetails: allTransactionDetails.join('\n'),  // NEW: Individual transaction details
                         // Store split ACMM values for bank-specific reports
                         acmmBCATotal: acmmBCANonCashTotal,
                         acmmBRITotal: acmmBRINonCashTotal,
@@ -2415,8 +2498,9 @@
                 // Use BCA bank total from result
                 const bcaNonCashTotal = result.bcaBankTotal || 0;
                 
-                // Get BCA breakdown
+                // Get BCA breakdown and transaction details
                 const bcaNonCashBreakdown = [];
+                const bcaNonCashTransactionDetails = [];  // NEW: Collect transaction details
                 const nonCashTypes = ['CREDITCARD', 'DEBITCARD', 'QRIS'];
                 
                 for (const transactionType of nonCashTypes) {
@@ -2424,6 +2508,15 @@
                     if (bcaData && bcaData.weeklyBCA.has(key)) {
                         const detail = bcaData.weeklyBCA.get(key);
                         bcaNonCashBreakdown.push(`${transactionType}: ${detail.totalAmount.toFixed(2)} (${detail.transactionCount} txns)`);
+                        
+                        // NEW: Add transaction details
+                        if (detail.transactions && detail.transactions.length > 0) {
+                            detail.transactions.forEach((txn, idx) => {
+                                bcaNonCashTransactionDetails.push(
+                                    `[${transactionType} ${idx + 1}] ${txn.date} | Rp ${txn.amount.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})} | Ref: ${txn.reference}`
+                                );
+                            });
+                        }
                     }
                 }
                 
@@ -2449,7 +2542,8 @@
                         difference,
                         status,
                         acmmBreakdown: acmmBCABreakdown ? `BCA: ${acmmBCABreakdown}` : '',
-                        bcaBreakdown: bcaNonCashBreakdown.join('; ')
+                        bcaBreakdown: bcaNonCashBreakdown.join('; '),
+                        transactionDetails: bcaNonCashTransactionDetails.join('\n')  // NEW: Add transaction details
                     });
                 }
                 
@@ -2462,14 +2556,24 @@
                     // Use BRI bank total from result
                     const briNonCashTotal = result.briBankTotal || 0;
                     
-                    // Get BRI breakdown
+                    // Get BRI breakdown and transaction details
                     const briNonCashBreakdown = [];
+                    const briNonCashTransactionDetails = [];  // NEW: Collect transaction details
                     
                     for (const transactionType of nonCashTypes) {
                         const key = `${outletCode}|${transactionType}`;
                         if (briData.weeklyBRI.has(key)) {
                             const detail = briData.weeklyBRI.get(key);
                             briNonCashBreakdown.push(`${transactionType}: ${detail.totalAmount.toFixed(2)} (${detail.transactionCount} txns)`);
+                            
+                            // NEW: Add transaction details
+                            if (detail.transactions && detail.transactions.length > 0) {
+                                detail.transactions.forEach((txn, idx) => {
+                                    briNonCashTransactionDetails.push(
+                                        `[${transactionType} ${idx + 1}] ${txn.date} | Rp ${txn.amount.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})} | Ref: ${txn.reference}`
+                                    );
+                                });
+                            }
                         }
                     }
                     
@@ -2495,7 +2599,8 @@
                             difference,
                             status,
                             acmmBreakdown: acmmBRIBreakdown ? `BRI: ${acmmBRIBreakdown}` : '',
-                            bcaBreakdown: briNonCashBreakdown.join('; ')
+                            bcaBreakdown: briNonCashBreakdown.join('; '),
+                            transactionDetails: briNonCashTransactionDetails.join('\n')  // NEW: Add transaction details
                         });
                     }
                 }
@@ -2998,7 +3103,7 @@
             
             // SHEET 1: CASH RECONCILIATION
             const cashData = [
-                ['Category', 'Week', 'Outlet Code', 'Bank', 'Bank Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'Bank Breakdown']
+                ['Category', 'Week', 'Outlet Code', 'Bank', 'Bank Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'Bank Breakdown', 'Transaction Details']
             ];
             
             let cashToExport = results.cash;
@@ -3019,7 +3124,8 @@
                     row.difference,
                     row.status,
                     row.acmmBreakdown,
-                    row.bcaBreakdown
+                    row.bcaBreakdown,
+                    row.transactionDetails || ''  // NEW: Individual transaction details
                 ]);
             });
             
@@ -3027,13 +3133,13 @@
             wsCash['!cols'] = [
                 { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 10 },
                 { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 },
-                { wch: 30 }, { wch: 50 }
+                { wch: 30 }, { wch: 50 }, { wch: 80 }  // NEW: Wide column for transaction details
             ];
             XLSX.utils.book_append_sheet(wb, wsCash, 'Cash Reconciliation');
             
             // SHEET 2: NON-CASH TOTAL RECONCILIATION
             const nonCashTotalData = [
-                ['Category', 'Week', 'Outlet Code', 'Bank', 'Bank Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'Bank Breakdown']
+                ['Category', 'Week', 'Outlet Code', 'Bank', 'Bank Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'Bank Breakdown', 'Transaction Details']
             ];
             
             let nonCashTotalToExport = results.nonCash;
@@ -3054,7 +3160,8 @@
                     row.difference,
                     row.status,
                     row.acmmBreakdown,
-                    row.bcaBreakdown || '-'
+                    row.bcaBreakdown || '-',
+                    row.transactionDetails || ''  // NEW: Individual transaction details
                 ]);
             });
             
@@ -3062,13 +3169,13 @@
             wsNonCashTotal['!cols'] = [
                 { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 10 },
                 { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 },
-                { wch: 50 }, { wch: 60 }
+                { wch: 50 }, { wch: 60 }, { wch: 80 }  // NEW: Wide column for transaction details
             ];
             XLSX.utils.book_append_sheet(wb, wsNonCashTotal, 'Non-Cash Total');
             
             // SHEET 3: GRAND TOTAL RECONCILIATION (CASH + NON-CASH)
             const grandTotalData = [
-                ['Category', 'Week', 'Outlet Code', 'Bank', 'Bank Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'Bank Breakdown']
+                ['Category', 'Week', 'Outlet Code', 'Bank', 'Bank Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'Bank Breakdown', 'Transaction Details']
             ];
             
             let grandTotalToExport = results.grandTotal || [];
@@ -3089,7 +3196,8 @@
                     row.difference,
                     row.status,
                     row.acmmBreakdown,
-                    row.bcaBreakdown || '-'
+                    row.bcaBreakdown || '-',
+                    row.transactionDetails || ''  // NEW: Individual transaction details
                 ]);
             });
             
@@ -3097,7 +3205,7 @@
             wsGrandTotal['!cols'] = [
                 { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 10 },
                 { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 },
-                { wch: 60 }, { wch: 80 }
+                { wch: 60 }, { wch: 80 }, { wch: 80 }  // NEW: Wide column for transaction details
             ];
             XLSX.utils.book_append_sheet(wb, wsGrandTotal, 'Grand Total (All Types)');
             
