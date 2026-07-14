@@ -2498,8 +2498,9 @@
                 // Use BCA bank total from result
                 const bcaNonCashTotal = result.bcaBankTotal || 0;
                 
-                // Get BCA breakdown
+                // Get BCA breakdown and transaction details
                 const bcaNonCashBreakdown = [];
+                const bcaNonCashTransactionDetails = [];  // NEW: Collect transaction details
                 const nonCashTypes = ['CREDITCARD', 'DEBITCARD', 'QRIS'];
                 
                 for (const transactionType of nonCashTypes) {
@@ -2507,6 +2508,15 @@
                     if (bcaData && bcaData.weeklyBCA.has(key)) {
                         const detail = bcaData.weeklyBCA.get(key);
                         bcaNonCashBreakdown.push(`${transactionType}: ${detail.totalAmount.toFixed(2)} (${detail.transactionCount} txns)`);
+                        
+                        // NEW: Add transaction details
+                        if (detail.transactions && detail.transactions.length > 0) {
+                            detail.transactions.forEach((txn, idx) => {
+                                bcaNonCashTransactionDetails.push(
+                                    `[${transactionType} ${idx + 1}] ${txn.date} | Rp ${txn.amount.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})} | Ref: ${txn.reference}`
+                                );
+                            });
+                        }
                     }
                 }
                 
@@ -2532,7 +2542,8 @@
                         difference,
                         status,
                         acmmBreakdown: acmmBCABreakdown ? `BCA: ${acmmBCABreakdown}` : '',
-                        bcaBreakdown: bcaNonCashBreakdown.join('; ')
+                        bcaBreakdown: bcaNonCashBreakdown.join('; '),
+                        transactionDetails: bcaNonCashTransactionDetails.join('\n')  // NEW: Add transaction details
                     });
                 }
                 
@@ -2545,14 +2556,24 @@
                     // Use BRI bank total from result
                     const briNonCashTotal = result.briBankTotal || 0;
                     
-                    // Get BRI breakdown
+                    // Get BRI breakdown and transaction details
                     const briNonCashBreakdown = [];
+                    const briNonCashTransactionDetails = [];  // NEW: Collect transaction details
                     
                     for (const transactionType of nonCashTypes) {
                         const key = `${outletCode}|${transactionType}`;
                         if (briData.weeklyBRI.has(key)) {
                             const detail = briData.weeklyBRI.get(key);
                             briNonCashBreakdown.push(`${transactionType}: ${detail.totalAmount.toFixed(2)} (${detail.transactionCount} txns)`);
+                            
+                            // NEW: Add transaction details
+                            if (detail.transactions && detail.transactions.length > 0) {
+                                detail.transactions.forEach((txn, idx) => {
+                                    briNonCashTransactionDetails.push(
+                                        `[${transactionType} ${idx + 1}] ${txn.date} | Rp ${txn.amount.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})} | Ref: ${txn.reference}`
+                                    );
+                                });
+                            }
                         }
                     }
                     
@@ -2578,7 +2599,8 @@
                             difference,
                             status,
                             acmmBreakdown: acmmBRIBreakdown ? `BRI: ${acmmBRIBreakdown}` : '',
-                            bcaBreakdown: briNonCashBreakdown.join('; ')
+                            bcaBreakdown: briNonCashBreakdown.join('; '),
+                            transactionDetails: briNonCashTransactionDetails.join('\n')  // NEW: Add transaction details
                         });
                     }
                 }
