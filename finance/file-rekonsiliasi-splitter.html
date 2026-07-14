@@ -1093,7 +1093,7 @@ async function processBRI() {
 
         setProgress('bri', 95, 'Finalising…');
 
-        state.bri.processed = { summaryRows, processedRows, allDates, crCount, matchedCount, unmatchedMIDSet, midMap, csvHeaders };
+        state.bri.processed = { summaryRows, processedRows, allDates, crCount, matchedCount, unmatchedMIDSet, midMap, csvHeaders, csvRows };
 
         // Stats
         document.getElementById('bri-stat-cr-rows').textContent  = crCount.toLocaleString();
@@ -1167,6 +1167,15 @@ function downloadBRIOutput() {
     const detWs = XLSX.utils.aoa_to_sheet(detData);
     detWs['!cols'] = [{ wch:20 },{ wch:16 },{ wch:14 },{ wch:14 },{ wch:16 }];
     XLSX.utils.book_append_sheet(outWb, detWs, 'BRI Detail (Cr Only)');
+
+    // Sheet 3: Original CSV data as reference
+    if (pr.csvRows && pr.csvRows.length > 0) {
+        const refWs = XLSX.utils.aoa_to_sheet(pr.csvRows);
+        // Auto column widths based on header names
+        const hdrRow = pr.csvRows[0] || [];
+        refWs['!cols'] = hdrRow.map(h => ({ wch: Math.min(String(h || '').length + 4, 40) }));
+        XLSX.utils.book_append_sheet(outWb, refWs, 'Reference (Original)');
+    }
 
     const dateTag  = pr.allDates.length ? pr.allDates[0].replace(/-/g,'') : 'output';
     const fileName = `BRI_Rekon_Split_${dateTag}.xlsx`;
