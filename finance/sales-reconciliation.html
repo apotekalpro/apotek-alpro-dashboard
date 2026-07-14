@@ -2078,46 +2078,108 @@
                     
                     let status = 'UNMATCHED';
                     let fraudAlert = false;
+                    let sisaAlert = false;  // NEW: Flag for SISA transactions
+                    let matchedTransaction = null;  // NEW: Track which transaction matched
+                    let sisaTransactions = [];  // NEW: Track SISA transactions
                     
                     if (acmmCashTotal > 0 && bcaCashTotal > 0) {
                         if (matchingMode === 'period') {
                             // PERIOD MODE: Standard matching with 500 tolerance
                             status = Math.abs(difference) <= 500 ? 'MATCHED' : 'AMOUNT_MISMATCH';
                         } else {
-                            // DAILY MODE: CORRECT CASH matching logic
-                            // Rule: Round down ACMM CASH ONLY to nearest 50rb
-                            // Bank deposit should EXACTLY match the rounded ACMM amount
-                            // Example: ACMM 2,843,500 → rounds to 2,800,000 → Bank MUST be 2,800,000
-                            // NO rounding of bank deposit amount
+                            // DAILY MODE: Enhanced CASH matching logic with SISA detection
+                            // Rule 1: Round down ACMM CASH to nearest 50rb
+                            // Rule 2: Check if ANY individual transaction matches ACMM exactly
+                            // Rule 3: Flag other transactions as SISA (remainder)
                             
                             const acmmRounded = roundDownTo50k(acmmCashTotal);
                             
-                            // Bank should EXACTLY equal the rounded ACMM (no rounding of bank)
-                            if (bcaCashTotal === acmmRounded) {
-                                // Perfect match - outlet banked the correct rounded amount
-                                status = 'MATCHED';
-                            } else {
-                                // Bank doesn't match the rounded ACMM
-                                // TODO: Implement multi-day banking accumulation logic
-                                // - Detect if outlet has no bank-in for next 1-2 days
-                                // - Accumulate 2-3 days of bank deposits (no rounding)
-                                // - Sum 2-3 days of ACMM CASH, THEN round down the total
-                                // - Compare accumulated bank vs rounded accumulated ACMM
-                                // - If still no match after 3 days → FRAUD_ALERT
-                                
-                                // For now: Flag as fraud alert (multi-day accumulation not yet implemented)
-                                status = 'FRAUD_ALERT';
-                                fraudAlert = true;
-                                
-                                // Log for investigation
-                                const variance = bcaCashTotal - acmmRounded;
-                                console.log(`🚨 ${outletCode} CASH FRAUD ALERT: ACMM ${acmmCashTotal.toFixed(2)} → Rounded ${acmmRounded.toFixed(0)}, Bank ${bcaCashTotal.toFixed(0)}, Variance ${variance.toFixed(0)}`);
+                            // NEW: Check for 100% match with individual transactions
+                            let foundExactMatch = false;
+                            
+                            // Collect all individual transactions (CDM + SETORAN)
+                            const allTransactions = [];
+                            
+                            // Get CDM transactions
+                            const cdmKey = `${outletCode}|CDM`;
+                            if (bcaData.weeklyBCA.has(cdmKey)) {
+                                const cdmDetail = bcaData.weeklyBCA.get(cdmKey);
+                                if (cdmDetail.transactions) {
+                                    cdmDetail.transactions.forEach(txn => {
+                                        allTransactions.push({...txn, type: 'CDM'});
+                                    });
+                                }
+                            }
+                            
+                            // Get SETORAN transactions
+                            const setoranKey = `${outletCode}|SETORAN_TUNAI`;
+                            if (bcaData.weeklyBCA.has(setoranKey)) {
+                                const setoranDetail = bcaData.weeklyBCA.get(setoranKey);
+                                if (setoranDetail.transactions) {
+                                    setoranDetail.transactions.forEach(txn => {
+                                        allTransactions.push({...txn, type: 'SETORAN'});
+                                    });
+                                }
+                            }
+                            
+                            // Check if any single transaction matches ACMM exactly (or rounded ACMM)
+                            for (const txn of allTransactions) {
+                                // Check exact match with original ACMM
+                                if (txn.amount === acmmCashTotal) {
+                                    foundExactMatch = true;
+                                    matchedTransaction = txn;
+                                    status = 'MATCHED_WITH_SISA';
+                                    sisaAlert = true;
+                                    
+                                    // All other transactions are SISA
+                                    sisaTransactions = allTransactions.filter(t => t !== txn);
+                                    
+                                    console.log(`✅ ${outletCode} 100% MATCH: ${txn.type} Rp ${txn.amount.toFixed(2)} = ACMM Rp ${acmmCashTotal.toFixed(2)}`);
+                                    if (sisaTransactions.length > 0) {
+                                        const sisaTotal = sisaTransactions.reduce((sum, t) => sum + t.amount, 0);
+                                        console.log(`⚠️ ${outletCode} SISA ALERT: ${sisaTransactions.length} extra transaction(s), Total: Rp ${sisaTotal.toFixed(2)}`);
+                                    }
+                                    break;
+                                }
+                                // Check match with rounded ACMM
+                                else if (txn.amount === acmmRounded) {
+                                    foundExactMatch = true;
+                                    matchedTransaction = txn;
+                                    status = 'MATCHED_WITH_SISA';
+                                    sisaAlert = true;
+                                    
+                                    // All other transactions are SISA
+                                    sisaTransactions = allTransactions.filter(t => t !== txn);
+                                    
+                                    console.log(`✅ ${outletCode} ROUNDED MATCH: ${txn.type} Rp ${txn.amount.toFixed(2)} = ACMM Rounded Rp ${acmmRounded.toFixed(2)}`);
+                                    if (sisaTransactions.length > 0) {
+                                        const sisaTotal = sisaTransactions.reduce((sum, t) => sum + t.amount, 0);
+                                        console.log(`⚠️ ${outletCode} SISA ALERT: ${sisaTransactions.length} extra transaction(s), Total: Rp ${sisaTotal.toFixed(2)}`);
+                                    }
+                                    break;
+                                }
+                            }
+                            
+                            // If no individual match found, check total match
+                            if (!foundExactMatch) {
+                                if (bcaCashTotal === acmmRounded) {
+                                    // Total matches - all transactions combined equal ACMM
+                                    status = 'MATCHED';
+                                } else {
+                                    // No match found - fraud alert
+                                    status = 'FRAUD_ALERT';
+                                    fraudAlert = true;
+                                    
+                                    const variance = bcaCashTotal - acmmRounded;
+                                    console.log(`🚨 ${outletCode} CASH FRAUD ALERT: ACMM ${acmmCashTotal.toFixed(2)} → Rounded ${acmmRounded.toFixed(0)}, Bank ${bcaCashTotal.toFixed(0)}, Variance ${variance.toFixed(0)}`);
+                                }
                             }
                             
                             // Additional check: Very large variance is always fraud
-                            if (Math.abs(difference) > 5000000) { // > 5M variance (excessive)
+                            if (Math.abs(difference) > 5000000) {
                                 status = 'FRAUD_ALERT';
                                 fraudAlert = true;
+                                sisaAlert = false;  // Override SISA if variance is excessive
                                 console.log(`🚨 ${outletCode} EXCESSIVE VARIANCE: ${difference.toFixed(0)}`);
                             }
                         }
@@ -2129,6 +2191,29 @@
                         if (matchingMode === 'daily' && acmmCashTotal > 500000) {
                             fraudAlert = true;
                         }
+                    }
+                    
+                    // NEW: Enhance transaction details to highlight matched vs SISA transactions
+                    let enhancedTransactionDetails = bcaCashTransactionDetails.join('\n');
+                    
+                    if (sisaAlert && matchedTransaction && sisaTransactions.length > 0) {
+                        // Rebuild transaction details with MATCHED and SISA labels
+                        const detailLines = [];
+                        const sisaTotal = sisaTransactions.reduce((sum, t) => sum + t.amount, 0);
+                        
+                        // Add matched transaction first
+                        detailLines.push(`✅ MATCHED: [${matchedTransaction.type}] ${matchedTransaction.date} | Rp ${matchedTransaction.amount.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})} | Ref: ${matchedTransaction.reference}`);
+                        
+                        // Add separator
+                        detailLines.push('');
+                        detailLines.push(`⚠️ SISA TRANSACTIONS (Total: Rp ${sisaTotal.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})})`);
+                        
+                        // Add SISA transactions
+                        sisaTransactions.forEach((txn, idx) => {
+                            detailLines.push(`   [${txn.type} ${idx + 1}] ${txn.date} | Rp ${txn.amount.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})} | Ref: ${txn.reference}`);
+                        });
+                        
+                        enhancedTransactionDetails = detailLines.join('\n');
                     }
                     
                     cashResults.push({
@@ -2143,11 +2228,24 @@
                         acmmTotal: acmmCashTotal,
                         difference,
                         status,
-                        fraudAlert: fraudAlert,  // NEW: Flag for daily mode fraud detection
-                        matchingMode: matchingMode,  // NEW: Store which mode was used
+                        fraudAlert: fraudAlert,  // Flag for daily mode fraud detection
+                        sisaAlert: sisaAlert,  // NEW: Flag for SISA transactions
+                        matchingMode: matchingMode,  // Store which mode was used
                         acmmBreakdown: acmmCashMethods.join('; '),
                         bcaBreakdown: bcaCashBreakdown.join('; '),
-                        transactionDetails: bcaCashTransactionDetails.join('\n')  // NEW: Individual transaction details
+                        transactionDetails: enhancedTransactionDetails,  // Enhanced with MATCHED/SISA labels
+                        // NEW: Store SISA details for reporting
+                        sisaInfo: sisaAlert ? {
+                            matchedAmount: matchedTransaction ? matchedTransaction.amount : 0,
+                            sisaCount: sisaTransactions.length,
+                            sisaTotal: sisaTransactions.reduce((sum, t) => sum + t.amount, 0),
+                            sisaTransactions: sisaTransactions.map(t => ({
+                                type: t.type,
+                                date: t.date,
+                                amount: t.amount,
+                                reference: t.reference
+                            }))
+                        } : null
                     });
                 }
             }
@@ -3103,17 +3201,23 @@
             
             // SHEET 1: CASH RECONCILIATION
             const cashData = [
-                ['Category', 'Week', 'Outlet Code', 'Bank', 'Bank Total', 'ACMM Total', 'Difference', 'Status', 'ACMM Breakdown', 'Bank Breakdown', 'Transaction Details']
+                ['Category', 'Week', 'Outlet Code', 'Bank', 'Bank Total', 'ACMM Total', 'Difference', 'Status', 'SISA Alert', 'SISA Info', 'ACMM Breakdown', 'Bank Breakdown', 'Transaction Details']
             ];
             
             let cashToExport = results.cash;
             if (type === 'matched') {
-                cashToExport = results.cash.filter(r => r.status === 'MATCHED');
+                cashToExport = results.cash.filter(r => r.status === 'MATCHED' || r.status === 'MATCHED_WITH_SISA');
             } else if (type === 'unmatched') {
-                cashToExport = results.cash.filter(r => r.status !== 'MATCHED');
+                cashToExport = results.cash.filter(r => r.status !== 'MATCHED' && r.status !== 'MATCHED_WITH_SISA');
             }
             
             cashToExport.forEach(row => {
+                // Format SISA info
+                let sisaInfo = '';
+                if (row.sisaAlert && row.sisaInfo) {
+                    sisaInfo = `SISA: ${row.sisaInfo.sisaCount} txn(s), Total: Rp ${row.sisaInfo.sisaTotal.toLocaleString('id-ID', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                }
+                
                 cashData.push([
                     row.category,
                     row.weekLabel,
@@ -3123,17 +3227,20 @@
                     row.acmmTotal,
                     row.difference,
                     row.status,
+                    row.sisaAlert ? 'YES ⚠️' : 'NO',  // NEW: SISA Alert flag
+                    sisaInfo,  // NEW: SISA details
                     row.acmmBreakdown,
                     row.bcaBreakdown,
-                    row.transactionDetails || ''  // NEW: Individual transaction details
+                    row.transactionDetails || ''  // Individual transaction details with MATCHED/SISA labels
                 ]);
             });
             
             const wsCash = XLSX.utils.aoa_to_sheet(cashData);
             wsCash['!cols'] = [
                 { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 10 },
-                { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 20 },
-                { wch: 30 }, { wch: 50 }, { wch: 80 }  // NEW: Wide column for transaction details
+                { wch: 18 }, { wch: 18 }, { wch: 15 }, { wch: 25 },
+                { wch: 12 }, { wch: 35 },  // NEW: SISA Alert and SISA Info columns
+                { wch: 30 }, { wch: 50 }, { wch: 80 }  // Transaction details
             ];
             XLSX.utils.book_append_sheet(wb, wsCash, 'Cash Reconciliation');
             
