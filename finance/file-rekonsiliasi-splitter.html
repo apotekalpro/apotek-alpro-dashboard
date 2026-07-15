@@ -1622,10 +1622,12 @@ async function processBCA() {
             // col A (index 0): NOMOR KARTU BCA DEPOSIT CARD e.g. '147000100793995'
             // raw:false returns the formatted string, avoiding float64 precision loss on 15-digit numbers
             const card = String(r[0] || '').trim().replace(/\.0*$/, ''); // strip trailing .0 if any
-            // col B (index 1): KODE TOKO e.g. '0090-JBBSLH1' → outcode = 'JBBSLH1'
-            const storeCode = String(r[1] || '').trim();
-            if (card && storeCode && storeCode.includes('-')) {
-                cardMap[card] = storeCode.split('-').pop();
+            // col C (index 2): OUTCODE — already the parsed 7-char outlet code (e.g. 'JBBSLH1')
+            // This is the result of =MID(B,6,7) evaluated by Excel, read directly via raw:false.
+            // Do NOT use col B (KODE TOKO) and split on '-'; col C is already the final outcode.
+            const outcode = String(r[2] || '').trim();
+            if (card && outcode && !outcode.startsWith('=')) {
+                cardMap[card] = outcode;
             }
         }
         setProgress('bca', 25, `Loaded ${Object.keys(cardMap).length} card mappings. Reading BCA Statement…`);
@@ -1665,23 +1667,36 @@ async function processBCA() {
         const RE_CARD      = /0?(\d{15})\s*$/;  // 15-digit card at end of CDM desc
 
         function parseJumlah(raw) {
-            // With raw:false, number cells come formatted as strings e.g. '851078' or '851,078.00'
-            // Text cells with CR/DB suffix also come through: '2,800,000.00 CR' / 'DB'
+            // BCA Jumlah column format: '3,600,000.00 CR' or '851,078.00 CR' or plain number
+            // Comma = thousand separator, dot = decimal point (standard English/BCA format).
+            // BUG was: stripping ALL dots first, then comma→dot, which turned
+            // '3,600,000.00' → '3,600,00000' → '3.600.00000' → parseFloat = 3.6 (wrong!)
+            // FIX: strip only commas (thousands), keep dot as decimal.
             if (typeof raw === 'number') {
                 return raw > 0 ? raw : null;
             }
             const s = String(raw || '').trim();
             if (!s) return null;
             if (s.toUpperCase().endsWith('DB')) return null;   // exclude debit rows
-            const num = s.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+            // Keep only digits, dots, commas — then strip commas, parse float
+            const num = s.replace(/[^\d.,]/g, '').replace(/,/g, '');
             return parseFloat(num) || 0;
         }
 
         function parseTghQr(desc) {
+            // TGH/QR values in BCA descriptions use dot as decimal separator, NOT as
+            // a thousand separator. e.g. 'TGH:  1729101.00' means 1,729,101 (Rp).
+            // Stripping all dots (like Indonesian thousand-sep removal) would turn
+            // '1729101.00' → 172910100 — 100× too large. Just parseFloat directly.
+            // Leading zeros (e.g. '00001567800.00') are handled correctly by parseFloat.
+            function parseTghVal(s) {
+                // Strip any commas (shouldn't appear, but be safe), then parseFloat
+                return parseFloat(s.replace(/,/g, '')) || 0;
+            }
             let m = RE_TGH.exec(desc);
-            if (m) return parseFloat(m[1].replace(/\./g,'').replace(',','.')) || 0;
+            if (m) return parseTghVal(m[1]);
             m = RE_QR.exec(desc);
-            if (m) return parseFloat(m[1].replace(/\./g,'').replace(',','.')) || 0;
+            if (m) return parseTghVal(m[1]);
             return 0;
         }
 
