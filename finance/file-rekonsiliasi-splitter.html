@@ -1619,9 +1619,11 @@ async function processBCA() {
         const cardMap = {};  // card15 → outcode
         for (let i = 1; i < kartuRows.length; i++) {
             const r = kartuRows[i];
-            // col F (index 5): formatted string '147000100793995' (exact, no float precision loss)
-            const card = String(r[5] || '').trim().replace(/\.0*$/, ''); // strip trailing .0 if any
-            const storeCode = String(r[2] || '').trim();     // col C (index 2) like 0001-JKJSTT1
+            // col A (index 0): NOMOR KARTU BCA DEPOSIT CARD e.g. '147000100793995'
+            // raw:false returns the formatted string, avoiding float64 precision loss on 15-digit numbers
+            const card = String(r[0] || '').trim().replace(/\.0*$/, ''); // strip trailing .0 if any
+            // col B (index 1): KODE TOKO e.g. '0090-JBBSLH1' → outcode = 'JBBSLH1'
+            const storeCode = String(r[1] || '').trim();
             if (card && storeCode && storeCode.includes('-')) {
                 cardMap[card] = storeCode.split('-').pop();
             }
@@ -1684,20 +1686,27 @@ async function processBCA() {
         }
 
         function toYMD(raw) {
-            // With dateNF:'yyyy-mm-dd' + raw:false, SheetJS formats date serials directly
-            // as 'yyyy-mm-dd' strings (pure serial arithmetic, NO timezone shift).
-            // e.g. serial 46205 (July 2 2026) → '2026-07-02' always, regardless of locale.
+            // BCA date problem: the Excel file uses Indonesian DD/MM/YYYY convention but
+            // the number format is set to 'mm-dd-yy'. When user enters '7/2/2026' (July 2)
+            // Excel interprets the number format as MM/DD/YYYY and stores serial for Feb 7.
+            // SheetJS then reads that serial and outputs '2026-02-07' — wrong month and day.
+            // Fix: when we get a yyyy-MM-dd string from the date serial, swap month↔day
+            // because BCA cells are always entered as DD/MM/YYYY in the Indonesian locale.
             if (!raw) return '';
             const s = String(raw).trim();
-            // PRIMARY: yyyy-mm-dd produced by dateNF formatting
-            if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-            // FALLBACK for text-stored date cells not caught by dateNF:
-            // BCA uses M/D/YYYY text (e.g. '7/2/2026' = July 2)
-            const mdyMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-            if (mdyMatch) {
-                const mm = mdyMatch[1].padStart(2,'0');  // group1 = month (M/D/YYYY)
-                const dd = mdyMatch[2].padStart(2,'0');  // group2 = day
-                let yy = mdyMatch[3];
+            // PRIMARY: yyyy-mm-dd produced by dateNF formatting — swap month and day
+            if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+                const [yyyy, mm, dd] = s.slice(0, 10).split('-');
+                // Swap: what SheetJS calls 'month' is actually the day, and vice versa
+                return `${yyyy}-${dd}-${mm}`;
+            }
+            // FALLBACK for text-stored date cells (e.g. '2/7/26' seen in Reference sheet):
+            // BCA text dates use D/M/YY or D/M/YYYY (Indonesian DD/MM/YYYY convention)
+            const dmyMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+            if (dmyMatch) {
+                const dd = dmyMatch[1].padStart(2,'0');  // group1 = day (D/M/YYYY)
+                const mm = dmyMatch[2].padStart(2,'0');  // group2 = month
+                let yy = dmyMatch[3];
                 if (yy.length === 2) yy = '20' + yy;
                 return `${yy}-${mm}-${dd}`;
             }
