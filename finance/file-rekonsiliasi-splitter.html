@@ -2367,10 +2367,19 @@ async function processCashRekon() {
             const type      = String(r[ACMM_COL_TYPE] || '').trim().toLowerCase();
             const amount    = parseFloat(String(r[ACMM_COL_AMT] || '0').replace(/,/g,'')) || 0;
 
-            // Day from yyyy-mm-dd
+            // Day from date value — SheetJS may return a Date object (cellDates:true)
+            // or a yyyy-mm-dd string. Handle both robustly.
             let day = '';
-            const dMatch = String(dateVal).match(/(\d{4})-(\d{2})-(\d{2})/);
-            if (dMatch) day = parseInt(dMatch[3], 10).toString();
+            if (dateVal) {
+                const dMatch = String(dateVal).match(/(\d{4})-(\d{2})-(\d{2})/);
+                if (dMatch) {
+                    day = parseInt(dMatch[3], 10).toString();
+                } else {
+                    // Date object or other format — extract day directly
+                    const d = new Date(dateVal);
+                    if (!isNaN(d)) day = d.getUTCDate().toString();
+                }
+            }
 
             // Kode outlet from brackets e.g. "Apotik Alpro (JKJSTT1)"
             const bracketM = storeName.match(/\(([^)]+)\)/);
