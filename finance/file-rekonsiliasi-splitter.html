@@ -678,9 +678,11 @@
                     <div class="stat-card stat-rose"><p class="text-xs text-rose-200 mb-1">Unique Kode Rekon</p><p class="text-2xl font-bold" id="bca-stat-kode">0</p></div>
                 </div>
 
-                <div id="bca-unmatched-warn" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm">
-                    <p class="font-semibold text-amber-800 mb-1"><i class="fas fa-exclamation-triangle mr-1"></i>Unmatched MIDs</p>
-                    <p class="text-amber-700 text-xs" id="bca-unmatched-list"></p>
+                <!-- Unmatched MIDs: shown as compact badge only; full list goes into exported XLSX -->
+                <div id="bca-unmatched-badge" class="hidden flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 text-sm">
+                    <i class="fas fa-exclamation-triangle text-amber-500"></i>
+                    <span class="text-amber-800 font-semibold" id="bca-unmatched-count"></span>
+                    <span class="text-amber-700">— full list included as <strong>Unmatched MIDs</strong> sheet in the downloaded file.</span>
                 </div>
 
                 <div class="mb-3">
@@ -1592,9 +1594,11 @@ async function processBCA() {
 
         /* ── Step 3: Read BCA Statement XLSX ── */
         const stmtBuf = await stmtFile.arrayBuffer();
-        const stmtWb  = XLSX.read(stmtBuf, { type:'array', cellDates:true });
+        // Use raw:true so date cells come as Excel serial numbers (we'll convert manually)
+        // This avoids locale-dependent string formatting issues with M/D/YYYY vs D/M/YYYY
+        const stmtWb  = XLSX.read(stmtBuf, { type:'array', cellDates:true, raw:true });
         const stmtWs  = stmtWb.Sheets[stmtWb.SheetNames[0]];
-        const rawRows = XLSX.utils.sheet_to_json(stmtWs, { header:1, raw:false, dateNF:'yyyy-mm-dd' });
+        const rawRows = XLSX.utils.sheet_to_json(stmtWs, { header:1, raw:true });
 
         // Find header row (has 'Tanggal Transaksi')
         let hdrIdx = -1;
@@ -1629,18 +1633,32 @@ async function processBCA() {
         }
 
         function toYMD(raw) {
-            // BUG FIX: cellDates:true may return a JS Date object OR an ISO string like "2026-07-02T00:00:00.000Z"
-            // String(Date) gives "Wed Jul 02 2026 00:00:00 GMT+0000" — .split(' ')[0] = "Wed" which is wrong
-            // Also raw:false + dateNF may give formatted string; handle all cases
+            // BCA Statement Tanggal column may arrive as:
+            //   1. JS Date object (cellDates:true with numeric serial) → toISOString()
+            //   2. String "7/2/2026" (M/D/YYYY) → must parse explicitly, NOT via new Date() which is ambiguous
+            //   3. ISO string "2026-07-02T..." → slice(0,10)
             if (!raw) return '';
-            if (raw instanceof Date) return raw.toISOString().slice(0, 10);
-            const s = String(raw);
-            // ISO format: "2026-07-02T..." or "2026-07-02 ..."
+            if (raw instanceof Date) {
+                // Date object from cellDates:true is always correct (UTC midnight)
+                return raw.toISOString().slice(0, 10);
+            }
+            const s = String(raw).trim();
+            // ISO format: "2026-07-02" or "2026-07-02T..."
             if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-            // Fallback: try to parse
+            // M/D/YYYY or M/D/YY format (BCA statement text format)
+            // e.g. "7/2/2026" = July 2 2026, "12/31/2026" = Dec 31 2026
+            const mdyMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+            if (mdyMatch) {
+                const mm = mdyMatch[1].padStart(2,'0');
+                const dd = mdyMatch[2].padStart(2,'0');
+                let yy = mdyMatch[3];
+                if (yy.length === 2) yy = '20' + yy;
+                return `${yy}-${mm}-${dd}`;
+            }
+            // Last resort: try JS Date parse (may be wrong for ambiguous formats)
             const parsed = new Date(s);
             if (!isNaN(parsed)) return parsed.toISOString().slice(0, 10);
-            return s.slice(0, 10);
+            return '';
         }
 
         function dayMinusOne(raw) {
@@ -1778,11 +1796,14 @@ async function processBCA() {
         document.getElementById('bca-stat-set').textContent  = cntSet.toLocaleString();
         document.getElementById('bca-stat-kode').textContent = allKodes.size.toLocaleString();
 
-        const warnEl = document.getElementById('bca-unmatched-warn');
+        const badgeEl = document.getElementById('bca-unmatched-badge');
         if (unmatchedMIDs.size > 0) {
-            warnEl.classList.remove('hidden');
-            document.getElementById('bca-unmatched-list').textContent = [...unmatchedMIDs].sort().join(', ');
-        } else warnEl.classList.add('hidden');
+            badgeEl.classList.remove('hidden');
+            document.getElementById('bca-unmatched-count').textContent =
+                `${unmatchedMIDs.size} Unmatched MID${unmatchedMIDs.size > 1 ? 's' : ''} found`;
+        } else {
+            badgeEl.classList.add('hidden');
+        }
 
         const sheetCount = 4; // E-Banking + Non Cash + Cash + Reference
         document.getElementById('bca-output-info').textContent =
@@ -1868,14 +1889,32 @@ function downloadBCAOutput() {
     cashWs['!cols'] = [{ wch:22 },{ wch:16 },{ wch:10 },{ wch:18 },{ wch:14 }];
     XLSX.utils.book_append_sheet(outWb, cashWs, 'Cash');
 
-    /* ── Sheet 4: Reference (Original) ── */
+    /* ── Sheet 4: Unmatched MIDs (only if any) ── */
+    if (pr.unmatchedMIDs && pr.unmatchedMIDs.size > 0) {
+        const umData = [['Unmatched MID / Card', 'Note']];
+        [...pr.unmatchedMIDs].sort().forEach(mid => {
+            const note = mid.startsWith('CDM:')
+                ? 'Card number not found in Kartu Debit file'
+                : 'MID last-7 not found in BCA MID file';
+            umData.push([mid, note]);
+        });
+        const umWs = XLSX.utils.aoa_to_sheet(umData);
+        umWs['!cols'] = [{ wch:30 },{ wch:45 }];
+        XLSX.utils.book_append_sheet(outWb, umWs, 'Unmatched MIDs');
+    }
+
+    /* ── Sheet 5: Reference (Original) ── */
     const refWs = XLSX.utils.aoa_to_sheet(pr.rawRows);
     XLSX.utils.book_append_sheet(outWb, refWs, 'Reference (Original)');
 
     const dateTag = new Date().toISOString().slice(0,10).replace(/-/g,'');
     const fileName = `BCA_Split_${dateTag}.xlsx`;
     XLSX.writeFile(outWb, fileName);
-    document.getElementById('bca-output-info').textContent = `✓ Downloaded: ${fileName} (E-Banking | Non Cash | Cash | Reference)`;
+    const sheets = ['E-Banking','Non Cash','Cash'];
+    if (pr.unmatchedMIDs && pr.unmatchedMIDs.size > 0) sheets.push('Unmatched MIDs');
+    sheets.push('Reference (Original)');
+    document.getElementById('bca-output-info').textContent =
+        `✓ Downloaded: ${fileName} (${sheets.join(' | ')})`;
 }
 
 function resetBCA() {
