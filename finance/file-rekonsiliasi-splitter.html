@@ -222,12 +222,16 @@
                 <i class="fas fa-university mr-2 text-green-600"></i>BRI Statement
             </button>
             <button class="tab-btn" onclick="switchTab('file3')" id="tab-file3">
-                <i class="fas fa-file-alt mr-2 text-amber-600"></i>File 3
-                <span class="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Coming Soon</span>
+                <i class="fas fa-university mr-2 text-sky-600"></i>BCA Statement
+                <span class="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full" id="bca-tab-badge">Upload</span>
             </button>
             <button class="tab-btn" onclick="switchTab('rekon')" id="tab-rekon">
                 <i class="fas fa-balance-scale mr-2 text-purple-600"></i>BRI × ACMM Rekonsiliasi
                 <span class="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full" id="rekon-tab-badge">Not Ready</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('rekon-bca')" id="tab-rekon-bca">
+                <i class="fas fa-balance-scale mr-2 text-sky-600"></i>BCA × ACMM Rekonsiliasi
+                <span class="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full" id="rekon-bca-tab-badge">Not Ready</span>
             </button>
         </div>
 
@@ -597,19 +601,186 @@
             </div>
         </div>
 
-        <!-- ── File 3 Placeholder ── -->
+        <!-- ── BCA Statement Tab ── -->
         <div id="panel-file3" class="hidden p-6">
-            <div class="flex flex-col items-center justify-center py-16 text-center">
-                <i class="fas fa-tools text-5xl text-gray-300 mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-500">File 3 Splitter</h3>
-                <p class="text-gray-400 mt-2 max-w-md">
-                    This splitter is reserved for the third reconciliation file type.
-                    Upload logic and processing rules will be configured here.
-                </p>
-                <div class="upload-zone mt-6 w-full max-w-md opacity-50 pointer-events-none">
-                    <i class="fas fa-cloud-upload-alt text-3xl text-gray-300 mb-2"></i>
-                    <p class="text-gray-400 font-medium">Drop File 3 here</p>
-                    <p class="text-sm text-gray-300">Configuration coming soon</p>
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">BCA Statement Splitter</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">
+                        Upload BCA Statement (.xlsx) + BCA MID (.xlsx) + Bank in Kartu Debit (.xlsx).
+                        Splits into: <strong>E-Banking</strong>, <strong>MID/QRIS sheets per outlet</strong>, <strong>Setoran (CDM &amp; Tunai)</strong>, + Reference.
+                    </p>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-sky-100 text-sky-800">.xlsx × 3</span>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-4 mb-5">
+                <!-- BCA Statement -->
+                <div>
+                    <p class="text-sm font-semibold text-gray-600 mb-2"><i class="fas fa-file-excel text-sky-600 mr-1"></i>BCA Statement (.xlsx)</p>
+                    <div class="upload-zone" id="dropzone-bca-stmt"
+                        onclick="document.getElementById('fileInput-bca-stmt').click()"
+                        ondragover="handleDragOver(event,'bca-stmt')"
+                        ondragleave="handleDragLeave(event,'bca-stmt')"
+                        ondrop="handleDrop(event,'bca-stmt')">
+                        <input type="file" id="fileInput-bca-stmt" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(event,'bca-stmt')">
+                        <div id="upload-idle-bca-stmt"><i class="fas fa-cloud-upload-alt text-3xl text-sky-400 mb-2"></i><p class="font-semibold text-gray-700 text-sm">BCA Statement XLSX</p><p class="text-xs text-gray-400 mt-1">Mutasi Rekening</p></div>
+                        <div id="upload-loaded-bca-stmt" class="hidden flex-col items-center"><i class="fas fa-check-circle text-3xl text-emerald-500 mb-1"></i><p class="font-semibold text-gray-800 text-sm" id="bca-stmt-filename">—</p><p class="text-xs text-gray-400" id="bca-stmt-filesize">—</p><button class="mt-2 text-xs text-red-500 hover:text-red-700 underline" onclick="clearFile(event,'bca-stmt')">Remove</button></div>
+                    </div>
+                </div>
+                <!-- BCA MID -->
+                <div>
+                    <p class="text-sm font-semibold text-gray-600 mb-2"><i class="fas fa-table text-blue-600 mr-1"></i>BCA MID (.xlsx)</p>
+                    <div class="upload-zone" id="dropzone-bca-mid"
+                        onclick="document.getElementById('fileInput-bca-mid').click()"
+                        ondragover="handleDragOver(event,'bca-mid')"
+                        ondragleave="handleDragLeave(event,'bca-mid')"
+                        ondrop="handleDrop(event,'bca-mid')">
+                        <input type="file" id="fileInput-bca-mid" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(event,'bca-mid')">
+                        <div id="upload-idle-bca-mid"><i class="fas fa-cloud-upload-alt text-3xl text-blue-400 mb-2"></i><p class="font-semibold text-gray-700 text-sm">BCA MID Mapping</p><p class="text-xs text-gray-400 mt-1">Last 7 MID → Outlet Code</p></div>
+                        <div id="upload-loaded-bca-mid" class="hidden flex-col items-center"><i class="fas fa-check-circle text-3xl text-emerald-500 mb-1"></i><p class="font-semibold text-gray-800 text-sm" id="bca-mid-filename">—</p><p class="text-xs text-gray-400" id="bca-mid-filesize">—</p><button class="mt-2 text-xs text-red-500 hover:text-red-700 underline" onclick="clearFile(event,'bca-mid')">Remove</button></div>
+                    </div>
+                </div>
+                <!-- Bank in Kartu Debit -->
+                <div>
+                    <p class="text-sm font-semibold text-gray-600 mb-2"><i class="fas fa-credit-card text-indigo-600 mr-1"></i>Bank in Kartu Debit (.xlsx)</p>
+                    <div class="upload-zone" id="dropzone-bca-kartu"
+                        onclick="document.getElementById('fileInput-bca-kartu').click()"
+                        ondragover="handleDragOver(event,'bca-kartu')"
+                        ondragleave="handleDragLeave(event,'bca-kartu')"
+                        ondrop="handleDrop(event,'bca-kartu')">
+                        <input type="file" id="fileInput-bca-kartu" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(event,'bca-kartu')">
+                        <div id="upload-idle-bca-kartu"><i class="fas fa-cloud-upload-alt text-3xl text-indigo-400 mb-2"></i><p class="font-semibold text-gray-700 text-sm">Bank in Kartu Debit</p><p class="text-xs text-gray-400 mt-1">Card No → Outlet Code</p></div>
+                        <div id="upload-loaded-bca-kartu" class="hidden flex-col items-center"><i class="fas fa-check-circle text-3xl text-emerald-500 mb-1"></i><p class="font-semibold text-gray-800 text-sm" id="bca-kartu-filename">—</p><p class="text-xs text-gray-400" id="bca-kartu-filesize">—</p><button class="mt-2 text-xs text-red-500 hover:text-red-700 underline" onclick="clearFile(event,'bca-kartu')">Remove</button></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="btn-process-bca" class="btn-primary" onclick="processBCA()" disabled>
+                    <i class="fas fa-cogs mr-2"></i>Process BCA Statement
+                </button>
+                <span class="text-sm text-gray-400" id="bca-ready-msg">Upload all 3 files to enable processing</span>
+            </div>
+
+            <div id="progress-bca" class="hidden mt-5">
+                <div class="flex items-center gap-3 mb-2"><div class="spinner"></div>
+                    <span class="text-sm font-medium text-gray-600" id="progress-label-bca">Processing…</span>
+                </div>
+                <div class="progress-track"><div class="progress-fill" id="progress-bar-bca" style="width:0%"></div></div>
+            </div>
+
+            <div id="results-bca" class="hidden mt-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                    <div class="stat-card stat-blue"><p class="text-xs text-indigo-200 mb-1">MID/QRIS Rows</p><p class="text-2xl font-bold" id="bca-stat-mid">0</p></div>
+                    <div class="stat-card stat-green"><p class="text-xs text-emerald-200 mb-1">E-Banking Rows</p><p class="text-2xl font-bold" id="bca-stat-eb">0</p></div>
+                    <div class="stat-card stat-amber"><p class="text-xs text-amber-200 mb-1">Setoran (CDM+Tunai)</p><p class="text-2xl font-bold" id="bca-stat-set">0</p></div>
+                    <div class="stat-card stat-rose"><p class="text-xs text-rose-200 mb-1">Unique Kode Rekon</p><p class="text-2xl font-bold" id="bca-stat-kode">0</p></div>
+                </div>
+
+                <div id="bca-unmatched-warn" class="hidden bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm">
+                    <p class="font-semibold text-amber-800 mb-1"><i class="fas fa-exclamation-triangle mr-1"></i>Unmatched MIDs</p>
+                    <p class="text-amber-700 text-xs" id="bca-unmatched-list"></p>
+                </div>
+
+                <div class="mb-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-sm font-semibold text-gray-700">Preview – MID/QRIS Kode Rekon Summary <span class="text-gray-400 font-normal">(max 200)</span></p>
+                        <select id="bca-preview-filter" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="renderBCAPreview()">
+                            <option value="">All Sheets</option>
+                            <option value="ebanking">E-Banking</option>
+                            <option value="mid">MID/QRIS</option>
+                            <option value="setoran">Setoran</option>
+                        </select>
+                    </div>
+                    <div class="result-table border border-gray-200 rounded-lg">
+                        <table>
+                            <thead><tr>
+                                <th>Kode Rekon</th><th>Outlet Code</th><th>Type</th><th>Date</th><th class="text-right">Gross Amount</th>
+                            </tr></thead>
+                            <tbody id="bca-preview-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button class="btn-success" onclick="downloadBCAOutput()">
+                        <i class="fas fa-download mr-2"></i>Download BCA Split File (.xlsx)
+                    </button>
+                    <button class="btn-outline" onclick="resetBCA()">
+                        <i class="fas fa-redo mr-2"></i>Reset
+                    </button>
+                    <span class="text-sm text-gray-400" id="bca-output-info"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── BCA × ACMM Rekonsiliasi Tab ── -->
+        <div id="panel-rekon-bca" class="hidden p-6">
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">BCA &times; ACMM Rekonsiliasi</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">
+                        Compares <strong>BCA MID/QRIS Kode Rekon Gross</strong> against
+                        <strong>ACMM GL&nbsp;11201010 (PIUTANG KARTU KREDIT&nbsp;–&nbsp;BCA)</strong> per matching Kode Rekon.
+                    </p>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-sky-100 text-sky-800">Auto</span>
+            </div>
+
+            <div id="rekon-bca-not-ready-box" class="rekon-not-ready mb-5">
+                <i class="fas fa-lock text-gray-400 text-xl"></i>
+                <div><p class="font-semibold text-gray-500">Both files must be processed first</p>
+                <p class="text-sm text-gray-400" id="rekon-bca-missing-msg">Process the ACMM file and the BCA Statement to unlock.</p></div>
+            </div>
+
+            <div id="rekon-bca-ready-box" class="hidden">
+                <div class="flex items-center gap-3 mb-6">
+                    <button id="btn-run-rekon-bca" class="btn-primary" onclick="runRekonBCA()">
+                        <i class="fas fa-play mr-2"></i>Run Rekonsiliasi
+                    </button>
+                    <button class="btn-outline" onclick="resetRekonBCA()"><i class="fas fa-redo mr-2"></i>Reset</button>
+                    <span class="text-sm text-gray-400" id="rekon-bca-info-msg"></span>
+                </div>
+
+                <div id="results-rekon-bca" class="hidden">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                        <div class="stat-card stat-green"><p class="text-xs text-emerald-200 mb-1">Matched &amp; Equal</p><p class="text-2xl font-bold" id="rk-bca-stat-match">0</p></div>
+                        <div class="stat-card stat-amber"><p class="text-xs text-amber-200 mb-1">Matched, Diff</p><p class="text-2xl font-bold" id="rk-bca-stat-diff">0</p></div>
+                        <div class="stat-card stat-blue"><p class="text-xs text-indigo-200 mb-1">BCA Only</p><p class="text-2xl font-bold" id="rk-bca-stat-bca">0</p></div>
+                        <div class="stat-card stat-rose"><p class="text-xs text-rose-200 mb-1">ACMM Only</p><p class="text-2xl font-bold" id="rk-bca-stat-acmm">0</p></div>
+                    </div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <label class="text-sm font-semibold text-gray-600">Tolerance (Rp):</label>
+                        <input type="number" id="rekon-bca-tolerance" value="1" min="0" step="1"
+                            class="border border-gray-300 rounded px-2 py-1 text-sm w-28" onchange="runRekonBCA()">
+                        <div class="ml-auto flex items-center gap-2">
+                            <label class="text-sm font-semibold text-gray-600">Filter:</label>
+                            <select id="rekon-bca-filter" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="renderRekonBCATable()">
+                                <option value="">All</option><option value="MATCH">Matched Equal</option>
+                                <option value="DIFF">Amount Diff</option><option value="BCA_ONLY">BCA Only</option>
+                                <option value="ACMM_ONLY">ACMM Only</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="result-table border border-gray-200 rounded-lg mb-4" style="max-height:500px">
+                        <table>
+                            <thead><tr>
+                                <th>Kode Rekon</th>
+                                <th class="text-right">BCA Gross</th>
+                                <th class="text-right">ACMM Gross (GL 11201010)</th>
+                                <th class="text-right">Difference</th>
+                                <th class="text-center">Status</th>
+                            </tr></thead>
+                            <tbody id="rekon-bca-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button class="btn-success" onclick="downloadRekonBCAOutput()">
+                            <i class="fas fa-download mr-2"></i>Download BCA × ACMM Rekonsiliasi (.xlsx)
+                        </button>
+                        <span class="text-sm text-gray-400" id="rekon-bca-dl-info"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -699,22 +870,28 @@
 /*  STATE                                                          */
 /* ─────────────────────────────────────────────────────────────── */
 const state = {
-    acmm:    { file: null, workbook: null, processed: null },
-    'bri-csv': { file: null },
-    'bri-mid': { file: null },
-    bri:     { processed: null },
-    rekon:   null   // populated by runRekon()
+    acmm:       { file: null, workbook: null, processed: null },
+    'bri-csv':  { file: null },
+    'bri-mid':  { file: null },
+    bri:        { processed: null },
+    'bca-stmt': { file: null },
+    'bca-mid':  { file: null },
+    'bca-kartu':{ file: null },
+    bca:        { processed: null },
+    rekon:      null,   // BRI x ACMM
+    rekonBCA:   null    // BCA x ACMM
 };
 
 /* ─────────────────────────────────────────────────────────────── */
 /*  TAB SWITCHING                                                  */
 /* ─────────────────────────────────────────────────────────────── */
 function switchTab(name) {
-    ['acmm','file2','file3','rekon'].forEach(t => {
+    ['acmm','file2','file3','rekon','rekon-bca'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
         document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== name);
     });
-    if (name === 'rekon') checkRekonReadiness();
+    if (name === 'rekon')     checkRekonReadiness();
+    if (name === 'rekon-bca') checkRekonBCAReadiness();
 }
 
 /* ─────────────────────────────────────────────────────────────── */
@@ -761,6 +938,10 @@ function loadFile(file, key) {
         updateBRIReadyState();
         document.getElementById('results-bri').classList.add('hidden');
     }
+    if (key === 'bca-stmt' || key === 'bca-mid' || key === 'bca-kartu') {
+        updateBCAReadyState();
+        document.getElementById('results-bca').classList.add('hidden');
+    }
 }
 
 function clearFile(e, key) {
@@ -785,6 +966,7 @@ function clearFile(e, key) {
         document.getElementById('results-acmm').classList.add('hidden');
     }
     if (key === 'bri-csv' || key === 'bri-mid') updateBRIReadyState();
+    if (key === 'bca-stmt' || key === 'bca-mid' || key === 'bca-kartu') updateBCAReadyState();
 }
 
 /* ─────────────────────────────────────────────────────────────── */
@@ -940,6 +1122,7 @@ async function processACMM() {
             document.getElementById('results-acmm').classList.remove('hidden');
             document.getElementById('btn-process-acmm').disabled = false;
             checkRekonReadiness();
+            checkRekonBCAReadiness();
         }, 500);
 
     } catch (err) {
@@ -1333,6 +1516,495 @@ function resetBRI() {
     state.bri.processed = null;
     document.getElementById('results-bri').classList.add('hidden');
     checkRekonReadiness();
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  BCA – READY STATE                                             */
+/* ─────────────────────────────────────────────────────────────── */
+function updateBCAReadyState() {
+    const stmtOk  = !!(state['bca-stmt']  && state['bca-stmt'].file);
+    const midOk   = !!(state['bca-mid']   && state['bca-mid'].file);
+    const kartuOk = !!(state['bca-kartu'] && state['bca-kartu'].file);
+    const btn = document.getElementById('btn-process-bca');
+    const msg = document.getElementById('bca-ready-msg');
+    if (stmtOk && midOk && kartuOk) {
+        btn.disabled = false;
+        msg.textContent = '✓ All 3 files ready – click to process';
+        msg.style.color = '#059669';
+    } else {
+        btn.disabled = true;
+        const miss = [];
+        if (!stmtOk)  miss.push('BCA Statement');
+        if (!midOk)   miss.push('BCA MID');
+        if (!kartuOk) miss.push('Bank in Kartu Debit');
+        msg.textContent = 'Still need: ' + miss.join(', ');
+        msg.style.color = '#d97706';
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  BCA – MAIN PROCESSING                                          */
+/* ─────────────────────────────────────────────────────────────── */
+async function processBCA() {
+    const stmtFile  = state['bca-stmt'].file;
+    const midFile   = state['bca-mid'].file;
+    const kartuFile = state['bca-kartu'].file;
+    if (!stmtFile || !midFile || !kartuFile) return;
+
+    document.getElementById('progress-bca').classList.remove('hidden');
+    document.getElementById('results-bca').classList.add('hidden');
+    document.getElementById('btn-process-bca').disabled = true;
+    setProgress('bca', 5, 'Reading BCA MID…');
+
+    try {
+        /* ── Step 1: Build MID map (last 7 digits → outlet code) ── */
+        const midBuf = await midFile.arrayBuffer();
+        const midWb  = XLSX.read(midBuf, { type:'array' });
+        const midWs  = midWb.Sheets[midWb.SheetNames[0]];
+        const midRows = XLSX.utils.sheet_to_json(midWs, { header:1, raw:true });
+        const midMap = {};  // last7 → outcode
+        for (let i = 1; i < midRows.length; i++) {
+            const r = midRows[i];
+            const last7  = String(r[2] || '').trim();
+            const outcode = String(r[3] || '').trim();
+            if (last7 && outcode) midMap[last7] = outcode;
+        }
+        setProgress('bca', 15, `Loaded ${Object.keys(midMap).length} MID mappings. Reading Kartu Debit…`);
+
+        /* ── Step 2: Build Card map (15-digit card no → outlet code) ── */
+        const kartuBuf = await kartuFile.arrayBuffer();
+        const kartuWb  = XLSX.read(kartuBuf, { type:'array' });
+        const kartuWs  = kartuWb.Sheets[kartuWb.SheetNames[0]];
+        const kartuRows = XLSX.utils.sheet_to_json(kartuWs, { header:1, raw:true });
+        const cardMap = {};  // card15 → outcode
+        for (let i = 1; i < kartuRows.length; i++) {
+            const r = kartuRows[i];
+            const card = String(r[5] || '').trim();          // col F (index 5)
+            const storeCode = String(r[2] || '').trim();     // col C (index 2) like 0001-JKJSTT1
+            if (card && storeCode && storeCode.includes('-')) {
+                cardMap[card] = storeCode.split('-').pop();
+            }
+        }
+        setProgress('bca', 25, `Loaded ${Object.keys(cardMap).length} card mappings. Reading BCA Statement…`);
+
+        /* ── Step 3: Read BCA Statement XLSX ── */
+        const stmtBuf = await stmtFile.arrayBuffer();
+        const stmtWb  = XLSX.read(stmtBuf, { type:'array', cellDates:true });
+        const stmtWs  = stmtWb.Sheets[stmtWb.SheetNames[0]];
+        const rawRows = XLSX.utils.sheet_to_json(stmtWs, { header:1, raw:false, dateNF:'yyyy-mm-dd' });
+
+        // Find header row (has 'Tanggal Transaksi')
+        let hdrIdx = -1;
+        for (let i = 0; i < rawRows.length; i++) {
+            if (String(rawRows[i][0] || '').includes('Tanggal')) { hdrIdx = i; break; }
+        }
+        if (hdrIdx === -1) throw new Error('Cannot find header row (Tanggal Transaksi)');
+        const dataRows = rawRows.slice(hdrIdx + 1).filter(r => r[0] && r[1]);
+        setProgress('bca', 40, `Parsing ${dataRows.length} statement rows…`);
+
+        // Helpers
+        const EXCLUDE_EB   = ['VISIONET','MENSA MEDIKA','AIRPAY'];
+        const RE_MID_FULL  = /MID\s*:\s*(\d+)/i;
+        const RE_TGH       = /TGH:\s*([\d.,]+)/i;
+        const RE_QR        = /QR\s*:\s*([\d.,]+)/i;
+        const RE_CARD      = /0?(\d{15})\s*$/;  // 15-digit card at end of CDM desc
+
+        function parseJumlah(raw) {
+            // '2,800,000.00 CR' or '2.236.217,00 DB'
+            const s = String(raw || '').trim();
+            if (s.endsWith('DB')) return null;   // exclude DB
+            const num = s.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
+            return parseFloat(num) || 0;
+        }
+
+        function parseTghQr(desc) {
+            let m = RE_TGH.exec(desc);
+            if (m) return parseFloat(m[1].replace(/\./g,'').replace(',','.')) || 0;
+            m = RE_QR.exec(desc);
+            if (m) return parseFloat(m[1].replace(/\./g,'').replace(',','.')) || 0;
+            return 0;
+        }
+
+        function dayMinusOne(dateStr) {
+            // dateStr like '2026-03-14'
+            const parts = String(dateStr).split(' ')[0].split('-');
+            if (parts.length !== 3) return { day:'?', dateOnly: dateStr };
+            const d = new Date(Date.UTC(+parts[0], +parts[1]-1, +parts[2]));
+            d.setUTCDate(d.getUTCDate() - 1);
+            return { day: d.getUTCDate().toString(), dateOnly: d.toISOString().slice(0,10) };
+        }
+
+        // Result buckets
+        const ebRows   = [];  // E-Banking (non-excluded TRSF E-BANKING)
+        const midData  = {};  // outcode → { kodeRekon → totalGross }
+        const setoranRows = [];
+        const allKodes = new Set();
+        const unmatchedMIDs = new Set();
+        let cntMid = 0, cntEB = 0, cntSet = 0;
+
+        setProgress('bca', 55, 'Classifying rows…');
+
+        for (const row of dataRows) {
+            const dateStr = String(row[0] || '').slice(0,10);  // yyyy-mm-dd
+            const desc    = String(row[1] || '').trim();
+            const gross   = parseJumlah(row[3]);
+            if (gross === null) continue; // DB row, skip
+
+            /* ── E-Banking ── */
+            if (desc.includes('TRSF E-BANKING')) {
+                const excl = EXCLUDE_EB.some(kw => desc.toUpperCase().includes(kw));
+                if (!excl) {
+                    ebRows.push({ date: dateStr, desc, gross, raw: row });
+                    cntEB++;
+                }
+                continue;
+            }
+
+            /* ── MID / QRIS ── */
+            if (desc.includes('MID')) {
+                const midFull = RE_MID_FULL.exec(desc);
+                const midStr  = midFull ? midFull[1] : '';
+                const last7   = midStr.slice(-7);
+                const grossAmt = parseTghQr(desc) || gross;
+                const { day, dateOnly } = dayMinusOne(dateStr);
+                const outcode = midMap[last7] || null;
+                if (!outcode) { unmatchedMIDs.add(last7 || midStr); }
+                const oc = outcode || `UNKNOWN_${last7}`;
+                const kodeRekon = day + oc;
+                allKodes.add(kodeRekon);
+                if (!midData[oc]) midData[oc] = {};
+                if (!midData[oc][kodeRekon]) midData[oc][kodeRekon] = { gross:0, dateOnly, outcode:oc };
+                midData[oc][kodeRekon].gross += grossAmt;
+                cntMid++;
+                continue;
+            }
+
+            /* ── Setoran VIA CDM ── */
+            if (desc.includes('SETORAN VIA CDM')) {
+                const cardM = RE_CARD.exec(desc);
+                const { day, dateOnly } = dayMinusOne(dateStr);
+                let outcode = null;
+                if (cardM) {
+                    const card15 = cardM[1]; // already without leading 0
+                    outcode = cardMap[card15] || null;
+                    if (!outcode) unmatchedMIDs.add('CDM:' + card15);
+                }
+                const oc = outcode || `UNKNOWN_CDM`;
+                const kodeRekon = day + oc;
+                allKodes.add(kodeRekon);
+                setoranRows.push({ kodeRekon, outcode:oc, date:dateOnly, type:'CDM', gross, desc, raw:row });
+                cntSet++;
+                continue;
+            }
+
+            /* ── Setoran TUNAI ── */
+            if (desc.includes('SETORAN TUNAI')) {
+                // Extract outlet code directly from description: SETORAN TUNAI  JKJBGV1 ...
+                const { day, dateOnly } = dayMinusOne(dateStr);
+                const tunaiM = desc.match(/SETORAN TUNAI\s+([A-Z0-9]{6,10})/);
+                const oc = tunaiM ? tunaiM[1] : 'UNKNOWN_TUNAI';
+                const kodeRekon = day + oc;
+                allKodes.add(kodeRekon);
+                setoranRows.push({ kodeRekon, outcode:oc, date:dateOnly, type:'TUNAI', gross, desc, raw:row });
+                cntSet++;
+                continue;
+            }
+            // Other rows ignored
+        }
+
+        setProgress('bca', 80, 'Aggregating…');
+
+        // Aggregate MID data: outcode → kodeRekon → gross
+        // Flatten to preview rows
+        const midPreviewRows = [];
+        Object.keys(midData).sort().forEach(oc => {
+            Object.keys(midData[oc]).sort().forEach(kr => {
+                midPreviewRows.push({ kodeRekon:kr, outcode:oc, type:'MID/QRIS',
+                    date: midData[oc][kr].dateOnly, gross: midData[oc][kr].gross });
+            });
+        });
+
+        // Aggregate Setoran
+        const setMap = {};
+        setoranRows.forEach(r => {
+            const key = r.kodeRekon;
+            if (!setMap[key]) setMap[key] = { kodeRekon:key, outcode:r.outcode, date:r.date, type:r.type, gross:0 };
+            setMap[key].gross += r.gross;
+        });
+        const setPreviewRows = Object.values(setMap).sort((a,b)=>a.kodeRekon.localeCompare(b.kodeRekon));
+
+        // Build a flat kodeRekon→gross map for MID (for ACMM rekon later)
+        const midKodeMap = {};
+        midPreviewRows.forEach(r => {
+            midKodeMap[r.kodeRekon] = (midKodeMap[r.kodeRekon] || 0) + r.gross;
+        });
+
+        state.bca.processed = {
+            rawRows, ebRows, midData, midKodeMap, midPreviewRows,
+            setPreviewRows, setoranRows, allKodes, cntMid, cntEB, cntSet,
+            unmatchedMIDs
+        };
+
+        // Stats
+        document.getElementById('bca-stat-mid').textContent  = cntMid.toLocaleString();
+        document.getElementById('bca-stat-eb').textContent   = cntEB.toLocaleString();
+        document.getElementById('bca-stat-set').textContent  = cntSet.toLocaleString();
+        document.getElementById('bca-stat-kode').textContent = allKodes.size.toLocaleString();
+
+        const warnEl = document.getElementById('bca-unmatched-warn');
+        if (unmatchedMIDs.size > 0) {
+            warnEl.classList.remove('hidden');
+            document.getElementById('bca-unmatched-list').textContent = [...unmatchedMIDs].sort().join(', ');
+        } else warnEl.classList.add('hidden');
+
+        document.getElementById('bca-output-info').textContent =
+            `Will generate workbook: ${Object.keys(midData).length} MID/QRIS sheets + E-Banking + Setoran + Reference`;
+
+        renderBCAPreview();
+        setProgress('bca', 100, 'Done!');
+        setTimeout(() => {
+            document.getElementById('progress-bca').classList.add('hidden');
+            document.getElementById('results-bca').classList.remove('hidden');
+            document.getElementById('btn-process-bca').disabled = false;
+            checkRekonBCAReadiness();
+        }, 400);
+
+    } catch(err) {
+        document.getElementById('progress-bca').classList.add('hidden');
+        document.getElementById('btn-process-bca').disabled = false;
+        alert('Error processing BCA files:\n' + err.message);
+    }
+}
+
+function renderBCAPreview() {
+    const pr = state.bca.processed;
+    if (!pr) return;
+    const filter = document.getElementById('bca-preview-filter').value;
+    let rows = [];
+    if (!filter || filter === 'mid')      rows = rows.concat(pr.midPreviewRows);
+    if (!filter || filter === 'ebanking') pr.ebRows.slice(0,50).forEach(r => rows.push({ kodeRekon:'—', outcode:'—', type:'E-Banking', date:r.date, gross:r.gross }));
+    if (!filter || filter === 'setoran') rows = rows.concat(pr.setPreviewRows);
+    rows = rows.slice(0, 200);
+    document.getElementById('bca-preview-tbody').innerHTML = rows.map(r => `
+        <tr>
+            <td class="font-mono font-semibold text-sky-700">${r.kodeRekon}</td>
+            <td class="text-gray-600">${r.outcode}</td>
+            <td class="text-xs text-gray-500">${r.type}</td>
+            <td class="text-gray-400 text-xs">${r.date}</td>
+            <td class="text-right font-semibold text-gray-800">${fmtNum(r.gross)}</td>
+        </tr>`).join('');
+}
+
+function downloadBCAOutput() {
+    const pr = state.bca.processed;
+    if (!pr) return;
+    const outWb = XLSX.utils.book_new();
+
+    /* ── Sheet 1: E-Banking ── */
+    const ebData = [['Tanggal','Description','Gross Amount']];
+    pr.ebRows.forEach(r => ebData.push([r.date, r.desc, r.gross]));
+    const ebWs = XLSX.utils.aoa_to_sheet(ebData);
+    ebWs['!cols'] = [{ wch:14 },{ wch:60 },{ wch:18 }];
+    XLSX.utils.book_append_sheet(outWb, ebWs, 'E-Banking');
+
+    /* ── Sheet 2+: MID/QRIS per outlet ── */
+    // Group kodeRekon by outcode
+    Object.keys(pr.midData).sort().forEach(oc => {
+        const sheetData = [['Kode Rekon', 'Gross Amount', 'Date']];
+        const outcodeRows = pr.midData[oc];
+        let total = 0;
+        Object.keys(outcodeRows).sort().forEach(kr => {
+            const g = outcodeRows[kr].gross;
+            sheetData.push([kr, g, outcodeRows[kr].dateOnly]);
+            total += g;
+        });
+        sheetData.push(['TOTAL', total, '']);
+        const ws = XLSX.utils.aoa_to_sheet(sheetData);
+        ws['!cols'] = [{ wch:20 },{ wch:18 },{ wch:14 }];
+        XLSX.utils.book_append_sheet(outWb, ws, sanitizeSheetName(oc));
+    });
+
+    /* ── Setoran sheet ── */
+    const setData = [['Kode Rekon','Outlet Code','Type','Date','Gross Amount']];
+    // Group by kodeRekon
+    const setAgg = {};
+    pr.setoranRows.forEach(r => {
+        if (!setAgg[r.kodeRekon]) setAgg[r.kodeRekon] = { outcode:r.outcode, date:r.date, type:r.type, gross:0 };
+        setAgg[r.kodeRekon].gross += r.gross;
+    });
+    Object.keys(setAgg).sort().forEach(kr => {
+        const v = setAgg[kr];
+        setData.push([kr, v.outcode, v.type, v.date, v.gross]);
+    });
+    setData.push(['TOTAL','','','', Object.values(setAgg).reduce((s,v)=>s+v.gross,0)]);
+    const setWs = XLSX.utils.aoa_to_sheet(setData);
+    setWs['!cols'] = [{ wch:22 },{ wch:16 },{ wch:10 },{ wch:14 },{ wch:18 }];
+    XLSX.utils.book_append_sheet(outWb, setWs, 'Setoran');
+
+    /* ── Reference (Original) ── */
+    const refWs = XLSX.utils.aoa_to_sheet(pr.rawRows);
+    XLSX.utils.book_append_sheet(outWb, refWs, 'Reference (Original)');
+
+    const dateTag = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const fileName = `BCA_Split_${dateTag}.xlsx`;
+    XLSX.writeFile(outWb, fileName);
+    document.getElementById('bca-output-info').textContent = `✓ Downloaded: ${fileName}`;
+}
+
+function resetBCA() {
+    ['bca-stmt','bca-mid','bca-kartu'].forEach(k => clearFile(new Event('click'), k));
+    state.bca.processed = null;
+    document.getElementById('results-bca').classList.add('hidden');
+    checkRekonBCAReadiness();
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  BCA × ACMM REKONSILIASI                                       */
+/* ─────────────────────────────────────────────────────────────── */
+function checkRekonBCAReadiness() {
+    const acmmOk = !!(state.acmm.processed);
+    const bcaOk  = !!(state.bca.processed);
+    const badge  = document.getElementById('rekon-bca-tab-badge');
+    const notBox = document.getElementById('rekon-bca-not-ready-box');
+    const rdyBox = document.getElementById('rekon-bca-ready-box');
+    const missMsg= document.getElementById('rekon-bca-missing-msg');
+    if (acmmOk && bcaOk) {
+        badge.textContent = 'Ready!';
+        badge.className = 'ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold';
+        notBox.classList.add('hidden');
+        rdyBox.classList.remove('hidden');
+    } else {
+        const miss = [];
+        if (!acmmOk) miss.push('ACMM Sales File');
+        if (!bcaOk)  miss.push('BCA Statement');
+        badge.textContent = 'Not Ready';
+        badge.className = 'ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full';
+        notBox.classList.remove('hidden');
+        rdyBox.classList.add('hidden');
+        missMsg.textContent = `Still need to process: ${miss.join(' and ')}.`;
+    }
+}
+
+function runRekonBCA() {
+    const bcaPr  = state.bca.processed;
+    const acmmPr = state.acmm.processed;
+    if (!bcaPr || !acmmPr) return;
+
+    // Find GL 11201010 in ACMM
+    const BCA_GL_KEY = Object.keys(acmmPr.glData).find(k => k.startsWith('11201010'));
+    if (!BCA_GL_KEY) {
+        alert('Could not find GL code starting with 11201010 in ACMM file.\nEnsure ACMM file contains BCA PIUTANG KARTU KREDIT data.');
+        return;
+    }
+    const acmmGL = acmmPr.glData[BCA_GL_KEY];
+    const acmmMap = {};
+    Object.keys(acmmGL).forEach(kr => {
+        const { debit, credit } = acmmGL[kr];
+        acmmMap[kr] = debit - credit;
+    });
+
+    const bcaMap = bcaPr.midKodeMap;  // kodeRekon → totalGross
+    const tolerance = parseFloat(document.getElementById('rekon-bca-tolerance').value) || 0;
+    const allKeys = [...new Set([...Object.keys(bcaMap), ...Object.keys(acmmMap)])].sort();
+
+    const rows = allKeys.map(kr => {
+        const bca  = bcaMap[kr]  ?? null;
+        const acmm = acmmMap[kr] ?? null;
+        const diff = (bca !== null && acmm !== null) ? bca - acmm : null;
+        let status;
+        if (bca !== null && acmm !== null)
+            status = Math.abs(diff) <= tolerance ? 'MATCH' : 'DIFF';
+        else if (bca !== null) status = 'BCA_ONLY';
+        else status = 'ACMM_ONLY';
+        return { kr, bca, acmm, diff, status };
+    });
+
+    state.rekonBCA = { rows, bcaGLKey: BCA_GL_KEY };
+
+    const cnts = { MATCH:0, DIFF:0, BCA_ONLY:0, ACMM_ONLY:0 };
+    rows.forEach(r => cnts[r.status]++);
+    document.getElementById('rk-bca-stat-match').textContent = cnts.MATCH;
+    document.getElementById('rk-bca-stat-diff').textContent  = cnts.DIFF;
+    document.getElementById('rk-bca-stat-bca').textContent   = cnts.BCA_ONLY;
+    document.getElementById('rk-bca-stat-acmm').textContent  = cnts.ACMM_ONLY;
+    document.getElementById('rekon-bca-info-msg').textContent =
+        `GL used: ${BCA_GL_KEY} · ${rows.length} Kode Rekon compared`;
+
+    renderRekonBCATable();
+    document.getElementById('results-rekon-bca').classList.remove('hidden');
+}
+
+function renderRekonBCATable() {
+    if (!state.rekonBCA) return;
+    const filter = document.getElementById('rekon-bca-filter').value;
+    let rows = state.rekonBCA.rows;
+    if (filter) rows = rows.filter(r => r.status === filter);
+    const statusMeta = {
+        MATCH:    { label:'Match',     cls:'badge-match'  },
+        DIFF:     { label:'Diff',      cls:'badge-diff'   },
+        BCA_ONLY: { label:'BCA Only',  cls:'badge-bri'    },
+        ACMM_ONLY:{ label:'ACMM Only', cls:'badge-acmm'   }
+    };
+    const rowCls = { MATCH:'row-match', DIFF:'row-diff', BCA_ONLY:'row-bri-only', ACMM_ONLY:'row-acmm-only' };
+    document.getElementById('rekon-bca-tbody').innerHTML = rows.map(r => {
+        const m = statusMeta[r.status];
+        return `<tr class="${rowCls[r.status]}">
+            <td class="font-mono font-semibold text-gray-800">${r.kr}</td>
+            <td class="text-right">${r.bca  !== null ? fmtNum(r.bca)  : '<span class="text-gray-300">—</span>'}</td>
+            <td class="text-right">${r.acmm !== null ? fmtNum(r.acmm) : '<span class="text-gray-300">—</span>'}</td>
+            <td class="text-right font-semibold ${r.diff !== null && r.diff !== 0 ? 'text-orange-600':'text-gray-500'}">
+                ${r.diff !== null ? fmtNum(r.diff) : '<span class="text-gray-300">—</span>'}</td>
+            <td class="text-center"><span class="badge-pill ${m.cls}">${m.label}</span></td>
+        </tr>`;
+    }).join('');
+}
+
+function resetRekonBCA() {
+    state.rekonBCA = null;
+    document.getElementById('results-rekon-bca').classList.add('hidden');
+    document.getElementById('rekon-bca-info-msg').textContent = '';
+    document.getElementById('rekon-bca-dl-info').textContent = '';
+}
+
+function downloadRekonBCAOutput() {
+    if (!state.rekonBCA) return;
+    const { rows, bcaGLKey } = state.rekonBCA;
+    const outWb = XLSX.utils.book_new();
+
+    const compData = [['Kode Rekon','BCA Gross Amount',`ACMM Gross (${bcaGLKey})`,'Difference (BCA-ACMM)','Status']];
+    rows.forEach(r => compData.push([
+        r.kr, r.bca??'', r.acmm??'', r.diff??'',
+        r.status==='MATCH' ? 'Match' : r.status==='DIFF' ? 'Amount Diff' :
+        r.status==='BCA_ONLY' ? 'BCA Only (missing in ACMM)' : 'ACMM Only (missing in BCA)'
+    ]));
+    const totBCA  = rows.reduce((s,r)=>s+(r.bca??0),0);
+    const totACMM = rows.reduce((s,r)=>s+(r.acmm??0),0);
+    compData.push(['TOTAL', totBCA, totACMM, totBCA-totACMM, '']);
+    const compWs = XLSX.utils.aoa_to_sheet(compData);
+    compWs['!cols'] = [{wch:22},{wch:22},{wch:32},{wch:26},{wch:28}];
+    XLSX.utils.book_append_sheet(outWb, compWs, 'BCA x ACMM Rekon');
+
+    const mismatch = rows.filter(r => r.status !== 'MATCH');
+    if (mismatch.length > 0) {
+        const mmData = [['Kode Rekon','BCA Gross','ACMM Gross','Difference','Status']];
+        mismatch.forEach(r => mmData.push([r.kr, r.bca??'', r.acmm??'', r.diff??'',
+            r.status==='DIFF'?'Amount Diff':r.status==='BCA_ONLY'?'BCA Only':'ACMM Only']));
+        const mmWs = XLSX.utils.aoa_to_sheet(mmData);
+        mmWs['!cols'] = [{wch:22},{wch:20},{wch:20},{wch:22},{wch:22}];
+        XLSX.utils.book_append_sheet(outWb, mmWs, 'Exceptions');
+    }
+    const matched = rows.filter(r => r.status === 'MATCH');
+    if (matched.length > 0) {
+        const mData = [['Kode Rekon','BCA Gross','ACMM Gross']];
+        matched.forEach(r => mData.push([r.kr, r.bca, r.acmm]));
+        const mWs = XLSX.utils.aoa_to_sheet(mData);
+        mWs['!cols'] = [{wch:22},{wch:20},{wch:20}];
+        XLSX.utils.book_append_sheet(outWb, mWs, 'Matched');
+    }
+    const dateTag = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const fileName = `BCA_ACMM_Rekon_${dateTag}.xlsx`;
+    XLSX.writeFile(outWb, fileName);
+    document.getElementById('rekon-bca-dl-info').textContent = `✓ Downloaded: ${fileName}`;
 }
 
 /* ─────────────────────────────────────────────────────────────── */
