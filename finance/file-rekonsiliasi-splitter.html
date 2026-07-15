@@ -608,7 +608,7 @@
                     <h2 class="text-lg font-bold text-gray-800">BCA Statement Splitter</h2>
                     <p class="text-sm text-gray-500 mt-0.5">
                         Upload BCA Statement (.xlsx) + BCA MID (.xlsx) + Bank in Kartu Debit (.xlsx).
-                        Splits into: <strong>E-Banking</strong>, <strong>MID/QRIS sheets per outlet</strong>, <strong>Setoran (CDM &amp; Tunai)</strong>, + Reference.
+                        Splits into: <strong>E-Banking</strong>, <strong>Non Cash</strong> (all MID/QRIS aggregated by Kode Rekon), <strong>Cash</strong> (Setoran CDM &amp; Tunai), + Reference.
                     </p>
                 </div>
                 <span class="text-xs font-semibold px-3 py-1 rounded-full bg-sky-100 text-sky-800">.xlsx × 3</span>
@@ -1573,15 +1573,18 @@ async function processBCA() {
 
         /* ── Step 2: Build Card map (15-digit card no → outlet code) ── */
         const kartuBuf = await kartuFile.arrayBuffer();
-        const kartuWb  = XLSX.read(kartuBuf, { type:'array' });
+        const kartuWb  = XLSX.read(kartuBuf, { type:'array', raw:true });
         const kartuWs  = kartuWb.Sheets[kartuWb.SheetNames[0]];
         const kartuRows = XLSX.utils.sheet_to_json(kartuWs, { header:1, raw:true });
         const cardMap = {};  // card15 → outcode
         for (let i = 1; i < kartuRows.length; i++) {
             const r = kartuRows[i];
-            const card = String(r[5] || '').trim();          // col F (index 5)
+            // BUG FIX: col F (index 5) is a 15-digit integer read as float (1.47E+14)
+            // Must use Math.round(Number()) to recover full integer, not String() which gives "1.47e+14"
+            const rawCard = r[5];
+            const card = rawCard ? Math.round(Number(rawCard)).toString().trim() : '';
             const storeCode = String(r[2] || '').trim();     // col C (index 2) like 0001-JKJSTT1
-            if (card && storeCode && storeCode.includes('-')) {
+            if (card && card !== 'NaN' && storeCode && storeCode.includes('-')) {
                 cardMap[card] = storeCode.split('-').pop();
             }
         }
@@ -1625,27 +1628,44 @@ async function processBCA() {
             return 0;
         }
 
-        function dayMinusOne(dateStr) {
-            // dateStr like '2026-03-14'
-            const parts = String(dateStr).split(' ')[0].split('-');
-            if (parts.length !== 3) return { day:'?', dateOnly: dateStr };
+        function toYMD(raw) {
+            // BUG FIX: cellDates:true may return a JS Date object OR an ISO string like "2026-07-02T00:00:00.000Z"
+            // String(Date) gives "Wed Jul 02 2026 00:00:00 GMT+0000" — .split(' ')[0] = "Wed" which is wrong
+            // Also raw:false + dateNF may give formatted string; handle all cases
+            if (!raw) return '';
+            if (raw instanceof Date) return raw.toISOString().slice(0, 10);
+            const s = String(raw);
+            // ISO format: "2026-07-02T..." or "2026-07-02 ..."
+            if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+            // Fallback: try to parse
+            const parsed = new Date(s);
+            if (!isNaN(parsed)) return parsed.toISOString().slice(0, 10);
+            return s.slice(0, 10);
+        }
+
+        function dayMinusOne(raw) {
+            const dateStr = toYMD(raw);
+            const parts = dateStr.split('-');
+            if (parts.length !== 3 || parts[0].length !== 4) return { day:'?', dateOnly: dateStr };
             const d = new Date(Date.UTC(+parts[0], +parts[1]-1, +parts[2]));
             d.setUTCDate(d.getUTCDate() - 1);
             return { day: d.getUTCDate().toString(), dateOnly: d.toISOString().slice(0,10) };
         }
 
         // Result buckets
-        const ebRows   = [];  // E-Banking (non-excluded TRSF E-BANKING)
-        const midData  = {};  // outcode → { kodeRekon → totalGross }
+        const ebRows      = [];  // E-Banking (non-excluded TRSF E-BANKING)
+        const nonCashRows = [];  // Non Cash: all MID/QRIS rows (flat, for new sheet structure)
+        const midData     = {};  // outcode → { kodeRekon → totalGross } (kept for BCA×ACMM rekon)
         const setoranRows = [];
-        const allKodes = new Set();
+        const allKodes    = new Set();
         const unmatchedMIDs = new Set();
         let cntMid = 0, cntEB = 0, cntSet = 0;
 
         setProgress('bca', 55, 'Classifying rows…');
 
         for (const row of dataRows) {
-            const dateStr = String(row[0] || '').slice(0,10);  // yyyy-mm-dd
+            const rawDate = row[0];
+            const dateStr = toYMD(rawDate);  // BUG FIX: convert Date object / ISO string to 'yyyy-mm-dd'
             const desc    = String(row[1] || '').trim();
             const gross   = parseJumlah(row[3]);
             if (gross === null) continue; // DB row, skip
@@ -1666,15 +1686,18 @@ async function processBCA() {
                 const midStr  = midFull ? midFull[1] : '';
                 const last7   = midStr.slice(-7);
                 const grossAmt = parseTghQr(desc) || gross;
-                const { day, dateOnly } = dayMinusOne(dateStr);
+                const { day, dateOnly } = dayMinusOne(rawDate);
                 const outcode = midMap[last7] || null;
                 if (!outcode) { unmatchedMIDs.add(last7 || midStr); }
                 const oc = outcode || `UNKNOWN_${last7}`;
                 const kodeRekon = day + oc;
                 allKodes.add(kodeRekon);
+                // Keep midData for BCA×ACMM rekon compatibility
                 if (!midData[oc]) midData[oc] = {};
                 if (!midData[oc][kodeRekon]) midData[oc][kodeRekon] = { gross:0, dateOnly, outcode:oc };
                 midData[oc][kodeRekon].gross += grossAmt;
+                // Also push to flat nonCashRows for the Non Cash sheet
+                nonCashRows.push({ kodeRekon, outcode:oc, date:dateOnly, gross:grossAmt, desc });
                 cntMid++;
                 continue;
             }
@@ -1682,10 +1705,13 @@ async function processBCA() {
             /* ── Setoran VIA CDM ── */
             if (desc.includes('SETORAN VIA CDM')) {
                 const cardM = RE_CARD.exec(desc);
-                const { day, dateOnly } = dayMinusOne(dateStr);
+                const { day, dateOnly } = dayMinusOne(rawDate);
                 let outcode = null;
                 if (cardM) {
-                    const card15 = cardM[1]; // already without leading 0
+                    // card15 from regex: 15 digits without leading 0
+                    // The BCA statement stores like: "0147000100793995" → regex captures "147000100793995"
+                    // The Kartu Debit file stores as 1.47E+14 (float) → converted to "147000100793995" in cardMap
+                    const card15 = cardM[1];
                     outcode = cardMap[card15] || null;
                     if (!outcode) unmatchedMIDs.add('CDM:' + card15);
                 }
@@ -1700,7 +1726,7 @@ async function processBCA() {
             /* ── Setoran TUNAI ── */
             if (desc.includes('SETORAN TUNAI')) {
                 // Extract outlet code directly from description: SETORAN TUNAI  JKJBGV1 ...
-                const { day, dateOnly } = dayMinusOne(dateStr);
+                const { day, dateOnly } = dayMinusOne(rawDate);
                 const tunaiM = desc.match(/SETORAN TUNAI\s+([A-Z0-9]{6,10})/);
                 const oc = tunaiM ? tunaiM[1] : 'UNKNOWN_TUNAI';
                 const kodeRekon = day + oc;
@@ -1714,17 +1740,18 @@ async function processBCA() {
 
         setProgress('bca', 80, 'Aggregating…');
 
-        // Aggregate MID data: outcode → kodeRekon → gross
-        // Flatten to preview rows
-        const midPreviewRows = [];
-        Object.keys(midData).sort().forEach(oc => {
-            Object.keys(midData[oc]).sort().forEach(kr => {
-                midPreviewRows.push({ kodeRekon:kr, outcode:oc, type:'MID/QRIS',
-                    date: midData[oc][kr].dateOnly, gross: midData[oc][kr].gross });
-            });
+        // Aggregate Non Cash (MID/QRIS): flat rows for preview and sheet output
+        // Also aggregate per kodeRekon for Non Cash sheet
+        const nonCashAgg = {}; // kodeRekon → { outcode, date, gross }
+        nonCashRows.forEach(r => {
+            if (!nonCashAgg[r.kodeRekon]) nonCashAgg[r.kodeRekon] = { kodeRekon:r.kodeRekon, outcode:r.outcode, date:r.date, gross:0 };
+            nonCashAgg[r.kodeRekon].gross += r.gross;
         });
+        const midPreviewRows = Object.values(nonCashAgg)
+            .sort((a,b)=>a.kodeRekon.localeCompare(b.kodeRekon))
+            .map(r => ({ ...r, type:'MID/QRIS' }));
 
-        // Aggregate Setoran
+        // Aggregate Setoran (Cash)
         const setMap = {};
         setoranRows.forEach(r => {
             const key = r.kodeRekon;
@@ -1733,14 +1760,14 @@ async function processBCA() {
         });
         const setPreviewRows = Object.values(setMap).sort((a,b)=>a.kodeRekon.localeCompare(b.kodeRekon));
 
-        // Build a flat kodeRekon→gross map for MID (for ACMM rekon later)
+        // Build a flat kodeRekon→gross map for Non Cash MID (for BCA×ACMM rekon)
         const midKodeMap = {};
         midPreviewRows.forEach(r => {
             midKodeMap[r.kodeRekon] = (midKodeMap[r.kodeRekon] || 0) + r.gross;
         });
 
         state.bca.processed = {
-            rawRows, ebRows, midData, midKodeMap, midPreviewRows,
+            rawRows, ebRows, nonCashRows, nonCashAgg, midData, midKodeMap, midPreviewRows,
             setPreviewRows, setoranRows, allKodes, cntMid, cntEB, cntSet,
             unmatchedMIDs
         };
@@ -1757,8 +1784,9 @@ async function processBCA() {
             document.getElementById('bca-unmatched-list').textContent = [...unmatchedMIDs].sort().join(', ');
         } else warnEl.classList.add('hidden');
 
+        const sheetCount = 4; // E-Banking + Non Cash + Cash + Reference
         document.getElementById('bca-output-info').textContent =
-            `Will generate workbook: ${Object.keys(midData).length} MID/QRIS sheets + E-Banking + Setoran + Reference`;
+            `Will generate workbook: ${sheetCount} sheets (E-Banking, Non Cash, Cash, Reference)`;
 
         renderBCAPreview();
         setProgress('bca', 100, 'Done!');
@@ -1803,52 +1831,51 @@ function downloadBCAOutput() {
     /* ── Sheet 1: E-Banking ── */
     const ebData = [['Tanggal','Description','Gross Amount']];
     pr.ebRows.forEach(r => ebData.push([r.date, r.desc, r.gross]));
+    let ebTotal = pr.ebRows.reduce((s,r)=>s+r.gross,0);
+    ebData.push(['TOTAL','',ebTotal]);
     const ebWs = XLSX.utils.aoa_to_sheet(ebData);
     ebWs['!cols'] = [{ wch:14 },{ wch:60 },{ wch:18 }];
     XLSX.utils.book_append_sheet(outWb, ebWs, 'E-Banking');
 
-    /* ── Sheet 2+: MID/QRIS per outlet ── */
-    // Group kodeRekon by outcode
-    Object.keys(pr.midData).sort().forEach(oc => {
-        const sheetData = [['Kode Rekon', 'Gross Amount', 'Date']];
-        const outcodeRows = pr.midData[oc];
-        let total = 0;
-        Object.keys(outcodeRows).sort().forEach(kr => {
-            const g = outcodeRows[kr].gross;
-            sheetData.push([kr, g, outcodeRows[kr].dateOnly]);
-            total += g;
-        });
-        sheetData.push(['TOTAL', total, '']);
-        const ws = XLSX.utils.aoa_to_sheet(sheetData);
-        ws['!cols'] = [{ wch:20 },{ wch:18 },{ wch:14 }];
-        XLSX.utils.book_append_sheet(outWb, ws, sanitizeSheetName(oc));
+    /* ── Sheet 2: Non Cash (all MID/QRIS, aggregated per Kode Rekon) ── */
+    const ncData = [['Kode Rekon','Outlet Code','Gross Amount','Date']];
+    const ncRows = Object.values(pr.nonCashAgg).sort((a,b)=>a.kodeRekon.localeCompare(b.kodeRekon));
+    let ncTotal = 0;
+    ncRows.forEach(r => {
+        ncData.push([r.kodeRekon, r.outcode, r.gross, r.date]);
+        ncTotal += r.gross;
     });
+    ncData.push(['TOTAL','',ncTotal,'']);
+    const ncWs = XLSX.utils.aoa_to_sheet(ncData);
+    ncWs['!cols'] = [{ wch:22 },{ wch:16 },{ wch:18 },{ wch:14 }];
+    XLSX.utils.book_append_sheet(outWb, ncWs, 'Non Cash');
 
-    /* ── Setoran sheet ── */
-    const setData = [['Kode Rekon','Outlet Code','Type','Date','Gross Amount']];
-    // Group by kodeRekon
-    const setAgg = {};
+    /* ── Sheet 3: Cash (Setoran CDM + TUNAI, aggregated per Kode Rekon) ── */
+    const cashData = [['Kode Rekon','Outlet Code','Type','Gross Amount','Date']];
+    const cashAgg = {};
     pr.setoranRows.forEach(r => {
-        if (!setAgg[r.kodeRekon]) setAgg[r.kodeRekon] = { outcode:r.outcode, date:r.date, type:r.type, gross:0 };
-        setAgg[r.kodeRekon].gross += r.gross;
+        if (!cashAgg[r.kodeRekon]) cashAgg[r.kodeRekon] = { outcode:r.outcode, date:r.date, type:r.type, gross:0 };
+        cashAgg[r.kodeRekon].gross += r.gross;
     });
-    Object.keys(setAgg).sort().forEach(kr => {
-        const v = setAgg[kr];
-        setData.push([kr, v.outcode, v.type, v.date, v.gross]);
+    let cashTotal = 0;
+    Object.keys(cashAgg).sort().forEach(kr => {
+        const v = cashAgg[kr];
+        cashData.push([kr, v.outcode, v.type, v.gross, v.date]);
+        cashTotal += v.gross;
     });
-    setData.push(['TOTAL','','','', Object.values(setAgg).reduce((s,v)=>s+v.gross,0)]);
-    const setWs = XLSX.utils.aoa_to_sheet(setData);
-    setWs['!cols'] = [{ wch:22 },{ wch:16 },{ wch:10 },{ wch:14 },{ wch:18 }];
-    XLSX.utils.book_append_sheet(outWb, setWs, 'Setoran');
+    cashData.push(['TOTAL','','',cashTotal,'']);
+    const cashWs = XLSX.utils.aoa_to_sheet(cashData);
+    cashWs['!cols'] = [{ wch:22 },{ wch:16 },{ wch:10 },{ wch:18 },{ wch:14 }];
+    XLSX.utils.book_append_sheet(outWb, cashWs, 'Cash');
 
-    /* ── Reference (Original) ── */
+    /* ── Sheet 4: Reference (Original) ── */
     const refWs = XLSX.utils.aoa_to_sheet(pr.rawRows);
     XLSX.utils.book_append_sheet(outWb, refWs, 'Reference (Original)');
 
     const dateTag = new Date().toISOString().slice(0,10).replace(/-/g,'');
     const fileName = `BCA_Split_${dateTag}.xlsx`;
     XLSX.writeFile(outWb, fileName);
-    document.getElementById('bca-output-info').textContent = `✓ Downloaded: ${fileName}`;
+    document.getElementById('bca-output-info').textContent = `✓ Downloaded: ${fileName} (E-Banking | Non Cash | Cash | Reference)`;
 }
 
 function resetBCA() {
