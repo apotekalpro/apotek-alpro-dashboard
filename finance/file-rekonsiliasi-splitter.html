@@ -233,6 +233,10 @@
                 <i class="fas fa-balance-scale mr-2 text-sky-600"></i>BCA × ACMM Rekonsiliasi
                 <span class="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full" id="rekon-bca-tab-badge">Not Ready</span>
             </button>
+            <button class="tab-btn" onclick="switchTab('cash-rekon')" id="tab-cash-rekon">
+                <i class="fas fa-money-bill-wave mr-2 text-emerald-600"></i>Cash Rekonsiliasi
+                <span class="ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full" id="cash-rekon-tab-badge">Not Ready</span>
+            </button>
         </div>
 
         <!-- ── ACMM Sales File Tab ── -->
@@ -601,6 +605,174 @@
             </div>
         </div>
 
+        <!-- ── Cash Rekonsiliasi Tab ── -->
+        <div id="panel-cash-rekon" class="hidden p-6">
+            <div class="flex items-start justify-between mb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">Cash Rekonsiliasi</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">
+                        Upload 4 files: <strong>ACMM Sales</strong> (GL 11201100 – Piutang Penjualan CA),
+                        <strong>BCA Statement</strong>, <strong>Kartu Debit</strong> (Card→Outlet), and
+                        <strong>Cabang BCA</strong> (Cabang No→Outlet). Matches BCA Cash rows to outlet codes
+                        via 3-priority logic, then compares Kode Rekon amounts.
+                    </p>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">.xlsx × 4</span>
+            </div>
+
+            <!-- 4 upload zones in 2×2 grid -->
+            <div class="grid md:grid-cols-2 gap-4 mb-5">
+                <!-- File 1: ACMM Sales -->
+                <div>
+                    <p class="text-sm font-semibold text-gray-600 mb-2"><i class="fas fa-file-excel text-indigo-600 mr-1"></i>ACMM Sales File (.xlsx)</p>
+                    <div class="upload-zone" id="dropzone-cr-acmm"
+                        onclick="document.getElementById('fileInput-cr-acmm').click()"
+                        ondragover="handleDragOver(event,'cr-acmm')"
+                        ondragleave="handleDragLeave(event,'cr-acmm')"
+                        ondrop="handleDrop(event,'cr-acmm')">
+                        <input type="file" id="fileInput-cr-acmm" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(event,'cr-acmm')">
+                        <div id="upload-idle-cr-acmm"><i class="fas fa-cloud-upload-alt text-3xl text-indigo-400 mb-2"></i><p class="font-semibold text-gray-700 text-sm">ACMM Sales File</p><p class="text-xs text-gray-400 mt-1">GL 11201100 – Piutang Penjualan CA</p></div>
+                        <div id="upload-loaded-cr-acmm" class="hidden flex-col items-center"><i class="fas fa-check-circle text-3xl text-emerald-500 mb-1"></i><p class="font-semibold text-gray-800 text-sm" id="cr-acmm-filename">—</p><p class="text-xs text-gray-400" id="cr-acmm-filesize">—</p><button class="mt-2 text-xs text-red-500 hover:text-red-700 underline" onclick="clearFile(event,'cr-acmm')">Remove</button></div>
+                    </div>
+                </div>
+                <!-- File 2: BCA Statement -->
+                <div>
+                    <p class="text-sm font-semibold text-gray-600 mb-2"><i class="fas fa-university text-sky-600 mr-1"></i>BCA Statement (.xlsx)</p>
+                    <div class="upload-zone" id="dropzone-cr-bca"
+                        onclick="document.getElementById('fileInput-cr-bca').click()"
+                        ondragover="handleDragOver(event,'cr-bca')"
+                        ondragleave="handleDragLeave(event,'cr-bca')"
+                        ondrop="handleDrop(event,'cr-bca')">
+                        <input type="file" id="fileInput-cr-bca" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(event,'cr-bca')">
+                        <div id="upload-idle-cr-bca"><i class="fas fa-cloud-upload-alt text-3xl text-sky-400 mb-2"></i><p class="font-semibold text-gray-700 text-sm">BCA Statement</p><p class="text-xs text-gray-400 mt-1">Mutasi Rekening XLSX</p></div>
+                        <div id="upload-loaded-cr-bca" class="hidden flex-col items-center"><i class="fas fa-check-circle text-3xl text-emerald-500 mb-1"></i><p class="font-semibold text-gray-800 text-sm" id="cr-bca-filename">—</p><p class="text-xs text-gray-400" id="cr-bca-filesize">—</p><button class="mt-2 text-xs text-red-500 hover:text-red-700 underline" onclick="clearFile(event,'cr-bca')">Remove</button></div>
+                    </div>
+                </div>
+                <!-- File 3: Kartu Debit -->
+                <div>
+                    <p class="text-sm font-semibold text-gray-600 mb-2"><i class="fas fa-credit-card text-amber-600 mr-1"></i>Kartu Debit (.xlsx) <span class="text-xs text-gray-400 font-normal">Priority 1: Card→Outlet</span></p>
+                    <div class="upload-zone" id="dropzone-cr-kartu"
+                        onclick="document.getElementById('fileInput-cr-kartu').click()"
+                        ondragover="handleDragOver(event,'cr-kartu')"
+                        ondragleave="handleDragLeave(event,'cr-kartu')"
+                        ondrop="handleDrop(event,'cr-kartu')">
+                        <input type="file" id="fileInput-cr-kartu" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(event,'cr-kartu')">
+                        <div id="upload-idle-cr-kartu"><i class="fas fa-cloud-upload-alt text-3xl text-amber-400 mb-2"></i><p class="font-semibold text-gray-700 text-sm">Bank in Kartu Debit</p><p class="text-xs text-gray-400 mt-1">Col A=Card No, Col C=Outlet Code</p></div>
+                        <div id="upload-loaded-cr-kartu" class="hidden flex-col items-center"><i class="fas fa-check-circle text-3xl text-emerald-500 mb-1"></i><p class="font-semibold text-gray-800 text-sm" id="cr-kartu-filename">—</p><p class="text-xs text-gray-400" id="cr-kartu-filesize">—</p><button class="mt-2 text-xs text-red-500 hover:text-red-700 underline" onclick="clearFile(event,'cr-kartu')">Remove</button></div>
+                    </div>
+                </div>
+                <!-- File 4: Cabang BCA -->
+                <div>
+                    <p class="text-sm font-semibold text-gray-600 mb-2"><i class="fas fa-map-marker-alt text-rose-600 mr-1"></i>Cabang BCA (.xlsx) <span class="text-xs text-gray-400 font-normal">Priority 3: Cabang No→Outlet</span></p>
+                    <div class="upload-zone" id="dropzone-cr-cabang"
+                        onclick="document.getElementById('fileInput-cr-cabang').click()"
+                        ondragover="handleDragOver(event,'cr-cabang')"
+                        ondragleave="handleDragLeave(event,'cr-cabang')"
+                        ondrop="handleDrop(event,'cr-cabang')">
+                        <input type="file" id="fileInput-cr-cabang" accept=".xlsx,.xls" class="hidden" onchange="handleFileSelect(event,'cr-cabang')">
+                        <div id="upload-idle-cr-cabang"><i class="fas fa-cloud-upload-alt text-3xl text-rose-400 mb-2"></i><p class="font-semibold text-gray-700 text-sm">Cabang BCA Mapping</p><p class="text-xs text-gray-400 mt-1">Col A=Cabang No, Col B=Outlet Code</p></div>
+                        <div id="upload-loaded-cr-cabang" class="hidden flex-col items-center"><i class="fas fa-check-circle text-3xl text-emerald-500 mb-1"></i><p class="font-semibold text-gray-800 text-sm" id="cr-cabang-filename">—</p><p class="text-xs text-gray-400" id="cr-cabang-filesize">—</p><button class="mt-2 text-xs text-red-500 hover:text-red-700 underline" onclick="clearFile(event,'cr-cabang')">Remove</button></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Matching logic explainer -->
+            <div class="bg-sky-50 border border-sky-200 rounded-lg p-4 mb-5 text-sm">
+                <p class="font-semibold text-sky-800 mb-2"><i class="fas fa-sitemap mr-1"></i>3-Priority Outlet Matching (BCA Cash rows)</p>
+                <div class="grid md:grid-cols-3 gap-3">
+                    <div class="bg-white rounded-lg p-3 border border-sky-100">
+                        <p class="font-semibold text-sky-700 text-xs mb-1">① Kartu Debit (CDM)</p>
+                        <p class="text-gray-600 text-xs">For SETORAN VIA CDM: extract 15-digit card from description, look up in Kartu Debit file (Col A→Col C).</p>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 border border-sky-100">
+                        <p class="font-semibold text-sky-700 text-xs mb-1">② Kode Outlet in Description</p>
+                        <p class="text-gray-600 text-xs">Detect 7-char outlet code pattern in description (e.g. JKJSTT1). Used for SETORAN TUNAI and CDM fallback.</p>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 border border-sky-100">
+                        <p class="font-semibold text-sky-700 text-xs mb-1">③ Cabang BCA</p>
+                        <p class="text-gray-600 text-xs">Match BCA statement Col C (cabang no) against Cabang BCA file Col A to find outlet code in Col B.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="btn-process-cash-rekon" class="btn-primary" onclick="processCashRekon()" disabled>
+                    <i class="fas fa-cogs mr-2"></i>Process Cash Rekonsiliasi
+                </button>
+                <span class="text-sm text-gray-400" id="cash-rekon-ready-msg">Upload all 4 files to enable processing</span>
+            </div>
+
+            <div id="progress-cash-rekon" class="hidden mt-5">
+                <div class="flex items-center gap-3 mb-2"><div class="spinner"></div>
+                    <span class="text-sm font-medium text-gray-600" id="progress-label-cash-rekon">Processing…</span>
+                </div>
+                <div class="progress-track"><div class="progress-fill" id="progress-bar-cash-rekon" style="width:0%"></div></div>
+            </div>
+
+            <div id="results-cash-rekon" class="hidden mt-6">
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                    <div class="stat-card stat-green"><p class="text-xs text-emerald-200 mb-1">Matched &amp; Equal</p><p class="text-2xl font-bold" id="cr-stat-match">0</p></div>
+                    <div class="stat-card stat-amber"><p class="text-xs text-amber-200 mb-1">Matched, Diff</p><p class="text-2xl font-bold" id="cr-stat-diff">0</p></div>
+                    <div class="stat-card stat-blue"><p class="text-xs text-indigo-200 mb-1">BCA Only</p><p class="text-2xl font-bold" id="cr-stat-bca">0</p></div>
+                    <div class="stat-card stat-rose"><p class="text-xs text-rose-200 mb-1">ACMM Only</p><p class="text-2xl font-bold" id="cr-stat-acmm">0</p></div>
+                </div>
+
+                <!-- Match method breakdown -->
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-xs flex gap-6 flex-wrap">
+                    <span class="text-gray-600"><i class="fas fa-credit-card text-amber-500 mr-1"></i>Via Kartu Debit: <strong id="cr-match-kartu">0</strong></span>
+                    <span class="text-gray-600"><i class="fas fa-tag text-sky-500 mr-1"></i>Via Kode Outlet: <strong id="cr-match-kode">0</strong></span>
+                    <span class="text-gray-600"><i class="fas fa-map-marker-alt text-rose-500 mr-1"></i>Via Cabang BCA: <strong id="cr-match-cabang">0</strong></span>
+                    <span class="text-gray-600"><i class="fas fa-question-circle text-gray-400 mr-1"></i>Unmatched: <strong id="cr-match-unknown">0</strong></span>
+                </div>
+
+                <!-- Tolerance + filter -->
+                <div class="flex items-center gap-3 mb-3 flex-wrap">
+                    <label class="text-sm font-semibold text-gray-600">Tolerance (Rp):</label>
+                    <input type="number" id="cash-rekon-tolerance" value="1" min="0" step="1"
+                        class="border border-gray-300 rounded px-2 py-1 text-sm w-28" onchange="runCashRekon()">
+                    <span class="text-xs text-gray-400">Amounts within this range treated as equal</span>
+                    <div class="ml-auto flex items-center gap-2">
+                        <label class="text-sm font-semibold text-gray-600">Filter:</label>
+                        <select id="cash-rekon-filter" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="renderCashRekonTable()">
+                            <option value="">All</option>
+                            <option value="MATCH">Matched Equal</option>
+                            <option value="DIFF">Amount Diff</option>
+                            <option value="BCA_ONLY">BCA Only</option>
+                            <option value="ACMM_ONLY">ACMM Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Comparison table -->
+                <div class="result-table border border-gray-200 rounded-lg mb-4" style="max-height:500px">
+                    <table>
+                        <thead><tr>
+                            <th>Kode Rekon</th>
+                            <th>Outlet</th>
+                            <th>Match Via</th>
+                            <th class="text-right">BCA Cash Gross</th>
+                            <th class="text-right">ACMM Gross (GL 11201100)</th>
+                            <th class="text-right">Difference</th>
+                            <th class="text-center">Status</th>
+                        </tr></thead>
+                        <tbody id="cash-rekon-tbody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Download + Reset -->
+                <div class="flex items-center gap-3">
+                    <button class="btn-success" onclick="downloadCashRekonOutput()">
+                        <i class="fas fa-download mr-2"></i>Download Cash Rekonsiliasi (.xlsx)
+                    </button>
+                    <button class="btn-outline" onclick="resetCashRekon()">
+                        <i class="fas fa-redo mr-2"></i>Reset
+                    </button>
+                    <span class="text-sm text-gray-400" id="cash-rekon-dl-info"></span>
+                </div>
+            </div>
+        </div><!-- /panel-cash-rekon -->
+
         <!-- ── BCA Statement Tab ── -->
         <div id="panel-file3" class="hidden p-6">
             <div class="flex items-start justify-between mb-5">
@@ -872,28 +1044,34 @@
 /*  STATE                                                          */
 /* ─────────────────────────────────────────────────────────────── */
 const state = {
-    acmm:       { file: null, workbook: null, processed: null },
-    'bri-csv':  { file: null },
-    'bri-mid':  { file: null },
-    bri:        { processed: null },
-    'bca-stmt': { file: null },
-    'bca-mid':  { file: null },
-    'bca-kartu':{ file: null },
-    bca:        { processed: null },
-    rekon:      null,   // BRI x ACMM
-    rekonBCA:   null    // BCA x ACMM
+    acmm:         { file: null, workbook: null, processed: null },
+    'bri-csv':    { file: null },
+    'bri-mid':    { file: null },
+    bri:          { processed: null },
+    'bca-stmt':   { file: null },
+    'bca-mid':    { file: null },
+    'bca-kartu':  { file: null },
+    bca:          { processed: null },
+    'cr-acmm':    { file: null },
+    'cr-bca':     { file: null },
+    'cr-kartu':   { file: null },
+    'cr-cabang':  { file: null },
+    cashRekon:    null,  // processed cash rekon result
+    rekon:        null,  // BRI x ACMM
+    rekonBCA:     null   // BCA x ACMM
 };
 
 /* ─────────────────────────────────────────────────────────────── */
 /*  TAB SWITCHING                                                  */
 /* ─────────────────────────────────────────────────────────────── */
 function switchTab(name) {
-    ['acmm','file2','file3','rekon','rekon-bca'].forEach(t => {
+    ['acmm','file2','file3','rekon','rekon-bca','cash-rekon'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('active', t === name);
         document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== name);
     });
-    if (name === 'rekon')     checkRekonReadiness();
-    if (name === 'rekon-bca') checkRekonBCAReadiness();
+    if (name === 'rekon')      checkRekonReadiness();
+    if (name === 'rekon-bca')  checkRekonBCAReadiness();
+    if (name === 'cash-rekon') checkCashRekonReadiness();
 }
 
 /* ─────────────────────────────────────────────────────────────── */
@@ -944,6 +1122,10 @@ function loadFile(file, key) {
         updateBCAReadyState();
         document.getElementById('results-bca').classList.add('hidden');
     }
+    if (key === 'cr-acmm' || key === 'cr-bca' || key === 'cr-kartu' || key === 'cr-cabang') {
+        updateCashRekonReadyState();
+        document.getElementById('results-cash-rekon').classList.add('hidden');
+    }
 }
 
 function clearFile(e, key) {
@@ -969,6 +1151,7 @@ function clearFile(e, key) {
     }
     if (key === 'bri-csv' || key === 'bri-mid') updateBRIReadyState();
     if (key === 'bca-stmt' || key === 'bca-mid' || key === 'bca-kartu') updateBCAReadyState();
+    if (key === 'cr-acmm' || key === 'cr-bca' || key === 'cr-kartu' || key === 'cr-cabang') updateCashRekonReadyState();
 }
 
 /* ─────────────────────────────────────────────────────────────── */
@@ -1989,6 +2172,527 @@ function resetBCA() {
     state.bca.processed = null;
     document.getElementById('results-bca').classList.add('hidden');
     checkRekonBCAReadiness();
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  CASH REKONSILIASI – READY STATE                               */
+/* ─────────────────────────────────────────────────────────────── */
+function updateCashRekonReadyState() {
+    const f1 = !!(state['cr-acmm']   && state['cr-acmm'].file);
+    const f2 = !!(state['cr-bca']    && state['cr-bca'].file);
+    const f3 = !!(state['cr-kartu']  && state['cr-kartu'].file);
+    const f4 = !!(state['cr-cabang'] && state['cr-cabang'].file);
+    const btn = document.getElementById('btn-process-cash-rekon');
+    const msg = document.getElementById('cash-rekon-ready-msg');
+    if (f1 && f2 && f3 && f4) {
+        btn.disabled = false;
+        msg.textContent = '✓ All 4 files ready – click to process';
+        msg.style.color = '#059669';
+    } else {
+        btn.disabled = true;
+        const miss = [];
+        if (!f1) miss.push('ACMM Sales');
+        if (!f2) miss.push('BCA Statement');
+        if (!f3) miss.push('Kartu Debit');
+        if (!f4) miss.push('Cabang BCA');
+        msg.textContent = 'Still need: ' + miss.join(', ');
+        msg.style.color = '#d97706';
+    }
+}
+
+function checkCashRekonReadiness() {
+    updateCashRekonReadyState();
+    const badge = document.getElementById('cash-rekon-tab-badge');
+    const allReady = !!(state['cr-acmm'].file && state['cr-bca'].file &&
+                        state['cr-kartu'].file && state['cr-cabang'].file);
+    if (allReady) {
+        badge.textContent = 'Ready';
+        badge.className = 'ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold';
+    } else {
+        badge.textContent = 'Not Ready';
+        badge.className = 'ml-2 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full';
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  CASH REKONSILIASI – MAIN PROCESSING                           */
+/* ─────────────────────────────────────────────────────────────── */
+async function processCashRekon() {
+    const acmmFile   = state['cr-acmm'].file;
+    const bcaFile    = state['cr-bca'].file;
+    const kartuFile  = state['cr-kartu'].file;
+    const cabangFile = state['cr-cabang'].file;
+    if (!acmmFile || !bcaFile || !kartuFile || !cabangFile) return;
+
+    document.getElementById('progress-cash-rekon').classList.remove('hidden');
+    document.getElementById('results-cash-rekon').classList.add('hidden');
+    document.getElementById('btn-process-cash-rekon').disabled = true;
+    setProgress('cash-rekon', 5, 'Reading ACMM Sales file…');
+
+    try {
+        /* ══════════════════════════════════════════════════════════
+           STEP 1: Parse ACMM Sales file → extract GL 11201100
+           Col A=Tanggal, Col B=Store code, Col C=Store name (kode in brackets)
+           Col L=Type, Col M=GL Code, Col N=Amount
+           Kode Rekon = day + kodeOutlet (from brackets in col C)
+        ══════════════════════════════════════════════════════════ */
+        const acmmBuf = await acmmFile.arrayBuffer();
+        const acmmWb  = XLSX.read(acmmBuf, { type:'array', cellDates:true });
+        const acmmSheetName = acmmWb.SheetNames.find(n =>
+            n.toLowerCase().includes('transaction') || n === acmmWb.SheetNames[0]);
+        const acmmWs  = acmmWb.Sheets[acmmSheetName];
+        const acmmRaw = XLSX.utils.sheet_to_json(acmmWs, { header:1, raw:false, dateNF:'yyyy-mm-dd' });
+
+        // Find header row (col A = 'Tanggal')
+        let acmmHdrIdx = -1;
+        for (let i = 0; i < acmmRaw.length; i++) {
+            if (acmmRaw[i][0] === 'Tanggal') { acmmHdrIdx = i; break; }
+        }
+        if (acmmHdrIdx === -1) throw new Error('ACMM file: Cannot find header row (Tanggal in column A)');
+        const acmmDataRows = acmmRaw.slice(acmmHdrIdx + 1).filter(r => r[0]);
+
+        const ACMM_COL_DATE  = 0;   // A – Tanggal
+        const ACMM_COL_STORE = 1;   // B – Store code
+        const ACMM_COL_SNAME = 2;   // C – Store name (kode in brackets)
+        const ACMM_COL_TYPE  = 11;  // L – Debit/Credit
+        const ACMM_COL_GL    = 12;  // M – GL Account Code
+        const ACMM_COL_AMT   = 13;  // N – Amount
+        const CASH_GL        = '11201100';
+
+        const acmmKodeMap = {};  // kodeRekon → { debit, credit }
+        let acmmGLFound = null;
+
+        acmmDataRows.forEach(r => {
+            const gl = String(r[ACMM_COL_GL] || '').trim();
+            if (!gl.startsWith(CASH_GL)) return;
+            acmmGLFound = gl;
+
+            const dateVal   = r[ACMM_COL_DATE];
+            const storeName = String(r[ACMM_COL_SNAME] || '');
+            const type      = String(r[ACMM_COL_TYPE] || '').trim().toLowerCase();
+            const amount    = parseFloat(String(r[ACMM_COL_AMT] || '0').replace(/,/g,'')) || 0;
+
+            // Day from yyyy-mm-dd
+            let day = '';
+            const dMatch = String(dateVal).match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (dMatch) day = parseInt(dMatch[3], 10).toString();
+
+            // Kode outlet from brackets e.g. "Apotik Alpro (JKJSTT1)"
+            const bracketM = storeName.match(/\(([^)]+)\)/);
+            const kode = bracketM ? bracketM[1] : String(r[ACMM_COL_STORE] || '');
+            const kr = day + kode;
+
+            if (!acmmKodeMap[kr]) acmmKodeMap[kr] = { debit:0, credit:0 };
+            if (type === 'debit')       acmmKodeMap[kr].debit  += amount;
+            else if (type === 'credit') acmmKodeMap[kr].credit += amount;
+        });
+
+        if (!acmmGLFound) throw new Error(
+            `ACMM file: GL code starting with ${CASH_GL} not found.\n` +
+            `Make sure the ACMM file contains GL 11201100 (Piutang Penjualan CA) data.`);
+
+        // Flatten to net (debit - credit) per kodeRekon
+        const acmmNetMap = {};
+        Object.keys(acmmKodeMap).forEach(kr => {
+            const { debit, credit } = acmmKodeMap[kr];
+            acmmNetMap[kr] = debit - credit;
+        });
+
+        setProgress('cash-rekon', 20,
+            `ACMM: ${Object.keys(acmmNetMap).length} Kode Rekon in ${acmmGLFound}. Reading Kartu Debit…`);
+
+        /* ══════════════════════════════════════════════════════════
+           STEP 2: Build Kartu Debit cardMap
+           Col A (index 0) = card number (15-digit)
+           Col C (index 2) = outcode (evaluated =MID() result)
+        ══════════════════════════════════════════════════════════ */
+        const kartuBuf  = await kartuFile.arrayBuffer();
+        const kartuWb   = XLSX.read(kartuBuf, { type:'array' });
+        const kartuWs   = kartuWb.Sheets[kartuWb.SheetNames[0]];
+        const kartuRows = XLSX.utils.sheet_to_json(kartuWs, { header:1, raw:false, defval:'' });
+        const cardMap = {};  // card15 → outcode
+        for (let i = 1; i < kartuRows.length; i++) {
+            const r = kartuRows[i];
+            const card    = String(r[0] || '').trim().replace(/\.0*$/, '');
+            const outcode = String(r[2] || '').trim();
+            if (card && outcode && !outcode.startsWith('=')) cardMap[card] = outcode;
+        }
+
+        setProgress('cash-rekon', 30,
+            `Kartu Debit: ${Object.keys(cardMap).length} cards. Reading Cabang BCA…`);
+
+        /* ══════════════════════════════════════════════════════════
+           STEP 3: Build Cabang BCA map
+           Col A (index 0) = cabang number   (as stored in BCA stmt col C)
+           Col B (index 1) = outlet code
+        ══════════════════════════════════════════════════════════ */
+        const cabangBuf  = await cabangFile.arrayBuffer();
+        const cabangWb   = XLSX.read(cabangBuf, { type:'array' });
+        const cabangWs   = cabangWb.Sheets[cabangWb.SheetNames[0]];
+        const cabangRows = XLSX.utils.sheet_to_json(cabangWs, { header:1, raw:false, defval:'' });
+        const cabangMap = {};  // cabangNo → outcode
+        for (let i = 1; i < cabangRows.length; i++) {
+            const r = cabangRows[i];
+            const cabangNo = String(r[0] || '').trim();
+            const outcode  = String(r[1] || '').trim();
+            if (cabangNo && outcode) cabangMap[cabangNo] = outcode;
+        }
+
+        setProgress('cash-rekon', 40,
+            `Cabang BCA: ${Object.keys(cabangMap).length} branches. Reading BCA Statement…`);
+
+        /* ══════════════════════════════════════════════════════════
+           STEP 4: Parse BCA Statement – extract Cash rows only
+           Apply 3-priority outlet matching:
+             ① Kartu Debit card lookup (CDM rows)
+             ② Kode outlet pattern in description text
+             ③ Cabang BCA: match col C (cabang no) → outlet code
+        ══════════════════════════════════════════════════════════ */
+        const stmtBuf = await bcaFile.arrayBuffer();
+        const stmtWb  = XLSX.read(stmtBuf, { type:'array', cellNF:true });
+        const stmtWs  = stmtWb.Sheets[stmtWb.SheetNames[0]];
+        const stmtRaw = XLSX.utils.sheet_to_json(stmtWs,
+            { header:1, raw:false, dateNF:'yyyy-mm-dd', defval:'' });
+
+        // Find header row (contains 'Tanggal')
+        let hdrIdx = -1;
+        for (let i = 0; i < stmtRaw.length; i++) {
+            if (String(stmtRaw[i][0] || '').includes('Tanggal')) { hdrIdx = i; break; }
+        }
+        if (hdrIdx === -1) throw new Error('BCA Statement: Cannot find header row (Tanggal Transaksi)');
+        const stmtData = stmtRaw.slice(hdrIdx + 1).filter(r => r[0] && r[1]);
+
+        setProgress('cash-rekon', 55,
+            `BCA Statement: ${stmtData.length} rows. Classifying Cash rows…`);
+
+        // ── Helpers (mirrored from processBCA) ──
+        function crParseJumlah(raw) {
+            if (typeof raw === 'number') return raw > 0 ? raw : null;
+            const s = String(raw || '').trim();
+            if (!s) return null;
+            if (s.toUpperCase().endsWith('DB')) return null;
+            const num = s.replace(/[^\d.,]/g, '').replace(/,/g, '');
+            return parseFloat(num) || 0;
+        }
+
+        function crToYMD(raw) {
+            if (!raw) return '';
+            const s = String(raw).trim();
+            // BCA date: stored as MM/DD but entered as DD/MM → swap after SheetJS formats
+            if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+                const [yyyy, mm, dd] = s.slice(0,10).split('-');
+                return `${yyyy}-${dd}-${mm}`;
+            }
+            const dmyM = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+            if (dmyM) {
+                const dd = dmyM[1].padStart(2,'0');
+                const mm = dmyM[2].padStart(2,'0');
+                let yy = dmyM[3]; if (yy.length === 2) yy = '20' + yy;
+                return `${yy}-${mm}-${dd}`;
+            }
+            return '';
+        }
+
+        function crDayMinusOne(raw) {
+            const dateStr = crToYMD(raw);
+            const parts = dateStr.split('-');
+            if (parts.length !== 3 || parts[0].length !== 4)
+                return { day:'?', dateOnly: dateStr };
+            const d = new Date(Date.UTC(+parts[0], +parts[1]-1, +parts[2]));
+            d.setUTCDate(d.getUTCDate() - 1);
+            return { day: d.getUTCDate().toString(), dateOnly: d.toISOString().slice(0,10) };
+        }
+
+        // Priority ② helper: detect 7-char outlet code in description
+        // Outlet codes: uppercase alphanumeric, 7 chars, ends with digit  e.g. JKJSTT1
+        function detectOutcodeInDesc(desc) {
+            const m = /\b([A-Z][A-Z0-9]{5}\d)\b/.exec(desc);
+            return m ? m[1] : null;
+        }
+
+        const CR_RE_CARD   = /0?(\d{15})\s*$/;  // 15-digit card at end of CDM desc
+        const BCA_COL_CABANG = 2;                // col C = cabang no in BCA statement
+
+        let matchViaKartu = 0, matchViaKode = 0, matchViaCabang = 0, matchUnknown = 0;
+        const cashRowsDetail = [];
+        const cashKodeMap    = {};  // kodeRekon → { outcode, date, gross, matchVia }
+
+        for (const row of stmtData) {
+            const rawDate = row[0];
+            const desc    = String(row[1] || '').trim();
+            const gross   = crParseJumlah(row[3]);
+            if (gross === null) continue;  // DB row – skip
+
+            const isCDM   = desc.includes('SETORAN VIA CDM');
+            const isTUNAI = desc.includes('SETORAN TUNAI');
+            if (!isCDM && !isTUNAI) continue;  // only Cash rows
+
+            const { day, dateOnly } = crDayMinusOne(rawDate);
+            let outcode  = null;
+            let matchVia = '';
+
+            /* ── Priority ①: Kartu Debit (CDM only) ── */
+            if (isCDM) {
+                const cardM = CR_RE_CARD.exec(desc);
+                if (cardM && cardMap[cardM[1]]) {
+                    outcode  = cardMap[cardM[1]];
+                    matchVia = 'Kartu Debit';
+                    matchViaKartu++;
+                }
+            }
+
+            /* ── Priority ②: Kode outlet in description ── */
+            if (!outcode) {
+                const oc = detectOutcodeInDesc(desc);
+                if (oc) {
+                    outcode  = oc;
+                    matchVia = 'Kode Outlet';
+                    matchViaKode++;
+                }
+            }
+
+            /* ── Priority ③: Cabang BCA (stmt col C) ── */
+            if (!outcode) {
+                const cabangNo = String(row[BCA_COL_CABANG] || '').trim();
+                if (cabangNo && cabangMap[cabangNo]) {
+                    outcode  = cabangMap[cabangNo];
+                    matchVia = 'Cabang BCA';
+                    matchViaCabang++;
+                }
+            }
+
+            /* ── Fallback: Unmatched ── */
+            if (!outcode) {
+                outcode  = isCDM ? 'UNKNOWN_CDM' : 'UNKNOWN_TUNAI';
+                matchVia = 'Unmatched';
+                matchUnknown++;
+            }
+
+            const kodeRekon = day + outcode;
+            const type      = isCDM ? 'CDM' : 'TUNAI';
+
+            cashRowsDetail.push({ kodeRekon, outcode, date: dateOnly, type, gross, matchVia, desc });
+
+            if (!cashKodeMap[kodeRekon]) {
+                cashKodeMap[kodeRekon] = { outcode, date: dateOnly, gross: 0, matchVia };
+            }
+            cashKodeMap[kodeRekon].gross += gross;
+        }
+
+        setProgress('cash-rekon', 75, 'Comparing with ACMM GL 11201100…');
+
+        /* ══════════════════════════════════════════════════════════
+           STEP 5: Build comparison rows (BCA Cash vs ACMM 11201100)
+        ══════════════════════════════════════════════════════════ */
+        const tolerance = parseFloat(document.getElementById('cash-rekon-tolerance').value) || 0;
+
+        const allKeys = [...new Set([
+            ...Object.keys(cashKodeMap),
+            ...Object.keys(acmmNetMap)
+        ])].sort();
+
+        const compRows = allKeys.map(kr => {
+            const bca      = cashKodeMap[kr]  ? cashKodeMap[kr].gross   : null;
+            const acmm     = acmmNetMap[kr]   ?? null;
+            const diff     = (bca !== null && acmm !== null) ? bca - acmm : null;
+            const outcode  = cashKodeMap[kr]?.outcode  || '—';
+            const matchVia = cashKodeMap[kr]?.matchVia || '—';
+            let status;
+            if (bca !== null && acmm !== null)
+                status = Math.abs(diff) <= tolerance ? 'MATCH' : 'DIFF';
+            else if (bca !== null) status = 'BCA_ONLY';
+            else                   status = 'ACMM_ONLY';
+            return { kr, bca, acmm, diff, status, outcode, matchVia };
+        });
+
+        state.cashRekon = {
+            compRows, cashRowsDetail, cashKodeMap, acmmNetMap, acmmGLFound,
+            matchViaKartu, matchViaKode, matchViaCabang, matchUnknown
+        };
+
+        // Update stats
+        const cnts = { MATCH:0, DIFF:0, BCA_ONLY:0, ACMM_ONLY:0 };
+        compRows.forEach(r => cnts[r.status]++);
+        document.getElementById('cr-stat-match').textContent    = cnts.MATCH;
+        document.getElementById('cr-stat-diff').textContent     = cnts.DIFF;
+        document.getElementById('cr-stat-bca').textContent      = cnts.BCA_ONLY;
+        document.getElementById('cr-stat-acmm').textContent     = cnts.ACMM_ONLY;
+        document.getElementById('cr-match-kartu').textContent   = matchViaKartu;
+        document.getElementById('cr-match-kode').textContent    = matchViaKode;
+        document.getElementById('cr-match-cabang').textContent  = matchViaCabang;
+        document.getElementById('cr-match-unknown').textContent = matchUnknown;
+
+        renderCashRekonTable();
+        setProgress('cash-rekon', 100, 'Done!');
+        setTimeout(() => {
+            document.getElementById('progress-cash-rekon').classList.add('hidden');
+            document.getElementById('results-cash-rekon').classList.remove('hidden');
+            document.getElementById('btn-process-cash-rekon').disabled = false;
+        }, 400);
+
+    } catch(err) {
+        document.getElementById('progress-cash-rekon').classList.add('hidden');
+        document.getElementById('btn-process-cash-rekon').disabled = false;
+        alert('Error processing Cash Rekonsiliasi:\n' + err.message);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  CASH REKONSILIASI – re-run on tolerance change                */
+/* ─────────────────────────────────────────────────────────────── */
+function runCashRekon() {
+    const cr = state.cashRekon;
+    if (!cr) return;
+    const tolerance = parseFloat(document.getElementById('cash-rekon-tolerance').value) || 0;
+    const allKeys = [...new Set([
+        ...Object.keys(cr.cashKodeMap),
+        ...Object.keys(cr.acmmNetMap)
+    ])].sort();
+    cr.compRows = allKeys.map(kr => {
+        const bca      = cr.cashKodeMap[kr]  ? cr.cashKodeMap[kr].gross : null;
+        const acmm     = cr.acmmNetMap[kr]   ?? null;
+        const diff     = (bca !== null && acmm !== null) ? bca - acmm : null;
+        const outcode  = cr.cashKodeMap[kr]?.outcode  || '—';
+        const matchVia = cr.cashKodeMap[kr]?.matchVia || '—';
+        let status;
+        if (bca !== null && acmm !== null)
+            status = Math.abs(diff) <= tolerance ? 'MATCH' : 'DIFF';
+        else if (bca !== null) status = 'BCA_ONLY';
+        else                   status = 'ACMM_ONLY';
+        return { kr, bca, acmm, diff, status, outcode, matchVia };
+    });
+    const cnts = { MATCH:0, DIFF:0, BCA_ONLY:0, ACMM_ONLY:0 };
+    cr.compRows.forEach(r => cnts[r.status]++);
+    document.getElementById('cr-stat-match').textContent = cnts.MATCH;
+    document.getElementById('cr-stat-diff').textContent  = cnts.DIFF;
+    document.getElementById('cr-stat-bca').textContent   = cnts.BCA_ONLY;
+    document.getElementById('cr-stat-acmm').textContent  = cnts.ACMM_ONLY;
+    renderCashRekonTable();
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  CASH REKONSILIASI – RENDER TABLE                              */
+/* ─────────────────────────────────────────────────────────────── */
+function renderCashRekonTable() {
+    const cr = state.cashRekon;
+    if (!cr) return;
+    const filter = document.getElementById('cash-rekon-filter').value;
+    let rows = cr.compRows;
+    if (filter) rows = rows.filter(r => r.status === filter);
+
+    const statusMeta = {
+        MATCH:     { label:'Match',     cls:'badge-match' },
+        DIFF:      { label:'Diff',      cls:'badge-diff'  },
+        BCA_ONLY:  { label:'BCA Only',  cls:'badge-bri'   },
+        ACMM_ONLY: { label:'ACMM Only', cls:'badge-acmm'  }
+    };
+    const rowCls = {
+        MATCH:     'row-match',
+        DIFF:      'row-diff',
+        BCA_ONLY:  'row-bri-only',
+        ACMM_ONLY: 'row-acmm-only'
+    };
+    // matchVia badge inline styles
+    const viaSty = {
+        'Kartu Debit': 'background:#fef3c7;color:#92400e',
+        'Kode Outlet': 'background:#dbeafe;color:#1e40af',
+        'Cabang BCA' : 'background:#fce7f3;color:#9d174d',
+        'Unmatched'  : 'background:#f3f4f6;color:#6b7280',
+        '—'          : 'background:#f3f4f6;color:#9ca3af'
+    };
+
+    document.getElementById('cash-rekon-tbody').innerHTML = rows.map(r => {
+        const m  = statusMeta[r.status];
+        const vs = viaSty[r.matchVia] || viaSty['—'];
+        return `<tr class="${rowCls[r.status]}">
+            <td class="font-mono font-semibold text-gray-800">${r.kr}</td>
+            <td class="text-gray-600 text-xs">${r.outcode}</td>
+            <td><span class="badge-pill" style="${vs}">${r.matchVia}</span></td>
+            <td class="text-right">${r.bca  !== null ? fmtNum(r.bca)  : '<span class="text-gray-300">—</span>'}</td>
+            <td class="text-right">${r.acmm !== null ? fmtNum(r.acmm) : '<span class="text-gray-300">—</span>'}</td>
+            <td class="text-right font-semibold ${r.diff !== null && r.diff !== 0 ? 'text-orange-600':'text-gray-500'}">
+                ${r.diff !== null ? fmtNum(r.diff) : '<span class="text-gray-300">—</span>'}</td>
+            <td class="text-center"><span class="badge-pill ${m.cls}">${m.label}</span></td>
+        </tr>`;
+    }).join('');
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  CASH REKONSILIASI – DOWNLOAD                                  */
+/* ─────────────────────────────────────────────────────────────── */
+function downloadCashRekonOutput() {
+    const cr = state.cashRekon;
+    if (!cr) return;
+    const { compRows, cashRowsDetail, acmmGLFound } = cr;
+    const outWb = XLSX.utils.book_new();
+
+    /* ── Sheet 1: Full Comparison ── */
+    const compData = [[
+        'Kode Rekon', 'Outlet Code', 'Match Via',
+        'BCA Cash Gross', `ACMM Gross (${acmmGLFound})`,
+        'Difference (BCA - ACMM)', 'Status'
+    ]];
+    compRows.forEach(r => compData.push([
+        r.kr, r.outcode, r.matchVia,
+        r.bca ?? '', r.acmm ?? '', r.diff ?? '',
+        r.status === 'MATCH'    ? 'Match' :
+        r.status === 'DIFF'     ? 'Amount Diff' :
+        r.status === 'BCA_ONLY' ? 'BCA Only (missing in ACMM)' :
+                                   'ACMM Only (missing in BCA)'
+    ]));
+    const totBCA  = compRows.reduce((s,r) => s + (r.bca  ?? 0), 0);
+    const totACMM = compRows.reduce((s,r) => s + (r.acmm ?? 0), 0);
+    compData.push(['TOTAL', '', '', totBCA, totACMM, totBCA - totACMM, '']);
+    const compWs = XLSX.utils.aoa_to_sheet(compData);
+    compWs['!cols'] = [{wch:22},{wch:16},{wch:16},{wch:20},{wch:28},{wch:26},{wch:30}];
+    XLSX.utils.book_append_sheet(outWb, compWs, 'Cash Rekon');
+
+    /* ── Sheet 2: Exceptions (non-MATCH) ── */
+    const exceptions = compRows.filter(r => r.status !== 'MATCH');
+    if (exceptions.length > 0) {
+        const exData = [['Kode Rekon','Outlet','Match Via','BCA Cash','ACMM Gross','Difference','Status']];
+        exceptions.forEach(r => exData.push([
+            r.kr, r.outcode, r.matchVia,
+            r.bca ?? '', r.acmm ?? '', r.diff ?? '',
+            r.status === 'DIFF' ? 'Amount Diff' :
+            r.status === 'BCA_ONLY' ? 'BCA Only' : 'ACMM Only'
+        ]));
+        const exWs = XLSX.utils.aoa_to_sheet(exData);
+        exWs['!cols'] = [{wch:22},{wch:16},{wch:16},{wch:18},{wch:18},{wch:18},{wch:22}];
+        XLSX.utils.book_append_sheet(outWb, exWs, 'Exceptions');
+    }
+
+    /* ── Sheet 3: Matched ── */
+    const matched = compRows.filter(r => r.status === 'MATCH');
+    if (matched.length > 0) {
+        const mData = [['Kode Rekon','Outlet','Match Via','BCA Cash','ACMM Gross']];
+        matched.forEach(r => mData.push([r.kr, r.outcode, r.matchVia, r.bca, r.acmm]));
+        const mWs = XLSX.utils.aoa_to_sheet(mData);
+        mWs['!cols'] = [{wch:22},{wch:16},{wch:16},{wch:18},{wch:18}];
+        XLSX.utils.book_append_sheet(outWb, mWs, 'Matched');
+    }
+
+    /* ── Sheet 4: BCA Cash Detail (per-row) ── */
+    const detData = [['Kode Rekon','Outlet Code','Type','Match Via','Gross Amount','Date','Description']];
+    cashRowsDetail.forEach(r => detData.push([
+        r.kodeRekon, r.outcode, r.type, r.matchVia, r.gross, r.date, r.desc
+    ]));
+    const detWs = XLSX.utils.aoa_to_sheet(detData);
+    detWs['!cols'] = [{wch:22},{wch:16},{wch:8},{wch:16},{wch:18},{wch:14},{wch:70}];
+    XLSX.utils.book_append_sheet(outWb, detWs, 'BCA Cash Detail');
+
+    const dateTag  = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const fileName = `Cash_Rekon_${dateTag}.xlsx`;
+    XLSX.writeFile(outWb, fileName);
+    document.getElementById('cash-rekon-dl-info').textContent = `✓ Downloaded: ${fileName}`;
+}
+
+function resetCashRekon() {
+    ['cr-acmm','cr-bca','cr-kartu','cr-cabang'].forEach(k => clearFile(new Event('click'), k));
+    state.cashRekon = null;
+    document.getElementById('results-cash-rekon').classList.add('hidden');
+    document.getElementById('cash-rekon-dl-info').textContent = '';
+    checkCashRekonReadiness();
 }
 
 /* ─────────────────────────────────────────────────────────────── */
