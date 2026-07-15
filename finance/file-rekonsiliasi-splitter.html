@@ -1628,14 +1628,14 @@ async function processBCA() {
 
         /* ── Step 3: Read BCA Statement XLSX ── */
         const stmtBuf = await stmtFile.arrayBuffer();
-        // Read BCA statement:
-        //   - cellDates:false (default): date serials stay as numbers, formatted via raw:false
-        //   - raw:false in sheet_to_json: ALL cells formatted as display strings
-        //     → date cells come as "7/2/2026" (Excel M/D/YYYY format) → toYMD() parses correctly
-        //     → Jumlah cells come as "2,100,000.00 CR" / "DB" → parseJumlah() works correctly
-        const stmtWb  = XLSX.read(stmtBuf, { type:'array' });
+        // Use cellDates:true so date serial cells become unambiguous JS Date objects.
+        // Use raw:true in sheet_to_json to receive those Date objects (raw:false would
+        // re-format them as strings using SheetJS's formatter, which may produce D/M order).
+        // Jumlah column (col D) is a pure number in BCA exports — parseJumlah() handles both
+        // number and "CR"/"DB"-suffixed text strings.
+        const stmtWb  = XLSX.read(stmtBuf, { type:'array', cellDates:true });
         const stmtWs  = stmtWb.Sheets[stmtWb.SheetNames[0]];
-        const rawRows = XLSX.utils.sheet_to_json(stmtWs, { header:1, raw:false, defval:'' });
+        const rawRows = XLSX.utils.sheet_to_json(stmtWs, { header:1, raw:true, defval:'' });
 
         // Find header row (has 'Tanggal Transaksi')
         let hdrIdx = -1;
@@ -1654,8 +1654,14 @@ async function processBCA() {
         const RE_CARD      = /0?(\d{15})\s*$/;  // 15-digit card at end of CDM desc
 
         function parseJumlah(raw) {
-            // '2,800,000.00 CR' or '2.236.217,00 DB'
+            // BCA Jumlah column is a pure number when read with raw:true (e.g. 851078)
+            // Fallback: text with CR/DB suffix: '2,800,000.00 CR' or '2.236.217,00 DB'
+            if (typeof raw === 'number') {
+                // Raw number from Excel — always positive in BCA credit-only export
+                return raw > 0 ? raw : null;  // negative = debit, skip
+            }
             const s = String(raw || '').trim();
+            if (!s) return null;
             if (s.endsWith('DB')) return null;   // exclude DB
             const num = s.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
             return parseFloat(num) || 0;
@@ -1670,31 +1676,25 @@ async function processBCA() {
         }
 
         function toYMD(raw) {
-            // BCA Statement Tanggal column may arrive as:
-            //   1. JS Date object (cellDates:true with numeric serial) → toISOString()
-            //   2. String "7/2/2026" (M/D/YYYY) → must parse explicitly, NOT via new Date() which is ambiguous
-            //   3. ISO string "2026-07-02T..." → slice(0,10)
+            // PRIMARY PATH: cellDates:true + raw:true → date serials become JS Date objects
+            // JS Date from SheetJS is always UTC midnight → toISOString() is unambiguous
             if (!raw) return '';
             if (raw instanceof Date) {
-                // Date object from cellDates:true is always correct (UTC midnight)
-                return raw.toISOString().slice(0, 10);
+                return raw.toISOString().slice(0, 10);  // '2026-07-02' always correct
             }
             const s = String(raw).trim();
-            // ISO format: "2026-07-02" or "2026-07-02T..."
+            // ISO format fallback: "2026-07-02" or "2026-07-02T..."
             if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-            // M/D/YYYY or M/D/YY format (BCA statement text format)
-            // e.g. "7/2/2026" = July 2 2026, "12/31/2026" = Dec 31 2026
+            // M/D/YYYY fallback for text cells (month first, BCA convention)
+            // e.g. "7/2/2026" = July 2, "12/31/2026" = Dec 31
             const mdyMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
             if (mdyMatch) {
-                const mm = mdyMatch[1].padStart(2,'0');
-                const dd = mdyMatch[2].padStart(2,'0');
+                const mm = mdyMatch[1].padStart(2,'0');  // group1 = month
+                const dd = mdyMatch[2].padStart(2,'0');  // group2 = day
                 let yy = mdyMatch[3];
                 if (yy.length === 2) yy = '20' + yy;
                 return `${yy}-${mm}-${dd}`;
             }
-            // Last resort: try JS Date parse (may be wrong for ambiguous formats)
-            const parsed = new Date(s);
-            if (!isNaN(parsed)) return parsed.toISOString().slice(0, 10);
             return '';
         }
 
