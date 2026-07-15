@@ -695,9 +695,21 @@
                 </div>
             </div>
 
+            <!-- ── Mode selector (choose BEFORE processing) ── -->
+            <div class="flex gap-2 mb-3">
+                <button id="cr-preselect-daily" onclick="selectCashRekonMode('daily')"
+                    class="px-4 py-2 text-sm font-semibold rounded-lg border border-emerald-400 bg-emerald-50 text-emerald-700 flex items-center gap-2">
+                    <i class="fas fa-calendar-day"></i>Daily Rekonsiliasi
+                </button>
+                <button id="cr-preselect-periode" onclick="selectCashRekonMode('periode')"
+                    class="px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 bg-gray-50 text-gray-500 hover:text-gray-700 flex items-center gap-2">
+                    <i class="fas fa-calendar-alt"></i>Periode Rekonsiliasi
+                </button>
+            </div>
+
             <div class="flex items-center gap-3">
                 <button id="btn-process-cash-rekon" class="btn-primary" onclick="processCashRekon()" disabled>
-                    <i class="fas fa-cogs mr-2"></i>Process Cash Rekonsiliasi
+                    <i class="fas fa-cogs mr-2"></i><span id="btn-process-cash-rekon-label">Process Daily Rekonsiliasi</span>
                 </button>
                 <span class="text-sm text-gray-400" id="cash-rekon-ready-msg">Upload all 4 files to enable processing</span>
             </div>
@@ -711,7 +723,7 @@
 
             <div id="results-cash-rekon" class="hidden mt-6">
 
-                <!-- ── Mode selector tabs ── -->
+                <!-- ── Mode selector tabs (inside results – re-trigger compute on click) ── -->
                 <div class="flex gap-2 mb-5 border-b border-gray-200 pb-0">
                     <button id="cr-mode-daily" onclick="switchCashRekonMode('daily')"
                         class="px-4 py-2 text-sm font-semibold rounded-t-lg border border-b-0 border-emerald-400 bg-emerald-50 text-emerald-700">
@@ -722,6 +734,10 @@
                         <i class="fas fa-calendar-alt mr-1"></i>Periode Rekonsiliasi
                     </button>
                 </div>
+                <!-- ── Re-process hint ── -->
+                <p class="text-xs text-gray-400 -mt-4 mb-4 ml-1">
+                    <i class="fas fa-info-circle mr-1"></i>Click a tab above to switch mode — results recompute instantly from loaded data.
+                </p>
 
                 <!-- ── Match method breakdown (shared) ── -->
                 <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-xs flex gap-6 flex-wrap">
@@ -1135,6 +1151,7 @@ const state = {
     'cr-kartu':   { file: null },
     'cr-cabang':  { file: null },
     cashRekon:    null,  // processed cash rekon result
+    cashRekonMode:'daily', // 'daily' | 'periode' — selected before/after process
     rekon:        null,  // BRI x ACMM
     rekonBCA:     null   // BCA x ACMM
 };
@@ -2562,32 +2579,11 @@ async function processCashRekon() {
         /* ══════════════════════════════════════════════════════════
            STEP 5: Build comparison rows (BCA Cash vs ACMM 11201100)
         ══════════════════════════════════════════════════════════ */
-        const tolerance = parseFloat(document.getElementById('cash-rekon-tolerance').value) || 0;
-
-        const allKeys = [...new Set([
-            ...Object.keys(cashKodeMap),
-            ...Object.keys(acmmNetMap)
-        ])].sort();
-
-        const compRows = allKeys.map(kr => {
-            const bca      = cashKodeMap[kr]  ? cashKodeMap[kr].gross   : null;
-            const acmm     = acmmNetMap[kr]   ?? null;
-            const diff     = (bca !== null && acmm !== null) ? bca - acmm : null;
-            const outcode  = cashKodeMap[kr]?.outcode  || '—';
-            const matchVia = cashKodeMap[kr]?.matchVia || '—';
-            let status;
-            if (bca !== null && acmm !== null)
-                status = Math.abs(diff) <= tolerance ? 'MATCH' : 'DIFF';
-            else if (bca !== null) status = 'BCA_ONLY';
-            else                   status = 'ACMM_ONLY';
-            return { kr, bca, acmm, diff, status, outcode, matchVia };
-        });
-
         state.cashRekon = {
             cashRowsDetail, cashKodeMap, acmmNetMap, acmmGLFound,
             matchViaKartu, matchViaKode, matchViaCabang, matchUnknown,
-            dailyRows:  null,   // computed on mode switch
-            periodeRows:null
+            dailyRows:   null,
+            periodeRows: null
         };
 
         // Update outlet-match breakdown counters (shared across both modes)
@@ -2596,11 +2592,11 @@ async function processCashRekon() {
         document.getElementById('cr-match-cabang').textContent  = matchViaCabang;
         document.getElementById('cr-match-unknown').textContent = matchUnknown;
 
-        // Compute both modes and render the active one
-        computeCashRekonDaily();
-        computeCashRekonPeriode();
-        // Default: show Daily
-        switchCashRekonMode('daily');
+        // Run only the selected mode, then show results
+        const selectedMode = state.cashRekonMode || 'daily';
+        if (selectedMode === 'daily') computeCashRekonDaily();
+        else                          { computeCashRekonPeriode(); runCashRekonPeriode(); }
+        switchCashRekonMode(selectedMode);
 
         setProgress('cash-rekon', 100, 'Done!');
         setTimeout(() => {
@@ -2617,21 +2613,70 @@ async function processCashRekon() {
 }
 
 /* ─────────────────────────────────────────────────────────────── */
-/*  CASH REKON – MODE SWITCHER                                    */
+/*  CASH REKON – PRE-PROCESS MODE SELECTOR                        */
+/*  Called when user clicks Daily/Periode button BEFORE process.  */
 /* ─────────────────────────────────────────────────────────────── */
-function switchCashRekonMode(mode) {
+/* ─────────────────────────────────────────────────────────────── */
+/*  CASH REKON – SHARED MODE UI HELPER (no recursion)            */
+/* ─────────────────────────────────────────────────────────────── */
+function _applyCashRekonModeUI(mode) {
     const isDaily = mode === 'daily';
-    // Tab button styles
+
+    // Pre-process selector buttons
+    const preD = document.getElementById('cr-preselect-daily');
+    const preP = document.getElementById('cr-preselect-periode');
+    preD.className = isDaily
+        ? 'px-4 py-2 text-sm font-semibold rounded-lg border border-emerald-400 bg-emerald-50 text-emerald-700 flex items-center gap-2'
+        : 'px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 bg-gray-50 text-gray-500 hover:text-gray-700 flex items-center gap-2';
+    preP.className = !isDaily
+        ? 'px-4 py-2 text-sm font-semibold rounded-lg border border-sky-400 bg-sky-50 text-sky-700 flex items-center gap-2'
+        : 'px-4 py-2 text-sm font-semibold rounded-lg border border-gray-200 bg-gray-50 text-gray-500 hover:text-gray-700 flex items-center gap-2';
+
+    // Process button label
+    document.getElementById('btn-process-cash-rekon-label').textContent =
+        isDaily ? 'Process Daily Rekonsiliasi' : 'Process Periode Rekonsiliasi';
+
+    // Results tab buttons (only present once results are visible, guard with ?)
     const btnD = document.getElementById('cr-mode-daily');
     const btnP = document.getElementById('cr-mode-periode');
-    btnD.className = isDaily
+    if (btnD) btnD.className = isDaily
         ? 'px-4 py-2 text-sm font-semibold rounded-t-lg border border-b-0 border-emerald-400 bg-emerald-50 text-emerald-700'
         : 'px-4 py-2 text-sm font-semibold rounded-t-lg border border-b-0 border-gray-200 bg-gray-50 text-gray-500 hover:text-gray-700';
-    btnP.className = !isDaily
+    if (btnP) btnP.className = !isDaily
         ? 'px-4 py-2 text-sm font-semibold rounded-t-lg border border-b-0 border-sky-400 bg-sky-50 text-sky-700'
         : 'px-4 py-2 text-sm font-semibold rounded-t-lg border border-b-0 border-gray-200 bg-gray-50 text-gray-500 hover:text-gray-700';
+
+    // Show / hide result panels
     document.getElementById('cr-panel-daily').classList.toggle('hidden', !isDaily);
     document.getElementById('cr-panel-periode').classList.toggle('hidden', isDaily);
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  CASH REKON – PRE-PROCESS MODE SELECTOR                        */
+/*  Called when user clicks Daily/Periode BEFORE hitting Process. */
+/* ─────────────────────────────────────────────────────────────── */
+function selectCashRekonMode(mode) {
+    state.cashRekonMode = mode;
+    _applyCashRekonModeUI(mode);
+    // If results already loaded, re-run that mode immediately (no re-upload needed)
+    if (state.cashRekon) {
+        const isDaily = mode === 'daily';
+        if (isDaily) computeCashRekonDaily();
+        else         { computeCashRekonPeriode(); runCashRekonPeriode(); }
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/*  CASH REKON – RESULTS TAB SWITCHER                             */
+/*  Called by tab buttons inside the results panel.               */
+/* ─────────────────────────────────────────────────────────────── */
+function switchCashRekonMode(mode) {
+    state.cashRekonMode = mode;
+    _applyCashRekonModeUI(mode);
+    if (!state.cashRekon) return;
+    const isDaily = mode === 'daily';
+    if (isDaily) computeCashRekonDaily();
+    else         { computeCashRekonPeriode(); runCashRekonPeriode(); }
 }
 
 /* ─────────────────────────────────────────────────────────────── */
@@ -2936,9 +2981,12 @@ function downloadCashRekonOutput(mode) {
 function resetCashRekon() {
     ['cr-acmm','cr-bca','cr-kartu','cr-cabang'].forEach(k => clearFile(new Event('click'), k));
     state.cashRekon = null;
+    state.cashRekonMode = 'daily';
     document.getElementById('results-cash-rekon').classList.add('hidden');
     document.getElementById('cr-daily-dl-info').textContent   = '';
     document.getElementById('cr-periode-dl-info').textContent = '';
+    // Reset pre-process mode selector back to Daily
+    selectCashRekonMode('daily');
     checkCashRekonReadiness();
 }
 
