@@ -380,18 +380,18 @@
             <div class="grid md:grid-cols-2 gap-4 mb-5">
                 <!-- BRI CSV -->
                 <div>
-                    <p class="text-sm font-semibold text-gray-600 mb-2"><i class="fas fa-file-csv text-green-600 mr-1"></i>BRI Statement CSV</p>
+                    <p class="text-sm font-semibold text-gray-600 mb-2"><i class="fas fa-file-alt text-green-600 mr-1"></i>BRI Statement (CSV or XLSX)</p>
                     <div class="upload-zone" id="dropzone-bri-csv"
                         onclick="document.getElementById('fileInput-bri-csv').click()"
                         ondragover="handleDragOver(event,'bri-csv')"
                         ondragleave="handleDragLeave(event,'bri-csv')"
                         ondrop="handleDrop(event,'bri-csv')">
-                        <input type="file" id="fileInput-bri-csv" accept=".csv,.txt" class="hidden"
+                        <input type="file" id="fileInput-bri-csv" accept=".csv,.txt,.xlsx,.xls" class="hidden"
                                onchange="handleFileSelect(event,'bri-csv')">
                         <div id="upload-idle-bri-csv">
                             <i class="fas fa-cloud-upload-alt text-3xl text-green-400 mb-2"></i>
-                            <p class="font-semibold text-gray-700 text-sm">Drop BRI Statement CSV</p>
-                            <p class="text-xs text-gray-400 mt-1">PKUTAMA_...csv</p>
+                            <p class="font-semibold text-gray-700 text-sm">Drop BRI Statement</p>
+                            <p class="text-xs text-gray-400 mt-1">CSV or XLSX accepted</p>
                         </div>
                         <div id="upload-loaded-bri-csv" class="hidden flex-col items-center">
                             <i class="fas fa-check-circle text-3xl text-emerald-500 mb-1"></i>
@@ -1330,11 +1330,32 @@ async function processBRI() {
         }
         setProgress('bri', 20, `Loaded ${Object.keys(midMap).length} MID mappings. Reading CSV…`);
 
-        /* ── Step 2: Parse BRI CSV ── */
-        const csvText = await readFileAsText(csvFile);
-        setProgress('bri', 40, 'Parsing CSV rows…');
-        const csvRows = parseCSV(csvText);
-        if (csvRows.length < 2) throw new Error('CSV appears empty or invalid.');
+        /* ── Step 2: Parse BRI Statement (CSV or XLSX) ── */
+        // Detect file type by extension
+        const briFileName = csvFile.name.toLowerCase();
+        const briIsXlsx   = briFileName.endsWith('.xlsx') || briFileName.endsWith('.xls');
+
+        let csvRows;  // array of string arrays
+        if (briIsXlsx) {
+            setProgress('bri', 40, 'Reading BRI XLSX…');
+            const xlsBuf = await csvFile.arrayBuffer();
+            const xlsWb  = XLSX.read(xlsBuf, { type:'array', raw:true, cellDates:true });
+            const xlsWs  = xlsWb.Sheets[xlsWb.SheetNames[0]];
+            // Convert to array-of-strings (same shape as CSV output)
+            const xlsData = XLSX.utils.sheet_to_json(xlsWs, { header:1, raw:true, defval:'' });
+            // Stringify every cell so downstream cleanCell() works uniformly
+            csvRows = xlsData.map(row =>
+                row.map(cell => {
+                    if (cell instanceof Date) return cell.toISOString();
+                    return String(cell === null || cell === undefined ? '' : cell);
+                })
+            );
+        } else {
+            setProgress('bri', 40, 'Parsing BRI CSV…');
+            const csvText = await readFileAsText(csvFile);
+            csvRows = parseCSV(csvText);
+        }
+        if (csvRows.length < 2) throw new Error('BRI Statement appears empty or invalid.');
 
         // Build column-index map from header row
         const csvHeaders = csvRows[0];
@@ -1348,6 +1369,21 @@ async function processBRI() {
         const MID_RE = /00(1\d{9})/;         // matches 001999xxxxxx  → group(0)[2:] = 1999xxxxxx
         const AMT_RE = /AMT:([\d.,]+)/;      // AMT:4.127.551,00
 
+        // Date parser: handles both YYYY-MM-DD and M/D/YYYY (with optional time)
+        function parseBRIDate(raw) {
+            const s = String(raw || '').trim();
+            // ISO-like: "2026-07-01" or "2026-07-01 03:22:44" or ISO string from Date obj
+            const isoM = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (isoM) return { y:+isoM[1], m:+isoM[2], d:+isoM[3] };
+            // M/D/YYYY or M/D/YYYY H:MM or M/D/YY variants
+            const mdyM = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+            if (mdyM) {
+                let yy = +mdyM[3]; if (yy < 100) yy += 2000;
+                return { y:yy, m:+mdyM[1], d:+mdyM[2] };
+            }
+            return null;
+        }
+
         setProgress('bri', 55, 'Filtering Cr rows…');
 
         const processedRows = [];
@@ -1360,19 +1396,15 @@ async function processBRI() {
             if (sign !== 'Cr') continue;
             crCount++;
 
-            const dateStr  = cleanCell(row[IDX_DATE]);   // '2026-07-01 03:22:44'
-            const desk     = cleanCell(row[IDX_DESK]);
+            const rawDate = cleanCell(row[IDX_DATE]);
+            const desk    = cleanCell(row[IDX_DESK]);
 
             // Day from date → subtract 1 day (BRI posts next day; rekon date = txn date - 1)
-            const dateParts = dateStr.split(' ')[0].split('-');   // ['2026','07','02']
             let day = '?';
-            let dateOnly = dateStr;
-            if (dateParts.length === 3) {
-                const d = new Date(Date.UTC(
-                    parseInt(dateParts[0], 10),
-                    parseInt(dateParts[1], 10) - 1,   // month is 0-based
-                    parseInt(dateParts[2], 10)
-                ));
+            let dateOnly = rawDate;
+            const parsed = parseBRIDate(rawDate);
+            if (parsed) {
+                const d = new Date(Date.UTC(parsed.y, parsed.m - 1, parsed.d));
                 d.setUTCDate(d.getUTCDate() - 1);     // go back 1 day
                 day      = d.getUTCDate().toString();  // e.g. 2/7 → 1,  1/7 → 30
                 dateOnly = d.toISOString().slice(0, 10);
@@ -1594,11 +1626,14 @@ async function processBCA() {
 
         /* ── Step 3: Read BCA Statement XLSX ── */
         const stmtBuf = await stmtFile.arrayBuffer();
-        // Use raw:true so date cells come as Excel serial numbers (we'll convert manually)
-        // This avoids locale-dependent string formatting issues with M/D/YYYY vs D/M/YYYY
-        const stmtWb  = XLSX.read(stmtBuf, { type:'array', cellDates:true, raw:true });
+        // Read BCA statement:
+        //   - cellDates:false (default): date serials stay as numbers, formatted via raw:false
+        //   - raw:false in sheet_to_json: ALL cells formatted as display strings
+        //     → date cells come as "7/2/2026" (Excel M/D/YYYY format) → toYMD() parses correctly
+        //     → Jumlah cells come as "2,100,000.00 CR" / "DB" → parseJumlah() works correctly
+        const stmtWb  = XLSX.read(stmtBuf, { type:'array' });
         const stmtWs  = stmtWb.Sheets[stmtWb.SheetNames[0]];
-        const rawRows = XLSX.utils.sheet_to_json(stmtWs, { header:1, raw:true });
+        const rawRows = XLSX.utils.sheet_to_json(stmtWs, { header:1, raw:false, defval:'' });
 
         // Find header row (has 'Tanggal Transaksi')
         let hdrIdx = -1;
