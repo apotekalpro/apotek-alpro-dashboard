@@ -1369,17 +1369,19 @@ async function processBRI() {
         const MID_RE = /00(1\d{9})/;         // matches 001999xxxxxx  → group(0)[2:] = 1999xxxxxx
         const AMT_RE = /AMT:([\d.,]+)/;      // AMT:4.127.551,00
 
-        // Date parser: handles both YYYY-MM-DD and M/D/YYYY (with optional time)
+        // Date parser: BRI uses D/M/YYYY (e.g. "1/7/2026" = 1 July 2026, day first)
+        // BCA uses M/D/YYYY (e.g. "7/1/2026" = 1 July 2026, month first) — different!
         function parseBRIDate(raw) {
             const s = String(raw || '').trim();
             // ISO-like: "2026-07-01" or "2026-07-01 03:22:44" or ISO string from Date obj
             const isoM = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
             if (isoM) return { y:+isoM[1], m:+isoM[2], d:+isoM[3] };
-            // M/D/YYYY or M/D/YYYY H:MM or M/D/YY variants
-            const mdyM = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-            if (mdyM) {
-                let yy = +mdyM[3]; if (yy < 100) yy += 2000;
-                return { y:yy, m:+mdyM[1], d:+mdyM[2] };
+            // D/M/YYYY or D/M/YYYY H:MM (BRI format: group1=day, group2=month, group3=year)
+            // e.g. "1/7/2026 3:22" → day=1, month=7, year=2026 → July 1, 2026
+            const dmyM = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+            if (dmyM) {
+                let yy = +dmyM[3]; if (yy < 100) yy += 2000;
+                return { y:yy, m:+dmyM[2], d:+dmyM[1] };  // group1=day, group2=month
             }
             return null;
         }
