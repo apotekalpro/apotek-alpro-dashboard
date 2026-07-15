@@ -1609,18 +1609,20 @@ async function processBCA() {
 
         /* ── Step 2: Build Card map (15-digit card no → outlet code) ── */
         const kartuBuf = await kartuFile.arrayBuffer();
-        const kartuWb  = XLSX.read(kartuBuf, { type:'array', raw:true });
+        // Read with raw:false so 15-digit card numbers (col F) come as their FORMATTED STRING
+        // e.g. Excel stores 147000100793995 as float 1.47E+14 but displays '147000100793995'
+        // raw:false gives us the display string '.w' which is exact; raw:true gives float which
+        // loses precision (float64 cannot represent all 15-digit integers exactly)
+        const kartuWb  = XLSX.read(kartuBuf, { type:'array' });
         const kartuWs  = kartuWb.Sheets[kartuWb.SheetNames[0]];
-        const kartuRows = XLSX.utils.sheet_to_json(kartuWs, { header:1, raw:true });
+        const kartuRows = XLSX.utils.sheet_to_json(kartuWs, { header:1, raw:false, defval:'' });
         const cardMap = {};  // card15 → outcode
         for (let i = 1; i < kartuRows.length; i++) {
             const r = kartuRows[i];
-            // BUG FIX: col F (index 5) is a 15-digit integer read as float (1.47E+14)
-            // Must use Math.round(Number()) to recover full integer, not String() which gives "1.47e+14"
-            const rawCard = r[5];
-            const card = rawCard ? Math.round(Number(rawCard)).toString().trim() : '';
+            // col F (index 5): formatted string '147000100793995' (exact, no float precision loss)
+            const card = String(r[5] || '').trim().replace(/\.0*$/, ''); // strip trailing .0 if any
             const storeCode = String(r[2] || '').trim();     // col C (index 2) like 0001-JKJSTT1
-            if (card && card !== 'NaN' && storeCode && storeCode.includes('-')) {
+            if (card && storeCode && storeCode.includes('-')) {
                 cardMap[card] = storeCode.split('-').pop();
             }
         }
@@ -1628,14 +1630,21 @@ async function processBCA() {
 
         /* ── Step 3: Read BCA Statement XLSX ── */
         const stmtBuf = await stmtFile.arrayBuffer();
-        // Use cellDates:true so date serial cells become unambiguous JS Date objects.
-        // Use raw:true in sheet_to_json to receive those Date objects (raw:false would
-        // re-format them as strings using SheetJS's formatter, which may produce D/M order).
-        // Jumlah column (col D) is a pure number in BCA exports — parseJumlah() handles both
-        // number and "CR"/"DB"-suffixed text strings.
-        const stmtWb  = XLSX.read(stmtBuf, { type:'array', cellDates:true });
+        // Strategy: read raw (no cellDates), then use SheetJS XLSX.SSF to format each
+        // date cell directly from its serial number into yyyy-mm-dd — this is timezone-safe.
+        // We read the workbook twice: once raw to get date serials as numbers for the date
+        // column, and once with raw:false + dateNF for everything else.
+        // Simpler: read with raw:false and dateNF:'yyyy-mm-dd'. SheetJS formats date serials
+        // using the dateNF pattern, producing '2026-07-02' unambiguously (no timezone shift
+        // because SheetJS date formatting is pure arithmetic on the serial, no JS Date object).
+        // Non-date cells (Jumlah text like '851,078.00 CR') pass through as-is.
+        const stmtWb  = XLSX.read(stmtBuf, { type:'array', cellNF:true });
         const stmtWs  = stmtWb.Sheets[stmtWb.SheetNames[0]];
-        const rawRows = XLSX.utils.sheet_to_json(stmtWs, { header:1, raw:true, defval:'' });
+
+        // For each date cell (type 'n' with date format), format the serial directly to
+        // yyyy-mm-dd using SheetJS SSF formatter — completely timezone-independent.
+        // Then read everything else with raw:false for string formatting.
+        const rawRows = XLSX.utils.sheet_to_json(stmtWs, { header:1, raw:false, dateNF:'yyyy-mm-dd', defval:'' });
 
         // Find header row (has 'Tanggal Transaksi')
         let hdrIdx = -1;
@@ -1654,15 +1663,14 @@ async function processBCA() {
         const RE_CARD      = /0?(\d{15})\s*$/;  // 15-digit card at end of CDM desc
 
         function parseJumlah(raw) {
-            // BCA Jumlah column is a pure number when read with raw:true (e.g. 851078)
-            // Fallback: text with CR/DB suffix: '2,800,000.00 CR' or '2.236.217,00 DB'
+            // With raw:false, number cells come formatted as strings e.g. '851078' or '851,078.00'
+            // Text cells with CR/DB suffix also come through: '2,800,000.00 CR' / 'DB'
             if (typeof raw === 'number') {
-                // Raw number from Excel — always positive in BCA credit-only export
-                return raw > 0 ? raw : null;  // negative = debit, skip
+                return raw > 0 ? raw : null;
             }
             const s = String(raw || '').trim();
             if (!s) return null;
-            if (s.endsWith('DB')) return null;   // exclude DB
+            if (s.toUpperCase().endsWith('DB')) return null;   // exclude debit rows
             const num = s.replace(/[^\d.,]/g,'').replace(/\./g,'').replace(',','.');
             return parseFloat(num) || 0;
         }
@@ -1676,20 +1684,18 @@ async function processBCA() {
         }
 
         function toYMD(raw) {
-            // PRIMARY PATH: cellDates:true + raw:true → date serials become JS Date objects
-            // JS Date from SheetJS is always UTC midnight → toISOString() is unambiguous
+            // With dateNF:'yyyy-mm-dd' + raw:false, SheetJS formats date serials directly
+            // as 'yyyy-mm-dd' strings (pure serial arithmetic, NO timezone shift).
+            // e.g. serial 46205 (July 2 2026) → '2026-07-02' always, regardless of locale.
             if (!raw) return '';
-            if (raw instanceof Date) {
-                return raw.toISOString().slice(0, 10);  // '2026-07-02' always correct
-            }
             const s = String(raw).trim();
-            // ISO format fallback: "2026-07-02" or "2026-07-02T..."
+            // PRIMARY: yyyy-mm-dd produced by dateNF formatting
             if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-            // M/D/YYYY fallback for text cells (month first, BCA convention)
-            // e.g. "7/2/2026" = July 2, "12/31/2026" = Dec 31
+            // FALLBACK for text-stored date cells not caught by dateNF:
+            // BCA uses M/D/YYYY text (e.g. '7/2/2026' = July 2)
             const mdyMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
             if (mdyMatch) {
-                const mm = mdyMatch[1].padStart(2,'0');  // group1 = month
+                const mm = mdyMatch[1].padStart(2,'0');  // group1 = month (M/D/YYYY)
                 const dd = mdyMatch[2].padStart(2,'0');  // group2 = day
                 let yy = mdyMatch[3];
                 if (yy.length === 2) yy = '20' + yy;
