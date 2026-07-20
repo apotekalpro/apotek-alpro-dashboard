@@ -2382,7 +2382,7 @@ async function processCashRekon() {
                     day = parseInt(dMatch[3], 10).toString();
                 } else {
                     const d = new Date(dateVal);
-                    if (!isNaN(d)) day = d.getUTCDate().toString();
+                    if (!isNaN(d)) day = d.getDate().toString();  // local day — correct for UTC+7 (Indonesia)
                 }
             }
 
