@@ -2329,7 +2329,13 @@ async function processCashRekon() {
            STEP 1: Parse ACMM Sales file → extract GL 11201100
            Col A=Tanggal, Col B=Store code, Col C=Store name (kode in brackets)
            Col L=Type, Col M=GL Code, Col N=Amount
-           Kode Rekon = day + kodeOutlet (from brackets in col C)
+
+           Date convention:
+             ACMM records the SALE DATE directly (e.g. 1-Jul for sales on 1-Jul).
+             BCA statement records the SETTLEMENT DATE (sale + 1 day, e.g. 2-Jul).
+             → ACMM uses raw day as-is; BCA subtracts 1 via crDayMinusOne.
+             Both produce the same sale-day key prefix.
+             (Same logic as the ACMM Splitter tab.)
         ══════════════════════════════════════════════════════════ */
         const acmmBuf = await acmmFile.arrayBuffer();
         const acmmWb  = XLSX.read(acmmBuf, { type:'array', cellDates:true });
@@ -2367,21 +2373,20 @@ async function processCashRekon() {
             const type      = String(r[ACMM_COL_TYPE] || '').trim().toLowerCase();
             const amount    = parseFloat(String(r[ACMM_COL_AMT] || '0').replace(/,/g,'')) || 0;
 
-            // Day from date value — SheetJS may return a Date object (cellDates:true)
-            // or a yyyy-mm-dd string. Handle both robustly.
+            // Day = raw sale date day (same as ACMM Splitter — no subtraction)
+            // ACMM records the actual sale date; BCA subtracts 1 on its side.
             let day = '';
             if (dateVal) {
                 const dMatch = String(dateVal).match(/(\d{4})-(\d{2})-(\d{2})/);
                 if (dMatch) {
                     day = parseInt(dMatch[3], 10).toString();
                 } else {
-                    // Date object or other format — extract day directly
                     const d = new Date(dateVal);
                     if (!isNaN(d)) day = d.getUTCDate().toString();
                 }
             }
 
-            // Kode outlet from brackets e.g. "Apotik Alpro (JKJSTT1)"
+            // Kode outlet from brackets e.g. "(JKJSTT1) APOTEK ALPRO TEBET TIMUR"
             const bracketM = storeName.match(/\(([^)]+)\)/);
             const kode = bracketM ? bracketM[1] : String(r[ACMM_COL_STORE] || '');
             const kr = day + kode;
