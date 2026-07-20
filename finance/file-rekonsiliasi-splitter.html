@@ -588,7 +588,7 @@
                                     <th class="text-right">ACMM Gross (GL 11201013)</th>
                                     <th class="text-right">Difference</th>
                                     <th class="text-center">Status</th>
-                                    <th class="text-center">Payment Type</th>
+                                    <th>Remark</th>
                                 </tr>
                             </thead>
                             <tbody id="rekon-tbody"></tbody>
@@ -1040,7 +1040,7 @@
                                 <th class="text-right">ACMM Gross (GL 11201010)</th>
                                 <th class="text-right">Difference</th>
                                 <th class="text-center">Status</th>
-                                <th class="text-center">Payment Type</th>
+                                <th>Remark</th>
                             </tr></thead>
                             <tbody id="rekon-bca-tbody"></tbody>
                         </table>
@@ -1722,8 +1722,8 @@ async function processBRI() {
 
         /* ── Step 3: Aggregate ── */
         const kodeMap = {};
-        // Also build kodeRekon → Set<payType> for BRI×ACMM Rekon payType badge
-        const briPayTypeMap = {};  // kodeRekon → Set<payType>
+        // Also build kodeRekon → { QR: amt, 'Debit/Credit': amt } for BRI×ACMM Remark
+        const briAmtByType = {};  // kodeRekon → { QR: number, 'Debit/Credit': number }
         for (const r of processedRows) {
             if (!kodeMap[r.kodeRekon]) {
                 kodeMap[r.kodeRekon] = { kodeRekon: r.kodeRekon, outcode: r.outcode,
@@ -1732,9 +1732,10 @@ async function processBRI() {
             }
             kodeMap[r.kodeRekon].totalAmt += r.amt;
             kodeMap[r.kodeRekon].rowCount += 1;
-            // accumulate payTypes per kodeRekon
-            if (!briPayTypeMap[r.kodeRekon]) briPayTypeMap[r.kodeRekon] = new Set();
-            if (r.payType) briPayTypeMap[r.kodeRekon].add(r.payType);
+            // accumulate amounts by payment type bucket
+            if (!briAmtByType[r.kodeRekon]) briAmtByType[r.kodeRekon] = { QR: 0, 'Debit/Credit': 0 };
+            const bucket = (r.payType === 'QR') ? 'QR' : 'Debit/Credit';
+            briAmtByType[r.kodeRekon][bucket] += r.amt;
         }
         const summaryRows = Object.values(kodeMap).sort((a,b) => a.kodeRekon.localeCompare(b.kodeRekon));
 
@@ -1746,7 +1747,7 @@ async function processBRI() {
 
         setProgress('bri', 95, 'Finalising…');
 
-        state.bri.processed = { summaryRows, processedRows, allDates, crCount, matchedCount, unmatchedMIDSet, midMap, csvHeaders, csvRows, briPayTypeMap };
+        state.bri.processed = { summaryRows, processedRows, allDates, crCount, matchedCount, unmatchedMIDSet, midMap, csvHeaders, csvRows, briAmtByType };
 
         // Stats
         document.getElementById('bri-stat-cr-rows').textContent  = crCount.toLocaleString();
@@ -2157,17 +2158,19 @@ async function processBCA() {
             midKodeMap[r.kodeRekon] = (midKodeMap[r.kodeRekon] || 0) + r.gross;
         });
 
-        // Build kodeRekon → Set<payType> map for BCA×ACMM Rekon payType badge
-        const midPayTypeMap = {};  // kodeRekon → Set of payType strings
+        // Build kodeRekon → { QR: amt, 'Debit/Credit': amt } for BCA×ACMM Remark
+        // BCA Debit Card + Credit Card are both collapsed into 'Debit/Credit' bucket
+        const midAmtByType = {};  // kodeRekon → { QR: number, 'Debit/Credit': number }
         nonCashRows.forEach(r => {
-            if (!midPayTypeMap[r.kodeRekon]) midPayTypeMap[r.kodeRekon] = new Set();
-            if (r.payType) midPayTypeMap[r.kodeRekon].add(r.payType);
+            if (!midAmtByType[r.kodeRekon]) midAmtByType[r.kodeRekon] = { QR: 0, 'Debit/Credit': 0 };
+            const bucket = (r.payType === 'QR') ? 'QR' : 'Debit/Credit';
+            midAmtByType[r.kodeRekon][bucket] += r.gross;
         });
 
         state.bca.processed = {
             rawRows, ebRows, nonCashRows, nonCashAgg, midData, midKodeMap, midPreviewRows,
             setPreviewRows, setoranRows, allKodes, cntMid, cntEB, cntSet,
-            unmatchedMIDs, midPayTypeMap
+            unmatchedMIDs, midAmtByType
         };
 
         // Stats
@@ -3084,8 +3087,8 @@ function runRekonBCA() {
         acmmMap[kr] = debit - credit;
     });
 
-    const bcaMap        = bcaPr.midKodeMap;   // kodeRekon → totalGross
-    const payTypeMap    = bcaPr.midPayTypeMap || {};  // kodeRekon → Set<payType>
+    const bcaMap      = bcaPr.midKodeMap;    // kodeRekon → totalGross
+    const amtByType   = bcaPr.midAmtByType || {};  // kodeRekon → { QR, 'Debit/Credit' }
     const tolerance = parseFloat(document.getElementById('rekon-bca-tolerance').value) || 0;
     const allKeys = [...new Set([...Object.keys(bcaMap), ...Object.keys(acmmMap)])].sort();
 
@@ -3098,10 +3101,16 @@ function runRekonBCA() {
             status = Math.abs(diff) <= tolerance ? 'MATCH' : 'DIFF';
         else if (bca !== null) status = 'BCA_ONLY';
         else status = 'ACMM_ONLY';
-        // payType: join all distinct types seen for this kodeRekon (e.g. "QR", "Debit Card", "Credit Card")
-        const ptSet = payTypeMap[kr];
-        const payType = ptSet && ptSet.size > 0 ? [...ptSet].sort().join(' + ') : '';
-        return { kr, bca, acmm, diff, status, payType };
+        // Remark: only for BCA_ONLY rows — show QR vs Debit/Credit split
+        let remark = '';
+        if (status === 'BCA_ONLY' && amtByType[kr]) {
+            const { QR, 'Debit/Credit': DC } = amtByType[kr];
+            const parts = [];
+            if (QR  > 0) parts.push(`QR: ${fmtNum(QR)}`);
+            if (DC  > 0) parts.push(`Debit/Credit: ${fmtNum(DC)}`);
+            remark = parts.join(' | ');
+        }
+        return { kr, bca, acmm, diff, status, remark };
     });
 
     state.rekonBCA = { rows, bcaGLKey: BCA_GL_KEY };
@@ -3131,22 +3140,11 @@ function renderRekonBCATable() {
         ACMM_ONLY:{ label:'ACMM Only', cls:'badge-acmm'   }
     };
     const rowCls = { MATCH:'row-match', DIFF:'row-diff', BCA_ONLY:'row-bri-only', ACMM_ONLY:'row-acmm-only' };
-    // payType badge styles
-    const ptSty = {
-        'QR':          'background:#d1fae5;color:#065f46',
-        'Debit Card':  'background:#fef3c7;color:#92400e',
-        'Credit Card': 'background:#ede9fe;color:#5b21b6',
-    };
     document.getElementById('rekon-bca-tbody').innerHTML = rows.map(r => {
         const m = statusMeta[r.status];
-        // Show payType badge only when BCA has data (BCA_ONLY or MATCH/DIFF)
-        let ptHtml = '<span class="text-gray-300">—</span>';
-        if (r.payType) {
-            ptHtml = r.payType.split(' + ').map(pt => {
-                const sty = ptSty[pt] || 'background:#f3f4f6;color:#6b7280';
-                return `<span class="badge-pill" style="${sty}">${pt}</span>`;
-            }).join(' ');
-        }
+        const remarkHtml = r.remark
+            ? `<span class="text-xs text-gray-600">${r.remark}</span>`
+            : '<span class="text-gray-300">—</span>';
         return `<tr class="${rowCls[r.status]}">
             <td class="font-mono font-semibold text-gray-800">${r.kr}</td>
             <td class="text-right">${r.bca  !== null ? fmtNum(r.bca)  : '<span class="text-gray-300">—</span>'}</td>
@@ -3154,7 +3152,7 @@ function renderRekonBCATable() {
             <td class="text-right font-semibold ${r.diff !== null && r.diff !== 0 ? 'text-orange-600':'text-gray-500'}">
                 ${r.diff !== null ? fmtNum(r.diff) : '<span class="text-gray-300">—</span>'}</td>
             <td class="text-center"><span class="badge-pill ${m.cls}">${m.label}</span></td>
-            <td class="text-center">${ptHtml}</td>
+            <td class="text-xs text-gray-600">${remarkHtml}</td>
         </tr>`;
     }).join('');
 }
@@ -3171,36 +3169,36 @@ function downloadRekonBCAOutput() {
     const { rows, bcaGLKey } = state.rekonBCA;
     const outWb = XLSX.utils.book_new();
 
-    const compData = [['Kode Rekon','BCA Gross Amount',`ACMM Gross (${bcaGLKey})`,'Difference (BCA-ACMM)','Status','Payment Type']];
+    const compData = [['Kode Rekon','BCA Gross Amount',`ACMM Gross (${bcaGLKey})`,'Difference (BCA-ACMM)','Status','Remark']];
     rows.forEach(r => compData.push([
         r.kr, r.bca??'', r.acmm??'', r.diff??'',
         r.status==='MATCH' ? 'Match' : r.status==='DIFF' ? 'Amount Diff' :
         r.status==='BCA_ONLY' ? 'BCA Only (missing in ACMM)' : 'ACMM Only (missing in BCA)',
-        r.payType || ''
+        r.remark || ''
     ]));
     const totBCA  = rows.reduce((s,r)=>s+(r.bca??0),0);
     const totACMM = rows.reduce((s,r)=>s+(r.acmm??0),0);
     compData.push(['TOTAL', totBCA, totACMM, totBCA-totACMM, '', '']);
     const compWs = XLSX.utils.aoa_to_sheet(compData);
-    compWs['!cols'] = [{wch:22},{wch:22},{wch:32},{wch:26},{wch:28},{wch:18}];
+    compWs['!cols'] = [{wch:22},{wch:22},{wch:32},{wch:26},{wch:28},{wch:36}];
     XLSX.utils.book_append_sheet(outWb, compWs, 'BCA x ACMM Rekon');
 
     const mismatch = rows.filter(r => r.status !== 'MATCH');
     if (mismatch.length > 0) {
-        const mmData = [['Kode Rekon','BCA Gross','ACMM Gross','Difference','Status','Payment Type']];
+        const mmData = [['Kode Rekon','BCA Gross','ACMM Gross','Difference','Status','Remark']];
         mismatch.forEach(r => mmData.push([r.kr, r.bca??'', r.acmm??'', r.diff??'',
             r.status==='DIFF'?'Amount Diff':r.status==='BCA_ONLY'?'BCA Only':'ACMM Only',
-            r.payType || '']));
+            r.remark || '']));
         const mmWs = XLSX.utils.aoa_to_sheet(mmData);
-        mmWs['!cols'] = [{wch:22},{wch:20},{wch:20},{wch:22},{wch:22},{wch:18}];
+        mmWs['!cols'] = [{wch:22},{wch:20},{wch:20},{wch:22},{wch:22},{wch:36}];
         XLSX.utils.book_append_sheet(outWb, mmWs, 'Exceptions');
     }
     const matched = rows.filter(r => r.status === 'MATCH');
     if (matched.length > 0) {
-        const mData = [['Kode Rekon','BCA Gross','ACMM Gross','Payment Type']];
-        matched.forEach(r => mData.push([r.kr, r.bca, r.acmm, r.payType||'']));
+        const mData = [['Kode Rekon','BCA Gross','ACMM Gross']];
+        matched.forEach(r => mData.push([r.kr, r.bca, r.acmm]));
         const mWs = XLSX.utils.aoa_to_sheet(mData);
-        mWs['!cols'] = [{wch:22},{wch:20},{wch:20},{wch:18}];
+        mWs['!cols'] = [{wch:22},{wch:20},{wch:20}];
         XLSX.utils.book_append_sheet(outWb, mWs, 'Matched');
     }
     const dateTag = new Date().toISOString().slice(0,10).replace(/-/g,'');
@@ -3261,8 +3259,8 @@ function runRekon() {
     });
 
     // Build BRI map: kodeRekon → totalAmt
-    const briMap        = {};
-    const briPayTypeMap = briPr.briPayTypeMap || {};  // kodeRekon → Set<payType>
+    const briMap      = {};
+    const amtByType   = briPr.briAmtByType || {};  // kodeRekon → { QR, 'Debit/Credit' }
     briPr.summaryRows.forEach(r => { briMap[r.kodeRekon] = r.totalAmt; });
 
     const tolerance = parseFloat(document.getElementById('rekon-tolerance').value) || 0;
@@ -3282,10 +3280,16 @@ function runRekon() {
         } else {
             status = 'ACMM_ONLY';
         }
-        // payType from BRI rows for this kodeRekon
-        const ptSet = briPayTypeMap[kr];
-        const payType = ptSet && ptSet.size > 0 ? [...ptSet].sort().join(' + ') : '';
-        return { kr, bri, acmm, diff, status, payType };
+        // Remark: only for BRI_ONLY rows — show QR vs Debit/Credit split
+        let remark = '';
+        if (status === 'BRI_ONLY' && amtByType[kr]) {
+            const { QR, 'Debit/Credit': DC } = amtByType[kr];
+            const parts = [];
+            if (QR > 0) parts.push(`QR: ${fmtNum(QR)}`);
+            if (DC > 0) parts.push(`Debit/Credit: ${fmtNum(DC)}`);
+            remark = parts.join(' | ');
+        }
+        return { kr, bri, acmm, diff, status, remark };
     });
 
     state.rekon = { rows, briGLKey: BRI_GL_KEY };
@@ -3318,22 +3322,12 @@ function renderRekonTable() {
         ACMM_ONLY:{ label: 'ACMM Only', cls: 'badge-acmm'   }
     };
     const rowCls = { MATCH:'row-match', DIFF:'row-diff', BRI_ONLY:'row-bri-only', ACMM_ONLY:'row-acmm-only' };
-    // payType badge styles (BRI uses QR / Debit/Credit)
-    const ptSty = {
-        'QR':           'background:#d1fae5;color:#065f46',
-        'Debit/Credit': 'background:#fef3c7;color:#92400e',
-    };
 
     document.getElementById('rekon-tbody').innerHTML = rows.map(r => {
         const m = statusMeta[r.status];
-        // Show payType badge only when BRI has data
-        let ptHtml = '<span class="text-gray-300">—</span>';
-        if (r.payType) {
-            ptHtml = r.payType.split(' + ').map(pt => {
-                const sty = ptSty[pt] || 'background:#f3f4f6;color:#6b7280';
-                return `<span class="badge-pill" style="${sty}">${pt}</span>`;
-            }).join(' ');
-        }
+        const remarkHtml = r.remark
+            ? `<span class="text-xs text-gray-600">${r.remark}</span>`
+            : '<span class="text-gray-300">—</span>';
         return `<tr class="${rowCls[r.status]}">
             <td class="font-mono font-semibold text-gray-800">${r.kr}</td>
             <td class="text-right">${r.bri  !== null ? fmtNum(r.bri)  : '<span class="text-gray-300">—</span>'}</td>
@@ -3342,7 +3336,7 @@ function renderRekonTable() {
                 ${r.diff !== null ? fmtNum(r.diff) : '<span class="text-gray-300">—</span>'}
             </td>
             <td class="text-center"><span class="badge-pill ${m.cls}">${m.label}</span></td>
-            <td class="text-center">${ptHtml}</td>
+            <td class="text-xs text-gray-600">${remarkHtml}</td>
         </tr>`;
     }).join('');
 }
@@ -3369,7 +3363,7 @@ function downloadRekonOutput() {
         `ACMM Gross Amount (${briGLKey})`,
         'Difference (BRI - ACMM)',
         'Status',
-        'Payment Type'
+        'Remark'
     ]];
     rows.forEach(r => compData.push([
         r.kr,
@@ -3380,7 +3374,7 @@ function downloadRekonOutput() {
         r.status === 'DIFF'  ? 'Amount Diff' :
         r.status === 'BRI_ONLY' ? 'BRI Only (missing in ACMM)' :
         'ACMM Only (missing in BRI)',
-        r.payType || ''
+        r.remark || ''
     ]));
     // Totals
     const totalBRI  = rows.reduce((s,r) => s + (r.bri  ?? 0), 0);
@@ -3388,31 +3382,31 @@ function downloadRekonOutput() {
     compData.push(['TOTAL', totalBRI, totalACMM, totalBRI - totalACMM, '', '']);
 
     const compWs = XLSX.utils.aoa_to_sheet(compData);
-    compWs['!cols'] = [{ wch:22 },{ wch:22 },{ wch:32 },{ wch:26 },{ wch:28 },{ wch:18 }];
+    compWs['!cols'] = [{ wch:22 },{ wch:22 },{ wch:32 },{ wch:26 },{ wch:28 },{ wch:36 }];
     XLSX.utils.book_append_sheet(outWb, compWs, 'BRI x ACMM Rekon');
 
     // Sheet 2: Mismatches only (DIFF + BRI_ONLY + ACMM_ONLY)
     const mismatch = rows.filter(r => r.status !== 'MATCH');
     if (mismatch.length > 0) {
-        const mmData = [['Kode Rekon','BRI Gross','ACMM Gross','Difference','Status','Payment Type']];
+        const mmData = [['Kode Rekon','BRI Gross','ACMM Gross','Difference','Status','Remark']];
         mismatch.forEach(r => mmData.push([
             r.kr, r.bri ?? '', r.acmm ?? '', r.diff ?? '',
             r.status === 'DIFF' ? 'Amount Diff' :
             r.status === 'BRI_ONLY' ? 'BRI Only' : 'ACMM Only',
-            r.payType || ''
+            r.remark || ''
         ]));
         const mmWs = XLSX.utils.aoa_to_sheet(mmData);
-        mmWs['!cols'] = [{ wch:22 },{ wch:20 },{ wch:20 },{ wch:22 },{ wch:22 },{ wch:18 }];
+        mmWs['!cols'] = [{ wch:22 },{ wch:20 },{ wch:20 },{ wch:22 },{ wch:22 },{ wch:36 }];
         XLSX.utils.book_append_sheet(outWb, mmWs, 'Exceptions');
     }
 
     // Sheet 3: Matched only
     const matched = rows.filter(r => r.status === 'MATCH');
     if (matched.length > 0) {
-        const mData = [['Kode Rekon','BRI Gross','ACMM Gross','Payment Type']];
-        matched.forEach(r => mData.push([r.kr, r.bri, r.acmm, r.payType||'']));
+        const mData = [['Kode Rekon','BRI Gross','ACMM Gross']];
+        matched.forEach(r => mData.push([r.kr, r.bri, r.acmm]));
         const mWs = XLSX.utils.aoa_to_sheet(mData);
-        mWs['!cols'] = [{ wch:22 },{ wch:20 },{ wch:20 },{ wch:18 }];
+        mWs['!cols'] = [{ wch:22 },{ wch:20 },{ wch:20 }];
         XLSX.utils.book_append_sheet(outWb, mWs, 'Matched');
     }
 
