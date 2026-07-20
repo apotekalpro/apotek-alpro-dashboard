@@ -204,6 +204,19 @@
   .loading-skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
   @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
+  /* Period filter enhanced */
+  .period-bar select {
+    font-weight: 600; min-width: 200px;
+  }
+  .filter-tag {
+    font-weight: 700; font-size: 12px; transition: all 0.2s;
+    padding: 4px 14px; border: 1.5px solid;
+  }
+
+  /* Monthly breakdown table */
+  #table-monthly-breakdown tfoot tr td { font-weight: 700; padding: 9px 12px; font-size: 12px; }
+  #table-monthly-breakdown tbody tr:hover td { background: #f0f9ff; }
+
   /* Candidates Monthly Tables */
   .candidates-month-block { margin-bottom: 18px; }
   .candidates-month-title { font-size: 13px; font-weight: 700; color: #1e293b; padding: 8px 12px; background: #f1f5f9; border-radius: 8px 8px 0 0; border-left: 4px solid #2563eb; display: flex; justify-content: space-between; align-items: center; }
@@ -254,13 +267,16 @@
   <div class="period-bar">
     <label>📅 View Period:</label>
     <select id="periodMonths" onchange="updateDashboard()">
-      <option value="6" selected>Latest 6 Months (Dashboard)</option>
-      <option value="12">Latest 12 Months</option>
-      <option value="ytd">Year to Date</option>
+      <option value="mtd">Month to Date (MTD)</option>
+      <option value="1">Last 1 Month</option>
+      <option value="3">Last 3 Months</option>
+      <option value="6" selected>Last 6 Months</option>
+      <option value="ytd">Year to Date (YTD)</option>
+      <option value="12">Last 12 Months</option>
     </select>
-    <span class="filter-tag" id="periodLabel">Jan 2026 – Jul 2026</span>
+    <span class="filter-tag" id="periodLabel">Feb 2026 – Jul 2026</span>
     <div style="font-size:11px;color:#64748b;">
-      ⚠️ Charts show selected period · Turnover Rate & KPI calculations always use 12-month rolling data
+      ⚠️ KPI cards reflect selected period · 12M Turnover Rate always uses rolling 12-month data
     </div>
     <button class="btn-refresh" onclick="updateDashboard()">🔄 Refresh</button>
   </div>
@@ -279,13 +295,13 @@
     </div>
     <div class="kpi-card" style="border-color:#16a34a;">
       <div class="kpi-icon">🆕</div>
-      <div class="kpi-label">New Hire (6M)</div>
+      <div class="kpi-label" id="kpi-newhire-label">New Hire</div>
       <div class="kpi-value" style="color:#16a34a;" id="kpi-newhire">—</div>
       <div class="kpi-sub" id="kpi-newhire-sub">—</div>
     </div>
     <div class="kpi-card" style="border-color:#dc2626;">
       <div class="kpi-icon">📤</div>
-      <div class="kpi-label">Resigned (6M)</div>
+      <div class="kpi-label" id="kpi-resigned-label">Resigned</div>
       <div class="kpi-value" style="color:#dc2626;" id="kpi-resigned">—</div>
       <div class="kpi-sub" id="kpi-resigned-sub">—</div>
     </div>
@@ -311,13 +327,42 @@
       <div class="kpi-icon">🚨</div>
       <div class="kpi-label">Exit Interviews</div>
       <div class="kpi-value" style="color:#ea580c;" id="kpi-exit">—</div>
-      <div class="kpi-sub">6-month period</div>
+      <div class="kpi-sub" id="kpi-exit-sub">6-month period</div>
     </div>
     <div class="kpi-card" style="border-color:#0f766e;">
       <div class="kpi-icon">👶</div>
       <div class="kpi-label">Newbie Turnover</div>
       <div class="kpi-value" style="color:#0f766e;" id="kpi-newbie">—</div>
       <div class="kpi-sub">&lt;6 months tenure</div>
+    </div>
+  </div>
+
+  <!-- Monthly Breakdown Table (period-aware) -->
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div>
+        <div class="chart-title" style="margin-bottom:2px;">📅 Monthly Breakdown — Hire &amp; Resign per Month</div>
+        <div class="chart-subtitle">Semua bulan dalam periode terpilih · Klik periode di atas untuk ganti tampilan</div>
+      </div>
+      <span class="filter-tag" id="monthBreakdownPeriodTag">6 Months</span>
+    </div>
+    <div class="table-wrapper">
+      <table id="table-monthly-breakdown" class="month-table">
+        <thead>
+          <tr>
+            <th>Bulan</th>
+            <th style="color:#16a34a;">✅ New Hire</th>
+            <th style="color:#dc2626;">📤 Resigned</th>
+            <th>Net Flow</th>
+            <th>Opening HC</th>
+            <th>Closing HC</th>
+            <th style="color:#f59e0b;">👶 Newbie Resign</th>
+            <th style="color:#6366f1;">👴 Oldbie Resign</th>
+          </tr>
+        </thead>
+        <tbody id="monthly-breakdown-tbody"></tbody>
+        <tfoot id="monthly-breakdown-tfoot"></tfoot>
+      </table>
     </div>
   </div>
 
@@ -334,7 +379,7 @@
     </div>
     <div class="chart-card">
       <div class="chart-title">📅 Monthly Headcount Movement</div>
-      <div class="chart-subtitle">Opening HC · New Hire · Resigned · Closing HC</div>
+      <div class="chart-subtitle" id="chart-hc-movement-subtitle">Opening HC · New Hire · Resigned · Closing HC</div>
       <canvas id="chart-hc-movement"></canvas>
     </div>
   </div>
@@ -936,6 +981,54 @@ const MONTHS_6 = getLast6Months();
 const MONTH_LABELS = MONTHS_6.map(m => m.label);
 
 // ============================================================
+// PERIOD SLICE ENGINE
+// DATA arrays cover: Feb, Mar, Apr, May, Jun, Jul 2026 (indices 0–5)
+// Feb=0, Mar=1, Apr=2, May=3, Jun=4, Jul=5
+// ============================================================
+const MONTH_FULL_LABELS = ['Feb 2026','Mar 2026','Apr 2026','Mei 2026','Jun 2026','Jul 2026'];
+const MONTH_SHORT_LABELS = ['Feb','Mar','Apr','Mei','Jun','Jul'];
+
+// Returns { start, end, indices, label, shortLabel, isSingleMonth }
+function getPeriodSlice() {
+  const period = document.getElementById('periodMonths').value;
+  // All monthly arrays have 6 entries: index 0=Feb, 1=Mar, 2=Apr, 3=May, 4=Jun, 5=Jul
+  // MTD = current month only = Jul 2026 = index 5 (partial month, day 1-9)
+  // 1M  = last complete or partial month = Jul 2026 = index 5
+  // 3M  = May, Jun, Jul = indices 3,4,5
+  // 6M  = Feb–Jul = indices 0–5
+  // YTD = Jan–Jul 2026: Jan not in array (pre-period), so show Feb–Jul + note
+  // 12M = Aug 2025–Jul 2026: only Feb–Jul in array, use 12M aggregates
+  const slices = {
+    mtd:  { indices: [5],           label: 'Month to Date · 1–9 Jul 2026',   shortLabel: 'MTD',  isMTD: true  },
+    '1':  { indices: [5],           label: '1 Bulan · Jul 2026',              shortLabel: '1M',   isMTD: false },
+    '3':  { indices: [3,4,5],       label: '3 Bulan · Mei–Jul 2026',          shortLabel: '3M',   isMTD: false },
+    '6':  { indices: [0,1,2,3,4,5], label: '6 Bulan · Feb–Jul 2026',          shortLabel: '6M',   isMTD: false },
+    ytd:  { indices: [0,1,2,3,4,5], label: 'YTD · Jan–Jul 2026',              shortLabel: 'YTD',  isMTD: false, useYTD: true },
+    '12': { indices: [0,1,2,3,4,5], label: '12 Bulan · Agu 2025–Jul 2026',    shortLabel: '12M',  isMTD: false, use12M: true },
+  };
+  return slices[period] || slices['6'];
+}
+
+// Slice a monthly data array by indices from getPeriodSlice
+function sliceData(arr, indices) {
+  return indices.map(i => (arr && arr[i] !== undefined) ? arr[i] : 0);
+}
+
+// Get period totals for scalar KPIs
+function getPeriodTotals(slice) {
+  const idx = slice.indices;
+  const resigned  = sliceData(DATA.resigned,  idx).reduce((a,b)=>a+b,0);
+  const newHires  = sliceData(DATA.newHires,  idx).reduce((a,b)=>a+b,0);
+  const newbie    = sliceData(DATA.newbie6M,  idx).reduce((a,b)=>a+b,0);
+  const oldbie    = sliceData(DATA.oldbie6M,  idx).reduce((a,b)=>a+b,0);
+
+  // For YTD/12M override with pre-aggregated totals
+  if (slice.useYTD)  return { resigned: DATA.resignedYTD, newHires: DATA.newHiresYTD, newbie, oldbie };
+  if (slice.use12M)  return { resigned: DATA.resigned12M, newHires: DATA.newHires12M, newbie, oldbie };
+  return { resigned, newHires, newbie, oldbie };
+}
+
+// ============================================================
 // REAL DATA — sourced from Google Sheets via gviz CSV API
 // Extraction date: July 9, 2026
 // GID=1 Master Database (2704 employee records)
@@ -1265,32 +1358,81 @@ function renderNA(canvasId, msg) {
 }
 
 function renderRetention() {
-  // ── KPI Cards ────────────────────────────────────────────────────
-  const totalResigned6M = DATA.resigned.reduce((a,b) => a+b, 0);
-  const totalHires6M    = DATA.newHires.reduce((a,b) => a+b, 0);
-  // 12M Turnover: resigned12M / avg(openingHC[0], closingHC[5])
-  const avgHC12 = (DATA.openingHC[0] + DATA.closingHC[5]) / 2;
-  const turnoverRate12  = ((DATA.resigned12M / avgHC12) * 100).toFixed(1);
-  const retentionRate12 = (100 - parseFloat(turnoverRate12)).toFixed(1);
-  const totalNewbie6M   = DATA.newbie6M.reduce((a,b) => a+b, 0);
-  // Est. turnover cost: resigned12M × Rp 4jt average onboarding cost
-  const turnoverCost    = DATA.resigned12M * 4000000;
-  const exitCount6M     = DATA.exitReasons.reduce((a,b) => a+b.count, 0);
+  const slice   = getPeriodSlice();
+  const totals  = getPeriodTotals(slice);
+  const idx     = slice.indices;
+  const sliceLabels = idx.map(i => MONTH_FULL_LABELS[i]);
+  const sliceShort  = idx.map(i => MONTH_SHORT_LABELS[i]);
 
-  document.getElementById('kpi-active-hc').textContent  = DATA.activeHC.toLocaleString('id');
-  document.getElementById('kpi-newhire').textContent     = totalHires6M;
-  document.getElementById('kpi-newhire-sub').textContent = `${totalHires6M} dari 12M: ${DATA.newHires12M}`;
-  document.getElementById('kpi-resigned').textContent    = totalResigned6M;
-  document.getElementById('kpi-resigned-sub').textContent= `12M total: ${DATA.resigned12M} | YTD: ${DATA.resignedYTD}`;
-  document.getElementById('kpi-turnover').textContent    = turnoverRate12 + '%';
-  document.getElementById('kpi-retention').textContent   = retentionRate12 + '%';
-  document.getElementById('kpi-cost').textContent        = '~Rp ' + (turnoverCost/1e6).toFixed(0) + 'jt';
-  document.getElementById('kpi-exit').textContent        = exitCount6M;
-  document.getElementById('kpi-newbie').textContent      = totalNewbie6M;
+  // ── KPI Cards (period-aware) ──────────────────────────────────────
+  const avgHC12        = (DATA.openingHC[0] + DATA.closingHC[5]) / 2;
+  const turnoverRate12 = ((DATA.resigned12M / avgHC12) * 100).toFixed(1);
+  const retentionRate12= (100 - parseFloat(turnoverRate12)).toFixed(1);
+  const turnoverCost   = totals.resigned * 4000000;
+  const exitCount6M    = DATA.exitReasons.reduce((a,b) => a+b.count, 0);
+
+  const pLabel = slice.shortLabel;
+  document.getElementById('kpi-active-hc').textContent    = DATA.activeHC.toLocaleString('id');
+  document.getElementById('kpi-newhire-label').textContent = `New Hire (${pLabel})`;
+  document.getElementById('kpi-newhire').textContent       = totals.newHires;
+  document.getElementById('kpi-newhire-sub').textContent   = `12M: ${DATA.newHires12M} | YTD: ${DATA.newHiresYTD}`;
+  document.getElementById('kpi-resigned-label').textContent= `Resigned (${pLabel})`;
+  document.getElementById('kpi-resigned').textContent      = totals.resigned;
+  document.getElementById('kpi-resigned-sub').textContent  = `12M: ${DATA.resigned12M} | YTD: ${DATA.resignedYTD}`;
+  document.getElementById('kpi-turnover').textContent      = turnoverRate12 + '%';
+  document.getElementById('kpi-retention').textContent     = retentionRate12 + '%';
+  document.getElementById('kpi-cost').textContent          = '~Rp ' + (turnoverCost/1e6).toFixed(0) + 'jt';
+  document.getElementById('kpi-exit').textContent          = exitCount6M;
+  document.getElementById('kpi-exit-sub').textContent      = `6M total · ${pLabel} selected`;
+  document.getElementById('kpi-newbie').textContent        = totals.newbie;
+
+  // ── Monthly Breakdown Table ───────────────────────────────────────
+  const tbody = document.getElementById('monthly-breakdown-tbody');
+  const tfoot = document.getElementById('monthly-breakdown-tfoot');
+  document.getElementById('monthBreakdownPeriodTag').textContent = slice.shortLabel + ' · ' + slice.label.split('·')[1].trim();
+
+  const hireSlice   = sliceData(DATA.newHires,  idx);
+  const resignSlice = sliceData(DATA.resigned,  idx);
+  const newbieSlice = sliceData(DATA.newbie6M,  idx);
+  const oldbieSlice = sliceData(DATA.oldbie6M,  idx);
+  const openSlice   = sliceData(DATA.openingHC, idx);
+  const closeSlice  = sliceData(DATA.closingHC, idx);
+
+  tbody.innerHTML = idx.map((dataIdx, i) => {
+    const net = hireSlice[i] - resignSlice[i];
+    const netColor = net >= 0 ? '#16a34a' : '#dc2626';
+    const netSign  = net >= 0 ? '+' : '';
+    const isMTD    = slice.isMTD;
+    return `<tr>
+      <td><strong>${sliceLabels[i]}</strong>${isMTD ? ' <span style="font-size:9px;background:#fef9c3;color:#92400e;padding:1px 6px;border-radius:10px;">MTD</span>' : ''}</td>
+      <td style="color:#16a34a;font-weight:700;">${hireSlice[i]}</td>
+      <td style="color:#dc2626;font-weight:700;">${resignSlice[i]}</td>
+      <td style="color:${netColor};font-weight:700;">${netSign}${net}</td>
+      <td style="color:#64748b;">${openSlice[i]}</td>
+      <td style="color:#64748b;">${closeSlice[i]}</td>
+      <td style="color:#f59e0b;">${newbieSlice[i]}</td>
+      <td style="color:#6366f1;">${oldbieSlice[i]}</td>
+    </tr>`;
+  }).join('');
+
+  // Totals footer
+  const sumHire   = hireSlice.reduce((a,b)=>a+b,0);
+  const sumResign = resignSlice.reduce((a,b)=>a+b,0);
+  const sumNet    = sumHire - sumResign;
+  const sumNewbie = newbieSlice.reduce((a,b)=>a+b,0);
+  const sumOldbie = oldbieSlice.reduce((a,b)=>a+b,0);
+  const footColor = sumNet >= 0 ? '#16a34a' : '#dc2626';
+  tfoot.innerHTML = `<tr style="background:#1e293b;color:white;font-weight:700;">
+    <td>TOTAL (${pLabel})</td>
+    <td style="color:#4ade80;">${sumHire}</td>
+    <td style="color:#f87171;">${sumResign}</td>
+    <td style="color:${sumNet>=0?'#4ade80':'#f87171'}">${sumNet>=0?'+':''}${sumNet}</td>
+    <td colspan="2" style="color:#94a3b8;font-size:10px;">Opening→Closing span</td>
+    <td style="color:#fde68a;">${sumNewbie}</td>
+    <td style="color:#a5b4fc;">${sumOldbie}</td>
+  </tr>`;
 
   // ── HQ vs Outlet Turnover Bar ─────────────────────────────────────
-  // 12M data: HQ resigned=7, outlet resigned=141
-  // Note: HQ has 46 active, Outlet has 392 active (from True Branch col)
   const hqRate     = ((DATA.hqResigned12M / DATA.hqActiveHC) * 100).toFixed(1);
   const outletRate = ((DATA.outletResigned12M / DATA.outletActiveHC) * 100).toFixed(1);
   createChart('chart-hq-outlet-turnover', {
@@ -1314,26 +1456,38 @@ function renderRetention() {
     }
   });
 
-  // ── HC Movement (Waterfall-style) ─────────────────────────────────
+  // ── HC Movement (period-sliced) ───────────────────────────────────
+  document.getElementById('chart-hc-movement-subtitle').textContent =
+    `Opening HC · New Hire · Resigned · Closing HC · ${slice.label}`;
   createChart('chart-hc-movement', {
     type: 'bar',
     data: {
-      labels: MONTH_LABELS,
+      labels: sliceShort,
       datasets: [
-        { label: '✅ New Hire', data: DATA.newHires, backgroundColor: '#34d39980', stack: 'flow' },
-        { label: '❌ Resigned', data: DATA.resigned.map(v => -v), backgroundColor: '#f8717180', stack: 'flow' },
-        { type: 'line', label: '📊 Closing HC', data: DATA.closingHC, borderColor: '#2563eb', backgroundColor: 'transparent', pointRadius: 4, tension: 0.3, borderWidth: 2 }
+        { label: '✅ New Hire', data: hireSlice, backgroundColor: '#34d39980', stack: 'flow' },
+        { label: '❌ Resigned', data: resignSlice.map(v => -v), backgroundColor: '#f8717180', stack: 'flow' },
+        { type: 'line', label: '📊 Closing HC', data: closeSlice, borderColor: '#2563eb', backgroundColor: 'transparent', pointRadius: 5, tension: 0.3, borderWidth: 2 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } },
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        datalabels: { display: false },
+        tooltip: { callbacks: {
+          afterBody: (items) => {
+            if (!items.length) return;
+            const i = items[0].dataIndex;
+            const h = hireSlice[i], r = resignSlice[i];
+            return [`Hire: +${h}`, `Resign: -${r}`, `Net: ${h>r?'+':''}${h-r}`];
+          }
+        }}
+      },
       scales: { y: { beginAtZero: false } }
     }
   });
 
-  // ── AM Turnover Chart (360° score = N/A, bar only) ────────────────
-  // Show resign counts only; 360° line replaced with N/A note
+  // ── AM Turnover Chart (12M data — always 12M rolling) ────────────
   createChart('chart-am-turnover', {
     type: 'bar',
     data: {
@@ -1353,29 +1507,33 @@ function renderRetention() {
     }
   });
 
-  // ── Newbie vs Oldbie Stacked ──────────────────────────────────────
+  // ── Newbie vs Oldbie Stacked (period-sliced) ──────────────────────
   createChart('chart-newbie-oldbie', {
     type: 'bar',
     data: {
-      labels: MONTH_LABELS,
+      labels: sliceShort,
       datasets: [
-        { label: '👶 Newbie (<6bln)', data: DATA.newbie6M, backgroundColor: '#f59e0b', borderRadius: 4 },
-        { label: '👴 Oldbie (≥6bln)', data: DATA.oldbie6M, backgroundColor: '#6366f1', borderRadius: 4 }
+        { label: '👶 Newbie (<6bln)', data: newbieSlice, backgroundColor: '#f59e0b', borderRadius: 4 },
+        { label: '👴 Oldbie (≥6bln)', data: oldbieSlice, backgroundColor: '#6366f1', borderRadius: 4 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
-      plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } }, datalabels: { display: false } },
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        datalabels: { display: false },
+        tooltip: { callbacks: {
+          afterBody: (items) => items.length ? [`Total resign bulan ini: ${newbieSlice[items[0].dataIndex]+oldbieSlice[items[0].dataIndex]}`] : []
+        }}
+      },
       scales: { x: { stacked: true }, y: { stacked: true } }
     }
   });
 
   // ── Position Forecast Horizontal Bar ─────────────────────────────
-  // Use 12M actual data, annualize from 6M portion
   const posLabels  = DATA.positions.map(p => p.name);
-  // 6M portion ≈ half of 12M since we have 12M data
   const resigned6MPos = DATA.positions.map(p => Math.round(p.resigned * DATA.resigned6M / DATA.resigned12M));
-  const forecastArr   = DATA.positions.map(p => p.resigned); // 12M actual IS the annual forecast
+  const forecastArr   = DATA.positions.map(p => p.resigned);
   createChart('chart-position-forecast', {
     type: 'bar',
     data: {
@@ -1461,21 +1619,37 @@ function renderRecruitment() {
   document.getElementById('kpi-vacancies').textContent        = DATA.opsHC.hiringNeeded;
   document.getElementById('kpi-avg-score').textContent        = DATA.avgCVScore.toFixed(1);
 
-  // ── Hire vs Resign Trend — REAL DATA ─────────────────────────────
+  // ── Hire vs Resign Trend — period-aware ──────────────────────────
+  const slice  = getPeriodSlice();
+  const idx    = slice.indices;
+  const sLabels= idx.map(i => MONTH_SHORT_LABELS[i]);
+  const hireS  = sliceData(DATA.newHires, idx);
+  const resignS= sliceData(DATA.resigned, idx);
+  const netS   = hireS.map((h,i) => h - resignS[i]);
+
   createChart('chart-hire-resign-trend', {
-    type: 'line',
+    type: 'bar',
     data: {
-      labels: MONTH_LABELS,
+      labels: sLabels,
       datasets: [
-        { label: 'New Hire', data: DATA.newHires, borderColor: '#16a34a', backgroundColor: '#16a34a22', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 5 },
-        { label: 'Resigned', data: DATA.resigned, borderColor: '#dc2626', backgroundColor: '#dc262622', fill: true, tension: 0.3, borderWidth: 2, pointRadius: 5 }
+        { label: '✅ New Hire', data: hireS, backgroundColor: '#16a34a99', borderRadius: 4 },
+        { label: '📤 Resigned', data: resignS, backgroundColor: '#dc262699', borderRadius: 4 },
+        { type: 'line', label: '📈 Net Flow', data: netS, borderColor: '#7c3aed', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 5, borderDash: [4,2] }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
       plugins: {
         legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
-        datalabels: { display: true, color: ctx => ctx.dataset.label === 'New Hire' ? '#16a34a' : '#dc2626', font: { weight: 'bold', size: 10 }, anchor: 'end', align: 'top' }
+        datalabels: { display: ctx => ctx.dataset.type !== 'line' && ctx.dataset.data.length <= 4,
+          color: ctx => ctx.dataset.label.includes('Hire') ? '#16a34a' : '#dc2626',
+          font: { weight: 'bold', size: 10 }, anchor: 'end', align: 'top' },
+        tooltip: { callbacks: {
+          afterBody: (items) => {
+            const i = items[0].dataIndex;
+            return [`Net: ${hireS[i]>resignS[i]?'+':''}${hireS[i]-resignS[i]}`];
+          }
+        }}
       }
     }
   });
@@ -1895,12 +2069,18 @@ function switchTab(tab) {
 // PERIOD UPDATE
 // ============================================================
 function updateDashboard() {
+  const slice = getPeriodSlice();
+
+  // Update filter badge
+  const filterBadge = document.getElementById('periodLabel');
+  filterBadge.textContent = slice.label;
+
+  // Color-code the badge by period type
+  const badgeColors = { mtd: '#7c3aed', '1': '#2563eb', '3': '#0d9488', '6': '#16a34a', ytd: '#ca8a04', '12': '#dc2626' };
   const period = document.getElementById('periodMonths').value;
-  let label;
-  if (period === '6') label = 'Feb 2026 – Jul 2026';
-  else if (period === '12') label = 'Aug 2025 – Jul 2026';
-  else label = 'Jan 2026 – Jul 2026';
-  document.getElementById('periodLabel').textContent = label;
+  filterBadge.style.background = (badgeColors[period] || '#eff6ff') + '22';
+  filterBadge.style.color = badgeColors[period] || '#1d4ed8';
+  filterBadge.style.borderColor = (badgeColors[period] || '#2563eb') + '44';
 
   // Re-render active tab
   const activeTab = document.querySelector('.tab-content.active');
@@ -1927,11 +2107,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const opts = { day: '2-digit', month: 'short', year: 'numeric' };
   document.getElementById('currentDateBadge').textContent = NOW.toLocaleDateString('id-ID', opts);
 
-  // Set period label
-  document.getElementById('periodLabel').textContent = 'Feb 2026 – Jul 2026';
-
-  // Render default tab
-  renderRetention();
+  // Initialize period label from current selection
+  updateDashboard();
 });
 </script>
 </body>
