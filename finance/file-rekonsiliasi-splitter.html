@@ -2325,52 +2325,17 @@ async function processCashRekon() {
     setProgress('cash-rekon', 5, 'Reading ACMM Sales file…');
 
     try {
-        /* ─────────────────────────────────────────────────────────
-           Inner helpers — defined first so both STEP 1 (ACMM) and
-           STEP 4 (BCA) can use them.
-        ───────────────────────────────────────────────────────── */
-
-        // ACMM dates: SheetJS cellDates:true → JS Date at UTC midnight, or
-        // yyyy-mm-dd string. Extract UTC day then subtract 1 (ACMM records
-        // the settlement day; BCA stmt date is also settlement day → both
-        // subtract 1 to arrive at the same sales-day key).
-        function acmmDayMinusOne(dateVal) {
-            let utcDay = null;
-            if (dateVal) {
-                // Try yyyy-mm-dd string first
-                const m = String(dateVal).match(/(\d{4})-(\d{2})-(\d{2})/);
-                if (m) {
-                    utcDay = parseInt(m[3], 10);
-                } else {
-                    // JS Date object (SheetJS cellDates:true)
-                    const d = new Date(dateVal);
-                    if (!isNaN(d)) utcDay = d.getUTCDate();
-                }
-            }
-            if (utcDay === null) return '?';
-            // Subtract 1 day: if day=1 wrap to last day of prev month
-            if (utcDay > 1) return (utcDay - 1).toString();
-            // day=1: get last day of previous month
-            // We need full date for this — re-parse to Date
-            let fullDate = null;
-            const m2 = String(dateVal).match(/(\d{4})-(\d{2})-(\d{2})/);
-            if (m2) {
-                fullDate = new Date(Date.UTC(+m2[1], +m2[2]-1, 1));
-            } else {
-                fullDate = new Date(dateVal);
-                fullDate = new Date(Date.UTC(fullDate.getUTCFullYear(), fullDate.getUTCMonth(), 1));
-            }
-            fullDate.setUTCDate(fullDate.getUTCDate() - 1); // last day of prev month
-            return fullDate.getUTCDate().toString();
-        }
-
         /* ══════════════════════════════════════════════════════════
            STEP 1: Parse ACMM Sales file → extract GL 11201100
            Col A=Tanggal, Col B=Store code, Col C=Store name (kode in brackets)
            Col L=Type, Col M=GL Code, Col N=Amount
-           Kode Rekon = (acmm_date − 1 day).day + kodeOutlet
-           (ACMM records settlement day; subtract 1 to get sales day,
-            matching BCA's stmt_date − 1 convention)
+
+           Date convention:
+             ACMM records the SALE DATE directly (e.g. 1-Jul for sales on 1-Jul).
+             BCA statement records the SETTLEMENT DATE (sale + 1 day, e.g. 2-Jul).
+             → ACMM uses raw day as-is; BCA subtracts 1 via crDayMinusOne.
+             Both produce the same sale-day key prefix.
+             (Same logic as the ACMM Splitter tab.)
         ══════════════════════════════════════════════════════════ */
         const acmmBuf = await acmmFile.arrayBuffer();
         const acmmWb  = XLSX.read(acmmBuf, { type:'array', cellDates:true });
@@ -2408,8 +2373,18 @@ async function processCashRekon() {
             const type      = String(r[ACMM_COL_TYPE] || '').trim().toLowerCase();
             const amount    = parseFloat(String(r[ACMM_COL_AMT] || '0').replace(/,/g,'')) || 0;
 
-            // Day = (acmm_date − 1) to match BCA's stmt_date − 1 convention
-            const day = acmmDayMinusOne(dateVal);
+            // Day = raw sale date day (same as ACMM Splitter — no subtraction)
+            // ACMM records the actual sale date; BCA subtracts 1 on its side.
+            let day = '';
+            if (dateVal) {
+                const dMatch = String(dateVal).match(/(\d{4})-(\d{2})-(\d{2})/);
+                if (dMatch) {
+                    day = parseInt(dMatch[3], 10).toString();
+                } else {
+                    const d = new Date(dateVal);
+                    if (!isNaN(d)) day = d.getUTCDate().toString();
+                }
+            }
 
             // Kode outlet from brackets e.g. "(JKJSTT1) APOTEK ALPRO TEBET TIMUR"
             const bracketM = storeName.match(/\(([^)]+)\)/);
