@@ -992,16 +992,16 @@ const MONTH_SHORT_LABELS = ['Feb','Mar','Apr','Mei','Jun','Jul'];
 function getPeriodSlice() {
   const period = document.getElementById('periodMonths').value;
   // All monthly arrays have 6 entries: index 0=Feb, 1=Mar, 2=Apr, 3=May, 4=Jun, 5=Jul
-  // MTD = current month only = Jul 2026 = index 5 (partial month, day 1-9)
-  // 1M  = last complete or partial month = Jul 2026 = index 5
-  // 3M  = May, Jun, Jul = indices 3,4,5
-  // 6M  = Feb–Jul = indices 0–5
-  // YTD = Jan–Jul 2026: Jan not in array (pre-period), so show Feb–Jul + note
-  // 12M = Aug 2025–Jul 2026: only Feb–Jul in array, use 12M aggregates
+  // MTD = current partial month only  = Jul 2026 = index 5  (day 1–today)
+  // 1M  = last COMPLETED month        = Jun 2026 = index 4  (full month, not current partial)
+  // 3M  = 3 last completed months     = Apr, Mei, Jun = indices 2,3,4
+  // 6M  = 6 months incl. current MTD  = Feb–Jul = indices 0–5
+  // YTD = Jan–Jul 2026 (use pre-aggregated YTD totals)
+  // 12M = Aug 2025–Jul 2026 (use pre-aggregated 12M totals)
   const slices = {
     mtd:  { indices: [5],           label: 'Month to Date · 1–9 Jul 2026',   shortLabel: 'MTD',  isMTD: true  },
-    '1':  { indices: [5],           label: '1 Bulan · Jul 2026',              shortLabel: '1M',   isMTD: false },
-    '3':  { indices: [3,4,5],       label: '3 Bulan · Mei–Jul 2026',          shortLabel: '3M',   isMTD: false },
+    '1':  { indices: [4],           label: '1 Bulan · Jun 2026',              shortLabel: '1M',   isMTD: false },
+    '3':  { indices: [2,3,4],       label: '3 Bulan · Apr–Jun 2026',          shortLabel: '3M',   isMTD: false },
     '6':  { indices: [0,1,2,3,4,5], label: '6 Bulan · Feb–Jul 2026',          shortLabel: '6M',   isMTD: false },
     ytd:  { indices: [0,1,2,3,4,5], label: 'YTD · Jan–Jul 2026',              shortLabel: 'YTD',  isMTD: false, useYTD: true },
     '12': { indices: [0,1,2,3,4,5], label: '12 Bulan · Agu 2025–Jul 2026',    shortLabel: '12M',  isMTD: false, use12M: true },
