@@ -2617,8 +2617,9 @@ async function processCashRekon() {
 
             const kodeRekon = day + outcode;
             const type      = isCDM ? 'CDM' : 'TUNAI';
+            const cabangNo  = String(row[BCA_COL_CABANG] || '').trim();
 
-            cashRowsDetail.push({ kodeRekon, outcode, date: dateOnly, type, gross, matchVia, desc });
+            cashRowsDetail.push({ kodeRekon, outcode, date: dateOnly, type, gross, matchVia, desc, cabangNo });
 
             if (!cashKodeMap[kodeRekon]) {
                 cashKodeMap[kodeRekon] = { outcode, date: dateOnly, gross: 0, matchVia };
@@ -2970,6 +2971,29 @@ function downloadCashRekonOutput(mode) {
         detWs['!cols']=[{wch:22},{wch:16},{wch:8},{wch:16},{wch:18},{wch:14},{wch:70}];
         XLSX.utils.book_append_sheet(outWb,detWs,'BCA Cash Detail');
 
+        /* ── Sheet 5: Unknown (rows that could not be matched to any outlet) ── */
+        const unknownRows = cr.cashRowsDetail.filter(r => r.matchVia === 'Unmatched');
+        if (unknownRows.length > 0) {
+            const unData = [['Date','Type (CDM/TUNAI)','Gross Amount','Cabang No (Col C)','Description',
+                             'Note']];
+            unknownRows.forEach(r => unData.push([
+                r.date,
+                r.type,
+                r.gross,
+                r.cabangNo || '—',
+                r.desc,
+                r.type === 'CDM'
+                    ? 'CDM: card not in Kartu Debit file, no outlet code in desc, cabang not in Cabang BCA file'
+                    : 'TUNAI: outlet code pattern not found in description'
+            ]));
+            // Total row
+            const totalUnknown = unknownRows.reduce((s,r) => s + r.gross, 0);
+            unData.push(['TOTAL', '', totalUnknown, '', '', '']);
+            const unWs = XLSX.utils.aoa_to_sheet(unData);
+            unWs['!cols'] = [{wch:14},{wch:16},{wch:18},{wch:20},{wch:80},{wch:60}];
+            XLSX.utils.book_append_sheet(outWb, unWs, 'Unknown');
+        }
+
         const fn = `Cash_Daily_Rekon_${dateTag}.xlsx`;
         XLSX.writeFile(outWb, fn);
         document.getElementById('cr-daily-dl-info').textContent = `✓ Downloaded: ${fn}`;
@@ -3023,6 +3047,28 @@ function downloadCashRekonOutput(mode) {
         const detWs=XLSX.utils.aoa_to_sheet(detData);
         detWs['!cols']=[{wch:22},{wch:16},{wch:8},{wch:16},{wch:18},{wch:14},{wch:70}];
         XLSX.utils.book_append_sheet(outWb,detWs,'BCA Cash Detail');
+
+        /* ── Sheet 5: Unknown (rows that could not be matched to any outlet) ── */
+        const unknownRowsP = cr.cashRowsDetail.filter(r => r.matchVia === 'Unmatched');
+        if (unknownRowsP.length > 0) {
+            const unData = [['Date','Type (CDM/TUNAI)','Gross Amount','Cabang No (Col C)','Description',
+                             'Note']];
+            unknownRowsP.forEach(r => unData.push([
+                r.date,
+                r.type,
+                r.gross,
+                r.cabangNo || '—',
+                r.desc,
+                r.type === 'CDM'
+                    ? 'CDM: card not in Kartu Debit file, no outlet code in desc, cabang not in Cabang BCA file'
+                    : 'TUNAI: outlet code pattern not found in description'
+            ]));
+            const totalUnknown = unknownRowsP.reduce((s,r) => s + r.gross, 0);
+            unData.push(['TOTAL', '', totalUnknown, '', '', '']);
+            const unWs = XLSX.utils.aoa_to_sheet(unData);
+            unWs['!cols'] = [{wch:14},{wch:16},{wch:18},{wch:20},{wch:80},{wch:60}];
+            XLSX.utils.book_append_sheet(outWb, unWs, 'Unknown');
+        }
 
         const fn = `Cash_Periode_Rekon_${dateTag}.xlsx`;
         XLSX.writeFile(outWb, fn);
