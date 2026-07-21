@@ -3101,9 +3101,9 @@ function runRekonBCA() {
             status = Math.abs(diff) <= tolerance ? 'MATCH' : 'DIFF';
         else if (bca !== null) status = 'BCA_ONLY';
         else status = 'ACMM_ONLY';
-        // Remark: only for BCA_ONLY rows — show QR vs Debit/Credit split
+        // Remark: for any row where BCA has data (BCA_ONLY, DIFF, MATCH) — show QR vs Debit/Credit split
         let remark = '';
-        if (status === 'BCA_ONLY' && amtByType[kr]) {
+        if (status !== 'ACMM_ONLY' && amtByType[kr]) {
             const { QR, 'Debit/Credit': DC } = amtByType[kr];
             const parts = [];
             if (QR  > 0) parts.push(`QR: ${fmtNum(QR)}`);
@@ -3280,9 +3280,9 @@ function runRekon() {
         } else {
             status = 'ACMM_ONLY';
         }
-        // Remark: only for BRI_ONLY rows — show QR vs Debit/Credit split
+        // Remark: for any row where BRI has data (BRI_ONLY, DIFF, MATCH) — show QR vs Debit/Credit split
         let remark = '';
-        if (status === 'BRI_ONLY' && amtByType[kr]) {
+        if (status !== 'ACMM_ONLY' && amtByType[kr]) {
             const { QR, 'Debit/Credit': DC } = amtByType[kr];
             const parts = [];
             if (QR > 0) parts.push(`QR: ${fmtNum(QR)}`);
