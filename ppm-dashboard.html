@@ -949,7 +949,7 @@
 // ============================================================
 // DATA ENGINE
 // ============================================================
-const NOW = new Date(2026, 6, 9); // July 9, 2026
+const NOW = new Date(); // always use real today's date
 
 function get6MonthRange() {
   const end = new Date(NOW);
@@ -992,14 +992,20 @@ const MONTH_SHORT_LABELS = ['Feb','Mar','Apr','Mei','Jun','Jul'];
 function getPeriodSlice() {
   const period = document.getElementById('periodMonths').value;
   // All monthly arrays have 6 entries: index 0=Feb, 1=Mar, 2=Apr, 3=May, 4=Jun, 5=Jul
-  // MTD = current partial month only  = Jul 2026 = index 5  (day 1–today)
+  // MTD = current partial month only  = Jul 2026 = index 5  (day 1–today, dynamic date)
   // 1M  = last COMPLETED month        = Jun 2026 = index 4  (full month, not current partial)
   // 3M  = 3 last completed months     = Apr, Mei, Jun = indices 2,3,4
   // 6M  = 6 months incl. current MTD  = Feb–Jul = indices 0–5
   // YTD = Jan–Jul 2026 (use pre-aggregated YTD totals)
   // 12M = Aug 2025–Jul 2026 (use pre-aggregated 12M totals)
+
+  // Dynamic MTD label: always uses real today's date
+  const todayDate = new Date();
+  const todayDay  = todayDate.getDate();
+  const mtdLabel  = `Month to Date · 1\u2013${todayDay} Jul 2026`;
+
   const slices = {
-    mtd:  { indices: [5],           label: 'Month to Date · 1–9 Jul 2026',   shortLabel: 'MTD',  isMTD: true  },
+    mtd:  { indices: [5],           label: mtdLabel,                          shortLabel: 'MTD',  isMTD: true  },
     '1':  { indices: [4],           label: '1 Bulan · Jun 2026',              shortLabel: '1M',   isMTD: false },
     '3':  { indices: [2,3,4],       label: '3 Bulan · Apr–Jun 2026',          shortLabel: '3M',   isMTD: false },
     '6':  { indices: [0,1,2,3,4,5], label: '6 Bulan · Feb–Jul 2026',          shortLabel: '6M',   isMTD: false },
@@ -1030,7 +1036,7 @@ function getPeriodTotals(slice) {
 
 // ============================================================
 // REAL DATA — sourced from Google Sheets via gviz CSV API
-// Extraction date: July 9, 2026
+// Extraction date: July 24, 2026
 // GID=1 Master Database (2704 employee records)
 // GID=0 Exit Interview (108 records)
 // Metrics marked null = data not yet available in this workbook
@@ -1038,35 +1044,35 @@ function getPeriodTotals(slice) {
 
 // =====================================================================
 // REAL DATA — extracted from Google Sheets (GID=1 Master Database &
-// GID=0 Exit Interview) via gviz CSV API · as of July 9, 2026
+// GID=0 Exit Interview) via gviz CSV API · as of July 24, 2026
 // Data marked null = not available in current sheets (shown as N/A)
 // =====================================================================
 const DATA = {
   // ── RETENTION ─ REAL DATA ──────────────────────────────────────────
-  // Active HC: 794 per "Active Alproean" sheet (user-confirmed)
+  // Active HC: 794 per "Active Alproean" sheet (user-confirmed source of truth)
   activeHC: 794,
 
   // Opening/Closing HC per month (Feb–Jul 2026) — computed from join/resign dates
   // Opening = employees joined before month AND not yet resigned at month start
   // Closing = employees joined by month-end AND resigned after month-end (or still active)
-  openingHC: [821, 854, 843, 846, 851, 867],
-  closingHC: [854, 843, 846, 851, 867, 869],
+  openingHC: [836, 865, 854, 857, 865, 884],   // Feb–Jul 2026 — computed from join/resign dates
+  closingHC: [865, 854, 857, 865, 884, 914],   // Jul closing = 914 (incl. future-dated joins)
 
-  // Monthly new hires & resignations (Feb–Jul 2026) — REAL from Master Database
-  newHires: [51, 24, 42, 40, 50, 23],   // Feb=51, Mar=24, Apr=42, May=40, Jun=50, Jul=23 (partial month)
-  resigned: [22, 35, 39, 35, 35, 3],    // Feb=22, Mar=35, Apr=39, May=35, Jun=35, Jul=3 (partial month)
+  // Monthly new hires & resignations (Feb–Jul 2026) — REAL from Master Database (fetched 2026-07-24)
+  newHires: [51, 24, 42, 43, 54, 55],   // Feb=51, Mar=24, Apr=42, May=43, Jun=54, Jul=55 (incl. future-dated)
+  resigned: [22, 35, 39, 35, 35, 25],   // Feb=22, Mar=35, Apr=39, May=35, Jun=35, Jul=25 (all resign dates in Jul)
 
-  // Rolling 12-month totals (Jul 2025 – Jun 2026) — REAL
-  resigned12M: 352,
+  // Rolling 12-month totals (Aug 2025 – Jul 2026) — REAL (fetched 2026-07-24)
+  resigned12M: 349,
   newHires12M: 517,
 
-  // YTD 2026 (Jan 1 – Jul 9, 2026) — REAL
-  resignedYTD: 193,
-  newHiresYTD: 268,
+  // YTD 2026 (Jan 1 – Jul 24, 2026) — REAL
+  resignedYTD: 215,
+  newHiresYTD: 307,
 
   // 6-month totals (Feb–Jul 2026) — REAL
-  resigned6M: 169,
-  newHires6M: 230,
+  resigned6M: 191,
+  newHires6M: 269,
 
   // ── HQ vs OUTLET — REAL DATA ───────────────────────────────────────
   // HQ = True Branch (col 39) == "Head Office" | Outlet = contains "apotek alpro"
@@ -1077,9 +1083,9 @@ const DATA = {
   hqResigned12M: 7,
   outletResigned12M: 141,
 
-  // Monthly HQ vs Outlet resign (Feb–Jul 2026) — REAL
+  // Monthly HQ vs Outlet resign (Feb–Jul 2026) — REAL (updated 2026-07-24)
   resignMonthlyHQ:     [0, 0, 1, 1, 1, 0],
-  resignMonthlyOutlet: [8, 11, 11, 10, 14, 0],
+  resignMonthlyOutlet: [8, 11, 11, 10, 14, 0],  // Jul outlet breakdown pending re-extract
 
   // ── TURNOVER BY AM — REAL DATA (12M resigned from Master DB) ──────
   // 360 survey scores: NOT available in current sheets — shown as N/A
@@ -1100,8 +1106,8 @@ const DATA = {
 
   // ── NEWBIE vs OLDBIE — REAL DATA ───────────────────────────────────
   // Newbie = tenure < 6 months at time of resign | Oldbie = ≥ 6 months
-  newbie6M: [10, 14, 15, 16, 7, 2],   // monthly Feb–Jul
-  oldbie6M: [12, 21, 24, 19, 28, 1],  // monthly Feb–Jul
+  newbie6M: [13, 22, 17, 19, 12, 9],   // monthly Feb–Jul (fetched 2026-07-24, newbie = tenure ≤6M)
+  oldbie6M: [ 9, 13, 22, 16, 23,16],  // monthly Feb–Jul (fetched 2026-07-24, oldbie = tenure >6M)
 
   // ── POSITION TURNOVER — REAL DATA (12M) ────────────────────────────
   positions: [
