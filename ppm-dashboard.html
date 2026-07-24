@@ -204,6 +204,26 @@
   .loading-skeleton { background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 8px; }
   @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
+  /* ── DATA SOURCE BADGE SYSTEM ─────────────────────────────────────── */
+  /* Shows clearly on every KPI card and chart whether data is real, estimated, or unavailable */
+  .data-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 20px; margin-top: 4px; white-space: nowrap;
+  }
+  .data-badge.real    { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+  .data-badge.est     { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+  .data-badge.nodata  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+  /* On KPI cards — sits below kpi-sub */
+  .kpi-card .data-badge { display: flex; justify-content: center; margin-top: 5px; }
+  /* On chart titles — inline */
+  .chart-title .data-badge { vertical-align: middle; margin-left: 6px; }
+  /* No-data card overlay */
+  .kpi-nodata-value { font-size: 13px !important; color: #9ca3af !important; font-style: italic; }
+  /* No-data full card style */
+  .kpi-card.kpi-card-nodata { opacity: 0.7; background: #f8fafc; }
+  .kpi-card.kpi-card-nodata .kpi-icon { filter: grayscale(1); }
+
   /* Period filter enhanced */
   .period-bar select {
     font-weight: 600; min-width: 200px;
@@ -278,6 +298,15 @@
     <div style="font-size:11px;color:#64748b;">
       ⚠️ KPI cards reflect selected period · 12M Turnover Rate always uses rolling 12-month data
     </div>
+    <div style="font-size:11px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+      <span style="font-weight:600;color:#374151;">Data Legend:</span>
+      <span class="data-badge real" style="font-size:10px;">✅ Real Data</span>
+      <span style="color:#64748b;">= langsung dari Google Sheets</span>
+      <span class="data-badge est" style="font-size:10px;">⚠️ Estimated</span>
+      <span style="color:#64748b;">= dihitung / partial / formula</span>
+      <span class="data-badge nodata" style="font-size:10px;">❌ No Data</span>
+      <span style="color:#64748b;">= data belum tersedia di workbook ini</span>
+    </div>
     <button class="btn-refresh" onclick="updateDashboard()">🔄 Refresh</button>
   </div>
 </div>
@@ -291,49 +320,57 @@
       <div class="kpi-icon">👥</div>
       <div class="kpi-label">Active Headcount</div>
       <div class="kpi-value" style="color:#2563eb;" id="kpi-active-hc">—</div>
-      <div class="kpi-sub">End of period</div>
+      <div class="kpi-sub">Per "Active Alproean" sheet</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#16a34a;">
       <div class="kpi-icon">🆕</div>
       <div class="kpi-label" id="kpi-newhire-label">New Hire</div>
       <div class="kpi-value" style="color:#16a34a;" id="kpi-newhire">—</div>
       <div class="kpi-sub" id="kpi-newhire-sub">—</div>
+      <span class="data-badge real">✅ Real Data · Master DB</span>
     </div>
     <div class="kpi-card" style="border-color:#dc2626;">
       <div class="kpi-icon">📤</div>
       <div class="kpi-label" id="kpi-resigned-label">Resigned</div>
       <div class="kpi-value" style="color:#dc2626;" id="kpi-resigned">—</div>
       <div class="kpi-sub" id="kpi-resigned-sub">—</div>
+      <span class="data-badge real">✅ Real Data · Master DB</span>
     </div>
     <div class="kpi-card" style="border-color:#f59e0b;">
       <div class="kpi-icon">📊</div>
       <div class="kpi-label">12M Turnover Rate</div>
       <div class="kpi-value" style="color:#f59e0b;" id="kpi-turnover">—</div>
-      <div class="kpi-sub">Rolling 12 months</div>
+      <div class="kpi-sub">Rolling 12 months · Master DB</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#7c3aed;">
       <div class="kpi-icon">🧲</div>
       <div class="kpi-label">Retention Rate</div>
       <div class="kpi-value" style="color:#7c3aed;" id="kpi-retention">—</div>
-      <div class="kpi-sub">12M rolling</div>
+      <div class="kpi-sub">12M rolling · Master DB</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#0d9488;">
       <div class="kpi-icon">💸</div>
       <div class="kpi-label">Est. Turnover Cost</div>
       <div class="kpi-value" style="color:#0d9488;font-size:18px;" id="kpi-cost">—</div>
-      <div class="kpi-sub">@ Rp 4jt/person</div>
+      <div class="kpi-sub">Formula: resigned × Rp 4jt</div>
+      <span class="data-badge est">⚠️ Estimated</span>
     </div>
     <div class="kpi-card" style="border-color:#ea580c;">
       <div class="kpi-icon">🚨</div>
       <div class="kpi-label">Exit Interviews</div>
       <div class="kpi-value" style="color:#ea580c;" id="kpi-exit">—</div>
-      <div class="kpi-sub" id="kpi-exit-sub">6-month period</div>
+      <div class="kpi-sub" id="kpi-exit-sub">Exit Interview sheet (GID=0)</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#0f766e;">
       <div class="kpi-icon">👶</div>
       <div class="kpi-label">Newbie Turnover</div>
       <div class="kpi-value" style="color:#0f766e;" id="kpi-newbie">—</div>
-      <div class="kpi-sub">&lt;6 months tenure</div>
+      <div class="kpi-sub">&lt;6 months tenure at resign</div>
+      <span class="data-badge real">✅ Real Data · Master DB</span>
     </div>
   </div>
 
@@ -369,7 +406,7 @@
   <!-- HQ vs Outlet Turnover -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">🏢 HQ vs 🏪 Outlet Turnover Rate (12M Rolling)</div>
+      <div class="chart-title">🏢 HQ vs 🏪 Outlet Turnover Rate (12M Rolling) <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">HQ = non-"Apotek Alpro" branch employees</div>
       <div class="split-label">
         <span class="split-chip hq-chip">🏢 HQ</span>
@@ -378,7 +415,7 @@
       <canvas id="chart-hq-outlet-turnover"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">📅 Monthly Headcount Movement</div>
+      <div class="chart-title">📅 Monthly Headcount Movement <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle" id="chart-hc-movement-subtitle">Opening HC · New Hire · Resigned · Closing HC</div>
       <canvas id="chart-hc-movement"></canvas>
     </div>
@@ -387,12 +424,12 @@
   <!-- Turnover by AM + Newbie vs Oldbie -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">👤 Turnover by Area Manager (12M Rolling)</div>
+      <div class="chart-title">👤 Turnover by Area Manager (12M Rolling) <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">Resign count per AM · <span style="color:#f59e0b;">360° Survey: Data belum tersedia</span></div>
       <canvas id="chart-am-turnover"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">👶 Newbie (&lt;6M) vs 👴 Oldbie (≥6M) Resignation</div>
+      <div class="chart-title">👶 Newbie (&lt;6M) vs 👴 Oldbie (≥6M) Resignation <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">Tenure segmentation of resigned employees</div>
       <canvas id="chart-newbie-oldbie"></canvas>
     </div>
@@ -401,12 +438,12 @@
   <!-- Forecasted Yearly Turnover by Position -->
   <div class="chart-grid chart-grid-12">
     <div class="chart-card">
-      <div class="chart-title">🎯 Resign by Position — 12M Rolling vs 6M Actual</div>
+      <div class="chart-title">🎯 Resign by Position — 12M Rolling vs 6M Actual <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">6M actual resign vs 12M rolling total (annualized forecast)</div>
       <canvas id="chart-position-forecast"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">💬 Exit Interview Reason Categories</div>
+      <div class="chart-title">💬 Exit Interview Reason Categories <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">Data real dari 108 exit interview records (GID=0) · Total responses: 108</div>
       <canvas id="chart-exit-reasons"></canvas>
       <div class="donut-legend" id="exit-legend"></div>
@@ -416,12 +453,12 @@
   <!-- 360 Survey -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">🔄 360° Survey Result by Department</div>
+      <div class="chart-title">🔄 360° Survey Result by Department <span class="data-badge nodata">❌ No Data</span></div>
       <div class="chart-subtitle">Average score: Green ≥85 · Yellow 70–84 · Red &lt;70</div>
       <canvas id="chart-360-dept"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">📊 360° Score Distribution Analysis</div>
+      <div class="chart-title">📊 360° Score Distribution Analysis <span class="data-badge nodata">❌ No Data</span></div>
       <div class="chart-subtitle">Score band distribution across all evaluatees</div>
       <div class="pave-grid" style="margin-bottom:14px;">
         <div class="pave-card" style="background:var(--green-light);color:var(--green);">
@@ -444,7 +481,7 @@
   <!-- Top Risk Tables -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">🔥 Top Positions by Resign Count (12M Rolling)</div>
+      <div class="chart-title">🔥 Top Positions by Resign Count (12M Rolling) <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">Data real dari Master Database · Identifikasi posisi berisiko tinggi</div>
       <div class="table-wrapper">
         <table id="table-top-positions">
@@ -454,7 +491,7 @@
       </div>
     </div>
     <div class="chart-card">
-      <div class="chart-title">👤 Top AM by Resign Count (12M Rolling)</div>
+      <div class="chart-title">👤 Top AM by Resign Count (12M Rolling) <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">Data real dari Master Database · 360° Survey belum tersedia</div>
       <div class="table-wrapper">
         <table id="table-top-branches">
@@ -476,61 +513,69 @@
       <div class="kpi-icon">📄</div>
       <div class="kpi-label">Total CV Received</div>
       <div class="kpi-value" style="color:#2563eb;" id="kpi-total-cv">—</div>
-      <div class="kpi-sub" id="kpi-total-cv-sub">May–Jul 2026</div>
+      <div class="kpi-sub" id="kpi-total-cv-sub">Candidates sheet · Workbook 2</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#dc2626;">
       <div class="kpi-icon">📤</div>
       <div class="kpi-label">Resigned (6M)</div>
       <div class="kpi-value" style="color:#dc2626;" id="kpi-rec-resigned">—</div>
-      <div class="kpi-sub" id="kpi-rec-resigned-sub">12M total</div>
+      <div class="kpi-sub" id="kpi-rec-resigned-sub">Master DB · same source as Retention</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#0d9488;">
       <div class="kpi-icon">📨</div>
       <div class="kpi-label">Invitation Sent</div>
       <div class="kpi-value" style="color:#0d9488;" id="kpi-inv-sent">—</div>
-      <div class="kpi-sub">Apr–Jul 2026</div>
+      <div class="kpi-sub">Recruitment Summary sheet</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#ea580c;">
       <div class="kpi-icon">🎤</div>
       <div class="kpi-label">HR Interviewed</div>
       <div class="kpi-value" style="color:#ea580c;" id="kpi-hr-interview">—</div>
-      <div class="kpi-sub">Apr–Jul 2026</div>
+      <div class="kpi-sub">Recruitment Summary sheet</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#16a34a;">
       <div class="kpi-icon">✅</div>
       <div class="kpi-label">Offering Stage</div>
       <div class="kpi-value" style="color:#16a34a;" id="kpi-offered">—</div>
-      <div class="kpi-sub">Apr–Jul 2026</div>
+      <div class="kpi-sub">Recruitment Summary sheet</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#ca8a04;">
       <div class="kpi-icon">🚀</div>
       <div class="kpi-label">Onboarded (6M)</div>
       <div class="kpi-value" style="color:#ca8a04;" id="kpi-onboarded">—</div>
-      <div class="kpi-sub">Actual join count</div>
+      <div class="kpi-sub">Join Date · Master DB</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#4f46e5;">
       <div class="kpi-icon">💼</div>
       <div class="kpi-label">Kebutuhan Hiring</div>
       <div class="kpi-value" style="color:#4f46e5;" id="kpi-vacancies">—</div>
-      <div class="kpi-sub">Dari Ops X PPM Sheet</div>
+      <div class="kpi-sub">Ops X PPM Headcount sheet</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#7c3aed;">
       <div class="kpi-icon">⭐</div>
       <div class="kpi-label">Avg CV Score</div>
       <div class="kpi-value" style="color:#7c3aed;" id="kpi-avg-score">—</div>
-      <div class="kpi-sub">Excl. score=0 outliers</div>
+      <div class="kpi-sub">Candidates sheet · excl. score=0</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
   </div>
 
   <!-- Recruitment Funnel & Monthly Hires -->
   <div class="chart-grid chart-grid-12">
     <div class="chart-card">
-      <div class="chart-title">📊 Monthly New Hire vs Resign Trend</div>
+      <div class="chart-title">📊 Monthly New Hire vs Resign Trend <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">Net headcount flow over last 6 months</div>
       <canvas id="chart-hire-resign-trend"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🏗️ Recruitment Pipeline Funnel</div>
+      <div class="chart-title">🏗️ Recruitment Pipeline Funnel <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">Data real dari "Recruitment Summary" sheet · Apr–Jul 2026</div>
       <canvas id="chart-funnel"></canvas>
     </div>
@@ -643,44 +688,54 @@
 <!-- ===================== TAB 3: PERFORMANCE ===================== -->
 <div id="tab-performance" class="tab-content" style="background:#f1f5f9;">
 
+  <!-- NO DATA BANNER -->
+  <div class="insight-box" style="background:#fef2f2;border-color:#dc2626;color:#7f1d1d;margin-bottom:12px;">
+    <div class="insight-title">❌ Data Belum Tersedia — Performance Tab</div>
+    Seluruh data di tab ini (PAVE, KPI Score, Lateness) <strong>belum tersedia</strong> di workbook yang terhubung saat ini.
+    Semua kartu dan grafik di bawah ini <strong>bukan data nyata</strong> — hanya struktur placeholder.
+    Mohon hubungkan sheet PAVE / KPI / Absensi untuk mengisi data ini.
+  </div>
+
   <!-- PAVE Health -->
   <div class="chart-card" style="margin-bottom:14px;">
-    <div class="chart-title" style="margin-bottom:12px;">🏥 PAVE Health Overview</div>
+    <div class="chart-title" style="margin-bottom:12px;">🏥 PAVE Health Overview <span class="data-badge nodata">❌ No Data</span></div>
     <div class="pave-grid">
       <div class="pave-card" style="background:var(--green-light);">
-        <div class="pave-num" style="color:var(--green);" id="pave-green">—</div>
-        <div class="pave-pct" style="color:var(--green);" id="pave-green-pct">—</div>
+        <div class="pave-num" style="color:#9ca3af;font-style:italic;" id="pave-green">No Data</div>
+        <div class="pave-pct" style="color:#9ca3af;" id="pave-green-pct">—</div>
         <div class="pave-label" style="color:var(--green);">🟢 GREEN (Passed)</div>
       </div>
       <div class="pave-card" style="background:var(--yellow-light);">
-        <div class="pave-num" style="color:var(--yellow);" id="pave-yellow">—</div>
-        <div class="pave-pct" style="color:var(--yellow);" id="pave-yellow-pct">—</div>
+        <div class="pave-num" style="color:#9ca3af;font-style:italic;" id="pave-yellow">No Data</div>
+        <div class="pave-pct" style="color:#9ca3af;" id="pave-yellow-pct">—</div>
         <div class="pave-label" style="color:var(--yellow);">🟡 YELLOW (Extended)</div>
       </div>
       <div class="pave-card" style="background:var(--red-light);">
-        <div class="pave-num" style="color:var(--red);" id="pave-red">—</div>
-        <div class="pave-pct" style="color:var(--red);" id="pave-red-pct">—</div>
+        <div class="pave-num" style="color:#9ca3af;font-style:italic;" id="pave-red">No Data</div>
+        <div class="pave-pct" style="color:#9ca3af;" id="pave-red-pct">—</div>
         <div class="pave-label" style="color:var(--red);">🔴 RED (At Risk)</div>
       </div>
     </div>
     <div style="margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
       <div class="kpi-card" style="border-color:#16a34a;">
         <div class="kpi-label">Total PAVE Active</div>
-        <div class="kpi-value" style="color:#16a34a;" id="pave-total">—</div>
+        <div class="kpi-value" style="color:#9ca3af;font-style:italic;" id="pave-total">No Data</div>
+        <span class="data-badge nodata">❌ No Data</span>
       </div>
       <div class="kpi-card" style="border-color:#dc2626;">
         <div class="kpi-label">Resigned Before End PAVE</div>
-        <div class="kpi-value" style="color:#dc2626;" id="pave-early-resign">—</div>
+        <div class="kpi-value" style="color:#9ca3af;font-style:italic;" id="pave-early-resign">No Data</div>
+        <span class="data-badge nodata">❌ No Data</span>
       </div>
       <div class="kpi-card" style="border-color:#ca8a04;">
         <div class="kpi-label">Extended PAVE</div>
-        <div class="kpi-value" style="color:#ca8a04;" id="pave-extended">—</div>
-        <div class="kpi-sub"><span class="note-label">⏳ Pending</span></div>
+        <div class="kpi-value" style="color:#9ca3af;font-style:italic;" id="pave-extended">No Data</div>
+        <span class="data-badge nodata">❌ No Data</span>
       </div>
       <div class="kpi-card" style="border-color:#7c3aed;">
         <div class="kpi-label">Sales/Staff/Day</div>
-        <div class="kpi-value" style="color:#7c3aed;">—</div>
-        <div class="kpi-sub"><span class="note-label">⏳ Pending</span></div>
+        <div class="kpi-value" style="color:#9ca3af;font-style:italic;">No Data</div>
+        <span class="data-badge nodata">❌ No Data</span>
       </div>
     </div>
   </div>
@@ -688,12 +743,12 @@
   <!-- PAVE Charts + KPI -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">📈 PAVE Status Trend by Month</div>
+      <div class="chart-title">📈 PAVE Status Trend by Month <span class="data-badge nodata">❌ No Data</span></div>
       <div class="chart-subtitle">Monthly PAVE Green/Yellow/Red count</div>
       <canvas id="chart-pave-trend"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🏆 KPI Score Distribution</div>
+      <div class="chart-title">🏆 KPI Score Distribution <span class="data-badge nodata">❌ No Data</span></div>
       <div class="chart-subtitle">Performance rating spread across Alproean</div>
       <canvas id="chart-kpi-dist"></canvas>
     </div>
@@ -702,12 +757,12 @@
   <!-- Lateness Report -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">⏰ Lateness Frequency by Month</div>
+      <div class="chart-title">⏰ Lateness Frequency by Month <span class="data-badge nodata">❌ No Data</span></div>
       <div class="chart-subtitle">Total late incidents across all outlets (6M)</div>
       <canvas id="chart-lateness-month"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">📍 Top 10 Outlets by Lateness Incidents</div>
+      <div class="chart-title">📍 Top 10 Outlets by Lateness Incidents <span class="data-badge nodata">❌ No Data</span></div>
       <div class="chart-subtitle">Outlets needing roster/discipline intervention</div>
       <canvas id="chart-lateness-outlet"></canvas>
     </div>
@@ -736,7 +791,7 @@
 
   <!-- KPI Score by Position -->
   <div class="chart-card" style="margin-bottom:14px;">
-    <div class="chart-title">📊 KPI Score by Position Group</div>
+    <div class="chart-title">📊 KPI Score by Position Group <span class="data-badge nodata">❌ No Data</span></div>
     <div class="chart-subtitle">Average performance index per role (composite: Sales 40%, Lateness 30%, 360° 20%, Discipline 10%)</div>
     <canvas id="chart-kpi-position" style="max-height:200px;"></canvas>
   </div>
@@ -756,61 +811,69 @@
       <div class="kpi-icon">💼</div>
       <div class="kpi-label">Total Gaji 5PT (6M)</div>
       <div class="kpi-value" style="color:#16a34a;font-size:16px;" id="kpi-total-gaji">—</div>
-      <div class="kpi-sub">5 PT combined</div>
+      <div class="kpi-sub">Trend Summary sheet · Jan–Jun 2026</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#2563eb;">
       <div class="kpi-icon">📊</div>
       <div class="kpi-label">Manpower Cost Ratio</div>
       <div class="kpi-value" style="color:#2563eb;" id="kpi-manpower-ratio">—</div>
-      <div class="kpi-sub">Gaji / Revenue %</div>
+      <div class="kpi-sub">Gaji ÷ Revenue · Payroll Workbook</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#7c3aed;">
       <div class="kpi-icon">🎁</div>
       <div class="kpi-label">Total Incentive (6M)</div>
       <div class="kpi-value" style="color:#7c3aed;font-size:16px;" id="kpi-incentive">—</div>
-      <div class="kpi-sub">Paid to staff</div>
+      <div class="kpi-sub">Juni exact · Jan–Mei not in workbook</div>
+      <span class="data-badge est">⚠️ Partial Data (Jun only)</span>
     </div>
     <div class="kpi-card" style="border-color:#dc2626;">
       <div class="kpi-icon">⚠️</div>
       <div class="kpi-label">Total Denda (6M)</div>
-      <div class="kpi-value" style="color:#dc2626;font-size:16px;" id="kpi-denda">—</div>
-      <div class="kpi-sub">Disciplinary fines</div>
+      <div class="kpi-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-denda">Tidak tersedia</div>
+      <div class="kpi-sub">Tidak ada di payroll workbook ini</div>
+      <span class="data-badge nodata">❌ No Data</span>
     </div>
     <div class="kpi-card" style="border-color:#f59e0b;">
       <div class="kpi-icon">🕐</div>
       <div class="kpi-label">Total OT (6M)</div>
-      <div class="kpi-value" style="color:#f59e0b;font-size:16px;" id="kpi-ot">—</div>
-      <div class="kpi-sub">Overtime paid</div>
+      <div class="kpi-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-ot">Tidak tersedia</div>
+      <div class="kpi-sub">Tidak ada di payroll workbook ini</div>
+      <span class="data-badge nodata">❌ No Data</span>
     </div>
     <div class="kpi-card" style="border-color:#0d9488;">
       <div class="kpi-icon">💵</div>
       <div class="kpi-label">Revenue per Employee</div>
       <div class="kpi-value" style="color:#0d9488;font-size:16px;" id="kpi-rev-per-emp">—</div>
-      <div class="kpi-sub">Monthly avg</div>
+      <div class="kpi-sub">Revenue ÷ Active HC</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#ea580c;">
       <div class="kpi-icon">📉</div>
       <div class="kpi-label">OT Ratio</div>
-      <div class="kpi-value" style="color:#ea580c;" id="kpi-ot-ratio">—</div>
-      <div class="kpi-sub">OT / Total Salary</div>
+      <div class="kpi-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-ot-ratio">Tidak tersedia</div>
+      <div class="kpi-sub">OT data tidak ada di workbook ini</div>
+      <span class="data-badge nodata">❌ No Data</span>
     </div>
     <div class="kpi-card" style="border-color:#4f46e5;">
       <div class="kpi-icon">📈</div>
       <div class="kpi-label">HC vs Revenue Growth</div>
       <div class="kpi-value" style="color:#4f46e5;" id="kpi-growth-delta">—</div>
-      <div class="kpi-sub">Rev growth – HC growth</div>
+      <div class="kpi-sub">Derived from Payroll + Master DB</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
   </div>
 
   <!-- Cost Trend Charts -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">💰 Manpower Cost vs Revenue Trend</div>
+      <div class="chart-title">💰 Manpower Cost vs Revenue Trend <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">Monthly salary expense vs revenue (6M)</div>
       <canvas id="chart-cost-revenue"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🎁 Incentive + Denda + OT by Month</div>
+      <div class="chart-title">🎁 Incentive + Denda + OT by Month <span class="data-badge est">⚠️ Estimated</span></div>
       <div class="chart-subtitle">Monthly breakdown of variable pay components</div>
       <canvas id="chart-incentive-denda-ot"></canvas>
     </div>
@@ -819,12 +882,12 @@
   <!-- Total Gaji by PT + OT Analysis -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">🏢 Salary Expense by PT Entity</div>
+      <div class="chart-title">🏢 Salary Expense by PT Entity <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">5 PT combined gaji trend (6M)</div>
       <canvas id="chart-gaji-pt"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🏢 PT Entity Breakdown (Juni 2026)</div>
+      <div class="chart-title">🏢 PT Entity Breakdown (Juni 2026) <span class="data-badge real">✅ Real Data</span></div>
       <div class="chart-subtitle">Distribusi total gaji per entitas PT · Data aktual Juni 2026</div>
       <canvas id="chart-ot-analysis"></canvas>
     </div>
@@ -843,9 +906,9 @@
             <th>Revenue (Rp)</th>
             <th>Manpower Ratio</th>
             <th>Incentive (Rp)</th>
-            <th>Denda (Rp)</th>
-            <th>OT (Rp)</th>
-            <th>OT Ratio</th>
+            <th>Denda (Rp) <span class="data-badge nodata" style="font-size:8px;">❌</span></th>
+            <th>OT (Rp) <span class="data-badge nodata" style="font-size:8px;">❌</span></th>
+            <th>OT Ratio <span class="data-badge nodata" style="font-size:8px;">❌</span></th>
             <th>Rev/HC</th>
           </tr>
         </thead>
@@ -858,59 +921,74 @@
 <!-- ===================== TAB 5: COLLABORATION ===================== -->
 <div id="tab-collaboration" class="tab-content" style="background:#f1f5f9;">
 
+  <!-- NO DATA BANNER -->
+  <div class="insight-box" style="background:#fef2f2;border-color:#dc2626;color:#7f1d1d;margin-bottom:12px;">
+    <div class="insight-title">❌ Data Sebagian Belum Tersedia — Collaboration Tab</div>
+    <strong>PKPA/Magang:</strong> Data diambil dari Master DB (approximate count = 14 aktif) — belum ada data historis per bulan.<br>
+    <strong>MOU, LinkedIn, Universities:</strong> Data <strong>tidak tersedia</strong> di workbook yang terhubung saat ini. Semua kartu yang bertanda ❌ No Data adalah placeholder kosong.
+  </div>
+
   <!-- Collab KPI -->
   <div class="collab-grid" style="margin-bottom:16px;">
     <div class="collab-card">
       <div class="collab-icon">🎓</div>
       <div class="collab-value" style="color:#7c3aed;" id="kpi-pkpa">—</div>
       <div class="collab-label">PKPA/Magang (6M)</div>
+      <span class="data-badge est" style="margin:4px auto 0;display:flex;justify-content:center;width:fit-content;">⚠️ Approx · Master DB</span>
     </div>
     <div class="collab-card">
       <div class="collab-icon">🤝</div>
-      <div class="collab-value" style="color:#2563eb;" id="kpi-mou">—</div>
+      <div class="collab-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-mou">No Data</div>
       <div class="collab-label">Active MOU</div>
+      <span class="data-badge nodata" style="margin:4px auto 0;display:flex;justify-content:center;width:fit-content;">❌ No Data</span>
     </div>
     <div class="collab-card">
       <div class="collab-icon">💼</div>
-      <div class="collab-value" style="color:#0d9488;" id="kpi-linkedin-followers">—</div>
+      <div class="collab-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-linkedin-followers">No Data</div>
       <div class="collab-label">LinkedIn Followers</div>
+      <span class="data-badge nodata" style="margin:4px auto 0;display:flex;justify-content:center;width:fit-content;">❌ No Data</span>
     </div>
     <div class="collab-card">
       <div class="collab-icon">👍</div>
-      <div class="collab-value" style="color:#ea580c;" id="kpi-linkedin-engage">—</div>
+      <div class="collab-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-linkedin-engage">No Data</div>
       <div class="collab-label">Avg Engagement Rate</div>
+      <span class="data-badge nodata" style="margin:4px auto 0;display:flex;justify-content:center;width:fit-content;">❌ No Data</span>
     </div>
     <div class="collab-card">
       <div class="collab-icon">📝</div>
-      <div class="collab-value" style="color:#16a34a;" id="kpi-linkedin-posts">—</div>
+      <div class="collab-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-linkedin-posts">No Data</div>
       <div class="collab-label">LinkedIn Posts (6M)</div>
+      <span class="data-badge nodata" style="margin:4px auto 0;display:flex;justify-content:center;width:fit-content;">❌ No Data</span>
     </div>
     <div class="collab-card">
       <div class="collab-icon">🏫</div>
-      <div class="collab-value" style="color:#ca8a04;" id="kpi-mou-active">—</div>
+      <div class="collab-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-mou-active">No Data</div>
       <div class="collab-label">Universities/Partners</div>
+      <span class="data-badge nodata" style="margin:4px auto 0;display:flex;justify-content:center;width:fit-content;">❌ No Data</span>
     </div>
     <div class="collab-card">
       <div class="collab-icon">👩‍🎓</div>
-      <div class="collab-value" style="color:#4f46e5;" id="kpi-intern-dept">—</div>
+      <div class="collab-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-intern-dept">No Data</div>
       <div class="collab-label">Intern Departments</div>
+      <span class="data-badge nodata" style="margin:4px auto 0;display:flex;justify-content:center;width:fit-content;">❌ No Data</span>
     </div>
     <div class="collab-card">
       <div class="collab-icon">🌐</div>
-      <div class="collab-value" style="color:#0f766e;" id="kpi-linkedin-impressions">—</div>
+      <div class="collab-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-linkedin-impressions">No Data</div>
       <div class="collab-label">LinkedIn Impressions</div>
+      <span class="data-badge nodata" style="margin:4px auto 0;display:flex;justify-content:center;width:fit-content;">❌ No Data</span>
     </div>
   </div>
 
   <!-- PKPA Trend + MOU Status -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">🎓 PKPA/Magang Count by Month</div>
+      <div class="chart-title">🎓 PKPA/Magang Count by Month <span class="data-badge nodata">❌ No Data</span></div>
       <div class="chart-subtitle">Internship program participants over time</div>
       <canvas id="chart-pkpa-trend"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🤝 MOU Status & Partner Breakdown</div>
+      <div class="chart-title">🤝 MOU Status & Partner Breakdown <span class="data-badge nodata">❌ No Data</span></div>
       <div class="chart-subtitle">Active, expired, and pending MOU partnerships</div>
       <canvas id="chart-mou-status"></canvas>
     </div>
@@ -919,12 +997,12 @@
   <!-- LinkedIn Performance -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">💼 LinkedIn Followers Growth (6M)</div>
+      <div class="chart-title">💼 LinkedIn Followers Growth (6M) <span class="data-badge nodata">❌ No Data</span></div>
       <div class="chart-subtitle">Monthly follower count trajectory</div>
       <canvas id="chart-linkedin-followers"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">📊 LinkedIn Engagement & Impressions</div>
+      <div class="chart-title">📊 LinkedIn Engagement & Impressions <span class="data-badge nodata">❌ No Data</span></div>
       <div class="chart-subtitle">Post reach, likes, comments, shares per month</div>
       <canvas id="chart-linkedin-engage"></canvas>
     </div>
@@ -932,7 +1010,7 @@
 
   <!-- PKPA Details Table -->
   <div class="chart-card">
-    <div class="chart-title">📋 PKPA/Magang Participant Detail (6M)</div>
+    <div class="chart-title">📋 PKPA/Magang Participant Detail (6M) <span class="data-badge nodata">❌ No Data</span></div>
     <div class="chart-subtitle">University, program type, department placement, duration</div>
     <div class="table-wrapper">
       <table id="table-pkpa">
@@ -949,7 +1027,7 @@
 // ============================================================
 // DATA ENGINE
 // ============================================================
-const NOW = new Date(2026, 6, 9); // July 9, 2026
+const NOW = new Date(); // always use real today's date
 
 function get6MonthRange() {
   const end = new Date(NOW);
@@ -992,14 +1070,20 @@ const MONTH_SHORT_LABELS = ['Feb','Mar','Apr','Mei','Jun','Jul'];
 function getPeriodSlice() {
   const period = document.getElementById('periodMonths').value;
   // All monthly arrays have 6 entries: index 0=Feb, 1=Mar, 2=Apr, 3=May, 4=Jun, 5=Jul
-  // MTD = current partial month only  = Jul 2026 = index 5  (day 1–today)
+  // MTD = current partial month only  = Jul 2026 = index 5  (day 1–today, dynamic date)
   // 1M  = last COMPLETED month        = Jun 2026 = index 4  (full month, not current partial)
   // 3M  = 3 last completed months     = Apr, Mei, Jun = indices 2,3,4
   // 6M  = 6 months incl. current MTD  = Feb–Jul = indices 0–5
   // YTD = Jan–Jul 2026 (use pre-aggregated YTD totals)
   // 12M = Aug 2025–Jul 2026 (use pre-aggregated 12M totals)
+
+  // Dynamic MTD label: always uses real today's date
+  const todayDate = new Date();
+  const todayDay  = todayDate.getDate();
+  const mtdLabel  = `Month to Date · 1\u2013${todayDay} Jul 2026`;
+
   const slices = {
-    mtd:  { indices: [5],           label: 'Month to Date · 1–9 Jul 2026',   shortLabel: 'MTD',  isMTD: true  },
+    mtd:  { indices: [5],           label: mtdLabel,                          shortLabel: 'MTD',  isMTD: true  },
     '1':  { indices: [4],           label: '1 Bulan · Jun 2026',              shortLabel: '1M',   isMTD: false },
     '3':  { indices: [2,3,4],       label: '3 Bulan · Apr–Jun 2026',          shortLabel: '3M',   isMTD: false },
     '6':  { indices: [0,1,2,3,4,5], label: '6 Bulan · Feb–Jul 2026',          shortLabel: '6M',   isMTD: false },
@@ -1030,7 +1114,7 @@ function getPeriodTotals(slice) {
 
 // ============================================================
 // REAL DATA — sourced from Google Sheets via gviz CSV API
-// Extraction date: July 9, 2026
+// Extraction date: July 24, 2026
 // GID=1 Master Database (2704 employee records)
 // GID=0 Exit Interview (108 records)
 // Metrics marked null = data not yet available in this workbook
@@ -1038,35 +1122,35 @@ function getPeriodTotals(slice) {
 
 // =====================================================================
 // REAL DATA — extracted from Google Sheets (GID=1 Master Database &
-// GID=0 Exit Interview) via gviz CSV API · as of July 9, 2026
+// GID=0 Exit Interview) via gviz CSV API · as of July 24, 2026
 // Data marked null = not available in current sheets (shown as N/A)
 // =====================================================================
 const DATA = {
   // ── RETENTION ─ REAL DATA ──────────────────────────────────────────
-  // Active HC: 794 per "Active Alproean" sheet (user-confirmed)
+  // Active HC: 794 per "Active Alproean" sheet (user-confirmed source of truth)
   activeHC: 794,
 
   // Opening/Closing HC per month (Feb–Jul 2026) — computed from join/resign dates
   // Opening = employees joined before month AND not yet resigned at month start
   // Closing = employees joined by month-end AND resigned after month-end (or still active)
-  openingHC: [821, 854, 843, 846, 851, 867],
-  closingHC: [854, 843, 846, 851, 867, 869],
+  openingHC: [836, 865, 854, 857, 865, 884],   // Feb–Jul 2026 — computed from join/resign dates
+  closingHC: [865, 854, 857, 865, 884, 914],   // Jul closing = 914 (incl. future-dated joins)
 
-  // Monthly new hires & resignations (Feb–Jul 2026) — REAL from Master Database
-  newHires: [51, 24, 42, 40, 50, 23],   // Feb=51, Mar=24, Apr=42, May=40, Jun=50, Jul=23 (partial month)
-  resigned: [22, 35, 39, 35, 35, 3],    // Feb=22, Mar=35, Apr=39, May=35, Jun=35, Jul=3 (partial month)
+  // Monthly new hires & resignations (Feb–Jul 2026) — REAL from Master Database (fetched 2026-07-24)
+  newHires: [51, 24, 42, 43, 54, 55],   // Feb=51, Mar=24, Apr=42, May=43, Jun=54, Jul=55 (incl. future-dated)
+  resigned: [22, 35, 39, 35, 35, 25],   // Feb=22, Mar=35, Apr=39, May=35, Jun=35, Jul=25 (all resign dates in Jul)
 
-  // Rolling 12-month totals (Jul 2025 – Jun 2026) — REAL
-  resigned12M: 352,
+  // Rolling 12-month totals (Aug 2025 – Jul 2026) — REAL (fetched 2026-07-24)
+  resigned12M: 349,
   newHires12M: 517,
 
-  // YTD 2026 (Jan 1 – Jul 9, 2026) — REAL
-  resignedYTD: 193,
-  newHiresYTD: 268,
+  // YTD 2026 (Jan 1 – Jul 24, 2026) — REAL
+  resignedYTD: 215,
+  newHiresYTD: 307,
 
   // 6-month totals (Feb–Jul 2026) — REAL
-  resigned6M: 169,
-  newHires6M: 230,
+  resigned6M: 191,
+  newHires6M: 269,
 
   // ── HQ vs OUTLET — REAL DATA ───────────────────────────────────────
   // HQ = True Branch (col 39) == "Head Office" | Outlet = contains "apotek alpro"
@@ -1077,9 +1161,9 @@ const DATA = {
   hqResigned12M: 7,
   outletResigned12M: 141,
 
-  // Monthly HQ vs Outlet resign (Feb–Jul 2026) — REAL
+  // Monthly HQ vs Outlet resign (Feb–Jul 2026) — REAL (updated 2026-07-24)
   resignMonthlyHQ:     [0, 0, 1, 1, 1, 0],
-  resignMonthlyOutlet: [8, 11, 11, 10, 14, 0],
+  resignMonthlyOutlet: [8, 11, 11, 10, 14, 0],  // Jul outlet breakdown pending re-extract
 
   // ── TURNOVER BY AM — REAL DATA (12M resigned from Master DB) ──────
   // 360 survey scores: NOT available in current sheets — shown as N/A
@@ -1100,8 +1184,8 @@ const DATA = {
 
   // ── NEWBIE vs OLDBIE — REAL DATA ───────────────────────────────────
   // Newbie = tenure < 6 months at time of resign | Oldbie = ≥ 6 months
-  newbie6M: [10, 14, 15, 16, 7, 2],   // monthly Feb–Jul
-  oldbie6M: [12, 21, 24, 19, 28, 1],  // monthly Feb–Jul
+  newbie6M: [13, 22, 17, 19, 12, 9],   // monthly Feb–Jul (fetched 2026-07-24, newbie = tenure ≤6M)
+  oldbie6M: [ 9, 13, 22, 16, 23,16],  // monthly Feb–Jul (fetched 2026-07-24, oldbie = tenure >6M)
 
   // ── POSITION TURNOVER — REAL DATA (12M) ────────────────────────────
   positions: [
