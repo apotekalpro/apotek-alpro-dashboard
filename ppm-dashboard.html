@@ -2030,14 +2030,20 @@ function createChart(id, config) {
 const PALETTE = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#14b8a6','#ec4899','#84cc16'];
 
 function fmt(num, unit = '') {
-  if (num >= 1e9) return `Rp ${(num/1e9).toFixed(1)}M`;
-  if (num >= 1e6) return `Rp ${(num/1e6).toFixed(0)}jt`;
-  if (num >= 1e3) return `${(num/1e3).toFixed(0)}k`;
-  return `${num}${unit}`;
+  if (num >= 1e9) return `Rp ${(num/1e9).toFixed(2)}M`;   // Milyar
+  if (num >= 1e6) return `Rp ${(num/1e6).toFixed(1)}jt`;  // Juta
+  if (num >= 1e3) return `Rp ${(num/1e3).toFixed(0)}rb`;  // Ribu
+  return `Rp ${num}${unit}`;
 }
-
-function fmtB(val) { return `Rp ${val.toFixed(1)}M`; } // billions formatted
-function fmtJuta(val) { return `Rp ${(val/1000).toFixed(2)}M`; } // juta → miliar formatted
+// fmtJutaVal: input in Rp juta → display as Milyar if ≥1000jt, else Juta
+function fmtJutaVal(juta) {
+  if (juta == null) return '—';
+  if (juta >= 1000) return `Rp ${(juta/1000).toFixed(2)}M`;  // ≥1000jt → Milyar
+  return `Rp ${juta.toFixed(1)}jt`;                          // <1000jt → Juta
+}
+function fmtM(milyar) { return `Rp ${milyar.toFixed(2)}M`; }  // Milyar
+function fmtB(val) { return `Rp ${val.toFixed(2)}M`; }         // Milyar (alias)
+function fmtJuta(val) { return fmtJutaVal(val); }              // juta → formatted
 
 // ============================================================
 // RENDER FUNCTIONS
@@ -2112,7 +2118,7 @@ function renderRetention() {
   document.getElementById('kpi-resigned-sub').textContent  = `12M: ${DATA.resigned12M} | YTD: ${DATA.resignedYTD}`;
   document.getElementById('kpi-turnover').textContent      = turnoverRate12 + '%';
   document.getElementById('kpi-retention').textContent     = retentionRate12 + '%';
-  document.getElementById('kpi-cost').textContent          = '~Rp ' + (turnoverCost/1e6).toFixed(0) + 'jt';
+  document.getElementById('kpi-cost').textContent          = '~' + fmt(turnoverCost);
   document.getElementById('kpi-exit-label').textContent    = `Exit Interviews (${pLabel})`;
   document.getElementById('kpi-exit').textContent          = exitCount;
   document.getElementById('kpi-exit-sub').textContent      = exitCountSub;
@@ -2831,11 +2837,7 @@ function renderROI() {
   const activeHC   = DATA.activeHC;           // current active HC (818)
 
   // ── Helper: format Rp juta as readable string ──
-  function fmtJt(val) {
-    if (val == null) return '—';
-    if (val >= 1000) return 'Rp ' + (val/1000).toFixed(2) + 'M';
-    return 'Rp ' + val.toFixed(0) + 'jt';
-  }
+  function fmtJt(val) { return fmtJutaVal(val); } // delegates to global fmtJutaVal (M=Milyar, jt=Juta)
   function fmtRpRaw(valJuta) {
     if (valJuta == null) return '—';
     // valJuta is in Rp juta → convert to per-person (already in Rp)
@@ -2881,10 +2883,10 @@ function renderROI() {
   const janRev  = revArr[0];   // 36711 juta
 
   // ── KPI Cards — Row 1: Financial Fundamentals ──
-  nullDash('kpi-total-gaji',    'Rp ' + (latestGaji/1000).toFixed(3) + 'M');
-  nullDash('kpi-revenue-val',   'Rp ' + (latestRev/1000).toFixed(3) + 'M');
+  nullDash('kpi-total-gaji',    fmtJutaVal(latestGaji));
+  nullDash('kpi-revenue-val',   fmtJutaVal(latestRev));
   nullDash('kpi-gross-margin',  latestGM.toFixed(2) + '%');
-  nullDash('kpi-gross-profit',  'Rp ' + (latestGP/1000).toFixed(3) + 'M');
+  nullDash('kpi-gross-profit',  fmtJutaVal(latestGP));
   nullDash('kpi-manpower-ratio', latestRatio.toFixed(2) + '%');
   nullDash('kpi-incentive',     'Jun: Rp 650jt');
 
@@ -2896,8 +2898,8 @@ function renderROI() {
   nullDash('kpi-mp-ratio-label',   'Manpower Cost Ratio');
 
   // ── KPI Cards — Row 2: ROI Per Person ──
-  nullDash('kpi-gp-per-hc',     'Rp ' + (gpPerHC / 1e6).toFixed(2) + 'jt/bulan');
-  nullDash('kpi-salary-per-hc', 'Rp ' + (salaryPerHC / 1e6).toFixed(2) + 'jt/bulan');
+  nullDash('kpi-gp-per-hc',     fmt(gpPerHC) + '/bln');
+  nullDash('kpi-salary-per-hc', fmt(salaryPerHC) + '/bln');
 
   // ROI per person — color-coded
   const roiEl = document.getElementById('kpi-roi-per-person');
@@ -2907,8 +2909,8 @@ function renderROI() {
     roiEl.style.fontSize = '15px';
   }
 
-  nullDash('kpi-rev-per-emp',   'Rp ' + (revPerHC / 1e6).toFixed(2) + 'jt/bulan');
-  nullDash('kpi-sales-per-day', 'Rp ' + (salesPerDay / 1e6).toFixed(3) + 'jt/hari');
+  nullDash('kpi-rev-per-emp',   fmt(revPerHC) + '/bln');
+  nullDash('kpi-sales-per-day', fmt(salesPerDay) + '/hari');
   nullDash('kpi-denda',         'Tidak tersedia');
 
   // KPI label updates
@@ -3002,7 +3004,7 @@ function renderROI() {
         },
         datalabels: {
           display: true, color: '#fff', font: { weight: 'bold', size: 10 },
-          formatter: v => v != null ? (v/1000).toFixed(1) + 'jt' : ''
+          formatter: v => v != null ? fmtJutaVal(v/1000) : ''
         },
         annotation: {
           annotations: {
@@ -3013,8 +3015,8 @@ function renderROI() {
       scales: {
         y: {
           beginAtZero: true,
-          ticks: { callback: v => 'Rp' + (v/1000).toFixed(0) + 'jt' },
-          title: { display: true, text: 'Rp Ribu / Orang', font: { size: 9 } }
+          ticks: { callback: v => fmtJutaVal(v/1000) },
+          title: { display: true, text: 'Rp / Orang', font: { size: 9 } }
         }
       }
     }
@@ -3042,14 +3044,14 @@ function renderROI() {
         },
         datalabels: {
           display: true, color: '#fff', font: { weight: 'bold', size: 11 },
-          formatter: v => v != null ? 'Rp ' + (v/1000).toFixed(2) + 'jt' : ''
+          formatter: v => v != null ? fmtJutaVal(v/1000) : ''
         }
       },
       scales: {
         y: {
           beginAtZero: false,
-          ticks: { callback: v => 'Rp' + (v/1000).toFixed(1) + 'jt' },
-          title: { display: true, text: 'Rp Ribu / Orang / Hari', font: { size: 9 } }
+          ticks: { callback: v => fmtJutaVal(v/1000) },
+          title: { display: true, text: 'Rp / Orang / Hari', font: { size: 9 } }
         }
       }
     }
@@ -3094,7 +3096,7 @@ function renderROI() {
           callbacks: {
             label: ctx => {
               if (ctx.dataset.yAxisID === 'y2') return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + '%' : '—');
-              return ctx.dataset.label + ': Rp ' + (ctx.parsed.y != null ? (ctx.parsed.y/1000).toFixed(3) + 'M' : '—');
+              return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? fmtJutaVal(ctx.parsed.y) : '—');
             }
           }
         },
@@ -3104,7 +3106,7 @@ function renderROI() {
         y: {
           position: 'left',
           title: { display: true, text: 'Rp Juta', font: { size: 10 } },
-          ticks: { callback: v => 'Rp' + (v/1000).toFixed(0) + 'M' },
+          ticks: { callback: v => fmtJutaVal(v) },
           min: 0
         },
         y2: {
@@ -3159,10 +3161,10 @@ function renderROI() {
         },
         datalabels: {
           display: true, color: '#fff', font: { weight: 'bold', size: 10 },
-          formatter: v => v != null ? 'Rp' + (v/1000).toFixed(2) + 'M' : ''
+          formatter: v => v != null ? fmtJutaVal(v) : ''
         }
       },
-      scales: { y: { beginAtZero: true, ticks: { callback: v => 'Rp' + (v/1000).toFixed(0) + 'M' } } }
+      scales: { y: { beginAtZero: true, ticks: { callback: v => fmtJutaVal(v) } } }
     }
   });
 
@@ -3188,7 +3190,7 @@ function renderROI() {
       },
       scales: {
         x: { stacked: true },
-        y: { stacked: true, ticks: { callback: v => 'Rp' + (v/1000).toFixed(0) + 'M' } }
+        y: { stacked: true, ticks: { callback: v => fmtJutaVal(v) } }
       }
     }
   });
@@ -3276,15 +3278,15 @@ function renderROI() {
     return `<tr style="${isLatest ? 'background:#f0fdf4;' : isTHR ? 'background:#fffbeb;' : ''}">
       <td><strong>${m}</strong> ${qualBadge}${thrBadge}</td>
       <td style="text-align:center;">${hcCell}</td>
-      <td>${hasGaji ? 'Rp ' + (gaji/1000).toFixed(3) + 'M' : '—'}</td>
-      <td>${hasRev  ? 'Rp ' + (rev/1000).toFixed(3) + 'M'  : '—'}</td>
+      <td>${hasGaji ? fmtJutaVal(gaji) : '—'}</td>
+      <td>${hasRev  ? fmtJutaVal(rev)  : '—'}</td>
       <td>${hasGM   ? gm.toFixed(2) + '%' : '—'}</td>
-      <td>${gp != null ? 'Rp ' + (gp/1000).toFixed(3) + 'M' : '—'}</td>
+      <td>${gp != null ? fmtJutaVal(gp) : '—'}</td>
       <td>${ratioCell}</td>
-      <td>${gpHC  != null ? 'Rp ' + (gpHC/1000).toFixed(2) + 'jt'  : '—'}</td>
-      <td>${salHC != null ? 'Rp ' + (salHC/1000).toFixed(2) + 'jt' : '—'}</td>
+      <td>${gpHC  != null ? fmtJutaVal(gpHC/1000)  : '—'}</td>
+      <td>${salHC != null ? fmtJutaVal(salHC/1000) : '—'}</td>
       <td>${roiCell}</td>
-      <td>${salesD != null ? 'Rp ' + (salesD/1000).toFixed(2) + 'jt' : '—'}</td>
+      <td>${salesD != null ? fmtJutaVal(salesD/1000) : '—'}</td>
     </tr>`;
   }).join('');
 }
@@ -3473,12 +3475,12 @@ function renderOverview() {
     roiBadge.className   = `ov-pillar-badge ${cls}`;
     roiBadge.textContent = `${icon} ROI ${ovROI}x (+${ovROIPct}%)`;
   }
-  set('pil-roi-gaji',    'Rp ' + (ovLatestGaji/1000).toFixed(3) + 'M  (Jun 26)');
+  set('pil-roi-gaji',    fmtJutaVal(ovLatestGaji) + '  (Jun 26)');
   set('pil-roi-ratio',   ovLatestRatio.toFixed(2) + '%  |  GM ' + ovLatestGM.toFixed(2) + '%');
-  // Revenue/HC/month in juta (using Jun HC = 875)
-  set('pil-roi-rev-emp', 'Rp ' + (ovLatestRev / ovHC).toFixed(2) + 'jt/mo');
-  // Sales/Staff/Day in juta
-  set('pil-roi-cost',    'Rp ' + (ovSalesDay / 1e6).toFixed(3) + 'jt/day');
+  // Revenue/HC/month — ovLatestRev in juta × 1e6 / HC → Rp per person
+  set('pil-roi-rev-emp', fmt(Math.round(ovLatestRev * 1e6 / ovHC)) + '/bln');
+  // Sales/Staff/Day — ovSalesDay in Rp (raw)
+  set('pil-roi-cost',    fmt(ovSalesDay) + '/hari');
 
   // PKPA (Collaboration)
   set('pil-col-pkpa', DATA.pkpaFromDB + ' (approx)');
@@ -3694,7 +3696,7 @@ function renderOverview() {
           callbacks: {
             label: ctx => {
               if (ctx.dataset.yAxisID === 'y2') return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + '%' : '—');
-              return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? 'Rp' + (ctx.parsed.y/1000).toFixed(3) + 'M' : '—');
+              return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? fmtJutaVal(ctx.parsed.y) : '—');
             }
           }
         },
@@ -3703,7 +3705,7 @@ function renderOverview() {
       scales: {
         y: {
           position: 'left',
-          ticks: { callback: v => 'Rp'+(v/1000).toFixed(0)+'M', font:{size:9} },
+          ticks: { callback: v => fmtJutaVal(v), font:{size:9} },
           min: 0
         },
         y2: {
