@@ -1973,7 +1973,8 @@ const DATA = {
   // Monthly HC — avg active per month (opening+closing)/2, Jan–Jul 2026
   // Jan: ~818 (confirmed active) | Feb–Jul: (openingHC+closingHC)/2
   // openingHC Feb-Jul: [836,865,854,857,865,884] | closingHC: [865,854,857,865,884,914]
-  activeHCMonthly: [818, 851, 860, 856, 861, 875, 899],  // Jan-Jul 2026
+  activeHCMonthly: [818, 851, 860, 856, 861, 875, 818],  // Jan-Jul 2026
+  // Note: Jul-26 uses current active snapshot (818) — closingHC formula gives 914 incl. future-dated joins
 
   // ── ROI PER-PERSON METRICS (new 2026-07-27) ──────────────────────────
   // Based on user instructions:
@@ -2827,6 +2828,7 @@ function renderROI() {
   // ── ROI — REAL DATA from Payroll Workbook (Trend Summary Payroll) ──
   // ROI arrays: index 0=Jan … 6=Jul 2026 (7 months)
   // Period arrays (retention/recruitment): index 0=Feb … 5=Jul 2026 (6 months)
+  // Period-to-ROI index mapping: period[i] → ROI[i+1]  (Feb=0→ROI1, ..., Jul=5→ROI6)
   const roiMonths  = DATA.roiMonths;          // ['Jan 2026'...'Jul 2026']
   const gajiArr    = DATA.totalGajiMonthly;   // Rp juta, index 0=Jan…6=Jul
   const revArr     = DATA.revenueMonthly;     // Rp juta
@@ -2835,6 +2837,49 @@ function renderROI() {
   const hcMonthly  = DATA.activeHCMonthly;    // avg HC per month, Jan-Jul 2026
   const workDays   = DATA.roiWorkingDaysPerMonth; // 26
   const activeHC   = DATA.activeHC;           // current active HC (818)
+
+  // ── Period-aware: map selected period to ROI array indices ──
+  const slice      = getPeriodSlice();
+  const pLabel     = slice.shortLabel;      // e.g. '1M', '3M', '6M'
+  const periodIdx  = slice.indices;         // period indices (0=Feb..5=Jul)
+  // Convert to ROI indices (Jan-based): period[i] → ROI[i+1]
+  const roiPeriodIdx = periodIdx.map(i => i + 1); // e.g. [4]→[5], [2,3,4]→[3,4,5]
+
+  // Build period aggregates over roiPeriodIdx (skip nulls)
+  function roiPeriodSum(arr) {
+    return roiPeriodIdx.reduce((acc, i) => acc + (arr[i] != null ? arr[i] : 0), roiPeriodIdx.every(i => arr[i] == null) ? null : 0);
+  }
+  function roiPeriodNonNull(arr) {
+    return roiPeriodIdx.map(i => arr[i]).filter(v => v != null);
+  }
+  // Sum payroll and revenue over selected period (Rp juta)
+  const periodGajiVals  = roiPeriodNonNull(gajiArr);
+  const periodRevVals   = roiPeriodNonNull(revArr);
+  const periodGMVals    = roiPeriodNonNull(gmArr);
+  const periodRatioVals = roiPeriodNonNull(ratioArr);
+  const periodHCVals    = roiPeriodIdx.map(i => hcMonthly[i] || activeHC);
+
+  const periodTotalGaji = periodGajiVals.length  > 0 ? periodGajiVals.reduce((a,b)=>a+b, 0) : null;
+  const periodTotalRev  = periodRevVals.length   > 0 ? periodRevVals.reduce((a,b)=>a+b, 0)  : null;
+  const periodAvgGM     = periodGMVals.length    > 0 ? periodGMVals.reduce((a,b)=>a+b,0) / periodGMVals.length : null;
+  const periodAvgRatio  = periodRatioVals.length > 0 ? periodRatioVals.reduce((a,b)=>a+b,0) / periodRatioVals.length : null;
+  // Total HC across period (sum, for avg: divide by months with data)
+  const periodAvgHC     = periodHCVals.length    > 0 ? Math.round(periodHCVals.reduce((a,b)=>a+b,0) / periodHCVals.length) : activeHC;
+  // Total GP
+  const periodTotalGP   = (periodTotalRev != null && periodAvgGM != null) ? periodTotalRev * (periodAvgGM / 100) : null;
+  // Number of months in period
+  const nMonths         = roiPeriodIdx.length;
+  // Working days in period
+  const periodWorkDays  = nMonths * workDays;
+
+  // Per-person metrics (using avg HC over period)
+  const periodGPperHC     = periodTotalGP   != null ? Math.round(periodTotalGP   * 1e6 / periodAvgHC) : null; // Rp
+  const periodSalPerHC    = periodTotalGaji != null ? Math.round(periodTotalGaji * 1e6 / periodAvgHC) : null; // Rp
+  const periodRevPerHC    = periodTotalRev  != null ? Math.round(periodTotalRev  * 1e6 / periodAvgHC) : null; // Rp
+  const periodSalesPerDay = periodRevPerHC  != null ? Math.round(periodRevPerHC  / periodWorkDays)    : null; // Rp/day
+  const periodROI         = (periodGPperHC != null && periodSalPerHC != null && periodSalPerHC > 0)
+                              ? periodGPperHC / periodSalPerHC : null;
+  const periodROIPct      = periodROI != null ? ((periodROI - 1) * 100).toFixed(1) : null;
 
   // ── Helper: format Rp juta as readable string ──
   function fmtJt(val) { return fmtJutaVal(val); } // delegates to global fmtJutaVal (M=Milyar, jt=Juta)
@@ -2856,80 +2901,77 @@ function renderROI() {
   }
 
   // ── Identify latest month with full data (Revenue + GM + Payroll all non-null) ──
-  // Revenue Jan-Jun: all confirmed. GM Jan-Jun: all confirmed. Payroll: Jan/Mei/Jun only.
-  // → "full" = all three present; Jun 2026 (index 5) is latest full
   let latestFullIdx = 0;
   for (let i = 0; i < roiMonths.length; i++) {
     if (gajiArr[i] != null && revArr[i] != null && gmArr[i] != null) latestFullIdx = i;
   }
 
-  const latestGaji    = gajiArr[latestFullIdx];    // 7558 juta
-  const latestRev     = revArr[latestFullIdx];     // 38853 juta
-  const latestGM      = gmArr[latestFullIdx];      // 25.26 %
-  const latestRatio   = ratioArr[latestFullIdx];   // 19.45 %
+  // ── KPI Cards — Row 1: Period-aggregated Financial Fundamentals ──
+  // Use period totals (sum over selected months); fall back to latest single month if no data
+  const dispGaji  = periodTotalGaji != null ? periodTotalGaji : gajiArr[latestFullIdx];
+  const dispRev   = periodTotalRev  != null ? periodTotalRev  : revArr[latestFullIdx];
+  const dispGM    = periodAvgGM     != null ? periodAvgGM     : gmArr[latestFullIdx];
+  const dispRatio = periodAvgRatio  != null ? periodAvgRatio  : ratioArr[latestFullIdx];
+  const dispGP    = (dispRev != null && dispGM != null) ? dispRev * (dispGM / 100) : null;
 
-  // ── Latest full month (Jun 2026) derived calculations — use that month's avg HC ──
-  const latestHC      = hcMonthly[latestFullIdx] || activeHC;        // Jun HC = 875
-  const latestGP      = latestRev * (latestGM / 100);               // Gross Profit in Rp juta
-  const gpPerHC       = Math.round(latestGP * 1e6 / latestHC);      // Rp per person
-  const salaryPerHC   = Math.round(latestGaji * 1e6 / latestHC);    // Rp per person
-  const roiRatio      = gpPerHC / salaryPerHC;
-  const roiPct        = ((roiRatio - 1) * 100).toFixed(1);
-  const revPerHC      = Math.round(latestRev * 1e6 / latestHC);     // Rp per person
-  const salesPerDay   = Math.round(revPerHC / workDays);            // Rp per person per day
-
-  // ── Jan 2026 for growth calculations (index 0) ──
-  const janGaji = gajiArr[0];  // 7791 juta
-  const janRev  = revArr[0];   // 36711 juta
-
-  // ── KPI Cards — Row 1: Financial Fundamentals ──
-  nullDash('kpi-total-gaji',    fmtJutaVal(latestGaji));
-  nullDash('kpi-revenue-val',   fmtJutaVal(latestRev));
-  nullDash('kpi-gross-margin',  latestGM.toFixed(2) + '%');
-  nullDash('kpi-gross-profit',  fmtJutaVal(latestGP));
-  nullDash('kpi-manpower-ratio', latestRatio.toFixed(2) + '%');
+  nullDash('kpi-total-gaji',    fmtJutaVal(dispGaji));
+  nullDash('kpi-revenue-val',   fmtJutaVal(dispRev));
+  nullDash('kpi-gross-margin',  dispGM   != null ? dispGM.toFixed(2) + '%' : '—');
+  nullDash('kpi-gross-profit',  fmtJutaVal(dispGP));
+  nullDash('kpi-manpower-ratio', dispRatio != null ? dispRatio.toFixed(2) + '%' : '—');
   nullDash('kpi-incentive',     'Jun: Rp 650jt');
 
-  // Update labels to show which month
-  nullDash('kpi-total-gaji-label', 'Total Payroll (Jun 2026)');
-  nullDash('kpi-revenue-label',    'Revenue (Jun 2026)');
-  nullDash('kpi-gm-label',         'Gross Margin (Jun 2026)');
-  nullDash('kpi-gp-label',         'Gross Profit (Jun 2026)');
-  nullDash('kpi-mp-ratio-label',   'Manpower Cost Ratio');
+  // Period-aware label suffix
+  const nM = roiPeriodIdx.length;
+  const periodSuffix = nM === 1
+    ? roiMonths[roiPeriodIdx[0]]         // e.g. 'Jun 2026'
+    : roiMonths[roiPeriodIdx[0]].replace(' 2026','') + '–' + roiMonths[roiPeriodIdx[nM-1]]; // e.g. 'Apr–Jun 2026'
+  nullDash('kpi-total-gaji-label', 'Total Payroll (' + periodSuffix + ')');
+  nullDash('kpi-revenue-label',    'Revenue (' + periodSuffix + ')');
+  nullDash('kpi-gm-label',         'Avg Gross Margin (' + periodSuffix + ')');
+  nullDash('kpi-gp-label',         'Gross Profit (' + periodSuffix + ')');
+  nullDash('kpi-mp-ratio-label',   'Avg Manpower Ratio (' + pLabel + ')');
 
-  // ── KPI Cards — Row 2: ROI Per Person ──
-  nullDash('kpi-gp-per-hc',     fmt(gpPerHC) + '/bln');
-  nullDash('kpi-salary-per-hc', fmt(salaryPerHC) + '/bln');
+  // ── KPI Cards — Row 2: Period-aggregated ROI Per Person ──
+  // Per-person: divide totals by avg HC and period days
+  const dispGPperHC  = periodGPperHC  != null ? Math.round(periodGPperHC  / nMonths) : null; // per month avg
+  const dispSalPerHC = periodSalPerHC != null ? Math.round(periodSalPerHC / nMonths) : null; // per month avg
+  const dispRevPerHC = periodRevPerHC != null ? Math.round(periodRevPerHC / nMonths) : null; // per month avg
+  const dispROI      = periodROI;
+  const dispROIPct   = periodROIPct;
+
+  nullDash('kpi-gp-per-hc',     dispGPperHC  != null ? fmt(dispGPperHC)  + '/bln' : '—');
+  nullDash('kpi-salary-per-hc', dispSalPerHC != null ? fmt(dispSalPerHC) + '/bln' : '—');
 
   // ROI per person — color-coded
   const roiEl = document.getElementById('kpi-roi-per-person');
-  if (roiEl) {
-    roiEl.textContent = roiRatio.toFixed(3) + 'x  (' + (roiPct >= 0 ? '+' : '') + roiPct + '%)';
-    roiEl.style.color  = roiRatio >= 1 ? '#16a34a' : '#dc2626';
+  if (roiEl && dispROI != null) {
+    roiEl.textContent = dispROI.toFixed(3) + 'x  (' + (parseFloat(dispROIPct) >= 0 ? '+' : '') + dispROIPct + '%)';
+    roiEl.style.color  = dispROI >= 1 ? '#16a34a' : '#dc2626';
     roiEl.style.fontSize = '15px';
+  } else if (roiEl) {
+    roiEl.textContent = '—';
   }
 
-  nullDash('kpi-rev-per-emp',   fmt(revPerHC) + '/bln');
-  nullDash('kpi-sales-per-day', fmt(salesPerDay) + '/hari');
+  nullDash('kpi-rev-per-emp',   dispRevPerHC != null ? fmt(dispRevPerHC) + '/bln' : '—');
+  nullDash('kpi-sales-per-day', periodSalesPerDay != null ? fmt(periodSalesPerDay) + '/hari' : '—');
   nullDash('kpi-denda',         'Tidak tersedia');
 
-  // KPI label updates
-  nullDash('kpi-gp-per-hc-label',  'GP / HC / bulan (Jun 26)');
-  nullDash('kpi-sal-per-hc-label', 'Salary / HC / bulan (Jun 26)');
-  nullDash('kpi-roi-label',        'ROI per Person (Jun 26)');
-  nullDash('kpi-rev-per-emp-label','Revenue / HC / bulan (Jun 26)');
-  nullDash('kpi-sales-day-label',  'Sales / Staff / Day (Jun 26)');
+  // KPI per-person label updates — show period
+  nullDash('kpi-gp-per-hc-label',  'GP / HC / bln avg (' + pLabel + ')');
+  nullDash('kpi-sal-per-hc-label', 'Salary / HC / bln avg (' + pLabel + ')');
+  nullDash('kpi-roi-label',        'ROI per Person (' + pLabel + ')');
+  nullDash('kpi-rev-per-emp-label','Revenue / HC / bln avg (' + pLabel + ')');
+  nullDash('kpi-sales-day-label',  'Sales / Staff / Day (' + pLabel + ')');
 
-  // ── HC vs Revenue Growth: Jan 2026 → Jun 2026 ──
-  // HC: use openingHC[0]=Feb as proxy for Jan closing vs activeHC (current)
-  // Revenue: janRev → latestRev
-  if (janRev && latestRev) {
-    const revGrowth = ((latestRev - janRev) / janRev * 100).toFixed(1);
-    // HC Jan 2026 ≈ openingHC[0] = 836 (Feb opening = Jan closing)
+  // ── HC vs Revenue Growth: Jan 2026 → latest period end ──
+  const janRev  = revArr[0];   // 36711 juta
+  const endRev  = revArr[roiPeriodIdx[roiPeriodIdx.length - 1]]; // latest period month
+  if (janRev && endRev) {
+    const revGrowth = ((endRev - janRev) / janRev * 100).toFixed(1);
     const hcJan    = DATA.openingHC[0]; // 836
-    const hcJun    = activeHC;          // 818
-    const hcGrowth = ((hcJun - hcJan) / hcJan * 100).toFixed(1);
-    const delta    = (parseFloat(revGrowth) - parseFloat(hcGrowth)).toFixed(1);
+    const hcEnd    = hcMonthly[roiPeriodIdx[roiPeriodIdx.length - 1]] || activeHC;
+    const hcGrowth = ((hcEnd - hcJan) / hcJan * 100).toFixed(1);
     const growthEl = document.getElementById('kpi-growth-delta');
     if (growthEl) {
       growthEl.textContent = 'Rev: ' + (revGrowth >= 0 ? '+' : '') + revGrowth + '%  |  HC: ' + (hcGrowth >= 0 ? '+' : '') + hcGrowth + '%';
