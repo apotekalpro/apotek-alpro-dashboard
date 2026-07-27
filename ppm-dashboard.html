@@ -571,12 +571,12 @@
   <div class="chart-grid chart-grid-12">
     <div class="chart-card">
       <div class="chart-title">📊 Monthly New Hire vs Resign Trend <span class="data-badge real">✅ Real Data</span></div>
-      <div class="chart-subtitle">Net headcount flow over last 6 months</div>
+      <div class="chart-subtitle" id="subtitle-hire-resign-trend">Net headcount flow over last 6 months</div>
       <canvas id="chart-hire-resign-trend"></canvas>
     </div>
     <div class="chart-card">
       <div class="chart-title">🏗️ Recruitment Pipeline Funnel <span class="data-badge real">✅ Real Data</span></div>
-      <div class="chart-subtitle">Data real dari "Recruitment Summary" sheet · Apr–Jul 2026</div>
+      <div class="chart-subtitle" id="subtitle-funnel">Data real dari "Recruitment Summary" sheet · Apr–Jul 2026</div>
       <canvas id="chart-funnel"></canvas>
     </div>
   </div>
@@ -1212,9 +1212,32 @@ const DATA = {
 
   // ── RECRUITMENT ─ REAL DATA from Candidates Sheet + Recruitment Summary ────
   // Candidates sheet (GID=50664098 from Workbook 2): May–Jul 2026 = 677 total
-  onboarded6M: 230,   // actual join count Feb–Jul 2026 (REAL from Master DB)
+  onboarded6M: 269,   // actual join count Feb–Jul 2026 (REAL from Master DB, updated Jul-24)
   totalCVReceived: 677,  // REAL — Candidates sheet May–Jul 2026
   avgCVScore: 66.7,      // REAL — excl score=0 outliers (592 valid scores out of 677)
+
+  // Monthly onboarded (join count) per month — Feb–Jul 2026 (indices 0–5)
+  // Source: Master DB Join Date column. Feb/Mar have no CV data (not in Candidates sheet)
+  onboardedMonthly: [51, 24, 42, 43, 54, 55],  // same as newHires — join = onboard
+
+  // Monthly CV Received — indices map to Feb–Jul (Feb/Mar = null = no data in Candidates sheet)
+  // Candidates sheet only covers May–Jul 2026; Apr not in sheet
+  cvReceivedMonthly: [null, null, null, 33, 535, 109],  // May=33, Jun=535, Jul=109
+
+  // Monthly avg CV score (excl. score=0) — only where data exists
+  avgScoreMonthly: [null, null, null, 71.2, 65.9, 68.8],
+
+  // Recruitment funnel monthly arrays mapped to Feb–Jul indices (0–5)
+  // Funnel data exists for Apr(2), May(3), Jun(4), Jul(5) only — Feb/Mar = null
+  funnelMonthly: {
+    // index:              0     1     2    3    4    5
+    // month:             Feb   Mar   Apr  May  Jun  Jul
+    totalCV:        [null, null, 177, 177, 215, 114],
+    invitationSent: [null, null,   8,  13,  28,  50],
+    hrInterview:    [null, null,   3,   8,  61,  29],
+    userInterview:  [null, null,  28,  19,   9,   9],
+    offeringStage:  [null, null,  36,  36,  27,   3],
+  },
 
   // Monthly candidates breakdown (May, Jun, Jul 2026)
   // Source: Candidates sheet grouped by Date Received month
@@ -1684,28 +1707,128 @@ function renderRetention() {
 }
 
 function renderRecruitment() {
-  const fn = DATA.recruitmentFunnel;
-  // Total from Apr–Jul 2026 (Recruitment Summary)
-  const totalCV6M     = fn.totalCV.reduce((a,b) => a+b, 0);        // 177+177+215+114 = 683
-  const totalInvSent  = fn.invitationSent.reduce((a,b) => a+b, 0); // 99
-  const totalHRInt    = fn.hrInterview.reduce((a,b) => a+b, 0);    // 101
-  const totalOffering = fn.offeringStage.reduce((a,b) => a+b, 0);  // 102
+  // ── Period slice (same engine as Retention) ──────────────────────
+  const slice = getPeriodSlice();
+  const idx   = slice.indices;
 
-  // ── KPI Cards (REAL DATA) ─────────────────────────────────────────
-  document.getElementById('kpi-total-cv').textContent         = DATA.totalCVReceived.toLocaleString('id');
-  document.getElementById('kpi-total-cv-sub').textContent     = `Candidates sheet · 677 records (Mei–Jul)`;
-  document.getElementById('kpi-rec-resigned').textContent     = DATA.resigned6M;
-  document.getElementById('kpi-rec-resigned-sub').textContent = `12M total: ${DATA.resigned12M} | YTD: ${DATA.resignedYTD}`;
-  document.getElementById('kpi-inv-sent').textContent         = totalInvSent;
-  document.getElementById('kpi-hr-interview').textContent     = totalHRInt;
-  document.getElementById('kpi-offered').textContent          = totalOffering;
-  document.getElementById('kpi-onboarded').textContent        = DATA.onboarded6M;
-  document.getElementById('kpi-vacancies').textContent        = DATA.opsHC.hiringNeeded;
-  document.getElementById('kpi-avg-score').textContent        = DATA.avgCVScore.toFixed(1);
+  // Helper: sum a monthly array over selected indices, skip nulls
+  function sumSlice(arr) {
+    return idx.reduce((acc, i) => acc + (arr[i] != null ? arr[i] : 0), 0);
+  }
+  // Helper: return "No Data" string if ALL values in slice are null
+  function sliceOrNA(arr) {
+    const vals = idx.map(i => arr[i]).filter(v => v != null);
+    if (vals.length === 0) return null;  // null = no data for this period
+    return vals.reduce((a,b) => a+b, 0);
+  }
+  // Weighted avg score over period (null-aware)
+  function avgScoreSlice() {
+    let totalCVs = 0, weightedSum = 0;
+    idx.forEach(i => {
+      if (DATA.cvReceivedMonthly[i] != null && DATA.avgScoreMonthly[i] != null) {
+        totalCVs    += DATA.cvReceivedMonthly[i];
+        weightedSum += DATA.avgScoreMonthly[i] * DATA.cvReceivedMonthly[i];
+      }
+    });
+    return totalCVs > 0 ? (weightedSum / totalCVs).toFixed(1) : null;
+  }
+
+  // ── Compute period totals ─────────────────────────────────────────
+  const fn              = DATA.recruitmentFunnel;    // shorthand for trend chart
+  const periodResigned  = sliceData(DATA.resigned,  idx).reduce((a,b)=>a+b,0);
+  const periodOnboarded = sumSlice(DATA.onboardedMonthly);
+  const cvTotal         = sliceOrNA(DATA.funnelMonthly.totalCV) ?? sliceOrNA(DATA.cvReceivedMonthly);
+  const invTotal        = sliceOrNA(DATA.funnelMonthly.invitationSent);
+  const hrTotal         = sliceOrNA(DATA.funnelMonthly.hrInterview);
+  const userTotal       = sliceOrNA(DATA.funnelMonthly.userInterview);
+  const offerTotal      = sliceOrNA(DATA.funnelMonthly.offeringStage);
+  const avgScore        = avgScoreSlice();
+
+  // Label helpers
+  const pLabel = slice.shortLabel;
+  function fmt(val) { return val != null ? val.toLocaleString('id') : 'No Data'; }
+
+  // ── KPI Cards — all period-aware ─────────────────────────────────
+  // Total CV Received
+  const cvEl    = document.getElementById('kpi-total-cv');
+  const cvSubEl = document.getElementById('kpi-total-cv-sub');
+  if (cvTotal != null) {
+    cvEl.textContent    = cvTotal.toLocaleString('id');
+    cvEl.style.color    = '#2563eb';
+    cvEl.style.fontStyle= 'normal';
+    cvSubEl.textContent = `Candidates sheet (${pLabel})`;
+  } else {
+    cvEl.textContent    = 'No Data';
+    cvEl.style.color    = '#9ca3af';
+    cvEl.style.fontStyle= 'italic';
+    cvSubEl.textContent = `Candidates sheet · data only dari Mei–Jul`;
+  }
+
+  // Resigned
+  document.getElementById('kpi-rec-resigned').textContent     = periodResigned;
+  document.getElementById('kpi-rec-resigned-sub').textContent = `12M: ${DATA.resigned12M} | YTD: ${DATA.resignedYTD}`;
+  document.getElementById('kpi-rec-resigned').style.color     = '#dc2626';
+  document.getElementById('kpi-rec-resigned').style.fontStyle = 'normal';
+
+  // Invitation Sent
+  const invEl = document.getElementById('kpi-inv-sent');
+  if (invTotal != null) {
+    invEl.textContent  = invTotal.toLocaleString('id');
+    invEl.style.color  = '#0d9488'; invEl.style.fontStyle = 'normal';
+  } else {
+    invEl.textContent  = 'No Data'; invEl.style.color = '#9ca3af'; invEl.style.fontStyle = 'italic';
+  }
+
+  // HR Interview
+  const hrEl = document.getElementById('kpi-hr-interview');
+  if (hrTotal != null) {
+    hrEl.textContent  = hrTotal.toLocaleString('id');
+    hrEl.style.color  = '#ea580c'; hrEl.style.fontStyle = 'normal';
+  } else {
+    hrEl.textContent  = 'No Data'; hrEl.style.color = '#9ca3af'; hrEl.style.fontStyle = 'italic';
+  }
+
+  // Offering Stage
+  const offEl = document.getElementById('kpi-offered');
+  if (offerTotal != null) {
+    offEl.textContent  = offerTotal.toLocaleString('id');
+    offEl.style.color  = '#16a34a'; offEl.style.fontStyle = 'normal';
+  } else {
+    offEl.textContent  = 'No Data'; offEl.style.color = '#9ca3af'; offEl.style.fontStyle = 'italic';
+  }
+
+  // Onboarded
+  document.getElementById('kpi-onboarded').textContent     = periodOnboarded.toLocaleString('id');
+  document.getElementById('kpi-onboarded').style.color     = '#ca8a04';
+  document.getElementById('kpi-onboarded').style.fontStyle = 'normal';
+
+  // Kebutuhan Hiring — not period-dependent (current snapshot)
+  document.getElementById('kpi-vacancies').textContent     = DATA.opsHC.hiringNeeded;
+
+  // Avg CV Score
+  const scoreEl = document.getElementById('kpi-avg-score');
+  if (avgScore != null) {
+    scoreEl.textContent  = avgScore;
+    scoreEl.style.color  = '#7c3aed'; scoreEl.style.fontStyle = 'normal';
+  } else {
+    scoreEl.textContent  = 'No Data'; scoreEl.style.color = '#9ca3af'; scoreEl.style.fontStyle = 'italic';
+  }
+
+  // Update KPI labels to show period dynamically
+  document.getElementById('kpi-rec-resigned').closest('.kpi-card').querySelector('.kpi-label').textContent  = `Resigned (${pLabel})`;
+  document.getElementById('kpi-onboarded').closest('.kpi-card').querySelector('.kpi-label').textContent     = `Onboarded (${pLabel})`;
+  document.getElementById('kpi-total-cv').closest('.kpi-card').querySelector('.kpi-label').textContent      = `Total CV (${pLabel})`;
+  document.getElementById('kpi-inv-sent').closest('.kpi-card').querySelector('.kpi-label').textContent      = `Invitation Sent (${pLabel})`;
+  document.getElementById('kpi-hr-interview').closest('.kpi-card').querySelector('.kpi-label').textContent  = `HR Interviewed (${pLabel})`;
+  document.getElementById('kpi-offered').closest('.kpi-card').querySelector('.kpi-label').textContent       = `Offering Stage (${pLabel})`;
+
+  // Update chart subtitles dynamically
+  const subtitleHireResign = document.getElementById('subtitle-hire-resign-trend');
+  if (subtitleHireResign) subtitleHireResign.textContent = `Net headcount flow · ${slice.label}`;
+  const subtitleFunnel = document.getElementById('subtitle-funnel');
+  if (subtitleFunnel) subtitleFunnel.textContent = `Recruitment Summary sheet · ${slice.label}`;
 
   // ── Hire vs Resign Trend — period-aware ──────────────────────────
-  const slice  = getPeriodSlice();
-  const idx    = slice.indices;
   const sLabels= idx.map(i => MONTH_SHORT_LABELS[i]);
   const hireS  = sliceData(DATA.newHires, idx);
   const resignS= sliceData(DATA.resigned, idx);
@@ -1738,29 +1861,37 @@ function renderRecruitment() {
     }
   });
 
-  // ── Recruitment Pipeline Funnel (latest month — Jul 2026) ─────────
-  // Show cumulative Apr–Jul 2026 as a horizontal funnel bar chart
-  createChart('chart-funnel', {
-    type: 'bar',
-    data: {
-      labels: ['Total CV', 'Invited', 'HR Interview', 'User Interview', 'Offering'],
-      datasets: [{
-        label: 'Candidates (Apr–Jul 2026)',
-        data: [totalCV6M, totalInvSent, totalHRInt, fn.userInterview.reduce((a,b)=>a+b,0), totalOffering],
-        backgroundColor: ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#16a34a'],
-        borderRadius: 6,
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: true,
-      plugins: {
-        legend: { display: false },
-        datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 12 }, formatter: v => v.toLocaleString('id') }
+  // ── Recruitment Pipeline Funnel (period-aware) ───────────────────
+  const funnelData  = [cvTotal, invTotal, hrTotal, userTotal, offerTotal];
+  const funnelHasData = funnelData.some(v => v != null);
+  const funnelLabels  = ['Total CV', 'Invited', 'HR Interview', 'User Interview', 'Offering'];
+  const funnelValues  = funnelData.map(v => v ?? 0);
+  if (!funnelHasData) {
+    renderNA('chart-funnel', 'Funnel data tidak tersedia untuk periode ini (Apr–Jul saja)');
+  } else {
+    createChart('chart-funnel', {
+      type: 'bar',
+      data: {
+        labels: funnelLabels,
+        datasets: [{
+          label: `Candidates (${slice.shortLabel})`,
+          data: funnelValues,
+          backgroundColor: ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#16a34a'],
+          borderRadius: 6,
+        }]
       },
-      scales: { x: { beginAtZero: true } }
-    }
-  });
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 12 },
+            formatter: (v, ctx) => v === 0 && funnelData[ctx.dataIndex] == null ? 'N/A' : v.toLocaleString('id') }
+        },
+        scales: { x: { beginAtZero: true } }
+      }
+    });
+  }
 
   // ── Candidates Monthly Table (REAL from Candidates sheet) ─────────
   const monthContainer = document.getElementById('candidates-monthly-tables');
@@ -1810,16 +1941,16 @@ function renderRecruitment() {
     }
   });
 
-  // ── Funnel Trend by Month (from Recruitment Summary) ─────────────
+  // ── Funnel Trend by Month (always full history: Apr–Jul 2026) ─────
   createChart('chart-funnel-trend', {
     type: 'line',
     data: {
       labels: fn.months,
       datasets: [
-        { label: 'Total CV', data: fn.totalCV, borderColor: '#3b82f6', backgroundColor: '#3b82f622', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 },
-        { label: 'Invited', data: fn.invitationSent, borderColor: '#8b5cf6', backgroundColor: '#8b5cf622', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 },
-        { label: 'HR Interview', data: fn.hrInterview, borderColor: '#f59e0b', backgroundColor: '#f59e0b22', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 },
-        { label: 'Offering', data: fn.offeringStage, borderColor: '#16a34a', backgroundColor: '#16a34a22', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 }
+        { label: 'Total CV',     data: fn.totalCV,        borderColor: '#3b82f6', backgroundColor: '#3b82f622', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 },
+        { label: 'Invited',      data: fn.invitationSent, borderColor: '#8b5cf6', backgroundColor: '#8b5cf622', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 },
+        { label: 'HR Interview', data: fn.hrInterview,    borderColor: '#f59e0b', backgroundColor: '#f59e0b22', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 },
+        { label: 'Offering',     data: fn.offeringStage,  borderColor: '#16a34a', backgroundColor: '#16a34a22', fill: false, tension: 0.3, borderWidth: 2, pointRadius: 5 }
       ]
     },
     options: {
