@@ -1394,8 +1394,8 @@
   <!-- Total Gaji by PT + OT Analysis -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">🏢 Salary Expense by PT Entity (2025 Trend) <span class="data-badge est">⚠️ 2025 Data</span></div>
-      <div class="chart-subtitle">Jan–Jun 2025 · 2026 per-PT trend pending extraction</div>
+      <div class="chart-title">🏢 Salary Expense by PT Entity (2026 Trend) <span class="data-badge real">✅ Real Data</span></div>
+      <div class="chart-subtitle">Jan–Jun 2026 · All PT entities · Source: Master Data Row 9 by entity</div>
       <canvas id="chart-gaji-pt"></canvas>
     </div>
     <div class="chart-card">
@@ -1414,6 +1414,7 @@
         <thead>
           <tr>
             <th>Month</th>
+            <th>Active HC</th>
             <th>Total Payroll</th>
             <th>Revenue</th>
             <th>Gross Margin%</th>
@@ -1917,11 +1918,10 @@ const DATA = {
   roiMonths: ['Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'Mei 2026', 'Jun 2026', 'Jul 2026'],
   roiMonthShort: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'],
 
-  // Total payroll (Row 32 Grand Total, ALL PT) — Rp juta
-  // Jan-26: 7,791 (confirmed) | Mei-26: 6,963 (confirmed) | Jun-26: 7,558 (confirmed)
-  // Jul-26: 7,791 (confirmed from current export)
-  // Feb/Mar/Apr-26: NOT YET PROVIDED by user — remaining null until Rows 24-32 extracted
-  totalGajiMonthly: [7791, null, null, null, 6963, 7558, 7791],  // Rp juta, Jan-Jul 2026
+  // Total payroll (Row 9 TOTAL from Master Data / Row 32 Trend Summary ALL PT) — Rp juta
+  // ALL months Jan–Jun 26 now confirmed from Master Data screenshot Row 9
+  // Jan=7,791 | Feb=7,573 | Mar=10,521 (THR/bonus spike) | Apr=7,836 | Mei=7,103 | Jun=7,558 | Jul=7,791
+  totalGajiMonthly: [7791, 7573, 10521, 7836, 7103, 7558, 7791],  // Rp juta, Jan-Jul 2026
 
   // Revenue (Row 35) — FULL Jan–Jun 2026 confirmed from screenshot
   // Jan=36,711,120,636 | Feb=35,566,990,323 | Mar=43,169,499,535
@@ -1932,23 +1932,22 @@ const DATA = {
   // Jan=24.20% | Feb=24.65% | Mar=23.44% | Apr=24.29% | Mei=25.48% | Jun=25.26%
   grossMarginPct: [24.20, 24.65, 23.44, 24.29, 25.48, 25.26, null],  // %, Jan-Jul 2026
 
-  // Manpower ratio — computed where payroll available (Jan, Mei, Jun)
-  // Jan: 7791/36711=21.22% | Mei: 6963/40254=17.30% | Jun: 7558/38853=19.45%
-  // Feb/Mar/Apr: null (payroll not yet extracted from Rows 24-32)
-  manpowerRatioPct: [21.22, null, null, null, 17.30, 19.45, null], // %, Jan-Jul 2026
+  // Manpower ratio (Payroll÷Revenue×100) — ALL months now computable Jan–Jun 2026
+  // Jan=21.22% | Feb=21.29% | Mar=24.37%(THR) | Apr=19.97% | Mei=17.64% | Jun=19.45%
+  manpowerRatioPct: [21.22, 21.29, 24.37, 19.97, 17.64, 19.45, null], // %, Jan-Jul 2026
 
-  // Historical 2025 context (Jan-Jun 2025, PKU+PRI only — kept for trend context)
-  // These are LOWER than all-PT totals; manpower ratio was ~24-28% (only PKU+PRI revenue)
+  // Historical 2025 context — ALL PT Grand Total from Master Data Row 9
+  // Jun-25=7020 | Jul-25=6659 | Aug-25=6946 | Sep-25=7322 | OKT-25=7125 | Nov-25=7456 | Dec-25=8304
   rev2025Monthly: [23504, 21895, 25172, 25023, 26747, 26864],  // Jan-Jun 2025, PKU+PRI only
-  gaji2025Monthly: [6248, 6113, 6778, 6543, 6470, 7020],       // Jan-Jun 2025 payroll (partial)
+  gaji2025Monthly: [7020, 6659, 6946, 7322, 7125, 7456, 8304], // Jun-Dec 2025 ALL PT Grand Total (Row 9)
 
-  // Incentive data — Juni 2026 detail available; others estimated from Juni ratio
-  // Juni: Total incentive = 649.9M (≈9.2% of total gaji from GID=182177192)
-  incentiveMonthly: [null, null, null, null, null, 650, null],  // Rp juta, Jun exact, others N/A
+  // Incentive data (Row 26 of Trend Summary Payroll) — Jun exact; others pending Row 26 extract
+  // Jun-26: 649.9M confirmed (GID=182177192) | Others: pending user extraction of Row 26
+  incentiveMonthly: [null, null, null, null, null, 650, null],  // Rp juta, Jun=exact, others=null until Row 26 provided
   dendaMonthly: null,  // Not in payroll workbook
   otMonthly: null,     // Not in payroll workbook
 
-  // By PT entity (Juni 2026 detailed breakdown from GID=182177192)
+  // By PT entity (Juni 2026 from GID=182177192 + Master Data screenshot Row 9)
   gajiByPT: {
     month: 'Juni 2026',
     entities: [
@@ -1960,16 +1959,21 @@ const DATA = {
     ]
   },
 
-  // PT trend — 2025 historical data (Jan-Jun 2025, PKU+PRI from Trend Summary)
-  // NOTE: 2026 per-PT monthly breakdown not yet extracted for all months
+  // PT trend — Jan–Jun 2026 ALL PT from Master Data screenshot Row 9 (Rp juta, rounded)
+  // Plus 2025 data for PKU/PRI historical context
   gajiTrendByPT: {
-    months: ['Jan-25', 'Feb-25', 'Mar-25', 'Apr-25', 'Mei-25', 'Jun-25'],
-    pku:    [3178, 2959, 3236, 3093, 2969, 3254],
-    pri:    [2377, 2337, 2684, 2581, 2521, 2743],
-    amom:   [482,  555,  588,  620,  669,  718],
-    apd:    [200,  237,  243,  224,  267,  262],  // APD + INTERN APD
-    ami:    [28,   26,   26,   24,   43,   43],
+    months: ['Jan-26', 'Feb-26', 'Mar-26', 'Apr-26', 'Mei-26', 'Jun-26'],
+    pku:    [3487, 3376, 4675, 3452, 3080, 3282],
+    pri:    [3026, 2909, 4012, 3067, 2686, 2865],
+    amom:   [901,  889,  1240, 904,  923,  987],   // AMOM + INTERN AMOM
+    apd:    [332,  354,  541,  369,  371,  380],   // APD + INTERN APD
+    ami:    [45,   45,   54,   45,   45,   44],
   },
+
+  // Monthly HC — avg active per month (opening+closing)/2, Jan–Jul 2026
+  // Jan: ~818 (confirmed active) | Feb–Jul: (openingHC+closingHC)/2
+  // openingHC Feb-Jul: [836,865,854,857,865,884] | closingHC: [865,854,857,865,884,914]
+  activeHCMonthly: [818, 851, 860, 856, 861, 875, 899],  // Jan-Jul 2026
 
   // ── ROI PER-PERSON METRICS (new 2026-07-27) ──────────────────────────
   // Based on user instructions:
@@ -2817,13 +2821,14 @@ function renderROI() {
   // ── ROI — REAL DATA from Payroll Workbook (Trend Summary Payroll) ──
   // ROI arrays: index 0=Jan … 6=Jul 2026 (7 months)
   // Period arrays (retention/recruitment): index 0=Feb … 5=Jul 2026 (6 months)
-  const roiMonths  = DATA.roiMonths;        // ['Jan 2026'...'Jul 2026']
-  const gajiArr    = DATA.totalGajiMonthly; // Rp juta, index 0=Jan…6=Jul, nulls for missing months
-  const revArr     = DATA.revenueMonthly;   // Rp juta
-  const gmArr      = DATA.grossMarginPct;   // %, e.g. 25.26
-  const ratioArr   = DATA.manpowerRatioPct; // %
+  const roiMonths  = DATA.roiMonths;          // ['Jan 2026'...'Jul 2026']
+  const gajiArr    = DATA.totalGajiMonthly;   // Rp juta, index 0=Jan…6=Jul
+  const revArr     = DATA.revenueMonthly;     // Rp juta
+  const gmArr      = DATA.grossMarginPct;     // %
+  const ratioArr   = DATA.manpowerRatioPct;   // %
+  const hcMonthly  = DATA.activeHCMonthly;    // avg HC per month, Jan-Jul 2026
   const workDays   = DATA.roiWorkingDaysPerMonth; // 26
-  const activeHC   = DATA.activeHC;         // 818
+  const activeHC   = DATA.activeHC;           // current active HC (818)
 
   // ── Helper: format Rp juta as readable string ──
   function fmtJt(val) {
@@ -2861,13 +2866,14 @@ function renderROI() {
   const latestGM      = gmArr[latestFullIdx];      // 25.26 %
   const latestRatio   = ratioArr[latestFullIdx];   // 19.45 %
 
-  // ── Jun 2026 derived calculations ──
+  // ── Latest full month (Jun 2026) derived calculations — use that month's avg HC ──
+  const latestHC      = hcMonthly[latestFullIdx] || activeHC;        // Jun HC = 875
   const latestGP      = latestRev * (latestGM / 100);               // Gross Profit in Rp juta
-  const gpPerHC       = Math.round(latestGP * 1e6 / activeHC);      // Rp per person
-  const salaryPerHC   = Math.round(latestGaji * 1e6 / activeHC);    // Rp per person
-  const roiRatio      = gpPerHC / salaryPerHC;                       // e.g. 1.299
-  const roiPct        = ((roiRatio - 1) * 100).toFixed(1);          // e.g. +29.9%
-  const revPerHC      = Math.round(latestRev * 1e6 / activeHC);     // Rp per person
+  const gpPerHC       = Math.round(latestGP * 1e6 / latestHC);      // Rp per person
+  const salaryPerHC   = Math.round(latestGaji * 1e6 / latestHC);    // Rp per person
+  const roiRatio      = gpPerHC / salaryPerHC;
+  const roiPct        = ((roiRatio - 1) * 100).toFixed(1);
+  const revPerHC      = Math.round(latestRev * 1e6 / latestHC);     // Rp per person
   const salesPerDay   = Math.round(revPerHC / workDays);            // Rp per person per day
 
   // ── Jan 2026 for growth calculations (index 0) ──
@@ -2931,30 +2937,30 @@ function renderROI() {
   }
 
   // ── Build per-month derived arrays (full 7-month: Jan–Jul 2026) ──
-  // gpArr[i] = gross profit in Rp juta (null if rev or gm missing)
+  // Use hcMonthly[i] for per-person metrics (avg active HC for that month)
   const gpArr      = roiMonths.map((_, i) => {
     const r = revArr[i], g = gmArr[i];
     return (r != null && g != null) ? r * (g / 100) : null;
   });
   const gpPerHCArr    = roiMonths.map((_, i) => {
-    const gp = gpArr[i];
-    return gp != null ? Math.round(gp * 1e6 / activeHC / 1000) : null; // Rp ribu
+    const gp = gpArr[i], hc = hcMonthly[i] || activeHC;
+    return gp != null ? Math.round(gp * 1e6 / hc / 1000) : null; // Rp ribu
   });
   const salPerHCArr   = roiMonths.map((_, i) => {
-    const gj = gajiArr[i];
-    return gj != null ? Math.round(gj * 1e6 / activeHC / 1000) : null; // Rp ribu
+    const gj = gajiArr[i], hc = hcMonthly[i] || activeHC;
+    return gj != null ? Math.round(gj * 1e6 / hc / 1000) : null; // Rp ribu
   });
   const roiRatioArr   = roiMonths.map((_, i) => {
     const gp = gpPerHCArr[i], sal = salPerHCArr[i];
     return (gp != null && sal != null && sal > 0) ? parseFloat((gp / sal).toFixed(3)) : null;
   });
   const salesDayArr   = roiMonths.map((_, i) => {
-    const r = revArr[i];
-    return r != null ? Math.round(r * 1e6 / activeHC / workDays / 1000) : null; // Rp ribu per day
+    const r = revArr[i], hc = hcMonthly[i] || activeHC;
+    return r != null ? Math.round(r * 1e6 / hc / workDays / 1000) : null; // Rp ribu per day
   });
   const revPerHCArr   = roiMonths.map((_, i) => {
-    const r = revArr[i];
-    return r != null ? Math.round(r * 1e6 / activeHC / 1000) : null; // Rp ribu
+    const r = revArr[i], hc = hcMonthly[i] || activeHC;
+    return r != null ? Math.round(r * 1e6 / hc / 1000) : null; // Rp ribu
   });
 
   // ── Chart 1: GP/HC vs Salary/HC per person (Jun 2026 spotlight + trend) ──
@@ -3218,6 +3224,7 @@ function renderROI() {
   // ── ROI Summary Table — Jan–Jul 2026 (all 7 months) ──────────────
   const roiBody = document.getElementById('roi-monthly-tbody');
   roiBody.innerHTML = roiMonths.map((m, i) => {
+    const hc      = hcMonthly[i];
     const gaji    = gajiArr[i];
     const rev     = revArr[i];
     const gm      = gmArr[i];
@@ -3228,34 +3235,47 @@ function renderROI() {
     const roiR    = roiRatioArr[i];
     const salesD  = salesDayArr[i];  // Rp ribu
 
-    const isActual = (i === latestFullIdx);
+    const isLatest = (i === latestFullIdx);
     const hasRev   = rev != null;
     const hasGaji  = gaji != null;
     const hasGM    = gm != null;
+    // Mar-26: THR/bonus month — payroll spike expected
+    const isTHR    = (i === 2 && gaji != null && gaji > 9000);
 
-    // Row data quality badge
+    // Row quality badge
     const qualBadge = (hasRev && hasGaji && hasGM)
-      ? '<span style="font-size:9px;background:#dcfce7;color:#16a34a;padding:1px 5px;border-radius:10px;font-weight:700;">✅ Full</span>'
+      ? `<span style="font-size:9px;background:#dcfce7;color:#16a34a;padding:1px 5px;border-radius:10px;font-weight:700;">${isLatest ? '⭐ Latest' : '✅ Full'}</span>`
       : (hasRev || hasGaji)
         ? '<span style="font-size:9px;background:#fef9c3;color:#ca8a04;padding:1px 5px;border-radius:10px;font-weight:700;">⚠️ Parsial</span>'
         : '<span style="font-size:9px;background:#fee2e2;color:#dc2626;padding:1px 5px;border-radius:10px;font-weight:700;">❌ N/A</span>';
 
-    // ROI cell styling
+    // THR warning badge for Mar
+    const thrBadge = isTHR
+      ? ' <span style="font-size:9px;background:#fef3c7;color:#92400e;padding:1px 5px;border-radius:10px;font-weight:700;">🎁 THR</span>'
+      : '';
+
+    // ROI cell
     let roiCell = '—';
     if (roiR != null) {
       const roiColor = roiR >= 1.3 ? '#16a34a' : roiR >= 1.0 ? '#ca8a04' : '#dc2626';
       const roiPctVal = ((roiR - 1) * 100).toFixed(1);
-      roiCell = `<span style="font-weight:800;color:${roiColor}">${roiR.toFixed(3)}x</span>
-                 <span style="font-size:10px;color:${roiColor}">(${roiPctVal >= 0 ? '+' : ''}${roiPctVal}%)</span>`;
+      const sign = roiR >= 1.0 ? '+' : '';
+      roiCell = `<span style="font-weight:800;color:${roiColor}">${roiR.toFixed(3)}x</span>&nbsp;<span style="font-size:10px;color:${roiColor}">(${sign}${roiPctVal}%)</span>`;
     }
 
-    // Ratio cell color
+    // MP Ratio cell — flag THR months
     const ratioCell = ratio != null
-      ? `<span style="font-weight:700;color:${ratio > 23 ? '#dc2626' : ratio > 20 ? '#ca8a04' : '#16a34a'}">${ratio.toFixed(2)}%</span>`
+      ? `<span style="font-weight:700;color:${ratio > 22 ? '#dc2626' : ratio > 20 ? '#ca8a04' : '#16a34a'}">${ratio.toFixed(2)}%</span>${isTHR ? '<span style="font-size:9px;color:#92400e;"> (+THR)</span>' : ''}`
       : '—';
 
-    return `<tr style="${isActual ? 'background:#f0fdf4;font-weight:600;' : ''}">
-      <td><strong>${m}</strong> ${qualBadge}</td>
+    // HC cell
+    const hcCell = hc != null
+      ? `<span style="font-weight:700;color:#1e293b;">${hc.toLocaleString('id')}</span>`
+      : '—';
+
+    return `<tr style="${isLatest ? 'background:#f0fdf4;' : isTHR ? 'background:#fffbeb;' : ''}">
+      <td><strong>${m}</strong> ${qualBadge}${thrBadge}</td>
+      <td style="text-align:center;">${hcCell}</td>
       <td>${hasGaji ? 'Rp ' + (gaji/1000).toFixed(3) + 'M' : '—'}</td>
       <td>${hasRev  ? 'Rp ' + (rev/1000).toFixed(3) + 'M'  : '—'}</td>
       <td>${hasGM   ? gm.toFixed(2) + '%' : '—'}</td>
@@ -3338,12 +3358,13 @@ function renderOverview() {
   const ovLatestRatio = roiRatArr[5];    // 19.45%
 
   // Derived Jun 2026
+  const ovHC          = DATA.activeHCMonthly[5] || DATA.activeHC;              // Jun HC = 875
   const ovGP          = ovLatestRev * (ovLatestGM / 100);                     // Rp juta
-  const ovGPperHC     = Math.round(ovGP * 1e6 / DATA.activeHC);               // Rp per person
-  const ovSalPerHC    = Math.round(ovLatestGaji * 1e6 / DATA.activeHC);       // Rp per person
-  const ovROI         = (ovGPperHC / ovSalPerHC).toFixed(3);                  // e.g. "1.299"
-  const ovROIPct      = ((ovGPperHC / ovSalPerHC - 1) * 100).toFixed(1);      // e.g. "29.9"
-  const ovSalesDay    = Math.round(ovLatestRev * 1e6 / DATA.activeHC / roiWD); // Rp per person per day
+  const ovGPperHC     = Math.round(ovGP * 1e6 / ovHC);                        // Rp per person
+  const ovSalPerHC    = Math.round(ovLatestGaji * 1e6 / ovHC);                // Rp per person
+  const ovROI         = (ovGPperHC / ovSalPerHC).toFixed(3);
+  const ovROIPct      = ((ovGPperHC / ovSalPerHC - 1) * 100).toFixed(1);
+  const ovSalesDay    = Math.round(ovLatestRev * 1e6 / ovHC / roiWD);         // Rp per person per day
 
   // Avg ratio from non-null months
   const roiNonNullPairs = roiGajiArr.map((g,i) => ({ g, r: roiRevArr[i] })).filter(p => p.g != null && p.r != null);
@@ -3454,9 +3475,9 @@ function renderOverview() {
   }
   set('pil-roi-gaji',    'Rp ' + (ovLatestGaji/1000).toFixed(3) + 'M  (Jun 26)');
   set('pil-roi-ratio',   ovLatestRatio.toFixed(2) + '%  |  GM ' + ovLatestGM.toFixed(2) + '%');
-  // Revenue/HC/month in juta: ovLatestRev (juta) ÷ activeHC → juta per person
-  set('pil-roi-rev-emp', 'Rp ' + (ovLatestRev / DATA.activeHC).toFixed(2) + 'jt/mo');
-  // Sales/Staff/Day in juta: ovSalesDay (Rp) ÷ 1,000,000 → juta per person per day
+  // Revenue/HC/month in juta (using Jun HC = 875)
+  set('pil-roi-rev-emp', 'Rp ' + (ovLatestRev / ovHC).toFixed(2) + 'jt/mo');
+  // Sales/Staff/Day in juta
   set('pil-roi-cost',    'Rp ' + (ovSalesDay / 1e6).toFixed(3) + 'jt/day');
 
   // PKPA (Collaboration)
