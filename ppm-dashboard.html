@@ -1248,9 +1248,11 @@
 
   <div class="insight-box" style="background:#f0fdf4;border-color:#16a34a;color:#14532d;margin-bottom:12px;">
     <div class="insight-title">✅ Data Real Tersedia · Payroll Workbook "Trend Summary Payroll"</div>
-    Revenue dari <strong>Row 35</strong> · Total Payroll dari <strong>Row 32 (SUMMARY ALL PT)</strong> · Gross Margin dari <strong>Row 36</strong> ·
-    Jan-26 &amp; Jun-26 confirmed · Feb–Mei-26 pending extraction · Denda &amp; OT belum tersedia.
-    ROI formula: Gross Profit ÷ Payroll per HC = value generated per Rp spent on staff.
+    <strong>Revenue (Row 35):</strong> Jan–Jun 2026 ✅ penuh ·
+    <strong>Gross Margin (Row 36):</strong> Jan–Jun 2026 ✅ penuh ·
+    <strong>Payroll (Row 32):</strong> Jan, Mei, Jun ✅ · Feb/Mar/Apr ⚠️ belum diextract ·
+    <strong>Incentive (Row 26):</strong> Jun ✅ · Jan–Mei ⚠️ belum diextract · Denda &amp; OT ❌ tidak tersedia.
+    <br>ROI formula: Gross Profit ÷ Payroll per HC = value generated per Rp spent on staff.
   </div>
 
   <!-- ROI KPI Cards — Row 1: Financial Fundamentals -->
@@ -1379,7 +1381,7 @@
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
       <div class="chart-title">💰 Payroll vs Revenue + Gross Margin Trend <span class="data-badge real">✅ Real Data</span></div>
-      <div class="chart-subtitle" id="chart-cost-revenue-subtitle">Jan–Jul 2026 · Row 32 (Payroll) · Row 35 (Revenue) · Row 36 (GM%)</div>
+      <div class="chart-subtitle" id="chart-cost-revenue-subtitle">Jan–Jun 2026 · Revenue &amp; GM%: penuh (Row 35/36) · Payroll: Jan/Mei/Jun (Row 32)</div>
       <canvas id="chart-cost-revenue"></canvas>
     </div>
     <div class="chart-card">
@@ -1916,25 +1918,24 @@ const DATA = {
   roiMonthShort: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'],
 
   // Total payroll (Row 32 Grand Total, ALL PT) — Rp juta
-  // Jan-26: confirmed from screenshot Row 32 + export (includes THR/bonus for Jan)
-  // Jun-26: confirmed from GID=182177192 Grand Total = 7,558,069,243
-  // Jul-26: confirmed from current export = 7,791,070,494
-  // Feb-Mar-Apr-May: not yet extracted → null (shown as estimated in dashboard)
+  // Jan-26: 7,791 (confirmed) | Mei-26: 6,963 (confirmed) | Jun-26: 7,558 (confirmed)
+  // Jul-26: 7,791 (confirmed from current export)
+  // Feb/Mar/Apr-26: NOT YET PROVIDED by user — remaining null until Rows 24-32 extracted
   totalGajiMonthly: [7791, null, null, null, 6963, 7558, 7791],  // Rp juta, Jan-Jul 2026
 
-  // Revenue (Row 35 — corrected source per user instruction) — Rp juta
-  // Jan-26: 36,711,120,636 (from screenshot)
-  // Jun-26: 38,852,561,501 (user-given example)
-  // Others: null (not yet visible in screenshot, pending extract)
-  revenueMonthly: [36711, null, null, null, null, 38853, null],  // Rp juta, Jan-Jul 2026
+  // Revenue (Row 35) — FULL Jan–Jun 2026 confirmed from screenshot
+  // Jan=36,711,120,636 | Feb=35,566,990,323 | Mar=43,169,499,535
+  // Apr=39,243,499,006 | Mei=40,254,174,989 | Jun=38,852,561,501
+  revenueMonthly: [36711, 35567, 43169, 39243, 40254, 38853, null],  // Rp juta, Jan-Jul 2026
 
-  // Gross Margin % (Row 36) — per month 2026
-  // Jun-26: 25.26% (user-given) | Others: pending
-  grossMarginPct: [null, null, null, null, null, 25.26, null],   // %, Jan-Jul 2026
+  // Gross Margin % (Row 36) — FULL Jan–Jun 2026 confirmed from screenshot
+  // Jan=24.20% | Feb=24.65% | Mar=23.44% | Apr=24.29% | Mei=25.48% | Jun=25.26%
+  grossMarginPct: [24.20, 24.65, 23.44, 24.29, 25.48, 25.26, null],  // %, Jan-Jul 2026
 
-  // Computed ratios (Payroll÷Revenue × 100) — derived where both available
-  // Jan-26: 7791/36711 = 21.22% | Jun-26: 7558/38853 = 19.45%
-  manpowerRatioPct: [21.22, null, null, null, null, 19.45, null], // %, Jan-Jul 2026
+  // Manpower ratio — computed where payroll available (Jan, Mei, Jun)
+  // Jan: 7791/36711=21.22% | Mei: 6963/40254=17.30% | Jun: 7558/38853=19.45%
+  // Feb/Mar/Apr: null (payroll not yet extracted from Rows 24-32)
+  manpowerRatioPct: [21.22, null, null, null, 17.30, 19.45, null], // %, Jan-Jul 2026
 
   // Historical 2025 context (Jan-Jun 2025, PKU+PRI only — kept for trend context)
   // These are LOWER than all-PT totals; manpower ratio was ~24-28% (only PKU+PRI revenue)
@@ -2847,9 +2848,13 @@ function renderROI() {
     if (color) e.style.color = color;
   }
 
-  // ── Identify latest month with full data (Revenue + GM + Payroll) ──
-  // Jun 2026 = index 5 — confirmed full data
-  const latestFullIdx = 5; // Jun 2026
+  // ── Identify latest month with full data (Revenue + GM + Payroll all non-null) ──
+  // Revenue Jan-Jun: all confirmed. GM Jan-Jun: all confirmed. Payroll: Jan/Mei/Jun only.
+  // → "full" = all three present; Jun 2026 (index 5) is latest full
+  let latestFullIdx = 0;
+  for (let i = 0; i < roiMonths.length; i++) {
+    if (gajiArr[i] != null && revArr[i] != null && gmArr[i] != null) latestFullIdx = i;
+  }
 
   const latestGaji    = gajiArr[latestFullIdx];    // 7558 juta
   const latestRev     = revArr[latestFullIdx];     // 38853 juta
@@ -3107,14 +3112,17 @@ function renderROI() {
     }
   });
 
-  // ── Chart 4: Incentive Estimated Trend ──
-  // Jun incentive = 650 juta (exact). Others estimated from Juni incentive/gaji ratio.
-  const juniIncentive = 650; // Rp juta — Jun 2026 exact
+  // ── Chart 4: Incentive Trend ──
+  // Jun incentive = 650 juta (exact from Row 26). Others: estimated from Jun ratio where payroll known.
+  // Once user provides Row 26 data for Feb/Mar/Apr, replace nulls below with actual values.
+  const juniIncentive = DATA.incentiveMonthly[5]; // 650 juta — Jun 2026 exact (Row 26)
   const juniGaji      = gajiArr[5]; // 7558
-  const incRatio      = juniIncentive / juniGaji;
-  const estIncentive  = gajiArr.map((g, i) => {
-    if (g == null) return null;
-    return i === latestFullIdx ? juniIncentive : Math.round(g * incRatio);
+  const incRatio      = juniIncentive / juniGaji; // ~8.6%
+  // Use actual incentive where DATA.incentiveMonthly has a value; estimate where payroll known
+  const estIncentive  = roiMonths.map((_, i) => {
+    if (DATA.incentiveMonthly[i] != null) return DATA.incentiveMonthly[i]; // actual
+    if (gajiArr[i] != null) return Math.round(gajiArr[i] * incRatio);      // estimated
+    return null;  // no data at all
   });
   createChart('chart-incentive-denda-ot', {
     type: 'bar',
@@ -3123,7 +3131,9 @@ function renderROI() {
       datasets: [{
         label: 'Incentive (Rp Juta)',
         data: estIncentive,
-        backgroundColor: roiMonths.map((_, i) => i === latestFullIdx ? '#8b5cf6' : '#8b5cf670'),
+        backgroundColor: roiMonths.map((_, i) =>
+          DATA.incentiveMonthly[i] != null ? '#8b5cf6' : '#8b5cf660'
+        ),
         borderRadius: 4
       }]
     },
@@ -3133,9 +3143,12 @@ function renderROI() {
         legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
         tooltip: {
           callbacks: {
-            footer: items => items[0].dataIndex === latestFullIdx
-              ? 'Data aktual Juni 2026 dari sheet payroll'
-              : 'Estimasi berdasarkan rasio Juni (Incentive/Payroll = ' + (incRatio*100).toFixed(1) + '%)'
+            footer: items => {
+              const i = items[0].dataIndex;
+              return DATA.incentiveMonthly[i] != null
+                ? '✅ Data aktual dari Row 26 Trend Summary Payroll'
+                : '⚠️ Estimasi dari rasio Juni (Incentive/Payroll = ' + (incRatio*100).toFixed(1) + '%)';
+            }
           }
         },
         datalabels: {
