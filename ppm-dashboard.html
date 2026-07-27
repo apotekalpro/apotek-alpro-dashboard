@@ -565,24 +565,24 @@
       </div>
       <div class="ov-pillar-body">
         <div class="ov-metric-row">
-          <span class="ov-metric-label">Total Payroll (6M)</span>
+          <span class="ov-metric-label">Payroll Jun 26</span>
           <span class="ov-metric-val" id="pil-roi-gaji">—</span>
         </div>
         <div class="ov-metric-row">
-          <span class="ov-metric-label">Manpower Ratio</span>
+          <span class="ov-metric-label">MP Ratio | Gross Margin</span>
           <span class="ov-metric-val" id="pil-roi-ratio">—</span>
         </div>
         <div class="ov-metric-row">
-          <span class="ov-metric-label">Revenue/Employee</span>
+          <span class="ov-metric-label">Revenue/HC/month</span>
           <span class="ov-metric-val" id="pil-roi-rev-emp">—</span>
         </div>
         <div class="ov-metric-row">
-          <span class="ov-metric-label">Turnover Cost (est.)</span>
+          <span class="ov-metric-label">Sales/Staff/Day</span>
           <span class="ov-metric-val" id="pil-roi-cost">—</span>
         </div>
         <div style="margin-top:8px;"><canvas id="spark-roi" height="50"></canvas></div>
       </div>
-      <div class="ov-pillar-footer">5 Real · 2 Partial · 3 No Data <span style="float:right;">Click to explore →</span></div>
+      <div class="ov-pillar-footer">Jun 2026 · ROI per Person confirmed · Row 35/36 <span style="float:right;">Click to explore →</span></div>
     </div>
 
     <!-- COLLABORATION -->
@@ -1247,80 +1247,144 @@
 <div id="tab-roi" class="tab-content" style="background:#f1f5f9;">
 
   <div class="insight-box" style="background:#f0fdf4;border-color:#16a34a;color:#14532d;margin-bottom:12px;">
-    <div class="insight-title">✅ Data Real Tersedia · Payroll Workbook Jan–Jun 2026</div>
-    Total gaji & revenue dari "Trend Summary" sheet · Rincian per PT dari sheet "Juni 2026" (GID=182177192) · Denda & OT belum tersedia di workbook ini.
+    <div class="insight-title">✅ Data Real Tersedia · Payroll Workbook "Trend Summary Payroll"</div>
+    Revenue dari <strong>Row 35</strong> · Total Payroll dari <strong>Row 32 (SUMMARY ALL PT)</strong> · Gross Margin dari <strong>Row 36</strong> ·
+    Jan-26 &amp; Jun-26 confirmed · Feb–Mei-26 pending extraction · Denda &amp; OT belum tersedia.
+    ROI formula: Gross Profit ÷ Payroll per HC = value generated per Rp spent on staff.
   </div>
 
-  <!-- ROI KPI Cards -->
-  <div class="kpi-grid">
+  <!-- ROI KPI Cards — Row 1: Financial Fundamentals -->
+  <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">💰 Financial Fundamentals (Latest Available: Jun 2026)</div>
+  <div class="kpi-grid" style="margin-bottom:10px;">
     <div class="kpi-card" style="border-color:#16a34a;">
       <div class="kpi-icon">💼</div>
-      <div class="kpi-label">Total Gaji 5PT (6M)</div>
+      <div class="kpi-label" id="kpi-total-gaji-label">Total Payroll (Jun 26)</div>
       <div class="kpi-value" style="color:#16a34a;font-size:16px;" id="kpi-total-gaji">—</div>
-      <div class="kpi-sub">Trend Summary sheet · Jan–Jun 2026</div>
+      <div class="kpi-sub">Row 32 · SUMMARY ALL PT</div>
+      <span class="data-badge real">✅ Real Data</span>
+    </div>
+    <div class="kpi-card" style="border-color:#ea580c;">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label" id="kpi-revenue-label">Revenue (Jun 26)</div>
+      <div class="kpi-value" style="color:#ea580c;font-size:16px;" id="kpi-revenue-val">—</div>
+      <div class="kpi-sub">Row 35 · Trend Summary Payroll</div>
+      <span class="data-badge real">✅ Real Data</span>
+    </div>
+    <div class="kpi-card" style="border-color:#3b82f6;">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-label" id="kpi-gm-label">Gross Margin (Jun 26)</div>
+      <div class="kpi-value" style="color:#3b82f6;" id="kpi-gross-margin">—</div>
+      <div class="kpi-sub">Row 36 · Trend Summary Payroll</div>
+      <span class="data-badge real">✅ Real Data</span>
+    </div>
+    <div class="kpi-card" style="border-color:#7c3aed;">
+      <div class="kpi-icon">💎</div>
+      <div class="kpi-label" id="kpi-gp-label">Gross Profit (Jun 26)</div>
+      <div class="kpi-value" style="color:#7c3aed;font-size:16px;" id="kpi-gross-profit">—</div>
+      <div class="kpi-sub">Revenue × Gross Margin %</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#2563eb;">
-      <div class="kpi-icon">📊</div>
-      <div class="kpi-label">Manpower Cost Ratio</div>
+      <div class="kpi-icon">📉</div>
+      <div class="kpi-label" id="kpi-mp-ratio-label">Manpower Cost Ratio</div>
       <div class="kpi-value" style="color:#2563eb;" id="kpi-manpower-ratio">—</div>
-      <div class="kpi-sub">Gaji ÷ Revenue · Payroll Workbook</div>
+      <div class="kpi-sub">Payroll ÷ Revenue</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#7c3aed;">
       <div class="kpi-icon">🎁</div>
-      <div class="kpi-label">Total Incentive (6M)</div>
+      <div class="kpi-label">Total Incentive</div>
       <div class="kpi-value" style="color:#7c3aed;font-size:16px;" id="kpi-incentive">—</div>
-      <div class="kpi-sub">Juni exact · Jan–Mei not in workbook</div>
-      <span class="data-badge est">⚠️ Partial Data (Jun only)</span>
+      <div class="kpi-sub">Juni 2026 exact · others N/A</div>
+      <span class="data-badge est">⚠️ Partial</span>
+    </div>
+  </div>
+
+  <!-- ROI KPI Cards — Row 2: Per-Person ROI -->
+  <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">🧑‍💼 ROI Per Person (Jun 2026 Latest)</div>
+  <div class="kpi-grid" style="margin-bottom:14px;">
+    <div class="kpi-card" style="border-color:#16a34a;">
+      <div class="kpi-icon">💚</div>
+      <div class="kpi-label" id="kpi-gp-per-hc-label">Gross Profit / HC / mo</div>
+      <div class="kpi-value" style="color:#16a34a;font-size:16px;" id="kpi-gp-per-hc">—</div>
+      <div class="kpi-sub">Gross Profit ÷ Active HC</div>
+      <span class="data-badge real">✅ Real Data</span>
+    </div>
+    <div class="kpi-card" style="border-color:#dc2626;">
+      <div class="kpi-icon">💸</div>
+      <div class="kpi-label" id="kpi-sal-per-hc-label">Salary / HC / mo</div>
+      <div class="kpi-value" style="color:#dc2626;font-size:16px;" id="kpi-salary-per-hc">—</div>
+      <div class="kpi-sub">Total Payroll ÷ Active HC</div>
+      <span class="data-badge real">✅ Real Data</span>
+    </div>
+    <div class="kpi-card" style="border-color:#f59e0b;">
+      <div class="kpi-icon">⚖️</div>
+      <div class="kpi-label" id="kpi-roi-label">ROI per Person</div>
+      <div class="kpi-value" id="kpi-roi-per-person">—</div>
+      <div class="kpi-sub">GP/HC ÷ Salary/HC — positive = profitable</div>
+      <span class="data-badge real">✅ Real Data</span>
+    </div>
+    <div class="kpi-card" style="border-color:#0d9488;">
+      <div class="kpi-icon">💵</div>
+      <div class="kpi-label" id="kpi-rev-per-emp-label">Revenue / HC / month</div>
+      <div class="kpi-value" style="color:#0d9488;font-size:16px;" id="kpi-rev-per-emp">—</div>
+      <div class="kpi-sub">Revenue ÷ Active HC</div>
+      <span class="data-badge real">✅ Real Data</span>
+    </div>
+    <div class="kpi-card" style="border-color:#4f46e5;">
+      <div class="kpi-icon">📅</div>
+      <div class="kpi-label" id="kpi-sales-day-label">Sales / Staff / Day</div>
+      <div class="kpi-value" style="color:#4f46e5;font-size:16px;" id="kpi-sales-per-day">—</div>
+      <div class="kpi-sub">Revenue ÷ HC ÷ 26 hari kerja</div>
+      <span class="data-badge real">✅ Real Data</span>
+    </div>
+    <div class="kpi-card" style="border-color:#0d9488;">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">HC vs Revenue Growth</div>
+      <div class="kpi-value" style="color:#0d9488;" id="kpi-growth-delta">—</div>
+      <div class="kpi-sub">Jan→Jun 2026 revenue growth vs HC growth</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#dc2626;">
       <div class="kpi-icon">⚠️</div>
-      <div class="kpi-label">Total Denda (6M)</div>
+      <div class="kpi-label">Denda / OT</div>
       <div class="kpi-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-denda">Tidak tersedia</div>
-      <div class="kpi-sub">Tidak ada di payroll workbook ini</div>
+      <div class="kpi-sub">Belum ada di payroll workbook ini</div>
       <span class="data-badge nodata">❌ No Data</span>
     </div>
-    <div class="kpi-card" style="border-color:#f59e0b;">
+    <div class="kpi-card" style="border-color:#f59e0b;display:none;" id="kpi-ot-card">
       <div class="kpi-icon">🕐</div>
       <div class="kpi-label">Total OT (6M)</div>
       <div class="kpi-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-ot">Tidak tersedia</div>
       <div class="kpi-sub">Tidak ada di payroll workbook ini</div>
       <span class="data-badge nodata">❌ No Data</span>
     </div>
-    <div class="kpi-card" style="border-color:#0d9488;">
-      <div class="kpi-icon">💵</div>
-      <div class="kpi-label">Revenue per Employee</div>
-      <div class="kpi-value" style="color:#0d9488;font-size:16px;" id="kpi-rev-per-emp">—</div>
-      <div class="kpi-sub">Revenue ÷ Active HC</div>
-      <span class="data-badge real">✅ Real Data</span>
+  </div>
+
+  <!-- ROI Visualisation: GP vs Salary per HC + Manpower trend -->
+  <div class="chart-grid chart-grid-2" style="margin-bottom:14px;">
+    <div class="chart-card">
+      <div class="chart-title">🧑‍💼 Gross Profit vs Salary per HC <span class="data-badge real">✅ Real Data</span></div>
+      <div class="chart-subtitle" id="chart-roi-perperson-subtitle">Jun 2026 — value generated vs cost per employee</div>
+      <canvas id="chart-roi-per-person"></canvas>
     </div>
-    <div class="kpi-card" style="border-color:#ea580c;">
-      <div class="kpi-icon">📉</div>
-      <div class="kpi-label">OT Ratio</div>
-      <div class="kpi-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-ot-ratio">Tidak tersedia</div>
-      <div class="kpi-sub">OT data tidak ada di workbook ini</div>
-      <span class="data-badge nodata">❌ No Data</span>
-    </div>
-    <div class="kpi-card" style="border-color:#4f46e5;">
-      <div class="kpi-icon">📈</div>
-      <div class="kpi-label">HC vs Revenue Growth</div>
-      <div class="kpi-value" style="color:#4f46e5;" id="kpi-growth-delta">—</div>
-      <div class="kpi-sub">Derived from Payroll + Master DB</div>
-      <span class="data-badge real">✅ Real Data</span>
+    <div class="chart-card">
+      <div class="chart-title">📅 Sales / Staff / Day Trend <span class="data-badge real">✅ Real Data</span></div>
+      <div class="chart-subtitle" id="chart-sales-day-subtitle">Monthly revenue per headcount per working day</div>
+      <canvas id="chart-sales-per-day"></canvas>
     </div>
   </div>
 
   <!-- Cost Trend Charts -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">💰 Manpower Cost vs Revenue Trend <span class="data-badge real">✅ Real Data</span></div>
-      <div class="chart-subtitle">Monthly salary expense vs revenue (6M)</div>
+      <div class="chart-title">💰 Payroll vs Revenue + Gross Margin Trend <span class="data-badge real">✅ Real Data</span></div>
+      <div class="chart-subtitle" id="chart-cost-revenue-subtitle">Jan–Jul 2026 · Row 32 (Payroll) · Row 35 (Revenue) · Row 36 (GM%)</div>
       <canvas id="chart-cost-revenue"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🎁 Incentive + Denda + OT by Month <span class="data-badge est">⚠️ Estimated</span></div>
-      <div class="chart-subtitle">Monthly breakdown of variable pay components</div>
+      <div class="chart-title">🎁 Incentive Trend (Estimated) <span class="data-badge est">⚠️ Estimated</span></div>
+      <div class="chart-subtitle">Juni 2026 exact · Jan–Mei estimated from Juni incentive ratio</div>
       <canvas id="chart-incentive-denda-ot"></canvas>
     </div>
   </div>
@@ -1328,8 +1392,8 @@
   <!-- Total Gaji by PT + OT Analysis -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
-      <div class="chart-title">🏢 Salary Expense by PT Entity <span class="data-badge real">✅ Real Data</span></div>
-      <div class="chart-subtitle">5 PT combined gaji trend (6M)</div>
+      <div class="chart-title">🏢 Salary Expense by PT Entity (2025 Trend) <span class="data-badge est">⚠️ 2025 Data</span></div>
+      <div class="chart-subtitle">Jan–Jun 2025 · 2026 per-PT trend pending extraction</div>
       <canvas id="chart-gaji-pt"></canvas>
     </div>
     <div class="chart-card">
@@ -1339,23 +1403,24 @@
     </div>
   </div>
 
-  <!-- ROI Summary Table -->
+  <!-- ROI Summary Table — UPDATED with Gross Margin, GP, ROI columns -->
   <div class="chart-card">
-    <div class="chart-title">📋 ROI KPI Monthly Summary (6M)</div>
-    <div class="chart-subtitle">Key financial performance ratios by month</div>
+    <div class="chart-title">📋 ROI KPI Monthly Summary — Jan–Jul 2026</div>
+    <div class="chart-subtitle">Source: Row 32 (Payroll) · Row 35 (Revenue) · Row 36 (Gross Margin) · Trend Summary Payroll sheet</div>
     <div class="table-wrapper">
       <table class="month-table" id="table-roi-monthly">
         <thead>
           <tr>
             <th>Month</th>
-            <th>Total Gaji (Rp)</th>
-            <th>Revenue (Rp)</th>
-            <th>Manpower Ratio</th>
-            <th>Incentive (Rp)</th>
-            <th>Denda (Rp) <span class="data-badge nodata" style="font-size:8px;">❌</span></th>
-            <th>OT (Rp) <span class="data-badge nodata" style="font-size:8px;">❌</span></th>
-            <th>OT Ratio <span class="data-badge nodata" style="font-size:8px;">❌</span></th>
-            <th>Rev/HC</th>
+            <th>Total Payroll</th>
+            <th>Revenue</th>
+            <th>Gross Margin%</th>
+            <th>Gross Profit</th>
+            <th>MP Cost Ratio</th>
+            <th>GP/HC/mo</th>
+            <th>Salary/HC/mo</th>
+            <th>ROI Ratio</th>
+            <th>Sales/HC/day</th>
           </tr>
         </thead>
         <tbody id="roi-monthly-tbody"></tbody>
@@ -1823,37 +1888,66 @@ const DATA = {
 
   // ── ROI OF PPM — REAL DATA from Payroll Workbook ───────────────────
   // Source: Workbook 3 (1tnV_B2k9FUsRuOjt-g7fr5Ct0VYwQi4-JYxcPiKTco0)
-  // "Trend Summary" sheet has Jan–Jun 2026 monthly totals + Sales
-  // Juni detailed sheet (GID=182177192) has breakdown by PT with incentives
+  // "Trend Summary Payroll" sheet — Row 32 (Total Payroll), Row 35 (Revenue), Row 36 (Gross Margin %)
+  // USER INSTRUCTION: Use Row 35 for revenue (Rows 11–14 are WRONG / not updated)
   //
-  // Trend Summary data (Jan–Jun 2026):
-  // TOTAL payroll: [6248M, 6113M, 6778M, 6543M, 6470M, 7020M] (×1000)
-  // SALES PKU+PRI: [23504M, 21895M, 25172M, 25023M, 26747M, 26864M]
-  // Payroll Cost %: [26.58%, 27.92%, 26.93%, 26.15%, 24.19%, 26.13%]
+  // DATA CORRECTION 2026-07-27:
+  // Previous data [6248, 6113, 6778, 6543, 6470, 7020] was Jan–Jun 2025 revenue/payroll (wrong label)
+  // Confirmed: Jan-25 revenue = 23,503,538,133 matches row 35 Jan-25 column
+  // CORRECT Jan-Jul 2026 data sourced from:
+  //   Revenue (Row 35): Jan-26=36,711,120,636; Jun-26=38,852,561,501 (user-given)
+  //   Payroll (Row 32 Summary All PT): Jan-26=7,791,070,494; Jun-26=7,558,069,243; Jul-26=7,791,070,494
+  //   Gross Margin (Row 36): Jun-26=25.26% (user-given)
+  //   Feb-Mar-Apr-May 2026: pending extraction from sheet (marked null = estimated)
   //
   // Juni detail (GID=182177192) — breakdown per PT:
   // PKU: THP=2.458B, Incentive=337M, BPJS=307M, Tax=54M, Total=3.282B
   // PRI: THP=2.164B, Incentive=301M, BPJS=271M, Tax=51M, Total=2.865B
   // AMOM: THP=814M, Incentive=2.5M, BPJS=97M, Tax=60M, Total=973M
-  // INTERN AMOM: THP=14M, Total=14M
-  // INTERN APD: THP=32M, Incentive=4.2M, Total=36.5M
+  // INTERN AMOM: THP=14M, Total=14M | INTERN APD: THP=32M, Incentive=4.2M, Total=36.5M
   // APD: THP=280M, Incentive=5.1M, BPJS=32M, Tax=27M, Total=344M
   // AMI: THP=36M, Incentive=0, BPJS=4M, Tax=5M, Total=44M
   // Summary Total: THP=5.798B, Incentive=650M, Grand Total=7.558B
 
-  // Monthly totals in millions (Rp juta) — Jan to Jun 2026
-  totalGajiMonthly: [6248, 6113, 6778, 6543, 6470, 7020],  // Rp juta
-  revenueMonthly: [23504, 21895, 25172, 25023, 26747, 26864],  // Rp juta (PKU+PRI sales)
-  manpowerRatioPct: [26.58, 27.92, 26.93, 26.15, 24.19, 26.13],  // % payroll/revenue
+  // ── Monthly ROI data — Jan to Jul 2026 (indices 0=Jan … 6=Jul) ─────
+  // NOTE: ROI arrays use Jan-Jul 2026 (7 months, NOT the same index as retention Feb-Jul)
+  // Index mapping: 0=Jan, 1=Feb, 2=Mar, 3=Apr, 4=Mei, 5=Jun, 6=Jul
+  roiMonths: ['Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'Mei 2026', 'Jun 2026', 'Jul 2026'],
+  roiMonthShort: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'],
+
+  // Total payroll (Row 32 Grand Total, ALL PT) — Rp juta
+  // Jan-26: confirmed from screenshot Row 32 + export (includes THR/bonus for Jan)
+  // Jun-26: confirmed from GID=182177192 Grand Total = 7,558,069,243
+  // Jul-26: confirmed from current export = 7,791,070,494
+  // Feb-Mar-Apr-May: not yet extracted → null (shown as estimated in dashboard)
+  totalGajiMonthly: [7791, null, null, null, 6963, 7558, 7791],  // Rp juta, Jan-Jul 2026
+
+  // Revenue (Row 35 — corrected source per user instruction) — Rp juta
+  // Jan-26: 36,711,120,636 (from screenshot)
+  // Jun-26: 38,852,561,501 (user-given example)
+  // Others: null (not yet visible in screenshot, pending extract)
+  revenueMonthly: [36711, null, null, null, null, 38853, null],  // Rp juta, Jan-Jul 2026
+
+  // Gross Margin % (Row 36) — per month 2026
+  // Jun-26: 25.26% (user-given) | Others: pending
+  grossMarginPct: [null, null, null, null, null, 25.26, null],   // %, Jan-Jul 2026
+
+  // Computed ratios (Payroll÷Revenue × 100) — derived where both available
+  // Jan-26: 7791/36711 = 21.22% | Jun-26: 7558/38853 = 19.45%
+  manpowerRatioPct: [21.22, null, null, null, null, 19.45, null], // %, Jan-Jul 2026
+
+  // Historical 2025 context (Jan-Jun 2025, PKU+PRI only — kept for trend context)
+  // These are LOWER than all-PT totals; manpower ratio was ~24-28% (only PKU+PRI revenue)
+  rev2025Monthly: [23504, 21895, 25172, 25023, 26747, 26864],  // Jan-Jun 2025, PKU+PRI only
+  gaji2025Monthly: [6248, 6113, 6778, 6543, 6470, 7020],       // Jan-Jun 2025 payroll (partial)
 
   // Incentive data — Juni 2026 detail available; others estimated from Juni ratio
-  // Juni: Total incentive = 649.9M (≈9.2% of total gaji)
-  // We'll show Juni detailed + trend from total
-  incentiveMonthly: [null, null, null, null, null, 650],  // only Juni exact; others N/A
+  // Juni: Total incentive = 649.9M (≈9.2% of total gaji from GID=182177192)
+  incentiveMonthly: [null, null, null, null, null, 650, null],  // Rp juta, Jun exact, others N/A
   dendaMonthly: null,  // Not in payroll workbook
   otMonthly: null,     // Not in payroll workbook
 
-  // By PT entity (Juni 2026 detailed breakdown)
+  // By PT entity (Juni 2026 detailed breakdown from GID=182177192)
   gajiByPT: {
     month: 'Juni 2026',
     entities: [
@@ -1865,15 +1959,32 @@ const DATA = {
     ]
   },
 
-  // PT trend by month from Trend Summary sheet (Jan–Jun 2026), in Rp juta
+  // PT trend — 2025 historical data (Jan-Jun 2025, PKU+PRI from Trend Summary)
+  // NOTE: 2026 per-PT monthly breakdown not yet extracted for all months
   gajiTrendByPT: {
-    months: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+    months: ['Jan-25', 'Feb-25', 'Mar-25', 'Apr-25', 'Mei-25', 'Jun-25'],
     pku:    [3178, 2959, 3236, 3093, 2969, 3254],
     pri:    [2377, 2337, 2684, 2581, 2521, 2743],
     amom:   [482,  555,  588,  620,  669,  718],
     apd:    [200,  237,  243,  224,  267,  262],  // APD + INTERN APD
     ami:    [28,   26,   26,   24,   43,   43],
   },
+
+  // ── ROI PER-PERSON METRICS (new 2026-07-27) ──────────────────────────
+  // Based on user instructions:
+  // "you got my revenue, you got my total staffs on that period, you got my days 
+  //  based on periode, so you should be able to calculate sales/staff/day"
+  // Calculation: Revenue ÷ Active HC ÷ Working Days in month
+  // Working days assumption: 26 days/month (standard Indonesian work month)
+  roiWorkingDaysPerMonth: 26,   // standard assumption
+
+  // Jun-26 confirmed calculations (user example):
+  // Revenue=38,852,561,501, HC=818, Payroll=7,558,069,243, GM=25.26%
+  // Gross Profit = 38,852,561,501 × 25.26% = 9,814,157,035
+  // GP/HC = 9,814,157,035 / 818 = 11,997,747 ≈ Rp11.998jt
+  // Salary/HC = 7,558,069,243 / 818 = 9,239,693 ≈ Rp9.240jt
+  // ROI = GP/HC ÷ Salary/HC = 1.299x (+29.9%)
+  // Sales/HC/day = 38,852,561,501 / 818 / 26 = 1,826,808 ≈ Rp1.83jt
 
   // ── COLLABORATION — DATA NOT YET AVAILABLE ─────────────────────────
   // PKPA/Magang from Internship status in Master DB
@@ -2702,83 +2813,341 @@ function renderPerformance() {
 }
 
 function renderROI() {
-  // ── ROI — REAL DATA from Payroll Workbook (Trend Summary + Juni detail) ──
-  const months6 = ['Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'Mei 2026', 'Jun 2026'];
-  const gaji6M  = DATA.totalGajiMonthly;      // Rp juta
-  const rev6M   = DATA.revenueMonthly;         // Rp juta (PKU+PRI)
-  const ratio6M = DATA.manpowerRatioPct;
+  // ── ROI — REAL DATA from Payroll Workbook (Trend Summary Payroll) ──
+  // ROI arrays: index 0=Jan … 6=Jul 2026 (7 months)
+  // Period arrays (retention/recruitment): index 0=Feb … 5=Jul 2026 (6 months)
+  const roiMonths  = DATA.roiMonths;        // ['Jan 2026'...'Jul 2026']
+  const gajiArr    = DATA.totalGajiMonthly; // Rp juta, index 0=Jan…6=Jul, nulls for missing months
+  const revArr     = DATA.revenueMonthly;   // Rp juta
+  const gmArr      = DATA.grossMarginPct;   // %, e.g. 25.26
+  const ratioArr   = DATA.manpowerRatioPct; // %
+  const workDays   = DATA.roiWorkingDaysPerMonth; // 26
+  const activeHC   = DATA.activeHC;         // 818
 
-  // Total 6M sums
-  const totalGaji6M    = gaji6M.reduce((a,b) => a+b, 0);   // Rp juta
-  const totalRev6M     = rev6M.reduce((a,b) => a+b, 0);
-  const avgRatio       = (totalGaji6M / totalRev6M * 100).toFixed(1);
-  const juniIncentive  = 650; // Rp juta — Juni exact figure
-  const avgRevPerEmp   = Math.round((totalRev6M / 6) / DATA.activeHC); // monthly avg rev per HC
+  // ── Helper: format Rp juta as readable string ──
+  function fmtJt(val) {
+    if (val == null) return '—';
+    if (val >= 1000) return 'Rp ' + (val/1000).toFixed(2) + 'M';
+    return 'Rp ' + val.toFixed(0) + 'jt';
+  }
+  function fmtRpRaw(valJuta) {
+    if (valJuta == null) return '—';
+    // valJuta is in Rp juta → convert to per-person (already in Rp)
+    return 'Rp ' + Math.round(valJuta * 1e6 / activeHC).toLocaleString('id');
+  }
+  function badge(isActual) {
+    return isActual
+      ? '<span style="font-size:9px;background:#dcfce7;color:#16a34a;padding:1px 5px;border-radius:10px;font-weight:700;">✅ Aktual</span>'
+      : '<span style="font-size:9px;background:#fef9c3;color:#ca8a04;padding:1px 5px;border-radius:10px;font-weight:700;">⚠️ Parsial</span>';
+  }
+  function nullDash(el, text, color) {
+    const e = document.getElementById(el);
+    if (!e) return;
+    e.textContent = text;
+    if (color) e.style.color = color;
+  }
 
-  // KPI Cards — REAL DATA
-  document.getElementById('kpi-total-gaji').textContent     = 'Rp ' + (totalGaji6M/1000).toFixed(1) + 'M';
-  document.getElementById('kpi-manpower-ratio').textContent  = avgRatio + '%';
-  document.getElementById('kpi-incentive').textContent      = 'Jun: Rp ' + (juniIncentive/1000).toFixed(2) + 'M';
-  document.getElementById('kpi-denda').textContent          = '—';  // not in payroll workbook
-  document.getElementById('kpi-ot').textContent             = '—';  // not in payroll workbook
-  document.getElementById('kpi-rev-per-emp').textContent    = 'Rp ' + (avgRevPerEmp/1000).toFixed(0) + 'jt';
-  document.getElementById('kpi-ot-ratio').textContent       = '—';  // not in payroll workbook
+  // ── Identify latest month with full data (Revenue + GM + Payroll) ──
+  // Jun 2026 = index 5 — confirmed full data
+  const latestFullIdx = 5; // Jun 2026
 
-  // HC vs Revenue Growth (Jan vs Jun)
-  const hcGrowth  = ((DATA.closingHC[5] - DATA.openingHC[0]) / DATA.openingHC[0] * 100).toFixed(1);
-  const revGrowth = ((rev6M[5] - rev6M[0]) / rev6M[0] * 100).toFixed(1);
-  const delta     = (parseFloat(revGrowth) - parseFloat(hcGrowth)).toFixed(1);
-  document.getElementById('kpi-growth-delta').textContent = (delta >= 0 ? '+' : '') + delta + '%';
+  const latestGaji    = gajiArr[latestFullIdx];    // 7558 juta
+  const latestRev     = revArr[latestFullIdx];     // 38853 juta
+  const latestGM      = gmArr[latestFullIdx];      // 25.26 %
+  const latestRatio   = ratioArr[latestFullIdx];   // 19.45 %
 
-  // ── Manpower Cost vs Revenue Trend Chart ─────────────────────────
-  createChart('chart-cost-revenue', {
+  // ── Jun 2026 derived calculations ──
+  const latestGP      = latestRev * (latestGM / 100);               // Gross Profit in Rp juta
+  const gpPerHC       = Math.round(latestGP * 1e6 / activeHC);      // Rp per person
+  const salaryPerHC   = Math.round(latestGaji * 1e6 / activeHC);    // Rp per person
+  const roiRatio      = gpPerHC / salaryPerHC;                       // e.g. 1.299
+  const roiPct        = ((roiRatio - 1) * 100).toFixed(1);          // e.g. +29.9%
+  const revPerHC      = Math.round(latestRev * 1e6 / activeHC);     // Rp per person
+  const salesPerDay   = Math.round(revPerHC / workDays);            // Rp per person per day
+
+  // ── Jan 2026 for growth calculations (index 0) ──
+  const janGaji = gajiArr[0];  // 7791 juta
+  const janRev  = revArr[0];   // 36711 juta
+
+  // ── KPI Cards — Row 1: Financial Fundamentals ──
+  nullDash('kpi-total-gaji',    'Rp ' + (latestGaji/1000).toFixed(3) + 'M');
+  nullDash('kpi-revenue-val',   'Rp ' + (latestRev/1000).toFixed(3) + 'M');
+  nullDash('kpi-gross-margin',  latestGM.toFixed(2) + '%');
+  nullDash('kpi-gross-profit',  'Rp ' + (latestGP/1000).toFixed(3) + 'M');
+  nullDash('kpi-manpower-ratio', latestRatio.toFixed(2) + '%');
+  nullDash('kpi-incentive',     'Jun: Rp 650jt');
+
+  // Update labels to show which month
+  nullDash('kpi-total-gaji-label', 'Total Payroll (Jun 2026)');
+  nullDash('kpi-revenue-label',    'Revenue (Jun 2026)');
+  nullDash('kpi-gm-label',         'Gross Margin (Jun 2026)');
+  nullDash('kpi-gp-label',         'Gross Profit (Jun 2026)');
+  nullDash('kpi-mp-ratio-label',   'Manpower Cost Ratio');
+
+  // ── KPI Cards — Row 2: ROI Per Person ──
+  nullDash('kpi-gp-per-hc',     'Rp ' + gpPerHC.toLocaleString('id'));
+  nullDash('kpi-salary-per-hc', 'Rp ' + salaryPerHC.toLocaleString('id'));
+
+  // ROI per person — color-coded
+  const roiEl = document.getElementById('kpi-roi-per-person');
+  if (roiEl) {
+    roiEl.textContent = roiRatio.toFixed(3) + 'x  (' + (roiPct >= 0 ? '+' : '') + roiPct + '%)';
+    roiEl.style.color  = roiRatio >= 1 ? '#16a34a' : '#dc2626';
+    roiEl.style.fontSize = '15px';
+  }
+
+  nullDash('kpi-rev-per-emp',   'Rp ' + revPerHC.toLocaleString('id'));
+  nullDash('kpi-sales-per-day', 'Rp ' + salesPerDay.toLocaleString('id'));
+  nullDash('kpi-denda',         'Tidak tersedia');
+
+  // KPI label updates
+  nullDash('kpi-gp-per-hc-label',  'GP / HC / bulan (Jun 26)');
+  nullDash('kpi-sal-per-hc-label', 'Salary / HC / bulan (Jun 26)');
+  nullDash('kpi-roi-label',        'ROI per Person (Jun 26)');
+  nullDash('kpi-rev-per-emp-label','Revenue / HC / bulan (Jun 26)');
+  nullDash('kpi-sales-day-label',  'Sales / Staff / Day (Jun 26)');
+
+  // ── HC vs Revenue Growth: Jan 2026 → Jun 2026 ──
+  // HC: use openingHC[0]=Feb as proxy for Jan closing vs activeHC (current)
+  // Revenue: janRev → latestRev
+  if (janRev && latestRev) {
+    const revGrowth = ((latestRev - janRev) / janRev * 100).toFixed(1);
+    // HC Jan 2026 ≈ openingHC[0] = 836 (Feb opening = Jan closing)
+    const hcJan    = DATA.openingHC[0]; // 836
+    const hcJun    = activeHC;          // 818
+    const hcGrowth = ((hcJun - hcJan) / hcJan * 100).toFixed(1);
+    const delta    = (parseFloat(revGrowth) - parseFloat(hcGrowth)).toFixed(1);
+    const growthEl = document.getElementById('kpi-growth-delta');
+    if (growthEl) {
+      growthEl.textContent = 'Rev: ' + (revGrowth >= 0 ? '+' : '') + revGrowth + '%  |  HC: ' + (hcGrowth >= 0 ? '+' : '') + hcGrowth + '%';
+      growthEl.style.color = parseFloat(revGrowth) > parseFloat(hcGrowth) ? '#16a34a' : '#dc2626';
+      growthEl.style.fontSize = '11px';
+    }
+  }
+
+  // ── Build per-month derived arrays (full 7-month: Jan–Jul 2026) ──
+  // gpArr[i] = gross profit in Rp juta (null if rev or gm missing)
+  const gpArr      = roiMonths.map((_, i) => {
+    const r = revArr[i], g = gmArr[i];
+    return (r != null && g != null) ? r * (g / 100) : null;
+  });
+  const gpPerHCArr    = roiMonths.map((_, i) => {
+    const gp = gpArr[i];
+    return gp != null ? Math.round(gp * 1e6 / activeHC / 1000) : null; // Rp ribu
+  });
+  const salPerHCArr   = roiMonths.map((_, i) => {
+    const gj = gajiArr[i];
+    return gj != null ? Math.round(gj * 1e6 / activeHC / 1000) : null; // Rp ribu
+  });
+  const roiRatioArr   = roiMonths.map((_, i) => {
+    const gp = gpPerHCArr[i], sal = salPerHCArr[i];
+    return (gp != null && sal != null && sal > 0) ? parseFloat((gp / sal).toFixed(3)) : null;
+  });
+  const salesDayArr   = roiMonths.map((_, i) => {
+    const r = revArr[i];
+    return r != null ? Math.round(r * 1e6 / activeHC / workDays / 1000) : null; // Rp ribu per day
+  });
+  const revPerHCArr   = roiMonths.map((_, i) => {
+    const r = revArr[i];
+    return r != null ? Math.round(r * 1e6 / activeHC / 1000) : null; // Rp ribu
+  });
+
+  // ── Chart 1: GP/HC vs Salary/HC per person (Jun 2026 spotlight + trend) ──
+  // Show as grouped bar for available months
+  const availMonths = roiMonths.filter((_, i) => gpPerHCArr[i] != null || salPerHCArr[i] != null);
+  const availIdx    = roiMonths.map((_, i) => i).filter(i => gpPerHCArr[i] != null || salPerHCArr[i] != null);
+  createChart('chart-roi-per-person', {
     type: 'bar',
     data: {
-      labels: months6,
+      labels: availIdx.map(i => DATA.roiMonthShort[i]),
       datasets: [
-        { type: 'line', label: 'Revenue (PKU+PRI)', data: rev6M, borderColor: '#16a34a', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2.5, pointRadius: 5, yAxisID: 'y' },
-        { type: 'bar', label: 'Total Gaji', data: gaji6M, backgroundColor: '#3b82f680', borderRadius: 4, yAxisID: 'y' },
-        { type: 'line', label: 'Manpower Ratio %', data: ratio6M, borderColor: '#ef4444', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2, pointRadius: 4, borderDash: [5,3], yAxisID: 'y2' }
+        {
+          label: 'Gross Profit / HC (Rp ribu)',
+          data: availIdx.map(i => gpPerHCArr[i]),
+          backgroundColor: availIdx.map(i => i === latestFullIdx ? '#16a34a' : '#16a34a80'),
+          borderRadius: 5, borderWidth: 0
+        },
+        {
+          label: 'Salary / HC (Rp ribu)',
+          data: availIdx.map(i => salPerHCArr[i]),
+          backgroundColor: availIdx.map(i => i === latestFullIdx ? '#dc2626' : '#dc262680'),
+          borderRadius: 5, borderWidth: 0
+        }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
       plugins: {
         legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
-        datalabels: { display: false }
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': Rp ' + (ctx.parsed.y).toLocaleString('id') + ' ribu',
+            afterBody: (items) => {
+              const i = availIdx[items[0].dataIndex];
+              const roi = roiRatioArr[i];
+              return roi != null ? ['ROI: ' + roi.toFixed(3) + 'x  (' + ((roi-1)*100).toFixed(1) + '%)'] : [];
+            }
+          }
+        },
+        datalabels: {
+          display: true, color: '#fff', font: { weight: 'bold', size: 10 },
+          formatter: v => v != null ? (v/1000).toFixed(1) + 'jt' : ''
+        },
+        annotation: {
+          annotations: {
+            // draw a "break-even" reference line: when GP/HC == Salary/HC, ROI = 1x
+          }
+        }
       },
       scales: {
-        y:  { position: 'left',  title: { display: true, text: 'Rp Juta', font: { size: 10 } }, ticks: { callback: v => 'Rp' + (v/1000).toFixed(0) + 'M' } },
-        y2: { position: 'right', title: { display: true, text: '%',  font: { size: 10 } }, ticks: { callback: v => v + '%' }, grid: { drawOnChartArea: false }, min: 20, max: 35 }
+        y: {
+          beginAtZero: true,
+          ticks: { callback: v => 'Rp' + (v/1000).toFixed(0) + 'jt' },
+          title: { display: true, text: 'Rp Ribu / Orang', font: { size: 9 } }
+        }
       }
     }
   });
 
-  // ── Incentive by Month (Juni exact; others as trend line from total) ─
-  // Use ratio: Juni incentive/gaji = 650/7020 = 9.26%
-  const incratio = juniIncentive / gaji6M[5];
-  const estIncentive = gaji6M.map((g, i) => i === 5 ? juniIncentive : Math.round(g * incratio));
-
-  createChart('chart-incentive-denda-ot', {
+  // ── Chart 2: Sales / Staff / Day trend (available months) ──
+  const sdAvailIdx = roiMonths.map((_, i) => i).filter(i => salesDayArr[i] != null);
+  createChart('chart-sales-per-day', {
     type: 'bar',
     data: {
-      labels: months6,
+      labels: sdAvailIdx.map(i => DATA.roiMonthShort[i]),
+      datasets: [{
+        label: 'Sales / Staff / Day (Rp ribu)',
+        data: sdAvailIdx.map(i => salesDayArr[i]),
+        backgroundColor: sdAvailIdx.map(i => i === latestFullIdx ? '#4f46e5' : '#4f46e580'),
+        borderRadius: 5, borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: {
+          callbacks: { label: ctx => 'Sales/Staff/Day: Rp ' + ctx.parsed.y.toLocaleString('id') + ' ribu' }
+        },
+        datalabels: {
+          display: true, color: '#fff', font: { weight: 'bold', size: 11 },
+          formatter: v => v != null ? 'Rp ' + (v/1000).toFixed(2) + 'jt' : ''
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          ticks: { callback: v => 'Rp' + (v/1000).toFixed(1) + 'jt' },
+          title: { display: true, text: 'Rp Ribu / Orang / Hari', font: { size: 9 } }
+        }
+      }
+    }
+  });
+
+  // ── Chart 3: Payroll vs Revenue + Gross Margin Trend (Jan–Jul 2026) ──
+  createChart('chart-cost-revenue', {
+    type: 'bar',
+    data: {
+      labels: roiMonths,
       datasets: [
-        { label: 'Incentive (Rp Juta)', data: estIncentive, backgroundColor: '#8b5cf6', borderRadius: 4 },
+        {
+          type: 'line', label: 'Revenue (Rp Juta)',
+          data: revArr, borderColor: '#16a34a', backgroundColor: 'transparent',
+          tension: 0.3, borderWidth: 2.5, pointRadius: 5,
+          spanGaps: true, yAxisID: 'y'
+        },
+        {
+          type: 'bar', label: 'Total Payroll (Rp Juta)',
+          data: gajiArr, backgroundColor: '#3b82f680', borderRadius: 4,
+          yAxisID: 'y'
+        },
+        {
+          type: 'line', label: 'Gross Margin %',
+          data: gmArr, borderColor: '#7c3aed', backgroundColor: 'transparent',
+          tension: 0.3, borderWidth: 2, pointRadius: 5, borderDash: [5, 3],
+          spanGaps: true, yAxisID: 'y2'
+        },
+        {
+          type: 'line', label: 'Manpower Ratio %',
+          data: ratioArr, borderColor: '#ef4444', backgroundColor: 'transparent',
+          tension: 0.3, borderWidth: 1.5, pointRadius: 4, borderDash: [3, 3],
+          spanGaps: true, yAxisID: 'y2'
+        }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
       plugins: {
         legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
-        tooltip: { callbacks: { footer: (items) => items[0].dataIndex === 5 ? 'Juni: Data aktual dari sheet payroll' : 'Estimasi berdasarkan rasio Juni' } },
-        datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 10 }, formatter: v => 'Rp' + (v/1000).toFixed(0) + 'M' }
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.yAxisID === 'y2') return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + '%' : '—');
+              return ctx.dataset.label + ': Rp ' + (ctx.parsed.y != null ? (ctx.parsed.y/1000).toFixed(3) + 'M' : '—');
+            }
+          }
+        },
+        datalabels: { display: false }
+      },
+      scales: {
+        y: {
+          position: 'left',
+          title: { display: true, text: 'Rp Juta', font: { size: 10 } },
+          ticks: { callback: v => 'Rp' + (v/1000).toFixed(0) + 'M' },
+          min: 0
+        },
+        y2: {
+          position: 'right',
+          title: { display: true, text: '%', font: { size: 10 } },
+          ticks: { callback: v => v + '%' },
+          grid: { drawOnChartArea: false },
+          min: 15, max: 35
+        }
+      }
+    }
+  });
+
+  // ── Chart 4: Incentive Estimated Trend ──
+  // Jun incentive = 650 juta (exact). Others estimated from Juni incentive/gaji ratio.
+  const juniIncentive = 650; // Rp juta — Jun 2026 exact
+  const juniGaji      = gajiArr[5]; // 7558
+  const incRatio      = juniIncentive / juniGaji;
+  const estIncentive  = gajiArr.map((g, i) => {
+    if (g == null) return null;
+    return i === latestFullIdx ? juniIncentive : Math.round(g * incRatio);
+  });
+  createChart('chart-incentive-denda-ot', {
+    type: 'bar',
+    data: {
+      labels: roiMonths,
+      datasets: [{
+        label: 'Incentive (Rp Juta)',
+        data: estIncentive,
+        backgroundColor: roiMonths.map((_, i) => i === latestFullIdx ? '#8b5cf6' : '#8b5cf670'),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: {
+          callbacks: {
+            footer: items => items[0].dataIndex === latestFullIdx
+              ? 'Data aktual Juni 2026 dari sheet payroll'
+              : 'Estimasi berdasarkan rasio Juni (Incentive/Payroll = ' + (incRatio*100).toFixed(1) + '%)'
+          }
+        },
+        datalabels: {
+          display: true, color: '#fff', font: { weight: 'bold', size: 10 },
+          formatter: v => v != null ? 'Rp' + (v/1000).toFixed(2) + 'M' : ''
+        }
       },
       scales: { y: { beginAtZero: true, ticks: { callback: v => 'Rp' + (v/1000).toFixed(0) + 'M' } } }
     }
   });
 
-  // ── Salary by PT Trend Chart ──────────────────────────────────────
+  // ── Chart 5: Salary by PT Entity (2025 trend — pending 2026 per-PT extraction) ──
   const pt = DATA.gajiTrendByPT;
   createChart('chart-gaji-pt', {
     type: 'bar',
@@ -2805,7 +3174,7 @@ function renderROI() {
     }
   });
 
-  // ── PT Entity Breakdown (Juni 2026 detail) + OT Ratio placeholder ──
+  // ── Chart 6: PT Entity Breakdown Donut (Jun 2026) ──
   const ptd = DATA.gajiByPT;
   createChart('chart-ot-analysis', {
     type: 'doughnut',
@@ -2821,7 +3190,8 @@ function renderROI() {
       responsive: true, maintainAspectRatio: true,
       plugins: {
         legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
-        datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 11 },
+        datalabels: {
+          display: true, color: '#fff', font: { weight: 'bold', size: 11 },
           formatter: (v, ctx) => {
             const total = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
             return ((v/total)*100).toFixed(0) + '%';
@@ -2832,25 +3202,56 @@ function renderROI() {
     }
   });
 
-  // ── ROI Summary Table — REAL DATA ────────────────────────────────
+  // ── ROI Summary Table — Jan–Jul 2026 (all 7 months) ──────────────
   const roiBody = document.getElementById('roi-monthly-tbody');
-  roiBody.innerHTML = months6.map((m, i) => {
-    const gaji = gaji6M[i];
-    const rev  = rev6M[i];
-    const ratio = ratio6M[i];
-    const incentive = estIncentive[i];
-    const revPerEmp = Math.round(rev / DATA.activeHC);
-    const isActual  = i === 5 ? '<span style="font-size:9px;background:#dcfce7;color:#16a34a;padding:1px 5px;border-radius:10px;">Aktual</span>' : '<span style="font-size:9px;background:#fef9c3;color:#ca8a04;padding:1px 5px;border-radius:10px;">Est.</span>';
-    return `<tr>
-      <td><strong>${m}</strong></td>
-      <td>Rp ${(gaji/1000).toFixed(2)}M</td>
-      <td>Rp ${(rev/1000).toFixed(2)}M</td>
-      <td><span style="font-weight:700;color:${ratio > 27 ? '#dc2626' : ratio > 25 ? '#f59e0b' : '#16a34a'}">${ratio}%</span></td>
-      <td>Rp ${(incentive/1000).toFixed(2)}M ${isActual}</td>
-      <td style="color:#94a3b8;">—</td>
-      <td style="color:#94a3b8;">—</td>
-      <td style="color:#94a3b8;">—</td>
-      <td>Rp ${(revPerEmp/1000).toFixed(0)}jt</td>
+  roiBody.innerHTML = roiMonths.map((m, i) => {
+    const gaji    = gajiArr[i];
+    const rev     = revArr[i];
+    const gm      = gmArr[i];
+    const gp      = gpArr[i];
+    const ratio   = ratioArr[i];
+    const gpHC    = gpPerHCArr[i];   // Rp ribu
+    const salHC   = salPerHCArr[i];  // Rp ribu
+    const roiR    = roiRatioArr[i];
+    const salesD  = salesDayArr[i];  // Rp ribu
+
+    const isActual = (i === latestFullIdx);
+    const hasRev   = rev != null;
+    const hasGaji  = gaji != null;
+    const hasGM    = gm != null;
+
+    // Row data quality badge
+    const qualBadge = (hasRev && hasGaji && hasGM)
+      ? '<span style="font-size:9px;background:#dcfce7;color:#16a34a;padding:1px 5px;border-radius:10px;font-weight:700;">✅ Full</span>'
+      : (hasRev || hasGaji)
+        ? '<span style="font-size:9px;background:#fef9c3;color:#ca8a04;padding:1px 5px;border-radius:10px;font-weight:700;">⚠️ Parsial</span>'
+        : '<span style="font-size:9px;background:#fee2e2;color:#dc2626;padding:1px 5px;border-radius:10px;font-weight:700;">❌ N/A</span>';
+
+    // ROI cell styling
+    let roiCell = '—';
+    if (roiR != null) {
+      const roiColor = roiR >= 1.3 ? '#16a34a' : roiR >= 1.0 ? '#ca8a04' : '#dc2626';
+      const roiPctVal = ((roiR - 1) * 100).toFixed(1);
+      roiCell = `<span style="font-weight:800;color:${roiColor}">${roiR.toFixed(3)}x</span>
+                 <span style="font-size:10px;color:${roiColor}">(${roiPctVal >= 0 ? '+' : ''}${roiPctVal}%)</span>`;
+    }
+
+    // Ratio cell color
+    const ratioCell = ratio != null
+      ? `<span style="font-weight:700;color:${ratio > 23 ? '#dc2626' : ratio > 20 ? '#ca8a04' : '#16a34a'}">${ratio.toFixed(2)}%</span>`
+      : '—';
+
+    return `<tr style="${isActual ? 'background:#f0fdf4;font-weight:600;' : ''}">
+      <td><strong>${m}</strong> ${qualBadge}</td>
+      <td>${hasGaji ? 'Rp ' + (gaji/1000).toFixed(3) + 'M' : '—'}</td>
+      <td>${hasRev  ? 'Rp ' + (rev/1000).toFixed(3) + 'M'  : '—'}</td>
+      <td>${hasGM   ? gm.toFixed(2) + '%' : '—'}</td>
+      <td>${gp != null ? 'Rp ' + (gp/1000).toFixed(3) + 'M' : '—'}</td>
+      <td>${ratioCell}</td>
+      <td>${gpHC  != null ? 'Rp ' + (gpHC/1000).toFixed(2) + 'jt'  : '—'}</td>
+      <td>${salHC != null ? 'Rp ' + (salHC/1000).toFixed(2) + 'jt' : '—'}</td>
+      <td>${roiCell}</td>
+      <td>${salesD != null ? 'Rp ' + (salesD/1000).toFixed(2) + 'jt' : '—'}</td>
     </tr>`;
   }).join('');
 }
@@ -2910,11 +3311,33 @@ function renderOverview() {
   const nbRetRate   = nbRecruited > 0 ? (nbRetained / nbRecruited * 100).toFixed(1) : null;
   const compRetention = (100 - parseFloat(turnoverRate12)).toFixed(1);
 
-  // ROI — always Jan-Jun 2026 (fixed, 6 months, index offset: ROI data is Jan=0, Feb=1…Jun=5)
-  const totalGaji6M = DATA.totalGajiMonthly.reduce((a,b)=>a+b,0);
-  const totalRev6M  = DATA.revenueMonthly.reduce((a,b)=>a+b,0);
-  const avgRatio    = (totalGaji6M / totalRev6M * 100).toFixed(1);
-  const avgRevPerEmp = Math.round((totalRev6M / 6) / DATA.activeHC);
+  // ROI — use corrected Jan–Jul 2026 arrays; compute from non-null values only
+  const roiGajiArr  = DATA.totalGajiMonthly;   // [7791,null,null,null,6963,7558,7791] Rp juta
+  const roiRevArr   = DATA.revenueMonthly;     // [36711,null,null,null,null,38853,null]
+  const roiGMArr    = DATA.grossMarginPct;     // [null,null,null,null,null,25.26,null]
+  const roiRatArr   = DATA.manpowerRatioPct;   // [21.22,null,null,null,null,19.45,null]
+  const roiWD       = DATA.roiWorkingDaysPerMonth; // 26
+
+  // Use Jun 2026 (index 5) as the "latest complete" reference for Overview ROI pillar
+  const ovLatestGaji  = roiGajiArr[5];   // 7558 juta
+  const ovLatestRev   = roiRevArr[5];    // 38853 juta
+  const ovLatestGM    = roiGMArr[5];     // 25.26%
+  const ovLatestRatio = roiRatArr[5];    // 19.45%
+
+  // Derived Jun 2026
+  const ovGP          = ovLatestRev * (ovLatestGM / 100);                     // Rp juta
+  const ovGPperHC     = Math.round(ovGP * 1e6 / DATA.activeHC);               // Rp per person
+  const ovSalPerHC    = Math.round(ovLatestGaji * 1e6 / DATA.activeHC);       // Rp per person
+  const ovROI         = (ovGPperHC / ovSalPerHC).toFixed(3);                  // e.g. "1.299"
+  const ovROIPct      = ((ovGPperHC / ovSalPerHC - 1) * 100).toFixed(1);      // e.g. "29.9"
+  const ovSalesDay    = Math.round(ovLatestRev * 1e6 / DATA.activeHC / roiWD); // Rp per person per day
+
+  // Avg ratio from non-null months
+  const roiNonNullPairs = roiGajiArr.map((g,i) => ({ g, r: roiRevArr[i] })).filter(p => p.g != null && p.r != null);
+  const avgGajiSum = roiNonNullPairs.reduce((a,p) => a + p.g, 0);
+  const avgRevSum  = roiNonNullPairs.reduce((a,p) => a + p.r, 0);
+  const avgRatio   = avgRevSum > 0 ? (avgGajiSum / avgRevSum * 100).toFixed(1) : ovLatestRatio.toFixed(1);
+  const avgRevPerEmp = Math.round((avgRevSum / roiNonNullPairs.length) / DATA.activeHC); // Rp juta per HC avg
   const turnoverCostEst = periodResign * 4000000; // Rp 4jt per person
 
   // ── TOP KPI STRIP ─────────────────────────────────────────────────
@@ -2940,7 +3363,7 @@ function renderOverview() {
   }
 
   set('ov-onboarded', periodOnboarded);
-  set('ov-mp-ratio',  avgRatio + '%');
+  set('ov-mp-ratio',  ovLatestRatio.toFixed(2) + '%');  // Jun 2026 actual
 
   const nbRateEl = document.getElementById('ov-nb-rate');
   if (nbRateEl) {
@@ -3007,19 +3430,20 @@ function renderOverview() {
   const recNbLbl = document.getElementById('pil-rec-nb-lbl');
   if (recNbLbl) recNbLbl.textContent = `Newbie Retention (${pLabel})`;
 
-  // ROI pillar
+  // ROI pillar — use Jun 2026 confirmed data
   const roiBadge = document.getElementById('pill-roi');
   if (roiBadge) {
-    const rNum = parseFloat(avgRatio);
-    const cls  = rNum <= 25 ? 'badge-health-green' : rNum <= 28 ? 'badge-health-yellow' : 'badge-health-red';
-    const icon = rNum <= 25 ? '🟢' : rNum <= 28 ? '🟡' : '🔴';
+    const roiNum = parseFloat(ovROI);
+    const cls  = roiNum >= 1.3 ? 'badge-health-green' : roiNum >= 1.0 ? 'badge-health-yellow' : 'badge-health-red';
+    const icon = roiNum >= 1.3 ? '🟢' : roiNum >= 1.0 ? '🟡' : '🔴';
     roiBadge.className   = `ov-pillar-badge ${cls}`;
-    roiBadge.textContent = `${icon} Ratio ${avgRatio}%`;
+    roiBadge.textContent = `${icon} ROI ${ovROI}x (+${ovROIPct}%)`;
   }
-  set('pil-roi-gaji',    'Rp ' + (totalGaji6M/1000).toFixed(1) + 'M');
-  set('pil-roi-ratio',   avgRatio + '%');
-  set('pil-roi-rev-emp', 'Rp ' + (avgRevPerEmp/1000).toFixed(0) + 'jt/mo');
-  set('pil-roi-cost',    '~Rp ' + (turnoverCostEst/1e6).toFixed(0) + 'jt');
+  set('pil-roi-gaji',    'Rp ' + (ovLatestGaji/1000).toFixed(3) + 'M  (Jun 26)');
+  set('pil-roi-ratio',   ovLatestRatio.toFixed(2) + '%  |  GM ' + ovLatestGM.toFixed(2) + '%');
+  set('pil-roi-rev-emp', 'Rp ' + Math.round(ovLatestRev * 1e6 / DATA.activeHC / 1000).toLocaleString('id') + 'rb/mo');
+  // ROI cost → now shows Sales/Staff/Day
+  set('pil-roi-cost',    'Rp ' + Math.round(ovSalesDay / 1000).toLocaleString('id') + 'rb/day');
 
   // PKPA (Collaboration)
   set('pil-col-pkpa', DATA.pkpaFromDB + ' (approx)');
@@ -3050,14 +3474,14 @@ function renderOverview() {
     options: sparkOpts('#3b82f6')
   });
 
-  // ROI sparkline: manpower ratio % (always 6M Jan-Jun, fixed)
+  // ROI sparkline: manpower ratio % Jan–Jul 2026 (nulls = gaps, spanGaps=true)
   createChart('spark-roi', {
     type: 'line',
     data: {
-      labels: ['Jan','Feb','Mar','Apr','Mei','Jun'],
-      datasets: [{ data: DATA.manpowerRatioPct, borderColor: '#16a34a', backgroundColor: '#dcfce720', fill: true }]
+      labels: DATA.roiMonthShort,
+      datasets: [{ data: DATA.manpowerRatioPct, borderColor: '#16a34a', backgroundColor: '#dcfce720', fill: true, spanGaps: true, pointRadius: 2 }]
     },
-    options: sparkOpts('#16a34a')
+    options: { ...sparkOpts('#16a34a'), spanGaps: true }
   });
 
   // ── CHART 1: People Flow + Manpower Ratio Trend ───────────────────
@@ -3200,27 +3624,59 @@ function renderOverview() {
     }
   });
 
-  // ── CHART 5: Payroll vs Revenue (always Jan–Jun 2026 fixed) ───────
-  const roi6Labels = ['Jan','Feb','Mar','Apr','Mei','Jun'];
+  // ── CHART 5: Payroll vs Revenue + Gross Margin (Jan–Jul 2026, corrected) ──
   createChart('chart-ov-roi', {
-    type: 'line',
+    type: 'bar',
     data: {
-      labels: roi6Labels,
+      labels: DATA.roiMonthShort,   // ['Jan','Feb','Mar','Apr','Mei','Jun','Jul']
       datasets: [
-        { type: 'bar',  label: 'Payroll (Rp Juta)', data: DATA.totalGajiMonthly, backgroundColor: '#3b82f660', borderRadius: 3, yAxisID: 'y' },
-        { type: 'line', label: 'Revenue (Rp Juta)',  data: DATA.revenueMonthly,   borderColor: '#16a34a', backgroundColor: 'transparent', borderWidth: 2, tension: 0.3, pointRadius: 3, yAxisID: 'y' },
-        { type: 'line', label: 'Ratio %',            data: DATA.manpowerRatioPct, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,3], tension: 0.3, pointRadius: 3, yAxisID: 'y2' }
+        {
+          type: 'bar',  label: 'Payroll',
+          data: DATA.totalGajiMonthly, backgroundColor: '#3b82f660', borderRadius: 3, yAxisID: 'y'
+        },
+        {
+          type: 'line', label: 'Revenue',
+          data: DATA.revenueMonthly, borderColor: '#16a34a', backgroundColor: 'transparent',
+          borderWidth: 2.5, tension: 0.3, pointRadius: 4, spanGaps: true, yAxisID: 'y'
+        },
+        {
+          type: 'line', label: 'Gross Margin %',
+          data: DATA.grossMarginPct, borderColor: '#7c3aed', backgroundColor: 'transparent',
+          borderWidth: 2, borderDash: [5,3], tension: 0.3, pointRadius: 4, spanGaps: true, yAxisID: 'y2'
+        },
+        {
+          type: 'line', label: 'MP Ratio %',
+          data: DATA.manpowerRatioPct, borderColor: '#ef4444', backgroundColor: 'transparent',
+          borderWidth: 1.5, borderDash: [3,3], tension: 0.3, pointRadius: 3, spanGaps: true, yAxisID: 'y2'
+        }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
       plugins: {
         legend: { position: 'top', labels: { boxWidth: 8, font: { size: 9 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.yAxisID === 'y2') return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? ctx.parsed.y.toFixed(2) + '%' : '—');
+              return ctx.dataset.label + ': ' + (ctx.parsed.y != null ? 'Rp' + (ctx.parsed.y/1000).toFixed(3) + 'M' : '—');
+            }
+          }
+        },
         datalabels: { display: false }
       },
       scales: {
-        y:  { position: 'left',  ticks: { callback: v=>'Rp'+(v/1000).toFixed(0)+'M', font:{size:9} } },
-        y2: { position: 'right', ticks: { callback: v=>v+'%', font:{size:9} }, grid: { drawOnChartArea: false }, min: 22, max: 30 }
+        y: {
+          position: 'left',
+          ticks: { callback: v => 'Rp'+(v/1000).toFixed(0)+'M', font:{size:9} },
+          min: 0
+        },
+        y2: {
+          position: 'right',
+          ticks: { callback: v => v+'%', font:{size:9} },
+          grid: { drawOnChartArea: false },
+          min: 15, max: 35
+        }
       }
     }
   });
