@@ -257,6 +257,61 @@
   .hc-vacant-card .hc-pos-name { font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
   .hc-vacant-card .hc-pos-count { font-size: 28px; font-weight: 800; line-height: 1; }
   .hc-vacant-card .hc-pos-label { font-size: 10px; color: #6b7280; margin-top: 4px; }
+
+  /* ── OVERVIEW / MASTER DASHBOARD ────────────────────────────────────── */
+  .ov-pillar-card {
+    background: white; border-radius: 14px; border-left: 4px solid;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    display: flex; flex-direction: column;
+  }
+  .ov-pillar-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.13); }
+
+  .ov-pillar-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .ov-pillar-icon { font-size: 22px; flex-shrink: 0; }
+  .ov-pillar-title { font-size: 13px; font-weight: 800; color: #1e293b; line-height: 1.2; }
+  .ov-pillar-badge {
+    font-size: 11px; font-weight: 700; margin-top: 2px;
+    display: inline-flex; align-items: center; gap: 3px;
+  }
+  .ov-pillar-arrow {
+    margin-left: auto; font-size: 20px; color: #94a3b8; font-weight: 300;
+    transition: transform 0.15s;
+  }
+  .ov-pillar-card:hover .ov-pillar-arrow { transform: translateX(3px); color: #475569; }
+
+  .ov-pillar-body { padding: 10px 14px; flex: 1; }
+
+  .ov-metric-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid #f3f4f6;
+  }
+  .ov-metric-row:last-of-type { border-bottom: none; }
+  .ov-metric-label { font-size: 11px; color: #64748b; }
+  .ov-metric-val   { font-size: 12px; font-weight: 700; color: #1e293b; }
+
+  .ov-pillar-footer {
+    padding: 7px 14px; background: #f8fafc;
+    font-size: 10px; color: #94a3b8;
+    border-top: 1px solid #f1f5f9;
+  }
+
+  /* KPI strip — tighter on overview */
+  .ov-kpi-strip { display:grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap:8px; margin-bottom:12px; }
+  .ov-kpi-strip .kpi-card { padding: 10px 12px; }
+  .ov-kpi-strip .kpi-value { font-size: 22px; }
+
+  /* Sparkline canvas inside pillar card */
+  .ov-pillar-body canvas { display:block; }
+
+  /* Health badge colours */
+  .badge-health-green  { color: #16a34a; }
+  .badge-health-yellow { color: #ca8a04; }
+  .badge-health-red    { color: #dc2626; }
+  .badge-health-gray   { color: #9ca3af; }
 </style>
 </head>
 <body>
@@ -275,7 +330,8 @@
 
 <!-- NAV TABS -->
 <div class="nav-tabs">
-  <button class="nav-tab active" onclick="switchTab('retention')"><span class="tab-icon">🔄</span> Retention</button>
+  <button class="nav-tab active" onclick="switchTab('overview')"><span class="tab-icon">🏠</span> Overview</button>
+  <button class="nav-tab" onclick="switchTab('retention')"><span class="tab-icon">🔄</span> Retention</button>
   <button class="nav-tab" onclick="switchTab('recruitment')"><span class="tab-icon">🎯</span> Recruitment</button>
   <button class="nav-tab" onclick="switchTab('performance')"><span class="tab-icon">⭐</span> Performance</button>
   <button class="nav-tab" onclick="switchTab('roi')"><span class="tab-icon">💰</span> ROI of PPM</button>
@@ -311,8 +367,344 @@
   </div>
 </div>
 
+<!-- ===================== TAB 0: OVERVIEW / MASTER DASHBOARD ===================== -->
+<div id="tab-overview" class="tab-content active" style="background:#f1f5f9;">
+
+  <!-- ── Master KPI Strip ───────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:14px;">
+    <!-- HC -->
+    <div class="kpi-card" style="border-color:#2563eb;padding:10px 12px;">
+      <div class="kpi-icon">👥</div>
+      <div class="kpi-label">Active HC</div>
+      <div class="kpi-value" style="color:#2563eb;" id="ov-active-hc">—</div>
+      <div class="kpi-sub">Active Alproean sheet</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- New Hire -->
+    <div class="kpi-card" style="border-color:#16a34a;padding:10px 12px;">
+      <div class="kpi-icon">🆕</div>
+      <div class="kpi-label" id="ov-newhire-label">New Hire</div>
+      <div class="kpi-value" style="color:#16a34a;" id="ov-newhire">—</div>
+      <div class="kpi-sub" id="ov-newhire-sub">—</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- Resigned -->
+    <div class="kpi-card" style="border-color:#dc2626;padding:10px 12px;">
+      <div class="kpi-icon">📤</div>
+      <div class="kpi-label" id="ov-resigned-label">Resigned</div>
+      <div class="kpi-value" style="color:#dc2626;" id="ov-resigned">—</div>
+      <div class="kpi-sub" id="ov-resigned-sub">—</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- Turnover Rate -->
+    <div class="kpi-card" style="border-color:#f59e0b;padding:10px 12px;">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-label">Turnover Rate</div>
+      <div class="kpi-value" style="color:#f59e0b;" id="ov-turnover">—</div>
+      <div class="kpi-sub">12M rolling</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- Net Flow -->
+    <div class="kpi-card" style="border-color:#7c3aed;padding:10px 12px;">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label" id="ov-net-label">Net HC Flow</div>
+      <div class="kpi-value" id="ov-net">—</div>
+      <div class="kpi-sub">Hire minus Resign</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- CV Received -->
+    <div class="kpi-card" style="border-color:#0d9488;padding:10px 12px;">
+      <div class="kpi-icon">📄</div>
+      <div class="kpi-label" id="ov-cv-label">CV Received</div>
+      <div class="kpi-value" style="color:#0d9488;" id="ov-cv">—</div>
+      <div class="kpi-sub">Candidates sheet</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- Onboarded -->
+    <div class="kpi-card" style="border-color:#ca8a04;padding:10px 12px;">
+      <div class="kpi-icon">🚀</div>
+      <div class="kpi-label" id="ov-onboarded-label">Onboarded</div>
+      <div class="kpi-value" style="color:#ca8a04;" id="ov-onboarded">—</div>
+      <div class="kpi-sub">Join Date · Master DB</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- Manpower Cost Ratio -->
+    <div class="kpi-card" style="border-color:#4f46e5;padding:10px 12px;">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Manpower Ratio</div>
+      <div class="kpi-value" style="color:#4f46e5;" id="ov-mp-ratio">—</div>
+      <div class="kpi-sub">Payroll ÷ Revenue</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- Newbie Retention -->
+    <div class="kpi-card" style="border-color:#0ea5e9;padding:10px 12px;">
+      <div class="kpi-icon">🌱</div>
+      <div class="kpi-label" id="ov-nb-label">Newbie Retention</div>
+      <div class="kpi-value" id="ov-nb-rate">—</div>
+      <div class="kpi-sub" id="ov-nb-sub">vs company avg</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- Exit Interviews -->
+    <div class="kpi-card" style="border-color:#ea580c;padding:10px 12px;">
+      <div class="kpi-icon">💬</div>
+      <div class="kpi-label" id="ov-exit-label">Exit Interviews</div>
+      <div class="kpi-value" style="color:#ea580c;" id="ov-exit">—</div>
+      <div class="kpi-sub">Exit Interview sheet</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+  </div>
+
+  <!-- ── Pillar Health Cards (click to navigate) ───────────────── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px;">
+
+    <!-- RETENTION -->
+    <div class="ov-pillar-card" onclick="switchTabById('retention')" style="border-color:#dc2626;" id="pillar-retention">
+      <div class="ov-pillar-header" style="background:linear-gradient(135deg,#fee2e2,#fef2f2);">
+        <span class="ov-pillar-icon">🔄</span>
+        <div>
+          <div class="ov-pillar-title">Retention</div>
+          <div class="ov-pillar-badge" id="pill-retention">—</div>
+        </div>
+        <span class="ov-pillar-arrow">›</span>
+      </div>
+      <div class="ov-pillar-body">
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">Turnover Rate (12M)</span>
+          <span class="ov-metric-val" id="pil-ret-turnover">—</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label" id="pil-ret-res-lbl">Resigned</span>
+          <span class="ov-metric-val" id="pil-ret-resigned">—</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">Top Exit Reason</span>
+          <span class="ov-metric-val" id="pil-ret-reason">—</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">Active Newbies</span>
+          <span class="ov-metric-val" id="pil-ret-newbie">—</span>
+        </div>
+        <div style="margin-top:8px;"><canvas id="spark-retention" height="50"></canvas></div>
+      </div>
+      <div class="ov-pillar-footer">4 Real · 1 Estimated · 2 No Data <span style="float:right;">Click to explore →</span></div>
+    </div>
+
+    <!-- RECRUITMENT -->
+    <div class="ov-pillar-card" onclick="switchTabById('recruitment')" style="border-color:#2563eb;" id="pillar-recruitment">
+      <div class="ov-pillar-header" style="background:linear-gradient(135deg,#dbeafe,#eff6ff);">
+        <span class="ov-pillar-icon">🎯</span>
+        <div>
+          <div class="ov-pillar-title">Recruitment</div>
+          <div class="ov-pillar-badge" id="pill-recruitment" style="color:#2563eb;">—</div>
+        </div>
+        <span class="ov-pillar-arrow">›</span>
+      </div>
+      <div class="ov-pillar-body">
+        <div class="ov-metric-row">
+          <span class="ov-metric-label" id="pil-rec-cv-lbl">CV Received</span>
+          <span class="ov-metric-val" id="pil-rec-cv">—</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label" id="pil-rec-ob-lbl">Onboarded</span>
+          <span class="ov-metric-val" id="pil-rec-onboarded">—</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">Hiring Needed</span>
+          <span class="ov-metric-val" id="pil-rec-vacancy">—</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label" id="pil-rec-nb-lbl">Newbie Retention</span>
+          <span class="ov-metric-val" id="pil-rec-nb-rate">—</span>
+        </div>
+        <div style="margin-top:8px;"><canvas id="spark-recruitment" height="50"></canvas></div>
+      </div>
+      <div class="ov-pillar-footer">6 Real · 1 Estimated · 0 No Data <span style="float:right;">Click to explore →</span></div>
+    </div>
+
+    <!-- PERFORMANCE -->
+    <div class="ov-pillar-card" onclick="switchTabById('performance')" style="border-color:#9ca3af;opacity:.85;" id="pillar-performance">
+      <div class="ov-pillar-header" style="background:linear-gradient(135deg,#f3f4f6,#f9fafb);">
+        <span class="ov-pillar-icon">⭐</span>
+        <div>
+          <div class="ov-pillar-title">Performance</div>
+          <div class="ov-pillar-badge" style="color:#9ca3af;">❌ No Data</div>
+        </div>
+        <span class="ov-pillar-arrow">›</span>
+      </div>
+      <div class="ov-pillar-body">
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">PAVE Status</span>
+          <span class="ov-metric-val" style="color:#9ca3af;font-style:italic;">No Data</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">KPI Score</span>
+          <span class="ov-metric-val" style="color:#9ca3af;font-style:italic;">No Data</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">Lateness</span>
+          <span class="ov-metric-val" style="color:#9ca3af;font-style:italic;">No Data</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">360° Survey</span>
+          <span class="ov-metric-val" style="color:#9ca3af;font-style:italic;">No Data</span>
+        </div>
+        <div style="margin-top:8px;padding:12px;background:#f9fafb;border-radius:6px;text-align:center;font-size:10px;color:#9ca3af;">Hubungkan sheet PAVE / KPI / Absensi</div>
+      </div>
+      <div class="ov-pillar-footer" style="color:#9ca3af;">0 Real · 0 Estimated · All No Data <span style="float:right;">Click to explore →</span></div>
+    </div>
+
+    <!-- ROI -->
+    <div class="ov-pillar-card" onclick="switchTabById('roi')" style="border-color:#16a34a;" id="pillar-roi">
+      <div class="ov-pillar-header" style="background:linear-gradient(135deg,#dcfce7,#f0fdf4);">
+        <span class="ov-pillar-icon">💰</span>
+        <div>
+          <div class="ov-pillar-title">ROI of PPM</div>
+          <div class="ov-pillar-badge" id="pill-roi" style="color:#16a34a;">—</div>
+        </div>
+        <span class="ov-pillar-arrow">›</span>
+      </div>
+      <div class="ov-pillar-body">
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">Total Payroll (6M)</span>
+          <span class="ov-metric-val" id="pil-roi-gaji">—</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">Manpower Ratio</span>
+          <span class="ov-metric-val" id="pil-roi-ratio">—</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">Revenue/Employee</span>
+          <span class="ov-metric-val" id="pil-roi-rev-emp">—</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">Turnover Cost (est.)</span>
+          <span class="ov-metric-val" id="pil-roi-cost">—</span>
+        </div>
+        <div style="margin-top:8px;"><canvas id="spark-roi" height="50"></canvas></div>
+      </div>
+      <div class="ov-pillar-footer">5 Real · 2 Partial · 3 No Data <span style="float:right;">Click to explore →</span></div>
+    </div>
+
+    <!-- COLLABORATION -->
+    <div class="ov-pillar-card" onclick="switchTabById('collaboration')" style="border-color:#9ca3af;opacity:.85;" id="pillar-collaboration">
+      <div class="ov-pillar-header" style="background:linear-gradient(135deg,#f3f4f6,#f9fafb);">
+        <span class="ov-pillar-icon">🤝</span>
+        <div>
+          <div class="ov-pillar-title">Collaboration</div>
+          <div class="ov-pillar-badge" style="color:#9ca3af;">⚠️ Partial</div>
+        </div>
+        <span class="ov-pillar-arrow">›</span>
+      </div>
+      <div class="ov-pillar-body">
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">PKPA/Magang</span>
+          <span class="ov-metric-val" id="pil-col-pkpa">—</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">Active MOU</span>
+          <span class="ov-metric-val" style="color:#9ca3af;font-style:italic;">No Data</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">LinkedIn</span>
+          <span class="ov-metric-val" style="color:#9ca3af;font-style:italic;">No Data</span>
+        </div>
+        <div class="ov-metric-row">
+          <span class="ov-metric-label">Universities</span>
+          <span class="ov-metric-val" style="color:#9ca3af;font-style:italic;">No Data</span>
+        </div>
+        <div style="margin-top:8px;padding:12px;background:#f9fafb;border-radius:6px;text-align:center;font-size:10px;color:#9ca3af;">Hubungkan sheet MOU / LinkedIn untuk data lengkap</div>
+      </div>
+      <div class="ov-pillar-footer" style="color:#9ca3af;">1 Approx · 7 No Data <span style="float:right;">Click to explore →</span></div>
+    </div>
+
+  </div>
+
+  <!-- ── Combined Trend Chart ───────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:14px;">
+    <div class="chart-card">
+      <div class="chart-title">📈 People Flow + Manpower Cost Trend <span class="data-badge real">✅ Real Data</span></div>
+      <div class="chart-subtitle" id="ov-trend-subtitle">Hire vs Resign net flow overlaid with Manpower Ratio %</div>
+      <canvas id="chart-ov-trend"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">💬 Exit Reasons — Top Contributors <span class="data-badge real">✅ Real Data</span></div>
+      <div class="chart-subtitle" id="ov-exit-subtitle">Period-aware · from Exit Interview sheet</div>
+      <canvas id="chart-ov-exit"></canvas>
+      <div id="ov-exit-legend" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- ── HC Snapshot + Recruitment Funnel row ─────────────────── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+    <div class="chart-card">
+      <div class="chart-title">👶 Newbie vs 👴 Oldbie Resign <span class="data-badge real">✅ Real Data</span></div>
+      <div class="chart-subtitle" id="ov-nb-subtitle">Tenure segmentation of resignees · period-aware</div>
+      <canvas id="chart-ov-newbie"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">🏗️ Recruitment Pipeline <span class="data-badge real">✅ Real Data</span></div>
+      <div class="chart-subtitle" id="ov-funnel-subtitle">Funnel stages · period-aware</div>
+      <canvas id="chart-ov-funnel"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">💰 Payroll vs Revenue <span class="data-badge real">✅ Real Data</span></div>
+      <div class="chart-subtitle">6M Jan–Jun 2026 · Manpower Ratio %</div>
+      <canvas id="chart-ov-roi"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Data Completeness Tracker ─────────────────────────────── -->
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div class="chart-title">📋 Data Completeness by Pillar</div>
+    <div class="chart-subtitle">Snapshot of which metrics have real data vs. pending connection</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px;">
+      <div style="text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">🔄 RETENTION</div>
+        <div style="font-size:22px;font-weight:800;color:#16a34a;">7</div>
+        <div style="font-size:10px;color:#6b7280;">Real KPIs</div>
+        <div style="background:#dcfce7;border-radius:6px;height:6px;margin:6px 0;"></div>
+        <div style="font-size:10px;color:#ca8a04;">1 Estimated</div>
+        <div style="font-size:10px;color:#dc2626;">2 No Data</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">🎯 RECRUITMENT</div>
+        <div style="font-size:22px;font-weight:800;color:#16a34a;">8</div>
+        <div style="font-size:10px;color:#6b7280;">Real KPIs</div>
+        <div style="background:#dcfce7;border-radius:6px;height:6px;margin:6px 0;"></div>
+        <div style="font-size:10px;color:#ca8a04;">1 Estimated</div>
+        <div style="font-size:10px;color:#dc2626;">0 No Data</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">⭐ PERFORMANCE</div>
+        <div style="font-size:22px;font-weight:800;color:#dc2626;">0</div>
+        <div style="font-size:10px;color:#6b7280;">Real KPIs</div>
+        <div style="background:#fee2e2;border-radius:6px;height:6px;margin:6px 0;"></div>
+        <div style="font-size:10px;color:#ca8a04;">0 Estimated</div>
+        <div style="font-size:10px;color:#dc2626;">All Pending</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">💰 ROI</div>
+        <div style="font-size:22px;font-weight:800;color:#16a34a;">5</div>
+        <div style="font-size:10px;color:#6b7280;">Real KPIs</div>
+        <div style="background:#fef9c3;border-radius:6px;height:6px;margin:6px 0;"></div>
+        <div style="font-size:10px;color:#ca8a04;">2 Partial</div>
+        <div style="font-size:10px;color:#dc2626;">3 No Data</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">🤝 COLLAB</div>
+        <div style="font-size:22px;font-weight:800;color:#f59e0b;">1</div>
+        <div style="font-size:10px;color:#6b7280;">Approx KPI</div>
+        <div style="background:#fef9c3;border-radius:6px;height:6px;margin:6px 0;"></div>
+        <div style="font-size:10px;color:#ca8a04;">0 Estimated</div>
+        <div style="font-size:10px;color:#dc2626;">7 No Data</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <!-- ===================== TAB 1: RETENTION ===================== -->
-<div id="tab-retention" class="tab-content active" style="background:#f1f5f9;">
+<div id="tab-retention" class="tab-content" style="background:#f1f5f9;">
 
   <!-- KPI Row -->
   <div class="kpi-grid" id="retentionKPIs">
@@ -360,7 +752,7 @@
     </div>
     <div class="kpi-card" style="border-color:#ea580c;">
       <div class="kpi-icon">🚨</div>
-      <div class="kpi-label">Exit Interviews</div>
+      <div class="kpi-label" id="kpi-exit-label">Exit Interviews</div>
       <div class="kpi-value" style="color:#ea580c;" id="kpi-exit">—</div>
       <div class="kpi-sub" id="kpi-exit-sub">Exit Interview sheet (GID=0)</div>
       <span class="data-badge real">✅ Real Data</span>
@@ -444,10 +836,17 @@
     </div>
     <div class="chart-card">
       <div class="chart-title">💬 Exit Interview Reason Categories <span class="data-badge real">✅ Real Data</span></div>
-      <div class="chart-subtitle">Data real dari 108 exit interview records (GID=0) · Total responses: 108</div>
+      <div class="chart-subtitle" id="subtitle-exit-reasons">Data real dari Exit Interview sheet (GID=0) · period-aware</div>
       <canvas id="chart-exit-reasons"></canvas>
       <div class="donut-legend" id="exit-legend"></div>
     </div>
+  </div>
+
+  <!-- Exit Interview Monthly Trend by Reason -->
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div class="chart-title">📈 Exit Interview Trend by Reason <span class="data-badge real">✅ Real Data</span></div>
+    <div class="chart-subtitle" id="subtitle-exit-trend">Monthly breakdown of exit interview reasons · period-aware</div>
+    <canvas id="chart-exit-trend"></canvas>
   </div>
 
   <!-- 360 Survey -->
@@ -564,6 +963,53 @@
       <div class="kpi-value" style="color:#7c3aed;" id="kpi-avg-score">—</div>
       <div class="kpi-sub">Candidates sheet · excl. score=0</div>
       <span class="data-badge real">✅ Real Data</span>
+    </div>
+  </div>
+
+  <!-- ── Newbie Retention Section ───────────────────────────────── -->
+  <div style="background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:14px;border:1px solid #e2e8f0;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="font-size:16px;">👶</span>
+      <span style="font-weight:700;font-size:14px;color:#1e293b;">Newbie Retention Analysis</span>
+      <span style="font-size:11px;color:#64748b;" id="newbie-section-period">— period-aware</span>
+      <span class="data-badge real" style="margin-left:auto;">✅ Real Data</span>
+    </div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:10px;">
+      <div class="kpi-card" style="border-color:#16a34a;padding:10px 12px;">
+        <div class="kpi-icon">🚀</div>
+        <div class="kpi-label" id="kpi-nb-recruited-label">Recruited Newbies</div>
+        <div class="kpi-value" style="color:#16a34a;font-size:1.6rem;" id="kpi-nb-recruited">—</div>
+        <div class="kpi-sub">New hires · all are newbies on day 1</div>
+        <span class="data-badge real">✅ Real Data</span>
+      </div>
+      <div class="kpi-card" style="border-color:#dc2626;padding:10px 12px;">
+        <div class="kpi-icon">📤</div>
+        <div class="kpi-label" id="kpi-nb-resigned-label">Resigned Newbies</div>
+        <div class="kpi-value" style="color:#dc2626;font-size:1.6rem;" id="kpi-nb-resigned">—</div>
+        <div class="kpi-sub">Left within 6 months of joining</div>
+        <span class="data-badge real">✅ Real Data</span>
+      </div>
+      <div class="kpi-card" style="border-color:#0ea5e9;padding:10px 12px;">
+        <div class="kpi-icon">🌱</div>
+        <div class="kpi-label">Active Newbies (Now)</div>
+        <div class="kpi-value" style="color:#0ea5e9;font-size:1.6rem;" id="kpi-nb-active">—</div>
+        <div class="kpi-sub" id="kpi-nb-active-sub">Currently employed &lt;6m tenure</div>
+        <span class="data-badge real">✅ Real Data</span>
+      </div>
+      <div class="kpi-card" style="border-color:#7c3aed;padding:10px 12px;">
+        <div class="kpi-icon">📈</div>
+        <div class="kpi-label" id="kpi-nb-rate-label">Newbie Retention Rate</div>
+        <div class="kpi-value" style="font-size:1.6rem;" id="kpi-nb-rate">—</div>
+        <div class="kpi-sub" id="kpi-nb-rate-sub">vs company turnover rate</div>
+        <span class="data-badge est">⚠️ Estimated</span>
+      </div>
+      <div class="kpi-card" style="border-color:#f59e0b;padding:10px 12px;">
+        <div class="kpi-icon">🏢</div>
+        <div class="kpi-label">Active Oldbies (Now)</div>
+        <div class="kpi-value" style="color:#f59e0b;font-size:1.6rem;" id="kpi-nb-oldbies">—</div>
+        <div class="kpi-sub">Currently employed ≥6m tenure</div>
+        <span class="data-badge real">✅ Real Data</span>
+      </div>
     </div>
   </div>
 
@@ -1127,8 +1573,10 @@ function getPeriodTotals(slice) {
 // =====================================================================
 const DATA = {
   // ── RETENTION ─ REAL DATA ──────────────────────────────────────────
-  // Active HC: 794 per "Active Alproean" sheet (user-confirmed source of truth)
-  activeHC: 794,
+  // Active HC: 818 — re-extracted 2026-07-27 directly from "Active Alproean" sheet
+  // 820 CSV rows → 818 valid employees (2 rows are blank/#N/A trailing rows)
+  // Previous value 794 was an undercount — this is the correct source-of-truth
+  activeHC: 818,
 
   // Opening/Closing HC per month (Feb–Jul 2026) — computed from join/resign dates
   // Opening = employees joined before month AND not yet resigned at month start
@@ -1184,8 +1632,20 @@ const DATA = {
 
   // ── NEWBIE vs OLDBIE — REAL DATA ───────────────────────────────────
   // Newbie = tenure < 6 months at time of resign | Oldbie = ≥ 6 months
-  newbie6M: [13, 22, 17, 19, 12, 9],   // monthly Feb–Jul (fetched 2026-07-24, newbie = tenure ≤6M)
-  oldbie6M: [ 9, 13, 22, 16, 23,16],  // monthly Feb–Jul (fetched 2026-07-24, oldbie = tenure >6M)
+  newbie6M: [13, 22, 17, 19, 12, 9],   // RESIGNED newbies monthly Feb–Jul (Master DB cross-ref)
+  oldbie6M: [ 9, 13, 22, 16, 23,16],   // RESIGNED oldbies monthly Feb–Jul
+
+  // ── ACTIVE NEWBIES (currently employed, tenure < 6 months as of 2026-07-27) ──
+  // Source: Active Alproean (818 employees) × Master DB join dates → tenure computed
+  // 818 cross-referenced: 817 matched (1 not found in Master DB)
+  // Tenure distribution: -1m=12(future Aug joins), 0m=55, 1m=50, 2m=38, 3m=32, 4m=17, 5m=32
+  activeNewbies: 236,    // all active with tenure < 6m (incl. 12 future-dated Aug 2026 joins)
+  activeOldbies: 581,    // active with tenure >= 6m
+
+  // Active newbies who JOINED in each month of Feb–Jul 2026 and are STILL employed today
+  // (recruited that month AND not yet resigned = retained newbies)
+  newbieActiveMonthly: [32, 17, 32, 38, 50, 55],  // Feb=32, Mar=17, Apr=32, May=38, Jun=50, Jul=55
+  // Note: Jul=55 matches Jul new hires (too early to have resigned yet)
 
   // ── POSITION TURNOVER — REAL DATA (12M) ────────────────────────────
   positions: [
@@ -1198,14 +1658,32 @@ const DATA = {
     { name: 'Customer Executive',        resigned: 4,   total: 18  },
   ],
 
-  // ── EXIT INTERVIEW REASONS — REAL DATA (GID=0, 108 records) ───────
+  // ── EXIT INTERVIEW REASONS — REAL DATA (GID=0, 116 records used, 1 bogus 1999 excluded)
+  // Source: "Exit Interview Result" sheet · Column D = Main Category · Column E = Tanggal Pengisian
+  // Re-extracted 2026-07-27 · Monthly arrays indexed 0-5 = Feb–Jul 2026
+  // Pre-Feb 2026 history kept separately for YTD / 12M views
   exitReasons: [
-    { reason: 'Manajemen',            count: 38, color: '#ef4444' },
-    { reason: 'Alasan Pribadi',       count: 29, color: '#8b5cf6' },
-    { reason: 'Lingkungan Kerja',     count: 23, color: '#f59e0b' },
-    { reason: 'Pengembangan Karir',   count: 11, color: '#3b82f6' },
-    { reason: 'Kompensasi & Benefit', count: 7,  color: '#10b981' },
+    // index:                              0   1   2   3   4   5
+    // month:                             Feb Mar Apr May Jun Jul
+    { reason: 'Manajemen',            monthly: [8,  1,  7,  8,  8,  2], color: '#ef4444',
+      ytd: 36,  m12: 39,  // YTD=Jan-Jul26, 12M=Nov25-Jul26 (Aug-Oct 2025 = 0 responses)
+      preMonthly: { nov25:1, dec25:2, jan26:2 } },
+    { reason: 'Alasan Pribadi',       monthly: [1,  0,  0,  5, 20,  3], color: '#8b5cf6',
+      ytd: 31,  m12: 32,
+      preMonthly: { nov25:1, dec25:0, jan26:2 } },
+    { reason: 'Lingkungan Kerja',     monthly: [3,  5,  6,  3,  0,  3], color: '#f59e0b',
+      ytd: 21,  m12: 26,
+      preMonthly: { nov25:1, dec25:4, jan26:1 } },
+    { reason: 'Pengembangan Karir',   monthly: [0,  2,  2,  2,  3,  1], color: '#3b82f6',
+      ytd: 10,  m12: 11,
+      preMonthly: { nov25:0, dec25:1, jan26:0 } },
+    { reason: 'Kompensasi & Benefit', monthly: [1,  1,  2,  0,  2,  2], color: '#10b981',
+      ytd:  8,  m12:  8,
+      preMonthly: { nov25:0, dec25:0, jan26:0 } },
   ],
+  // Exit interview KPI totals
+  exitTotal12M: 116,  // Nov 2025 – Jul 2026 (116 valid records)
+  exitTotalYTD: 106,  // Jan – Jul 2026
 
   // ── 360 SURVEY — DATA NOT YET AVAILABLE ────────────────────────────
   survey360: null,  // No 360 survey sheet found — rendered as N/A
@@ -1476,7 +1954,37 @@ function renderRetention() {
   const turnoverRate12 = ((DATA.resigned12M / avgHC12) * 100).toFixed(1);
   const retentionRate12= (100 - parseFloat(turnoverRate12)).toFixed(1);
   const turnoverCost   = totals.resigned * 4000000;
-  const exitCount6M    = DATA.exitReasons.reduce((a,b) => a+b.count, 0);
+
+  // ── Period-aware Exit Interview counts ───────────────────────────
+  // Sum monthly arrays for selected indices; fall back to YTD/12M for wide periods
+  function exitPeriodCount(indices) {
+    return DATA.exitReasons.reduce((acc, e) => {
+      return acc + indices.reduce((s, i) => s + (e.monthly[i] || 0), 0);
+    }, 0);
+  }
+  function exitPeriodByReason(indices) {
+    return DATA.exitReasons.map(e => ({
+      reason: e.reason, color: e.color,
+      count: indices.reduce((s, i) => s + (e.monthly[i] || 0), 0)
+    }));
+  }
+
+  let exitCount, exitCountSub, exitReasonData;
+  const useYTD = slice.useYTD;
+  const use12M = slice.use12M;
+  if (use12M) {
+    exitCount      = DATA.exitTotal12M;
+    exitCountSub   = `12M total (Nov 2025–Jul 2026)`;
+    exitReasonData = DATA.exitReasons.map(e => ({ reason: e.reason, color: e.color, count: e.m12 }));
+  } else if (useYTD) {
+    exitCount      = DATA.exitTotalYTD;
+    exitCountSub   = `YTD total (Jan–Jul 2026)`;
+    exitReasonData = DATA.exitReasons.map(e => ({ reason: e.reason, color: e.color, count: e.ytd }));
+  } else {
+    exitCount      = exitPeriodCount(idx);
+    exitCountSub   = `${slice.shortLabel} · dari ${exitCount} exit interview`;
+    exitReasonData = exitPeriodByReason(idx);
+  }
 
   const pLabel = slice.shortLabel;
   document.getElementById('kpi-active-hc').textContent    = DATA.activeHC.toLocaleString('id');
@@ -1489,8 +1997,9 @@ function renderRetention() {
   document.getElementById('kpi-turnover').textContent      = turnoverRate12 + '%';
   document.getElementById('kpi-retention').textContent     = retentionRate12 + '%';
   document.getElementById('kpi-cost').textContent          = '~Rp ' + (turnoverCost/1e6).toFixed(0) + 'jt';
-  document.getElementById('kpi-exit').textContent          = exitCount6M;
-  document.getElementById('kpi-exit-sub').textContent      = `6M total · ${pLabel} selected`;
+  document.getElementById('kpi-exit-label').textContent    = `Exit Interviews (${pLabel})`;
+  document.getElementById('kpi-exit').textContent          = exitCount;
+  document.getElementById('kpi-exit-sub').textContent      = exitCountSub;
   document.getElementById('kpi-newbie').textContent        = totals.newbie;
 
   // ── Monthly Breakdown Table ───────────────────────────────────────
@@ -1656,23 +2165,82 @@ function renderRetention() {
     }
   });
 
-  // ── Exit Reasons Donut ────────────────────────────────────────────
-  const exitColors = DATA.exitReasons.map(e => e.color);
-  const exitCounts = DATA.exitReasons.map(e => e.count);
-  const exitLabels = DATA.exitReasons.map(e => e.reason);
-  createChart('chart-exit-reasons', {
-    type: 'doughnut',
-    data: { labels: exitLabels, datasets: [{ data: exitCounts, backgroundColor: exitColors, borderWidth: 2, borderColor: 'white' }] },
-    options: {
-      responsive: true, maintainAspectRatio: true,
-      cutout: '60%',
-      plugins: { legend: { display: false }, datalabels: { display: false } }
-    }
-  });
-  const totalExit = exitCounts.reduce((a,b) => a+b, 0);
-  document.getElementById('exit-legend').innerHTML = DATA.exitReasons.map(e =>
-    `<div class="legend-item"><span class="legend-dot" style="background:${e.color}"></span><span>${e.reason}</span><span class="legend-pct">${e.count} <small style="color:#6b7280">(${(e.count/totalExit*100).toFixed(0)}%)</small></span></div>`
-  ).join('');
+  // ── Exit Reasons Donut — period-aware ────────────────────────────
+  const exitColors = exitReasonData.map(e => e.color);
+  const exitCounts = exitReasonData.map(e => e.count);
+  const exitLabels = exitReasonData.map(e => e.reason);
+  const totalExit  = exitCounts.reduce((a,b) => a+b, 0);
+
+  // Update chart subtitle dynamically
+  const subtitleEl = document.getElementById('subtitle-exit-reasons');
+  if (subtitleEl) subtitleEl.textContent =
+    `Exit Interview sheet (GID=0) · ${slice.label} · ${totalExit} responses`;
+
+  if (totalExit === 0) {
+    renderNA('chart-exit-reasons', `Belum ada Exit Interview tercatat untuk periode ${pLabel}`);
+    document.getElementById('exit-legend').innerHTML =
+      '<div style="color:#9ca3af;font-style:italic;font-size:12px;padding:8px;">Tidak ada data untuk periode ini</div>';
+  } else {
+    createChart('chart-exit-reasons', {
+      type: 'doughnut',
+      data: { labels: exitLabels, datasets: [{ data: exitCounts, backgroundColor: exitColors, borderWidth: 2, borderColor: 'white' }] },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        cutout: '60%',
+        plugins: { legend: { display: false }, datalabels: { display: false } }
+      }
+    });
+    document.getElementById('exit-legend').innerHTML = exitReasonData
+      .filter(e => e.count > 0)
+      .sort((a,b) => b.count - a.count)
+      .map(e =>
+        `<div class="legend-item"><span class="legend-dot" style="background:${e.color}"></span><span>${e.reason}</span><span class="legend-pct">${e.count} <small style="color:#6b7280">(${(e.count/totalExit*100).toFixed(0)}%)</small></span></div>`
+      ).join('');
+  }
+
+  // ── Exit Interview Trend (stacked bar, period-sliced) ────────────
+  const trendSubEl = document.getElementById('subtitle-exit-trend');
+  if (trendSubEl) trendSubEl.textContent =
+    `Monthly exit interview reasons · ${slice.label} · total ${totalExit} responses`;
+
+  const trendMonthLabels = idx.map(i => MONTH_SHORT_LABELS[i]);
+  const trendDatasets = DATA.exitReasons.map(e => ({
+    label: e.reason,
+    data: idx.map(i => e.monthly[i] || 0),
+    backgroundColor: e.color + 'cc',
+    borderColor: e.color,
+    borderWidth: 1,
+    borderRadius: 3,
+  }));
+  const trendHasData = trendDatasets.some(d => d.data.some(v => v > 0));
+  if (!trendHasData) {
+    renderNA('chart-exit-trend', `Belum ada Exit Interview untuk periode ${pLabel}`);
+  } else {
+    createChart('chart-exit-trend', {
+      type: 'bar',
+      data: { labels: trendMonthLabels, datasets: trendDatasets },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+          datalabels: { display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+            color: '#fff', font: { weight: 'bold', size: 10 },
+            formatter: v => v > 0 ? v : '' },
+          tooltip: { callbacks: {
+            afterBody: (items) => {
+              const mi = items[0].dataIndex;
+              const tot = trendDatasets.reduce((s,d) => s + d.data[mi], 0);
+              return [`Total bulan ini: ${tot}`];
+            }
+          }}
+        },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+        }
+      }
+    });
+  }
 
   // ── 360° Survey — N/A ─────────────────────────────────────────────
   document.getElementById('s360-green').textContent  = 'N/A';
@@ -1821,6 +2389,56 @@ function renderRecruitment() {
   document.getElementById('kpi-inv-sent').closest('.kpi-card').querySelector('.kpi-label').textContent      = `Invitation Sent (${pLabel})`;
   document.getElementById('kpi-hr-interview').closest('.kpi-card').querySelector('.kpi-label').textContent  = `HR Interviewed (${pLabel})`;
   document.getElementById('kpi-offered').closest('.kpi-card').querySelector('.kpi-label').textContent       = `Offering Stage (${pLabel})`;
+
+  // ── Newbie Retention KPIs (period-aware) ─────────────────────────
+  // Recruited newbies = same as new hires (all new joins are newbies day 1)
+  const nbRecruited  = periodOnboarded;   // same array: onboardedMonthly = newHires
+  // Resigned newbies for the period (newbie6M already monthly-indexed)
+  const nbResigned   = idx.reduce((acc, i) => acc + (DATA.newbie6M[i] || 0), 0);
+  // Active newbies still employed (joined in period AND not yet resigned)
+  // For current snapshot periods: use newbieActiveMonthly for Feb-Jul joins
+  const nbActive     = idx.reduce((acc, i) => acc + (DATA.newbieActiveMonthly[i] || 0), 0);
+  // Newbie retention rate = (recruited - resigned_newbies) / recruited * 100
+  // This counts newbies who are STILL employed from that cohort
+  const nbRetained   = nbRecruited - nbResigned;
+  const nbRetRate    = nbRecruited > 0 ? (nbRetained / nbRecruited * 100).toFixed(1) : null;
+  // Company overall turnover rate for comparison (12M rolling)
+  const companyTurnover = ((DATA.resigned12M / DATA.activeHC) * 100).toFixed(1);
+
+  // Section header period label
+  const nbSectionEl = document.getElementById('newbie-section-period');
+  if (nbSectionEl) nbSectionEl.textContent = `· ${slice.label}`;
+
+  document.getElementById('kpi-nb-recruited-label').textContent = `Recruited (${pLabel})`;
+  document.getElementById('kpi-nb-recruited').textContent       = nbRecruited.toLocaleString('id');
+
+  document.getElementById('kpi-nb-resigned-label').textContent  = `Resigned Newbies (${pLabel})`;
+  document.getElementById('kpi-nb-resigned').textContent        = nbResigned.toLocaleString('id');
+
+  // Active newbies — always current snapshot (not period-sliced, since it's live count)
+  document.getElementById('kpi-nb-active').textContent     = DATA.activeNewbies.toLocaleString('id');
+  document.getElementById('kpi-nb-active-sub').textContent =
+    `${DATA.activeNewbies} currently employed < 6m · ${DATA.activeOldbies} oldbies`;
+
+  // Newbie retention rate — color-coded vs company rate
+  const nbRateEl  = document.getElementById('kpi-nb-rate');
+  const nbSubEl   = document.getElementById('kpi-nb-rate-sub');
+  document.getElementById('kpi-nb-rate-label').textContent = `Newbie Retention (${pLabel})`;
+  if (nbRetRate !== null) {
+    const nbNum = parseFloat(nbRetRate);
+    const compNum = parseFloat(companyTurnover);
+    // Retention rate color: green if > (100 - companyTurnover), else red
+    const compRetention = 100 - compNum;
+    nbRateEl.textContent  = nbRetRate + '%';
+    nbRateEl.style.color  = nbNum >= compRetention ? '#16a34a' : '#dc2626';
+    nbSubEl.textContent   = `Company avg: ${compRetention.toFixed(1)}% · ${nbNum >= compRetention ? '✅ Above avg' : '⚠️ Below avg'}`;
+  } else {
+    nbRateEl.textContent = 'N/A'; nbRateEl.style.color = '#9ca3af';
+    nbSubEl.textContent  = 'No recruitment data for this period';
+  }
+
+  // Oldbies — always current snapshot
+  document.getElementById('kpi-nb-oldbies').textContent = DATA.activeOldbies.toLocaleString('id');
 
   // Update chart subtitles dynamically
   const subtitleHireResign = document.getElementById('subtitle-hire-resign-trend');
@@ -2237,6 +2855,377 @@ function renderROI() {
   }).join('');
 }
 
+// ============================================================
+// OVERVIEW / MASTER DASHBOARD RENDER
+// ============================================================
+function renderOverview() {
+  const slice  = getPeriodSlice();
+  const totals = getPeriodTotals(slice);
+  const idx    = slice.indices;
+  const pLabel = slice.shortLabel;
+
+  // ── Helper: sum monthly array over period indices (null-safe) ──────
+  function sumPeriod(arr) {
+    return idx.reduce((acc, i) => acc + (arr && arr[i] != null ? arr[i] : 0), 0);
+  }
+  function sumPeriodOrNA(arr) {
+    const vals = idx.map(i => arr && arr[i] != null ? arr[i] : null).filter(v => v !== null);
+    return vals.length > 0 ? vals.reduce((a,b)=>a+b,0) : null;
+  }
+
+  // ── Core period metrics ────────────────────────────────────────────
+  const periodHire    = totals.newHires;
+  const periodResign  = totals.resigned;
+  const netFlow       = periodHire - periodResign;
+  const avgHC12       = (DATA.openingHC[0] + DATA.closingHC[5]) / 2;
+  const turnoverRate12= ((DATA.resigned12M / avgHC12) * 100).toFixed(1);
+
+  // Recruitment period metrics
+  const periodOnboarded = sumPeriod(DATA.onboardedMonthly);
+  const periodCV        = sumPeriodOrNA(DATA.funnelMonthly.totalCV) ?? sumPeriodOrNA(DATA.cvReceivedMonthly);
+
+  // Exit interview period metrics (reuse same logic as renderRetention)
+  function exitPeriodByReason(indices) {
+    return DATA.exitReasons.map(e => ({
+      reason: e.reason, color: e.color,
+      count: indices.reduce((s, i) => s + (e.monthly[i] || 0), 0)
+    }));
+  }
+  let exitCount, exitReasonData;
+  if (slice.use12M) {
+    exitCount      = DATA.exitTotal12M;
+    exitReasonData = DATA.exitReasons.map(e => ({ reason:e.reason, color:e.color, count:e.m12 }));
+  } else if (slice.useYTD) {
+    exitCount      = DATA.exitTotalYTD;
+    exitReasonData = DATA.exitReasons.map(e => ({ reason:e.reason, color:e.color, count:e.ytd }));
+  } else {
+    exitReasonData = exitPeriodByReason(idx);
+    exitCount      = exitReasonData.reduce((a,e)=>a+e.count,0);
+  }
+
+  // Newbie retention
+  const nbRecruited = periodOnboarded;
+  const nbResigned  = idx.reduce((acc,i)=>acc+(DATA.newbie6M[i]||0),0);
+  const nbRetained  = nbRecruited - nbResigned;
+  const nbRetRate   = nbRecruited > 0 ? (nbRetained / nbRecruited * 100).toFixed(1) : null;
+  const compRetention = (100 - parseFloat(turnoverRate12)).toFixed(1);
+
+  // ROI — always Jan-Jun 2026 (fixed, 6 months, index offset: ROI data is Jan=0, Feb=1…Jun=5)
+  const totalGaji6M = DATA.totalGajiMonthly.reduce((a,b)=>a+b,0);
+  const totalRev6M  = DATA.revenueMonthly.reduce((a,b)=>a+b,0);
+  const avgRatio    = (totalGaji6M / totalRev6M * 100).toFixed(1);
+  const avgRevPerEmp = Math.round((totalRev6M / 6) / DATA.activeHC);
+  const turnoverCostEst = periodResign * 4000000; // Rp 4jt per person
+
+  // ── TOP KPI STRIP ─────────────────────────────────────────────────
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+
+  set('ov-active-hc',   DATA.activeHC.toLocaleString('id'));
+  set('ov-newhire',     periodHire);
+  set('ov-resigned',    periodResign);
+  set('ov-turnover',    turnoverRate12 + '%');
+
+  const netEl = document.getElementById('ov-net');
+  if (netEl) {
+    netEl.textContent  = (netFlow >= 0 ? '+' : '') + netFlow;
+    netEl.style.color  = netFlow >= 0 ? '#16a34a' : '#dc2626';
+  }
+
+  if (periodCV != null) {
+    set('ov-cv', periodCV.toLocaleString('id'));
+  } else {
+    set('ov-cv', 'No Data');
+    const cvEl = document.getElementById('ov-cv');
+    if (cvEl) { cvEl.style.color='#9ca3af'; cvEl.style.fontSize='16px'; }
+  }
+
+  set('ov-onboarded', periodOnboarded);
+  set('ov-mp-ratio',  avgRatio + '%');
+
+  const nbRateEl = document.getElementById('ov-nb-rate');
+  if (nbRateEl) {
+    if (nbRetRate !== null) {
+      nbRateEl.textContent = nbRetRate + '%';
+      nbRateEl.style.color = parseFloat(nbRetRate) >= parseFloat(compRetention) ? '#16a34a' : '#dc2626';
+    } else {
+      nbRateEl.textContent = '—'; nbRateEl.style.color = '#9ca3af';
+    }
+  }
+
+  const exitEl = document.getElementById('ov-exit');
+  if (exitEl) { exitEl.textContent = exitCount; }
+
+  // Dynamic labels
+  set('ov-newhire-label',   `New Hire (${pLabel})`);
+  set('ov-resigned-label',  `Resigned (${pLabel})`);
+  set('ov-net-label',       `Net Flow (${pLabel})`);
+  set('ov-cv-label',        `CV Received (${pLabel})`);
+  set('ov-onboarded-label', `Onboarded (${pLabel})`);
+  set('ov-exit-label',      `Exit Interviews (${pLabel})`);
+  set('ov-nb-label',        `Newbie Retention (${pLabel})`);
+
+  // Sub-labels
+  set('ov-newhire-sub',   `12M: ${DATA.newHires12M} | YTD: ${DATA.newHiresYTD}`);
+  set('ov-resigned-sub',  `12M: ${DATA.resigned12M} | YTD: ${DATA.resignedYTD}`);
+
+  // ── PILLAR HEALTH CARDS ───────────────────────────────────────────
+  // RETENTION pillar
+  const trNum = parseFloat(turnoverRate12);
+  const retBadge = document.getElementById('pill-retention');
+  if (retBadge) {
+    const cls  = trNum <= 30 ? 'badge-health-green' : trNum <= 45 ? 'badge-health-yellow' : 'badge-health-red';
+    const icon = trNum <= 30 ? '🟢' : trNum <= 45 ? '🟡' : '🔴';
+    retBadge.className = `ov-pillar-badge ${cls}`;
+    retBadge.textContent = `${icon} Turnover ${turnoverRate12}%`;
+  }
+
+  // Retention pillar metric rows
+  set('pil-ret-turnover', turnoverRate12 + '%');
+  set('pil-ret-resigned', periodResign + ' orang');
+
+  const retResLabel = document.getElementById('pil-ret-res-lbl');
+  if (retResLabel) retResLabel.textContent = `Resigned (${pLabel})`;
+
+  const topExit = exitReasonData.reduce((max, e) => e.count > max.count ? e : max, { count: 0, reason: '—' });
+  set('pil-ret-reason',  topExit.reason);
+  set('pil-ret-newbie',  DATA.activeNewbies + ' active');
+
+  // RECRUITMENT pillar
+  const recBadge = document.getElementById('pill-recruitment');
+  if (recBadge) {
+    recBadge.className   = 'ov-pillar-badge badge-health-green';
+    recBadge.textContent = `🟢 ${periodOnboarded} Onboarded`;
+  }
+  set('pil-rec-cv',        periodCV != null ? periodCV.toLocaleString('id') : 'No Data');
+  const recCvLbl = document.getElementById('pil-rec-cv-lbl');
+  if (recCvLbl) recCvLbl.textContent = `CV Received (${pLabel})`;
+  set('pil-rec-onboarded', periodOnboarded);
+  const recObLbl = document.getElementById('pil-rec-ob-lbl');
+  if (recObLbl) recObLbl.textContent = `Onboarded (${pLabel})`;
+  set('pil-rec-vacancy',   DATA.opsHC.hiringNeeded + ' positions');
+  set('pil-rec-nb-rate',   nbRetRate !== null ? nbRetRate + '%' : '—');
+  const recNbLbl = document.getElementById('pil-rec-nb-lbl');
+  if (recNbLbl) recNbLbl.textContent = `Newbie Retention (${pLabel})`;
+
+  // ROI pillar
+  const roiBadge = document.getElementById('pill-roi');
+  if (roiBadge) {
+    const rNum = parseFloat(avgRatio);
+    const cls  = rNum <= 25 ? 'badge-health-green' : rNum <= 28 ? 'badge-health-yellow' : 'badge-health-red';
+    const icon = rNum <= 25 ? '🟢' : rNum <= 28 ? '🟡' : '🔴';
+    roiBadge.className   = `ov-pillar-badge ${cls}`;
+    roiBadge.textContent = `${icon} Ratio ${avgRatio}%`;
+  }
+  set('pil-roi-gaji',    'Rp ' + (totalGaji6M/1000).toFixed(1) + 'M');
+  set('pil-roi-ratio',   avgRatio + '%');
+  set('pil-roi-rev-emp', 'Rp ' + (avgRevPerEmp/1000).toFixed(0) + 'jt/mo');
+  set('pil-roi-cost',    '~Rp ' + (turnoverCostEst/1e6).toFixed(0) + 'jt');
+
+  // PKPA (Collaboration)
+  set('pil-col-pkpa', DATA.pkpaFromDB + ' (approx)');
+
+  // ── SPARKLINES ────────────────────────────────────────────────────
+  const sparkOpts = (color) => ({
+    responsive: true, maintainAspectRatio: false,
+    elements: { point: { radius: 2 }, line: { borderWidth: 2 } },
+    plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: { enabled: false } },
+    scales: { x: { display: false }, y: { display: false, beginAtZero: true } },
+    animation: false
+  });
+
+  // Retention sparkline: resigned per month (period)
+  const sparkRetLabels = idx.map(i => MONTH_SHORT_LABELS[i]);
+  const sparkRetData   = idx.map(i => DATA.resigned[i]);
+  createChart('spark-retention', {
+    type: 'line',
+    data: { labels: sparkRetLabels, datasets: [{ data: sparkRetData, borderColor: '#dc2626', backgroundColor: '#fee2e220', fill: true }] },
+    options: sparkOpts('#dc2626')
+  });
+
+  // Recruitment sparkline: onboarded per month
+  const sparkRecData = idx.map(i => DATA.onboardedMonthly[i]);
+  createChart('spark-recruitment', {
+    type: 'bar',
+    data: { labels: sparkRetLabels, datasets: [{ data: sparkRecData, backgroundColor: '#3b82f6aa', borderRadius: 2 }] },
+    options: sparkOpts('#3b82f6')
+  });
+
+  // ROI sparkline: manpower ratio % (always 6M Jan-Jun, fixed)
+  createChart('spark-roi', {
+    type: 'line',
+    data: {
+      labels: ['Jan','Feb','Mar','Apr','Mei','Jun'],
+      datasets: [{ data: DATA.manpowerRatioPct, borderColor: '#16a34a', backgroundColor: '#dcfce720', fill: true }]
+    },
+    options: sparkOpts('#16a34a')
+  });
+
+  // ── CHART 1: People Flow + Manpower Ratio Trend ───────────────────
+  const trendLabels = idx.map(i => MONTH_SHORT_LABELS[i]);
+  const hireData    = idx.map(i => DATA.newHires[i]);
+  const resignData  = idx.map(i => DATA.resigned[i]);
+  const netData     = hireData.map((h,i) => h - resignData[i]);
+
+  // Manpower ratio: ROI data is Jan=0…Jun=5, period indices 0-5=Feb-Jul
+  // Map: period index i → ROI array index = i+1 for Feb-Jun (i=0→1, i=4→5), Jul has no ROI data
+  // We use ratio values where available; Jul (index 5) → null (no payroll data yet)
+  const ratioData = idx.map(i => {
+    const roiIdx = i + 1;   // shift: ROI Jan=0, so Feb=1…Jun=5; Jul(i=5)→roiIdx=6 = out of bounds
+    return DATA.manpowerRatioPct[roiIdx] !== undefined ? DATA.manpowerRatioPct[roiIdx] : null;
+  });
+
+  set('ov-trend-subtitle', `Hire vs Resign net flow · Manpower Ratio % · ${pLabel}`);
+
+  createChart('chart-ov-trend', {
+    type: 'bar',
+    data: {
+      labels: trendLabels,
+      datasets: [
+        { type: 'bar',  label: '🆕 New Hire',  data: hireData,   backgroundColor: '#3b82f680', borderRadius: 4, yAxisID: 'y' },
+        { type: 'bar',  label: '📤 Resigned',   data: resignData, backgroundColor: '#ef444480', borderRadius: 4, yAxisID: 'y' },
+        { type: 'line', label: '📈 Net Flow',   data: netData,    borderColor: '#7c3aed', backgroundColor: 'transparent', borderWidth: 2, tension: 0.3, pointRadius: 4, yAxisID: 'y' },
+        { type: 'line', label: '💰 MP Ratio %', data: ratioData,  borderColor: '#16a34a', backgroundColor: 'transparent', borderWidth: 2, tension: 0.3, pointRadius: 4, borderDash: [5,3], yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+        datalabels: { display: false }
+      },
+      scales: {
+        y:  { position: 'left',  beginAtZero: true, title: { display: true, text: 'Headcount', font: { size: 10 } } },
+        y2: { position: 'right', title: { display: true, text: '% Ratio', font: { size: 10 } },
+              ticks: { callback: v => v + '%' }, grid: { drawOnChartArea: false }, min: 20, max: 35, suggestedMin: 20 }
+      }
+    }
+  });
+
+  // ── CHART 2: Exit Reasons Donut (period-aware) ────────────────────
+  set('ov-exit-subtitle', slice.use12M ? '12M · Nov 2025–Jul 2026' : slice.useYTD ? 'YTD · Jan–Jul 2026' : `${pLabel} · period-aware`);
+  const exitColors = exitReasonData.map(e => e.color);
+  const exitCounts = exitReasonData.map(e => e.count);
+  const exitTotal  = exitCounts.reduce((a,b)=>a+b,0);
+
+  createChart('chart-ov-exit', {
+    type: 'doughnut',
+    data: {
+      labels: exitReasonData.map(e => e.reason),
+      datasets: [{ data: exitCounts, backgroundColor: exitColors, borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+          color: '#fff', font: { weight: 'bold', size: 9 },
+          formatter: (v) => exitTotal > 0 ? Math.round(v/exitTotal*100)+'%' : '0%'
+        }
+      },
+      cutout: '55%'
+    }
+  });
+
+  // Exit donut legend
+  const legendEl = document.getElementById('ov-exit-legend');
+  if (legendEl) {
+    legendEl.innerHTML = exitReasonData.map(e => {
+      const pct = exitTotal > 0 ? (e.count/exitTotal*100).toFixed(0)+'%' : '0%';
+      return `<div class="legend-item"><span class="legend-dot" style="background:${e.color}"></span>
+        <span style="font-size:10px;color:#374151;">${e.reason}</span>
+        <span class="legend-pct" style="font-size:11px;font-weight:700;">${e.count} <span style="font-weight:400;color:#94a3b8;">(${pct})</span></span>
+      </div>`;
+    }).join('');
+  }
+
+  // ── CHART 3: Newbie vs Oldbie Resign (period-aware) ───────────────
+  const nbResignData = idx.map(i => DATA.newbie6M[i]);
+  const obResignData = idx.map(i => DATA.oldbie6M[i]);
+  set('ov-nb-subtitle', `Tenure segmentation of resignees · ${pLabel}`);
+
+  createChart('chart-ov-newbie', {
+    type: 'bar',
+    data: {
+      labels: trendLabels,
+      datasets: [
+        { label: '👶 Newbie (<6M)', data: nbResignData, backgroundColor: '#f59e0b', borderRadius: 3 },
+        { label: '👴 Oldbie (≥6M)', data: obResignData, backgroundColor: '#6366f1', borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+        datalabels: { display: false }
+      },
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+    }
+  });
+
+  // ── CHART 4: Recruitment Funnel (period-aware) ────────────────────
+  // Use period-summed funnel data from funnelMonthly; skip nulls
+  function funnelSum(arr) { return idx.reduce((acc,i)=>acc+(arr[i]!=null?arr[i]:0),0); }
+  const fm = DATA.funnelMonthly;
+  const funnelData = [
+    funnelSum(fm.totalCV),
+    funnelSum(fm.invitationSent),
+    funnelSum(fm.hrInterview),
+    funnelSum(fm.userInterview),
+    funnelSum(fm.offeringStage),
+    periodOnboarded
+  ];
+  const funnelLabels = ['CV Masuk','Undangan','HR Interview','User Interview','Offering','Onboarded'];
+  const funnelColors = ['#3b82f6','#0d9488','#f59e0b','#ea580c','#8b5cf6','#16a34a'];
+  set('ov-funnel-subtitle', `Recruitment funnel stages · ${pLabel}`);
+
+  createChart('chart-ov-funnel', {
+    type: 'bar',
+    data: {
+      labels: funnelLabels,
+      datasets: [{ label: 'Kandidat', data: funnelData, backgroundColor: funnelColors, borderRadius: 5 }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          display: true, color: '#374151', anchor: 'end', align: 'end',
+          font: { weight: '700', size: 10 },
+          formatter: v => v > 0 ? v.toLocaleString('id') : '—'
+        }
+      },
+      scales: { x: { beginAtZero: true, ticks: { font: { size: 10 } } }, y: { ticks: { font: { size: 10 } } } }
+    }
+  });
+
+  // ── CHART 5: Payroll vs Revenue (always Jan–Jun 2026 fixed) ───────
+  const roi6Labels = ['Jan','Feb','Mar','Apr','Mei','Jun'];
+  createChart('chart-ov-roi', {
+    type: 'line',
+    data: {
+      labels: roi6Labels,
+      datasets: [
+        { type: 'bar',  label: 'Payroll (Rp Juta)', data: DATA.totalGajiMonthly, backgroundColor: '#3b82f660', borderRadius: 3, yAxisID: 'y' },
+        { type: 'line', label: 'Revenue (Rp Juta)',  data: DATA.revenueMonthly,   borderColor: '#16a34a', backgroundColor: 'transparent', borderWidth: 2, tension: 0.3, pointRadius: 3, yAxisID: 'y' },
+        { type: 'line', label: 'Ratio %',            data: DATA.manpowerRatioPct, borderColor: '#ef4444', backgroundColor: 'transparent', borderWidth: 1.5, borderDash: [4,3], tension: 0.3, pointRadius: 3, yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 8, font: { size: 9 } } },
+        datalabels: { display: false }
+      },
+      scales: {
+        y:  { position: 'left',  ticks: { callback: v=>'Rp'+(v/1000).toFixed(0)+'M', font:{size:9} } },
+        y2: { position: 'right', ticks: { callback: v=>v+'%', font:{size:9} }, grid: { drawOnChartArea: false }, min: 22, max: 30 }
+      }
+    }
+  });
+}
+
 function renderCollaboration() {
   // ── PKPA from Master DB (Internship status employees) — approximate ─
   document.getElementById('kpi-pkpa').textContent              = DATA.pkpaFromDB + ' (approx)';
@@ -2263,21 +3252,37 @@ function renderCollaboration() {
 // ============================================================
 // TAB NAVIGATION
 // ============================================================
+const RENDER_MAP = {
+  overview:      renderOverview,
+  retention:     renderRetention,
+  recruitment:   renderRecruitment,
+  performance:   renderPerformance,
+  roi:           renderROI,
+  collaboration: renderCollaboration
+};
+
+// Called programmatically (no event object needed)
+function switchTabById(tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const tabEl = document.querySelector(`#tab-${tab}`);
+  if (tabEl) tabEl.classList.add('active');
+  // Activate matching nav button
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${tab}'`)) {
+      btn.classList.add('active');
+    }
+  });
+  if (RENDER_MAP[tab]) RENDER_MAP[tab]();
+}
+
+// Called from nav button onclick (has event object)
 function switchTab(tab) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.querySelector(`#tab-${tab}`).classList.add('active');
   event.target.closest('.nav-tab').classList.add('active');
-
-  // Render on demand
-  const renderMap = {
-    retention: renderRetention,
-    recruitment: renderRecruitment,
-    performance: renderPerformance,
-    roi: renderROI,
-    collaboration: renderCollaboration
-  };
-  if (renderMap[tab]) renderMap[tab]();
+  if (RENDER_MAP[tab]) RENDER_MAP[tab]();
 }
 
 // ============================================================
@@ -2301,14 +3306,7 @@ function updateDashboard() {
   const activeTab = document.querySelector('.tab-content.active');
   if (activeTab) {
     const tabId = activeTab.id.replace('tab-', '');
-    const renderMap = {
-      retention: renderRetention,
-      recruitment: renderRecruitment,
-      performance: renderPerformance,
-      roi: renderROI,
-      collaboration: renderCollaboration
-    };
-    if (renderMap[tabId]) renderMap[tabId]();
+    if (RENDER_MAP[tabId]) RENDER_MAP[tabId]();
   }
 }
 
@@ -2322,7 +3320,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const opts = { day: '2-digit', month: 'short', year: 'numeric' };
   document.getElementById('currentDateBadge').textContent = NOW.toLocaleDateString('id-ID', opts);
 
-  // Initialize period label from current selection
+  // Ensure Overview nav tab is marked active on init
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const overviewBtn = document.querySelector('.nav-tab[onclick*="overview"]');
+  if (overviewBtn) overviewBtn.classList.add('active');
+
+  // Initialize period label then render Overview as default
   updateDashboard();
 });
 </script>
