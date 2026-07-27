@@ -2885,8 +2885,8 @@ function renderROI() {
   nullDash('kpi-mp-ratio-label',   'Manpower Cost Ratio');
 
   // ── KPI Cards — Row 2: ROI Per Person ──
-  nullDash('kpi-gp-per-hc',     'Rp ' + gpPerHC.toLocaleString('id'));
-  nullDash('kpi-salary-per-hc', 'Rp ' + salaryPerHC.toLocaleString('id'));
+  nullDash('kpi-gp-per-hc',     'Rp ' + (gpPerHC / 1e6).toFixed(2) + 'jt/bulan');
+  nullDash('kpi-salary-per-hc', 'Rp ' + (salaryPerHC / 1e6).toFixed(2) + 'jt/bulan');
 
   // ROI per person — color-coded
   const roiEl = document.getElementById('kpi-roi-per-person');
@@ -2896,8 +2896,8 @@ function renderROI() {
     roiEl.style.fontSize = '15px';
   }
 
-  nullDash('kpi-rev-per-emp',   'Rp ' + revPerHC.toLocaleString('id'));
-  nullDash('kpi-sales-per-day', 'Rp ' + salesPerDay.toLocaleString('id'));
+  nullDash('kpi-rev-per-emp',   'Rp ' + (revPerHC / 1e6).toFixed(2) + 'jt/bulan');
+  nullDash('kpi-sales-per-day', 'Rp ' + (salesPerDay / 1e6).toFixed(3) + 'jt/hari');
   nullDash('kpi-denda',         'Tidak tersedia');
 
   // KPI label updates
@@ -3441,9 +3441,10 @@ function renderOverview() {
   }
   set('pil-roi-gaji',    'Rp ' + (ovLatestGaji/1000).toFixed(3) + 'M  (Jun 26)');
   set('pil-roi-ratio',   ovLatestRatio.toFixed(2) + '%  |  GM ' + ovLatestGM.toFixed(2) + '%');
-  set('pil-roi-rev-emp', 'Rp ' + Math.round(ovLatestRev * 1e6 / DATA.activeHC / 1000).toLocaleString('id') + 'rb/mo');
-  // ROI cost → now shows Sales/Staff/Day
-  set('pil-roi-cost',    'Rp ' + Math.round(ovSalesDay / 1000).toLocaleString('id') + 'rb/day');
+  // Revenue/HC/month in juta: ovLatestRev (juta) ÷ activeHC → juta per person
+  set('pil-roi-rev-emp', 'Rp ' + (ovLatestRev / DATA.activeHC).toFixed(2) + 'jt/mo');
+  // Sales/Staff/Day in juta: ovSalesDay (Rp) ÷ 1,000,000 → juta per person per day
+  set('pil-roi-cost',    'Rp ' + (ovSalesDay / 1e6).toFixed(3) + 'jt/day');
 
   // PKPA (Collaboration)
   set('pil-col-pkpa', DATA.pkpaFromDB + ' (approx)');
