@@ -215,7 +215,7 @@
     font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
     padding: 2px 7px; border-radius: 20px; margin-top: 4px; white-space: nowrap;
   }
-  .data-badge.real    { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+  .data-badge.real    { display: none !important; }  /* Real Data badges hidden — less visual clutter */
   .data-badge.est     { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
   .data-badge.nodata  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
   /* On KPI cards — sits below kpi-sub */
@@ -1254,9 +1254,9 @@
     <div class="insight-title">✅ Data Real Tersedia · Payroll Workbook "Trend Summary Payroll"</div>
     <strong>Revenue (Row 44):</strong> Jan 2025–Jun 2026 ✅ penuh ·
     <strong>Gross Margin (Row 45):</strong> Jan 2025–Jun 2026 ✅ penuh ·
-    <strong>Payroll Total (Row 40):</strong> Jan 2025–Jan 2026 ✅ penuh ·
-    <strong>Incentive (Row 33):</strong> Jan–Jun 2026 ✅ Jan &amp; Jun aktual ·
-    <strong>Denda (Row 34):</strong> Jan–Jan 2026 aktual · Feb–Jul 2026 ⚠️ belum diextract
+    <strong>Payroll Total (Row 40):</strong> Jan 2025–Jul 2026 ✅ penuh ·
+    <strong>Incentive (Row 33):</strong> Jan–Jul 2026 ✅ semua aktual ·
+    <strong>Denda (Row 34):</strong> Jan–Jul 2026 ✅ semua aktual
     <br>ROI formula: Gross Profit ÷ Payroll per HC · KPI cards mengikuti periode yang dipilih.
   </div>
 
@@ -1302,7 +1302,7 @@
       <div class="kpi-icon">🎁</div>
       <div class="kpi-label" id="kpi-incentive-label">Total Incentive</div>
       <div class="kpi-value" style="color:#7c3aed;" id="kpi-incentive">—</div>
-      <div class="kpi-sub">Row 33 · Jan &amp; Jun aktual</div>
+      <div class="kpi-sub">Row 33 · All PT · Jan–Jul aktual</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
   </div>
@@ -1390,7 +1390,7 @@
     </div>
     <div class="chart-card">
       <div class="chart-title">📊 Payroll Components Trend <span class="data-badge real">✅ Real Data</span></div>
-      <div class="chart-subtitle">Jan 2025 – Jun 2026 · THP / Incentive / Denda / BPJS / Tax / THR / Konsultan · Source: Rows 32–38 Trend Summary Payroll</div>
+      <div class="chart-subtitle">Jan 2025 – Jul 2026 · THP / Incentive / Denda / BPJS / Tax / THR / Konsultan · Source: Rows 32–38 Trend Summary Payroll</div>
       <canvas id="chart-incentive-denda-ot"></canvas>
     </div>
   </div>
@@ -1398,7 +1398,7 @@
   <!-- Payroll Component Line Trend -->
   <div class="chart-card" style="margin-bottom:14px;">
     <div class="chart-title">📈 Payroll Component Trends (Line) <span class="data-badge real">✅ Real Data</span></div>
-    <div class="chart-subtitle">Jan 2025 – Jan 2026 · THP / Incentive / Denda / Konsultan · THR, BPJS, Tax excluded for clarity</div>
+    <div class="chart-subtitle">Jan 2025 – Jul 2026 · THP / Incentive / Denda / Konsultan · THR, BPJS, Tax excluded for clarity</div>
     <canvas id="chart-comp-line" style="max-height:260px;"></canvas>
   </div>
 
@@ -1964,24 +1964,35 @@ const DATA = {
 
   // Row 32: THP (Rp juta)
   thp2025to26:       [4601, 4646, 5059, 5051, 4894, 5252, 4924, 5269, 5251, 5365, 5543, 5443, 5726],
-  // Row 33: Incentive & Reward (Rp juta)
+  // Row 33: Incentive & Reward (Rp juta) — Jan25–Jan26 (13 months)
   incentive2025to26: [471,  281,  283,  387,  373,  572,  549,  523,  833,  614,  778,  856,  985],
-  // Row 34: Denda (Rp juta)
+  // Row 34: Denda (Rp juta) — Jan25–Jan26 (13 months)
   denda2025to26:     [45,   33,   15,   41,   70,   83,   190,  161,  78,   180,  173,  425,  261],
-  // Row 35: BPJS (Rp juta)
+  // Row 35: BPJS (Rp juta) — Jan25–Jan26 (13 months)
   bpjs2025to26:      [571,  591,  606,  628,  632,  630,  646,  662,  668,  677,  688,  687,  693],
-  // Row 36: Tax PPh (Rp juta)
+  // Row 36: Tax PPh (Rp juta) — Jan25–Jan26 (13 months)
   tax2025to26:       [128,  125,  379,  136,  138,  142,  144,  125,  209,  189,  198,  144,  220],
-  // Row 37: THR (Rp juta — Mar & Dec bonus months only)
+  // Row 37: THR (Rp juta — Mar & Dec bonus months only) — Jan25–Jan26 (13 months)
   thr2025to26:       [0,    0,    2410, 0,    0,    0,    0,    0,    0,    0,    0,    932,  0],
-  // Row 38: Konsultan (Rp juta)
+  // Row 38: Konsultan (Rp juta) — Jan25–Jan26 (13 months)
   konsultan2025to26: [477,  454,  470,  361,  433,  424,  399,  367,  301,  299,  249,  243,  187],
 
-  // ── 2026 monthly arrays (Jan-Jul 2026 already in roiMonths) ──
-  // Incentive: Row 33 Jan-26=985jt actual; Jun-26=650jt confirmed | Feb-Jun from ROI data
-  incentiveMonthly: [985, null, null, null, null, 650, null],  // Rp juta, Jan/Jun=actual
-  // Denda: Row 34 Jan-26=261jt actual; Feb-Jul pending
-  dendaMonthly: [261, null, null, null, null, null, null],     // Rp juta, Jan=actual
+  // ── 2026 monthly arrays (Jan-Jul 2026, indices 0=Jan…6=Jul) ──
+  // Source: Trend Summary Payroll screenshot 2026-07-28 — ALL 7 months confirmed actual
+  // Row 33: Incentive & Reward — Jan=964jt, Feb=522jt, Mar=488jt, Apr=863jt, May=665jt, Jun=650jt, Jul=601jt
+  incentiveMonthly: [965, 522, 488, 863, 665, 650, 601],  // Rp juta, all actual
+  // Row 34: Denda — Jan=261jt, Feb=151jt, Mar=266jt, Apr=255jt, May=571jt, Jun=290jt, Jul=251jt
+  dendaMonthly:     [261, 151, 266, 255, 571, 290, 251],  // Rp juta, all actual
+  // Row 32: THP — Jan=5726jt, Feb=5963jt, Mar=5305jt, Apr=5845jt, May=5368jt, Jun=5798jt, Jul=5773jt
+  thpMonthly:       [5726, 5963, 5305, 5845, 5368, 5798, 5773],  // Rp juta, all actual
+  // Row 35: BPJS — Jan=693jt, Feb=705jt, Mar=709jt, Apr=707jt, May=711jt, Jun=711jt, Jul=714jt
+  bpjsMonthly:      [693, 705, 709, 707, 711, 711, 714],  // Rp juta, all actual
+  // Row 36: Tax PPh — Jan=220jt, Feb=192jt, Mar=600jt(spike), Apr=237jt, May=171jt, Jun=196jt, Jul=160jt
+  taxMonthly:       [220, 192, 600, 237, 171, 196, 160],  // Rp juta, all actual
+  // Row 37: THR — Mar-26=3234jt (big spike), others 0
+  thrMonthly:       [0, 0, 3234, 0, 0, 0, 0],  // Rp juta, all actual
+  // Row 38: Konsultan — Jan=188jt, Feb=191jt, Mar=185jt, Apr=184jt, May=188jt, Jun=203jt, Jul=205jt
+  konsultanMonthly: [188, 191, 185, 184, 188, 203, 205],  // Rp juta, all actual
   otMonthly: null,     // Not in payroll workbook
 
   // Legacy aliases (used elsewhere in code)
@@ -2960,10 +2971,10 @@ function renderROI() {
   nullDash('kpi-gross-margin',  dispGM   != null ? dispGM.toFixed(2) + '%' : '—');
   nullDash('kpi-gross-profit',  fmtJutaVal(dispGP));
   nullDash('kpi-manpower-ratio', dispRatio != null ? dispRatio.toFixed(2) + '%' : '—');
-  // Incentive: sum over period from incentiveMonthly (Jan=985, Jun=650 actual; others null)
+  // Incentive: sum over period — all 2026 months now actual (Row 33 Trend Summary Payroll)
   const periodIncentiveVals = roiPeriodIdx.map(i => DATA.incentiveMonthly[i]).filter(v => v != null);
   const periodTotalInc = periodIncentiveVals.length > 0 ? periodIncentiveVals.reduce((a,b)=>a+b,0) : null;
-  nullDash('kpi-incentive', periodTotalInc != null ? fmtJutaVal(periodTotalInc) + ' (' + pLabel + ')' : 'Lihat chart komponen');
+  nullDash('kpi-incentive', periodTotalInc != null ? fmtJutaVal(periodTotalInc) + ' (' + pLabel + ')' : '—');
 
   // Period-aware label suffix
   const nM = roiPeriodIdx.length;
@@ -2999,75 +3010,15 @@ function renderROI() {
 
   nullDash('kpi-rev-per-emp',   dispRevPerHC != null ? fmt(dispRevPerHC) + '/bln' : '—');
   nullDash('kpi-sales-per-day', periodSalesPerDay != null ? fmt(periodSalesPerDay) + '/hari' : '—');
-  // Denda: dynamic display using denda2025to26 as reference
-  // denda2025to26 indices: 0=Jan25 … 11=Dec25, 12=Jan26
-  // ROI indices: 0=Jan26, 1=Feb26 … 6=Jul26
-  // For Jan26 (ROI idx 0): actual data → denda2025to26[12]
-  // For Feb–Jul 2026 (ROI idx 1–6): actual 2026 data not yet extracted →
-  //   use SAME calendar month from 2025 as reference: ROI idx i → denda2025to26[i]
-  //   (i=1→Feb25, i=2→Mar25, … i=6→Jul25)
-  const dendaD = DATA.denda2025to26;
-  // Map each ROI index to an available denda value
-  const dendaForROI = [
-    dendaD[12],  // idx 0 = Jan 2026 → actual Jan-26
-    dendaD[1],   // idx 1 = Feb 2026 → ref Feb-25
-    dendaD[2],   // idx 2 = Mar 2026 → ref Mar-25
-    dendaD[3],   // idx 3 = Apr 2026 → ref Apr-25
-    dendaD[4],   // idx 4 = May 2026 → ref May-25
-    dendaD[5],   // idx 5 = Jun 2026 → ref Jun-25
-    dendaD[6],   // idx 6 = Jul 2026 → ref Jul-25
-  ];
-  // Determine if selected period is purely Jan-26 (actual) or includes 2025 refs
-  const isJan26Only = roiPeriodIdx.length === 1 && roiPeriodIdx[0] === 0;
-  const has2026Actual = roiPeriodIdx.includes(0);
-  const has2025Ref    = roiPeriodIdx.some(i => i > 0);
-  const periodDendaSum = roiPeriodIdx.reduce((acc, i) => acc + (dendaForROI[i] || 0), 0);
-  // Build label and sub-label
-  let dendaDisplayVal, dendaLabelText, dendaSubText, dendaBadgeClass, dendaBadgeText;
-  if (isJan26Only) {
-    // Single month = Jan-26: show actual
-    dendaDisplayVal = fmtJutaVal(dendaD[12]);
-    dendaLabelText  = 'Denda · Jan-26 Aktual';
-    dendaSubText    = 'Row 34 · All PT · data aktual';
-    dendaBadgeClass = 'data-badge real';
-    dendaBadgeText  = '✅ Real Data';
-  } else if (has2026Actual && has2025Ref) {
-    // Mixed: Jan-26 actual + 2025 refs (e.g. 6M/YTD starting from Feb which excludes Jan)
-    // In practice periodIdx starts at 0=Feb so roiPeriodIdx starts at 1; Jan26 (roi=0) never in slice
-    // This branch handles edge case if it ever occurs
-    dendaDisplayVal = fmtJutaVal(periodDendaSum) + '*';
-    dendaLabelText  = 'Denda (' + periodSuffix + ' · campuran)';
-    dendaSubText    = 'Jan-26 aktual + bulan lain ref 2025';
-    dendaBadgeClass = 'data-badge est';
-    dendaBadgeText  = '⚠️ Parsial';
-  } else {
-    // All 2025 reference months (most common: 1M/3M/6M/YTD covering Feb–Jul 2026)
-    // Build month range label from 2025 equivalents
-    const refMonthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul'];
-    const refIdxs = roiPeriodIdx; // same numbers index into 2025 months (1=Feb25…6=Jul25)
-    let refLabel;
-    if (refIdxs.length === 1) {
-      refLabel = refMonthNames[refIdxs[0]] + '-25';
-    } else {
-      refLabel = refMonthNames[refIdxs[0]] + '–' + refMonthNames[refIdxs[refIdxs.length-1]] + ' 25';
-    }
-    dendaDisplayVal = fmtJutaVal(periodDendaSum);
-    dendaLabelText  = 'Denda · Ref ' + refLabel + ' (' + periodSuffix + ')';
-    dendaSubText    = 'Row 34 · referensi 2025 (2026 pending)';
-    dendaBadgeClass = 'data-badge est';
-    dendaBadgeText  = '📊 Ref 2025';
-  }
-  nullDash('kpi-denda', dendaDisplayVal);
-  nullDash('kpi-denda-label', dendaLabelText);
-  // Update sub text
+  // Denda: ALL 2026 months now confirmed from Row 34 Trend Summary Payroll screenshot
+  // dendaMonthly indices: 0=Jan26 … 6=Jul26 — all actual data
+  const dendaArr = DATA.dendaMonthly; // [261,151,266,255,571,290,251]
+  const periodDendaVals2026 = roiPeriodIdx.map(i => dendaArr[i]).filter(v => v != null);
+  const periodTotalDenda = periodDendaVals2026.length > 0 ? periodDendaVals2026.reduce((a,b)=>a+b,0) : null;
+  nullDash('kpi-denda', periodTotalDenda != null ? fmtJutaVal(periodTotalDenda) : '—');
+  nullDash('kpi-denda-label', 'Total Denda (' + periodSuffix + ')');
   const dendaSubEl = document.getElementById('kpi-denda-sub');
-  if (dendaSubEl) dendaSubEl.textContent = dendaSubText;
-  // Update badge
-  const dendaCardEl = document.getElementById('kpi-denda')?.closest('.kpi-card');
-  if (dendaCardEl) {
-    const badge = dendaCardEl.querySelector('.data-badge');
-    if (badge) { badge.className = dendaBadgeClass; badge.textContent = dendaBadgeText; }
-  }
+  if (dendaSubEl) dendaSubEl.textContent = 'Row 34 · All PT · data aktual';
 
   // Section headings with period
   const hFin = document.getElementById('roi-heading-fin');
@@ -3280,19 +3231,25 @@ function renderROI() {
     }
   });
 
-  // ── Chart 4: Payroll Components Stacked Bar — Jan 2025 → Jun 2026 ──
-  // Data from Rows 32-38 of Trend Summary Payroll (REAL DATA)
-  // Combine 2025 historical (13 months: Jan25-Jan26) + 2026 remaining (Feb26-Jul26)
-  // Note: Feb-Jul 2026 payroll components — only Total known; breakdown pending per-component extraction.
-  //       For Feb-Jul 26 we show the Total as THP proxy (denda/incentive/etc. to be filled when available).
-  const compMonths   = DATA.payrollMonths2025;   // Jan25…Jan26 (13 labels)
-  const compTHP      = DATA.thp2025to26;
-  const compInc      = DATA.incentive2025to26;
-  const compDenda    = DATA.denda2025to26;
-  const compBPJS     = DATA.bpjs2025to26;
-  const compTax      = DATA.tax2025to26;
-  const compTHR      = DATA.thr2025to26;
-  const compKonsul   = DATA.konsultan2025to26;
+  // ── Chart 4: Payroll Components Stacked Bar — Jan 2025 → Jul 2026 (19 months) ──
+  // Data from Rows 32-38 of Trend Summary Payroll — ALL ACTUAL (screenshot 2026-07-28)
+  // Combine 2025 historical (Jan25-Jan26 = 13 months) + 2026 remaining (Feb26-Jul26 = 6 months)
+  const compMonths2025 = DATA.payrollMonths2025; // ['Jan-25',...,'Jan-26'] (13 entries)
+  const compMonths2026 = ['Feb-26','Mar-26','Apr-26','Mei-26','Jun-26','Jul-26']; // 6 new months
+  const compMonths     = [...compMonths2025, ...compMonths2026]; // 19 months total
+
+  // Helper: concat 2025to26 array (13 items, Jan25-Jan26) with 2026 monthly array (indices 1-6 = Feb-Jul26)
+  function concatComp(arr2025to26, arr2026monthly, startIdx = 1) {
+    const tail = arr2026monthly.slice(startIdx); // Feb-Jul (indices 1-6)
+    return [...arr2025to26, ...tail];
+  }
+  const compTHP    = concatComp(DATA.thp2025to26,      DATA.thpMonthly);
+  const compInc    = concatComp(DATA.incentive2025to26, DATA.incentiveMonthly);
+  const compDenda  = concatComp(DATA.denda2025to26,     DATA.dendaMonthly);
+  const compBPJS   = concatComp(DATA.bpjs2025to26,      DATA.bpjsMonthly);
+  const compTax    = concatComp(DATA.tax2025to26,       DATA.taxMonthly);
+  const compTHR    = concatComp(DATA.thr2025to26,       DATA.thrMonthly);
+  const compKonsul = concatComp(DATA.konsultan2025to26, DATA.konsultanMonthly);
 
   createChart('chart-incentive-denda-ot', {
     type: 'bar',
