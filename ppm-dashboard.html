@@ -91,18 +91,22 @@
   .section-title .dot { width: 12px; height: 12px; border-radius: 3px; }
 
   /* KPI CARDS */
-  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px; }
+  /* ROI tab: 3-col row (6 cards = 3x2 grid) */
+  .kpi-grid-roi-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+  /* ROI tab: 4-col row for per-person metrics */
+  .kpi-grid-roi-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
   .kpi-card {
-    background: white; border-radius: 12px; padding: 14px 16px;
+    background: white; border-radius: 12px; padding: 18px 20px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: relative; overflow: hidden;
     border-left: 4px solid;
   }
   .kpi-card::before { content: ''; position: absolute; right: -10px; top: -10px; width: 70px; height: 70px; border-radius: 50%; opacity: 0.08; }
-  .kpi-card .kpi-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin-bottom: 6px; }
-  .kpi-card .kpi-value { font-size: 26px; font-weight: 800; line-height: 1; }
-  .kpi-card .kpi-sub { font-size: 10px; color: #6b7280; margin-top: 4px; }
+  .kpi-card .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin-bottom: 8px; }
+  .kpi-card .kpi-value { font-size: 28px; font-weight: 800; line-height: 1.1; }
+  .kpi-card .kpi-sub { font-size: 11px; color: #6b7280; margin-top: 6px; line-height: 1.4; }
   .kpi-card .kpi-trend { font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 3px; margin-top: 6px; }
-  .kpi-card .kpi-icon { position: absolute; right: 14px; top: 14px; font-size: 24px; opacity: 0.15; }
+  .kpi-card .kpi-icon { position: absolute; right: 16px; top: 16px; font-size: 26px; opacity: 0.15; }
 
   /* CHART CONTAINERS */
   .chart-grid { display: grid; gap: 14px; margin-bottom: 16px; }
@@ -1248,47 +1252,48 @@
 
   <div class="insight-box" style="background:#f0fdf4;border-color:#16a34a;color:#14532d;margin-bottom:12px;">
     <div class="insight-title">✅ Data Real Tersedia · Payroll Workbook "Trend Summary Payroll"</div>
-    <strong>Revenue (Row 35):</strong> Jan–Jun 2026 ✅ penuh ·
-    <strong>Gross Margin (Row 36):</strong> Jan–Jun 2026 ✅ penuh ·
-    <strong>Payroll (Row 32):</strong> Jan, Mei, Jun ✅ · Feb/Mar/Apr ⚠️ belum diextract ·
-    <strong>Incentive (Row 26):</strong> Jun ✅ · Jan–Mei ⚠️ belum diextract · Denda &amp; OT ❌ tidak tersedia.
-    <br>ROI formula: Gross Profit ÷ Payroll per HC = value generated per Rp spent on staff.
+    <strong>Revenue (Row 44):</strong> Jan 2025–Jun 2026 ✅ penuh ·
+    <strong>Gross Margin (Row 45):</strong> Jan 2025–Jun 2026 ✅ penuh ·
+    <strong>Payroll Total (Row 40):</strong> Jan 2025–Jan 2026 ✅ penuh ·
+    <strong>Incentive (Row 33):</strong> Jan–Jun 2026 ✅ Jan &amp; Jun aktual ·
+    <strong>Denda (Row 34):</strong> Jan–Jan 2026 aktual · Feb–Jul 2026 ⚠️ belum diextract
+    <br>ROI formula: Gross Profit ÷ Payroll per HC · KPI cards mengikuti periode yang dipilih.
   </div>
 
-  <!-- ROI KPI Cards — Row 1: Financial Fundamentals -->
-  <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">💰 Financial Fundamentals (Latest Available: Jun 2026)</div>
-  <div class="kpi-grid" style="margin-bottom:10px;">
+  <!-- ROI KPI Cards — Row 1: Financial Fundamentals (3-col x 2 rows) -->
+  <div id="roi-heading-fin" style="margin-bottom:10px;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">💰 Financial Fundamentals</div>
+  <div class="kpi-grid-roi-3">
     <div class="kpi-card" style="border-color:#16a34a;">
       <div class="kpi-icon">💼</div>
-      <div class="kpi-label" id="kpi-total-gaji-label">Total Payroll (Jun 26)</div>
-      <div class="kpi-value" style="color:#16a34a;font-size:16px;" id="kpi-total-gaji">—</div>
-      <div class="kpi-sub">Row 32 · SUMMARY ALL PT</div>
+      <div class="kpi-label" id="kpi-total-gaji-label">Total Payroll</div>
+      <div class="kpi-value" style="color:#16a34a;" id="kpi-total-gaji">—</div>
+      <div class="kpi-sub">Row 40 · SUMMARY ALL PT</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#ea580c;">
       <div class="kpi-icon">📈</div>
-      <div class="kpi-label" id="kpi-revenue-label">Revenue (Jun 26)</div>
-      <div class="kpi-value" style="color:#ea580c;font-size:16px;" id="kpi-revenue-val">—</div>
-      <div class="kpi-sub">Row 35 · Trend Summary Payroll</div>
+      <div class="kpi-label" id="kpi-revenue-label">Revenue</div>
+      <div class="kpi-value" style="color:#ea580c;" id="kpi-revenue-val">—</div>
+      <div class="kpi-sub">Row 44 · Trend Summary Payroll</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#3b82f6;">
       <div class="kpi-icon">📊</div>
-      <div class="kpi-label" id="kpi-gm-label">Gross Margin (Jun 26)</div>
+      <div class="kpi-label" id="kpi-gm-label">Avg Gross Margin</div>
       <div class="kpi-value" style="color:#3b82f6;" id="kpi-gross-margin">—</div>
-      <div class="kpi-sub">Row 36 · Trend Summary Payroll</div>
+      <div class="kpi-sub">Row 45 · Trend Summary Payroll</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#7c3aed;">
       <div class="kpi-icon">💎</div>
-      <div class="kpi-label" id="kpi-gp-label">Gross Profit (Jun 26)</div>
-      <div class="kpi-value" style="color:#7c3aed;font-size:16px;" id="kpi-gross-profit">—</div>
+      <div class="kpi-label" id="kpi-gp-label">Gross Profit</div>
+      <div class="kpi-value" style="color:#7c3aed;" id="kpi-gross-profit">—</div>
       <div class="kpi-sub">Revenue × Gross Margin %</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#2563eb;">
       <div class="kpi-icon">📉</div>
-      <div class="kpi-label" id="kpi-mp-ratio-label">Manpower Cost Ratio</div>
+      <div class="kpi-label" id="kpi-mp-ratio-label">Avg Manpower Ratio</div>
       <div class="kpi-value" style="color:#2563eb;" id="kpi-manpower-ratio">—</div>
       <div class="kpi-sub">Payroll ÷ Revenue</div>
       <span class="data-badge real">✅ Real Data</span>
@@ -1296,70 +1301,69 @@
     <div class="kpi-card" style="border-color:#7c3aed;">
       <div class="kpi-icon">🎁</div>
       <div class="kpi-label" id="kpi-incentive-label">Total Incentive</div>
-      <div class="kpi-value" style="color:#7c3aed;font-size:16px;" id="kpi-incentive">—</div>
-      <div class="kpi-sub">Row 33 Trend Summary Payroll · Jan &amp; Jun aktual</div>
+      <div class="kpi-value" style="color:#7c3aed;" id="kpi-incentive">—</div>
+      <div class="kpi-sub">Row 33 · Jan &amp; Jun aktual</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
   </div>
 
-  <!-- ROI KPI Cards — Row 2: Per-Person ROI -->
-  <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">🧑‍💼 ROI Per Person (Jun 2026 Latest)</div>
-  <div class="kpi-grid" style="margin-bottom:14px;">
+  <!-- ROI KPI Cards — Row 2: Per-Person ROI (4-col x 2 rows) -->
+  <div id="roi-heading-per" style="margin-bottom:10px;font-size:11px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">🧑‍💼 ROI Per Person</div>
+  <div class="kpi-grid-roi-4">
     <div class="kpi-card" style="border-color:#16a34a;">
       <div class="kpi-icon">💚</div>
-      <div class="kpi-label" id="kpi-gp-per-hc-label">Gross Profit / HC / mo</div>
-      <div class="kpi-value" style="color:#16a34a;font-size:16px;" id="kpi-gp-per-hc">—</div>
-      <div class="kpi-sub">Gross Profit ÷ Active HC</div>
+      <div class="kpi-label" id="kpi-gp-per-hc-label">GP / HC / bln</div>
+      <div class="kpi-value" style="color:#16a34a;" id="kpi-gp-per-hc">—</div>
+      <div class="kpi-sub">Gross Profit ÷ Avg HC</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#dc2626;">
       <div class="kpi-icon">💸</div>
-      <div class="kpi-label" id="kpi-sal-per-hc-label">Salary / HC / mo</div>
-      <div class="kpi-value" style="color:#dc2626;font-size:16px;" id="kpi-salary-per-hc">—</div>
-      <div class="kpi-sub">Total Payroll ÷ Active HC</div>
+      <div class="kpi-label" id="kpi-sal-per-hc-label">Salary / HC / bln</div>
+      <div class="kpi-value" style="color:#dc2626;" id="kpi-salary-per-hc">—</div>
+      <div class="kpi-sub">Total Payroll ÷ Avg HC</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#f59e0b;">
       <div class="kpi-icon">⚖️</div>
       <div class="kpi-label" id="kpi-roi-label">ROI per Person</div>
       <div class="kpi-value" id="kpi-roi-per-person">—</div>
-      <div class="kpi-sub">GP/HC ÷ Salary/HC — positive = profitable</div>
+      <div class="kpi-sub">GP/HC ÷ Salary/HC</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#0d9488;">
       <div class="kpi-icon">💵</div>
-      <div class="kpi-label" id="kpi-rev-per-emp-label">Revenue / HC / month</div>
-      <div class="kpi-value" style="color:#0d9488;font-size:16px;" id="kpi-rev-per-emp">—</div>
-      <div class="kpi-sub">Revenue ÷ Active HC</div>
+      <div class="kpi-label" id="kpi-rev-per-emp-label">Revenue / HC / bln</div>
+      <div class="kpi-value" style="color:#0d9488;" id="kpi-rev-per-emp">—</div>
+      <div class="kpi-sub">Revenue ÷ Avg HC</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#4f46e5;">
       <div class="kpi-icon">📅</div>
       <div class="kpi-label" id="kpi-sales-day-label">Sales / Staff / Day</div>
-      <div class="kpi-value" style="color:#4f46e5;font-size:16px;" id="kpi-sales-per-day">—</div>
-      <div class="kpi-sub">Revenue ÷ HC ÷ 26 hari kerja</div>
+      <div class="kpi-value" style="color:#4f46e5;" id="kpi-sales-per-day">—</div>
+      <div class="kpi-sub">Revenue ÷ HC ÷ 26 hari</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#0d9488;">
       <div class="kpi-icon">📈</div>
       <div class="kpi-label">HC vs Revenue Growth</div>
       <div class="kpi-value" style="color:#0d9488;" id="kpi-growth-delta">—</div>
-      <div class="kpi-sub">Jan→Jun 2026 revenue growth vs HC growth</div>
+      <div class="kpi-sub">Jan 2026 → periode terpilih</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#dc2626;">
       <div class="kpi-icon">⚠️</div>
-      <div class="kpi-label" id="kpi-denda-label">Denda (Jan 2026)</div>
+      <div class="kpi-label" id="kpi-denda-label">Total Denda</div>
       <div class="kpi-value" style="color:#dc2626;" id="kpi-denda">—</div>
-      <div class="kpi-sub">Row 34 Trend Summary Payroll · All PT</div>
+      <div class="kpi-sub">Row 34 · All PT · periode terpilih</div>
       <span class="data-badge real">✅ Real Data</span>
     </div>
-    <div class="kpi-card" style="border-color:#f59e0b;display:none;" id="kpi-ot-card">
+    <div class="kpi-card" style="border-color:#f59e0b;visibility:hidden;">
       <div class="kpi-icon">🕐</div>
-      <div class="kpi-label">Total OT (6M)</div>
-      <div class="kpi-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-ot">Tidak tersedia</div>
-      <div class="kpi-sub">Tidak ada di payroll workbook ini</div>
-      <span class="data-badge nodata">❌ No Data</span>
+      <div class="kpi-label">OT</div>
+      <div class="kpi-value" style="color:#9ca3af;font-size:14px;" id="kpi-ot">—</div>
+      <div class="kpi-sub">—</div>
     </div>
   </div>
 
@@ -1389,6 +1393,13 @@
       <div class="chart-subtitle">Jan 2025 – Jun 2026 · THP / Incentive / Denda / BPJS / Tax / THR / Konsultan · Source: Rows 32–38 Trend Summary Payroll</div>
       <canvas id="chart-incentive-denda-ot"></canvas>
     </div>
+  </div>
+
+  <!-- Payroll Component Line Trend -->
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div class="chart-title">📈 Payroll Component Trends (Line) <span class="data-badge real">✅ Real Data</span></div>
+    <div class="chart-subtitle">Jan 2025 – Jan 2026 · THP / Incentive / Denda / Konsultan · THR, BPJS, Tax excluded for clarity</div>
+    <canvas id="chart-comp-line" style="max-height:260px;"></canvas>
   </div>
 
   <!-- Total Gaji by PT + OT Analysis -->
@@ -2988,16 +2999,35 @@ function renderROI() {
 
   nullDash('kpi-rev-per-emp',   dispRevPerHC != null ? fmt(dispRevPerHC) + '/bln' : '—');
   nullDash('kpi-sales-per-day', periodSalesPerDay != null ? fmt(periodSalesPerDay) + '/hari' : '—');
-  // Denda: sum over period (Jan=261jt actual; others null)
-  const periodDendaVals = roiPeriodIdx.map(i => DATA.dendaMonthly[i]).filter(v => v != null);
+  // Denda: sum over selected period months using denda2025to26 array
+  // denda2025to26 indices: 0=Jan25 … 11=Dec25, 12=Jan26  (Feb-Jul 2026 = not yet extracted)
+  // ROI array indices:  0=Jan26, 1=Feb26 … 6=Jul26
+  // Mapping: ROI index i → denda2025to26 index: only i=0 (Jan26) maps to denda2025to26[12]
+  //          ROI indices 1-6 (Feb-Jul 26) → not yet available in denda2025to26
+  const dendaFor2026ROI = [261, null, null, null, null, null, null]; // Rp juta, Jan26 actual; rest pending
+  const periodDendaVals  = roiPeriodIdx.map(i => dendaFor2026ROI[i]).filter(v => v != null);
   const periodTotalDenda = periodDendaVals.length > 0 ? periodDendaVals.reduce((a,b)=>a+b,0) : null;
+  const dendaHasPartial  = roiPeriodIdx.some(i => dendaFor2026ROI[i] != null);
+  const dendaAllKnown    = roiPeriodIdx.every(i => dendaFor2026ROI[i] != null);
   if (periodTotalDenda != null) {
-    nullDash('kpi-denda', fmtJutaVal(periodTotalDenda));
-    nullDash('kpi-denda-label', 'Denda (' + periodSuffix + ')');
+    nullDash('kpi-denda', fmtJutaVal(periodTotalDenda) + (dendaAllKnown ? '' : '*'));
+    nullDash('kpi-denda-label', 'Denda (' + periodSuffix + (dendaAllKnown ? '' : ' · parsial') + ')');
+    // Update badge
+    const dendaCard = document.getElementById('kpi-denda') && document.getElementById('kpi-denda').closest('.kpi-card');
+    if (dendaCard) {
+      const badge = dendaCard.querySelector('.data-badge');
+      if (badge) { badge.className = dendaAllKnown ? 'data-badge real' : 'data-badge est'; badge.textContent = dendaAllKnown ? '✅ Real Data' : '⚠️ Parsial'; }
+    }
   } else {
     nullDash('kpi-denda', 'Jan-26: ' + fmtJutaVal(DATA.denda2025to26[12]));
-    nullDash('kpi-denda-label', 'Denda (Jan 2026 aktual)');
+    nullDash('kpi-denda-label', 'Denda · Jan-26 aktual');
   }
+
+  // Section headings with period
+  const hFin = document.getElementById('roi-heading-fin');
+  if (hFin) hFin.textContent = '💰 Financial Fundamentals · ' + periodSuffix;
+  const hPer = document.getElementById('roi-heading-per');
+  if (hPer) hPer.textContent = '🧑‍💼 ROI Per Person · ' + pLabel;
 
   // KPI per-person label updates — show period
   nullDash('kpi-gp-per-hc-label',  'GP / HC / bln avg (' + pLabel + ')');
@@ -3256,6 +3286,65 @@ function renderROI() {
           title: { display: true, text: 'Rp (Juta)', font: { size: 9 } }
         }
       }
+    }
+  });
+
+  // ── Chart 4b: Payroll Component Line Trend (THP / Incentive / Denda / Konsultan) ──
+  // THR, BPJS, Tax PPh excluded per user request (too stable / spike-only)
+  createChart('chart-comp-line', {
+    type: 'line',
+    data: {
+      labels: compMonths,
+      datasets: [
+        {
+          label: 'THP',
+          data: compTHP,
+          borderColor: '#3b82f6', backgroundColor: '#3b82f620',
+          tension: 0.3, borderWidth: 2.5, pointRadius: 4, fill: false
+        },
+        {
+          label: 'Incentive',
+          data: compInc,
+          borderColor: '#10b981', backgroundColor: '#10b98120',
+          tension: 0.3, borderWidth: 2, pointRadius: 4, fill: false
+        },
+        {
+          label: 'Denda',
+          data: compDenda,
+          borderColor: '#ef4444', backgroundColor: '#ef444420',
+          tension: 0.3, borderWidth: 2, pointRadius: 4, fill: false,
+          borderDash: [5, 3]
+        },
+        {
+          label: 'Konsultan',
+          data: compKonsul,
+          borderColor: '#06b6d4', backgroundColor: '#06b6d420',
+          tension: 0.3, borderWidth: 2, pointRadius: 4, fill: false,
+          borderDash: [3, 3]
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + fmtJutaVal(ctx.parsed.y)
+          }
+        },
+        datalabels: { display: false }
+      },
+      scales: {
+        x: { ticks: { font: { size: 9 } } },
+        y: {
+          beginAtZero: false,
+          ticks: { callback: v => fmtJutaVal(v), font: { size: 9 } },
+          title: { display: true, text: 'Rp (Juta)', font: { size: 9 } }
+        }
+      },
+      interaction: { mode: 'index', intersect: false }
     }
   });
 
