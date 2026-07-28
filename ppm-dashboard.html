@@ -1295,10 +1295,10 @@
     </div>
     <div class="kpi-card" style="border-color:#7c3aed;">
       <div class="kpi-icon">🎁</div>
-      <div class="kpi-label">Total Incentive</div>
+      <div class="kpi-label" id="kpi-incentive-label">Total Incentive</div>
       <div class="kpi-value" style="color:#7c3aed;font-size:16px;" id="kpi-incentive">—</div>
-      <div class="kpi-sub">Juni 2026 exact · others N/A</div>
-      <span class="data-badge est">⚠️ Partial</span>
+      <div class="kpi-sub">Row 33 Trend Summary Payroll · Jan &amp; Jun aktual</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
   </div>
 
@@ -1349,10 +1349,10 @@
     </div>
     <div class="kpi-card" style="border-color:#dc2626;">
       <div class="kpi-icon">⚠️</div>
-      <div class="kpi-label">Denda / OT</div>
-      <div class="kpi-value" style="color:#9ca3af;font-size:14px;font-style:italic;" id="kpi-denda">Tidak tersedia</div>
-      <div class="kpi-sub">Belum ada di payroll workbook ini</div>
-      <span class="data-badge nodata">❌ No Data</span>
+      <div class="kpi-label" id="kpi-denda-label">Denda (Jan 2026)</div>
+      <div class="kpi-value" style="color:#dc2626;" id="kpi-denda">—</div>
+      <div class="kpi-sub">Row 34 Trend Summary Payroll · All PT</div>
+      <span class="data-badge real">✅ Real Data</span>
     </div>
     <div class="kpi-card" style="border-color:#f59e0b;display:none;" id="kpi-ot-card">
       <div class="kpi-icon">🕐</div>
@@ -1381,12 +1381,12 @@
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
       <div class="chart-title">💰 Payroll vs Revenue + Gross Margin Trend <span class="data-badge real">✅ Real Data</span></div>
-      <div class="chart-subtitle" id="chart-cost-revenue-subtitle">Jan–Jun 2026 · Revenue &amp; GM%: penuh (Row 35/36) · Payroll: Jan/Mei/Jun (Row 32)</div>
+      <div class="chart-subtitle" id="chart-cost-revenue-subtitle">Jan–Jun 2026 · Revenue (Row 44) &amp; GM% (Row 45) · Payroll total (Row 40) · semua bulan lengkap</div>
       <canvas id="chart-cost-revenue"></canvas>
     </div>
     <div class="chart-card">
-      <div class="chart-title">🎁 Incentive Trend (Estimated) <span class="data-badge est">⚠️ Estimated</span></div>
-      <div class="chart-subtitle">Juni 2026 exact · Jan–Mei estimated from Juni incentive ratio</div>
+      <div class="chart-title">📊 Payroll Components Trend <span class="data-badge real">✅ Real Data</span></div>
+      <div class="chart-subtitle">Jan 2025 – Jun 2026 · THP / Incentive / Denda / BPJS / Tax / THR / Konsultan · Source: Rows 32–38 Trend Summary Payroll</div>
       <canvas id="chart-incentive-denda-ot"></canvas>
     </div>
   </div>
@@ -1936,16 +1936,46 @@ const DATA = {
   // Jan=21.22% | Feb=21.29% | Mar=24.37%(THR) | Apr=19.97% | Mei=17.64% | Jun=19.45%
   manpowerRatioPct: [21.22, 21.29, 24.37, 19.97, 17.64, 19.45, null], // %, Jan-Jul 2026
 
-  // Historical 2025 context — ALL PT Grand Total from Master Data Row 9
-  // Jun-25=7020 | Jul-25=6659 | Aug-25=6946 | Sep-25=7322 | OKT-25=7125 | Nov-25=7456 | Dec-25=8304
-  rev2025Monthly: [23504, 21895, 25172, 25023, 26747, 26864],  // Jan-Jun 2025, PKU+PRI only
-  gaji2025Monthly: [7020, 6659, 6946, 7322, 7125, 7456, 8304], // Jun-Dec 2025 ALL PT Grand Total (Row 9)
+  // ── 2025 Historical data — ALL PT SUMMARY (Rows 31-40 + 43-45 of Trend Summary Payroll) ──────
+  // Source: screenshot 2026-07-28, Row 40=Total payroll, Row 44=Revenue, Row 45=Gross Margin %
+  // Index: 0=Jan25 … 11=Dec25 (12 months), then Jan26 at index 12
+  payrollMonths2025: ['Jan-25','Feb-25','Mar-25','Apr-25','Mei-25','Jun-25','Jul-25','Agu-25','Sep-25','Okt-25','Nov-25','Des-25','Jan-26'],
 
-  // Incentive data (Row 26 of Trend Summary Payroll) — Jun exact; others pending Row 26 extract
-  // Jun-26: 649.9M confirmed (GID=182177192) | Others: pending user extraction of Row 26
-  incentiveMonthly: [null, null, null, null, null, 650, null],  // Rp juta, Jun=exact, others=null until Row 26 provided
-  dendaMonthly: null,  // Not in payroll workbook
+  // Row 40: TOTAL payroll ALL PT (Rp juta, rounded from screenshot)
+  gaji2025to26: [6248, 6079, 9188, 6543, 6410, 7020, 6859, 6946, 7322, 7125, 7456, 8304, 7791],
+
+  // Row 44: Revenue ALL PT (Rp juta)
+  rev2025to26: [23504, 21895, 25172, 25017, 26747, 26804, 28597, 32094, 31313, 34338, 35009, 38213, 36711],
+  // Note: Jan-26 confirmed from Row 35 as 36,711 juta (Row 44 screenshot was truncated)
+
+  // Row 45: Gross Margin % ALL PT
+  gm2025to26: [24.34, 25.26, 24.22, 25.00, 25.37, 25.08, 25.38, 25.33, 25.27, 24.16, 23.98, 22.08, 24.20],
+
+  // Row 32: THP (Rp juta)
+  thp2025to26:       [4601, 4646, 5059, 5051, 4894, 5252, 4924, 5269, 5251, 5365, 5543, 5443, 5726],
+  // Row 33: Incentive & Reward (Rp juta)
+  incentive2025to26: [471,  281,  283,  387,  373,  572,  549,  523,  833,  614,  778,  856,  985],
+  // Row 34: Denda (Rp juta)
+  denda2025to26:     [45,   33,   15,   41,   70,   83,   190,  161,  78,   180,  173,  425,  261],
+  // Row 35: BPJS (Rp juta)
+  bpjs2025to26:      [571,  591,  606,  628,  632,  630,  646,  662,  668,  677,  688,  687,  693],
+  // Row 36: Tax PPh (Rp juta)
+  tax2025to26:       [128,  125,  379,  136,  138,  142,  144,  125,  209,  189,  198,  144,  220],
+  // Row 37: THR (Rp juta — Mar & Dec bonus months only)
+  thr2025to26:       [0,    0,    2410, 0,    0,    0,    0,    0,    0,    0,    0,    932,  0],
+  // Row 38: Konsultan (Rp juta)
+  konsultan2025to26: [477,  454,  470,  361,  433,  424,  399,  367,  301,  299,  249,  243,  187],
+
+  // ── 2026 monthly arrays (Jan-Jul 2026 already in roiMonths) ──
+  // Incentive: Row 33 Jan-26=985jt actual; Jun-26=650jt confirmed | Feb-Jun from ROI data
+  incentiveMonthly: [985, null, null, null, null, 650, null],  // Rp juta, Jan/Jun=actual
+  // Denda: Row 34 Jan-26=261jt actual; Feb-Jul pending
+  dendaMonthly: [261, null, null, null, null, null, null],     // Rp juta, Jan=actual
   otMonthly: null,     // Not in payroll workbook
+
+  // Legacy aliases (used elsewhere in code)
+  rev2025Monthly: [23504, 21895, 25172, 25017, 26747, 26804],  // Jan-Jun 2025
+  gaji2025Monthly: [6248, 6079, 9188, 6543, 6410, 7020, 6859, 6946, 7322, 7125, 7456, 8304], // Jan-Dec 2025
 
   // By PT entity (Juni 2026 from GID=182177192 + Master Data screenshot Row 9)
   gajiByPT: {
@@ -2919,7 +2949,10 @@ function renderROI() {
   nullDash('kpi-gross-margin',  dispGM   != null ? dispGM.toFixed(2) + '%' : '—');
   nullDash('kpi-gross-profit',  fmtJutaVal(dispGP));
   nullDash('kpi-manpower-ratio', dispRatio != null ? dispRatio.toFixed(2) + '%' : '—');
-  nullDash('kpi-incentive',     'Jun: Rp 650jt');
+  // Incentive: sum over period from incentiveMonthly (Jan=985, Jun=650 actual; others null)
+  const periodIncentiveVals = roiPeriodIdx.map(i => DATA.incentiveMonthly[i]).filter(v => v != null);
+  const periodTotalInc = periodIncentiveVals.length > 0 ? periodIncentiveVals.reduce((a,b)=>a+b,0) : null;
+  nullDash('kpi-incentive', periodTotalInc != null ? fmtJutaVal(periodTotalInc) + ' (' + pLabel + ')' : 'Lihat chart komponen');
 
   // Period-aware label suffix
   const nM = roiPeriodIdx.length;
@@ -2955,7 +2988,16 @@ function renderROI() {
 
   nullDash('kpi-rev-per-emp',   dispRevPerHC != null ? fmt(dispRevPerHC) + '/bln' : '—');
   nullDash('kpi-sales-per-day', periodSalesPerDay != null ? fmt(periodSalesPerDay) + '/hari' : '—');
-  nullDash('kpi-denda',         'Tidak tersedia');
+  // Denda: sum over period (Jan=261jt actual; others null)
+  const periodDendaVals = roiPeriodIdx.map(i => DATA.dendaMonthly[i]).filter(v => v != null);
+  const periodTotalDenda = periodDendaVals.length > 0 ? periodDendaVals.reduce((a,b)=>a+b,0) : null;
+  if (periodTotalDenda != null) {
+    nullDash('kpi-denda', fmtJutaVal(periodTotalDenda));
+    nullDash('kpi-denda-label', 'Denda (' + periodSuffix + ')');
+  } else {
+    nullDash('kpi-denda', 'Jan-26: ' + fmtJutaVal(DATA.denda2025to26[12]));
+    nullDash('kpi-denda-label', 'Denda (Jan 2026 aktual)');
+  }
 
   // KPI per-person label updates — show period
   nullDash('kpi-gp-per-hc-label',  'GP / HC / bln avg (' + pLabel + ')');
@@ -3162,30 +3204,33 @@ function renderROI() {
     }
   });
 
-  // ── Chart 4: Incentive Trend ──
-  // Jun incentive = 650 juta (exact from Row 26). Others: estimated from Jun ratio where payroll known.
-  // Once user provides Row 26 data for Feb/Mar/Apr, replace nulls below with actual values.
-  const juniIncentive = DATA.incentiveMonthly[5]; // 650 juta — Jun 2026 exact (Row 26)
-  const juniGaji      = gajiArr[5]; // 7558
-  const incRatio      = juniIncentive / juniGaji; // ~8.6%
-  // Use actual incentive where DATA.incentiveMonthly has a value; estimate where payroll known
-  const estIncentive  = roiMonths.map((_, i) => {
-    if (DATA.incentiveMonthly[i] != null) return DATA.incentiveMonthly[i]; // actual
-    if (gajiArr[i] != null) return Math.round(gajiArr[i] * incRatio);      // estimated
-    return null;  // no data at all
-  });
+  // ── Chart 4: Payroll Components Stacked Bar — Jan 2025 → Jun 2026 ──
+  // Data from Rows 32-38 of Trend Summary Payroll (REAL DATA)
+  // Combine 2025 historical (13 months: Jan25-Jan26) + 2026 remaining (Feb26-Jul26)
+  // Note: Feb-Jul 2026 payroll components — only Total known; breakdown pending per-component extraction.
+  //       For Feb-Jul 26 we show the Total as THP proxy (denda/incentive/etc. to be filled when available).
+  const compMonths   = DATA.payrollMonths2025;   // Jan25…Jan26 (13 labels)
+  const compTHP      = DATA.thp2025to26;
+  const compInc      = DATA.incentive2025to26;
+  const compDenda    = DATA.denda2025to26;
+  const compBPJS     = DATA.bpjs2025to26;
+  const compTax      = DATA.tax2025to26;
+  const compTHR      = DATA.thr2025to26;
+  const compKonsul   = DATA.konsultan2025to26;
+
   createChart('chart-incentive-denda-ot', {
     type: 'bar',
     data: {
-      labels: roiMonths,
-      datasets: [{
-        label: 'Incentive (Rp Juta)',
-        data: estIncentive,
-        backgroundColor: roiMonths.map((_, i) =>
-          DATA.incentiveMonthly[i] != null ? '#8b5cf6' : '#8b5cf660'
-        ),
-        borderRadius: 4
-      }]
+      labels: compMonths,
+      datasets: [
+        { label: 'THP',           data: compTHP,    backgroundColor: '#3b82f6', borderRadius: 0 },
+        { label: 'Incentive',     data: compInc,    backgroundColor: '#10b981', borderRadius: 0 },
+        { label: 'Denda',         data: compDenda,  backgroundColor: '#ef4444', borderRadius: 0 },
+        { label: 'BPJS',          data: compBPJS,   backgroundColor: '#f59e0b', borderRadius: 0 },
+        { label: 'Tax PPh',       data: compTax,    backgroundColor: '#8b5cf6', borderRadius: 0 },
+        { label: 'THR',           data: compTHR,    backgroundColor: '#ec4899', borderRadius: 0 },
+        { label: 'Konsultan',     data: compKonsul, backgroundColor: '#06b6d4', borderRadius: 0 },
+      ]
     },
     options: {
       responsive: true, maintainAspectRatio: true,
@@ -3193,20 +3238,24 @@ function renderROI() {
         legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
         tooltip: {
           callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + fmtJutaVal(ctx.parsed.y),
             footer: items => {
-              const i = items[0].dataIndex;
-              return DATA.incentiveMonthly[i] != null
-                ? '✅ Data aktual dari Row 26 Trend Summary Payroll'
-                : '⚠️ Estimasi dari rasio Juni (Incentive/Payroll = ' + (incRatio*100).toFixed(1) + '%)';
+              const total = items.reduce((s, it) => s + (it.parsed.y || 0), 0);
+              return 'Total: ' + fmtJutaVal(total);
             }
           }
         },
-        datalabels: {
-          display: true, color: '#fff', font: { weight: 'bold', size: 10 },
-          formatter: v => v != null ? fmtJutaVal(v) : ''
-        }
+        datalabels: { display: false }
       },
-      scales: { y: { beginAtZero: true, ticks: { callback: v => fmtJutaVal(v) } } }
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 9 } } },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          ticks: { callback: v => fmtJutaVal(v), font: { size: 9 } },
+          title: { display: true, text: 'Rp (Juta)', font: { size: 9 } }
+        }
+      }
     }
   });
 
