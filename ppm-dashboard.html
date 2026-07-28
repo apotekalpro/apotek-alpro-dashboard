@@ -275,10 +275,10 @@
     display: flex; align-items: center; gap: 10px;
     padding: 12px 14px; border-bottom: 1px solid rgba(0,0,0,0.06);
   }
-  .ov-pillar-icon { font-size: 22px; flex-shrink: 0; }
-  .ov-pillar-title { font-size: 13px; font-weight: 800; color: #1e293b; line-height: 1.2; }
+  .ov-pillar-icon { font-size: 26px; flex-shrink: 0; }
+  .ov-pillar-title { font-size: 14px; font-weight: 800; color: #1e293b; line-height: 1.2; }
   .ov-pillar-badge {
-    font-size: 11px; font-weight: 700; margin-top: 2px;
+    font-size: 12px; font-weight: 700; margin-top: 3px;
     display: inline-flex; align-items: center; gap: 3px;
   }
   .ov-pillar-arrow {
@@ -287,26 +287,35 @@
   }
   .ov-pillar-card:hover .ov-pillar-arrow { transform: translateX(3px); color: #475569; }
 
-  .ov-pillar-body { padding: 10px 14px; flex: 1; }
+  .ov-pillar-body { padding: 12px 16px; flex: 1; }
 
   .ov-metric-row {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 5px 0; border-bottom: 1px solid #f3f4f6;
+    padding: 7px 0; border-bottom: 1px solid #f3f4f6;
   }
   .ov-metric-row:last-of-type { border-bottom: none; }
-  .ov-metric-label { font-size: 11px; color: #64748b; }
-  .ov-metric-val   { font-size: 12px; font-weight: 700; color: #1e293b; }
+  .ov-metric-label { font-size: 11.5px; color: #64748b; }
+  .ov-metric-val   { font-size: 13px; font-weight: 700; color: #1e293b; }
 
   .ov-pillar-footer {
-    padding: 7px 14px; background: #f8fafc;
+    padding: 8px 16px; background: #f8fafc;
     font-size: 10px; color: #94a3b8;
     border-top: 1px solid #f1f5f9;
   }
 
-  /* KPI strip — tighter on overview */
-  .ov-kpi-strip { display:grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap:8px; margin-bottom:12px; }
-  .ov-kpi-strip .kpi-card { padding: 10px 12px; }
-  .ov-kpi-strip .kpi-value { font-size: 22px; }
+  /* KPI strip — overview: 5 equal cols × 2 rows, full-width */
+  .ov-kpi-strip { display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; margin-bottom:14px; }
+  .ov-kpi-strip .kpi-card { padding: 14px 16px; }
+  .ov-kpi-strip .kpi-value { font-size: 28px !important; }
+  .ov-kpi-strip .kpi-label { font-size: 11.5px; }
+  .ov-kpi-strip .kpi-sub   { font-size: 11px; }
+
+  /* Pillar cards: exactly 5 equal cols, full-width */
+  .ov-pillar-grid { display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; margin-bottom:14px; }
+
+  /* Bigger metric text inside pillar cards */
+  .ov-metric-label-lg { font-size: 11px; color: #64748b; }
+  .ov-metric-val-lg   { font-size: 13px; font-weight: 700; color: #1e293b; }
 
   /* Sparkline canvas inside pillar card */
   .ov-pillar-body canvas { display:block; }
@@ -374,10 +383,10 @@
 <!-- ===================== TAB 0: OVERVIEW / MASTER DASHBOARD ===================== -->
 <div id="tab-overview" class="tab-content active" style="background:#f1f5f9;">
 
-  <!-- ── Master KPI Strip ───────────────────────────────────────── -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:14px;">
+  <!-- ── Master KPI Strip — 5×2 grid, full width ───────────────── -->
+  <div class="ov-kpi-strip">
     <!-- HC -->
-    <div class="kpi-card" style="border-color:#2563eb;padding:10px 12px;">
+    <div class="kpi-card" style="border-color:#2563eb;">
       <div class="kpi-icon">👥</div>
       <div class="kpi-label">Active HC</div>
       <div class="kpi-value" style="color:#2563eb;" id="ov-active-hc">—</div>
@@ -385,7 +394,7 @@
       <span class="data-badge real">✅ Real</span>
     </div>
     <!-- New Hire -->
-    <div class="kpi-card" style="border-color:#16a34a;padding:10px 12px;">
+    <div class="kpi-card" style="border-color:#16a34a;">
       <div class="kpi-icon">🆕</div>
       <div class="kpi-label" id="ov-newhire-label">New Hire</div>
       <div class="kpi-value" style="color:#16a34a;" id="ov-newhire">—</div>
@@ -393,7 +402,7 @@
       <span class="data-badge real">✅ Real</span>
     </div>
     <!-- Resigned -->
-    <div class="kpi-card" style="border-color:#dc2626;padding:10px 12px;">
+    <div class="kpi-card" style="border-color:#dc2626;">
       <div class="kpi-icon">📤</div>
       <div class="kpi-label" id="ov-resigned-label">Resigned</div>
       <div class="kpi-value" style="color:#dc2626;" id="ov-resigned">—</div>
@@ -401,7 +410,7 @@
       <span class="data-badge real">✅ Real</span>
     </div>
     <!-- Turnover Rate -->
-    <div class="kpi-card" style="border-color:#f59e0b;padding:10px 12px;">
+    <div class="kpi-card" style="border-color:#f59e0b;">
       <div class="kpi-icon">📊</div>
       <div class="kpi-label">Turnover Rate</div>
       <div class="kpi-value" style="color:#f59e0b;" id="ov-turnover">—</div>
@@ -409,7 +418,7 @@
       <span class="data-badge real">✅ Real</span>
     </div>
     <!-- Net Flow -->
-    <div class="kpi-card" style="border-color:#7c3aed;padding:10px 12px;">
+    <div class="kpi-card" style="border-color:#7c3aed;">
       <div class="kpi-icon">📈</div>
       <div class="kpi-label" id="ov-net-label">Net HC Flow</div>
       <div class="kpi-value" id="ov-net">—</div>
@@ -417,7 +426,7 @@
       <span class="data-badge real">✅ Real</span>
     </div>
     <!-- CV Received -->
-    <div class="kpi-card" style="border-color:#0d9488;padding:10px 12px;">
+    <div class="kpi-card" style="border-color:#0d9488;">
       <div class="kpi-icon">📄</div>
       <div class="kpi-label" id="ov-cv-label">CV Received</div>
       <div class="kpi-value" style="color:#0d9488;" id="ov-cv">—</div>
@@ -425,7 +434,7 @@
       <span class="data-badge real">✅ Real</span>
     </div>
     <!-- Onboarded -->
-    <div class="kpi-card" style="border-color:#ca8a04;padding:10px 12px;">
+    <div class="kpi-card" style="border-color:#ca8a04;">
       <div class="kpi-icon">🚀</div>
       <div class="kpi-label" id="ov-onboarded-label">Onboarded</div>
       <div class="kpi-value" style="color:#ca8a04;" id="ov-onboarded">—</div>
@@ -433,7 +442,7 @@
       <span class="data-badge real">✅ Real</span>
     </div>
     <!-- Manpower Cost Ratio -->
-    <div class="kpi-card" style="border-color:#4f46e5;padding:10px 12px;">
+    <div class="kpi-card" style="border-color:#4f46e5;">
       <div class="kpi-icon">💰</div>
       <div class="kpi-label">Manpower Ratio</div>
       <div class="kpi-value" style="color:#4f46e5;" id="ov-mp-ratio">—</div>
@@ -441,7 +450,7 @@
       <span class="data-badge real">✅ Real</span>
     </div>
     <!-- Newbie Retention -->
-    <div class="kpi-card" style="border-color:#0ea5e9;padding:10px 12px;">
+    <div class="kpi-card" style="border-color:#0ea5e9;">
       <div class="kpi-icon">🌱</div>
       <div class="kpi-label" id="ov-nb-label">Newbie Retention</div>
       <div class="kpi-value" id="ov-nb-rate">—</div>
@@ -449,7 +458,7 @@
       <span class="data-badge real">✅ Real</span>
     </div>
     <!-- Exit Interviews -->
-    <div class="kpi-card" style="border-color:#ea580c;padding:10px 12px;">
+    <div class="kpi-card" style="border-color:#ea580c;">
       <div class="kpi-icon">💬</div>
       <div class="kpi-label" id="ov-exit-label">Exit Interviews</div>
       <div class="kpi-value" style="color:#ea580c;" id="ov-exit">—</div>
@@ -458,8 +467,8 @@
     </div>
   </div>
 
-  <!-- ── Pillar Health Cards (click to navigate) ───────────────── -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px;">
+  <!-- ── Pillar Health Cards (click to navigate) — 5 equal cols ── -->
+  <div class="ov-pillar-grid">
 
     <!-- RETENTION -->
     <div class="ov-pillar-card" onclick="switchTabById('retention')" style="border-color:#dc2626;" id="pillar-retention">
