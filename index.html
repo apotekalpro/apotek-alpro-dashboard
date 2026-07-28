@@ -1385,6 +1385,11 @@
                                 <i class="fas fa-clock mr-2"></i>
                                 OT Calculator
                             </button>
+                            <button onclick="showPpmSubtab('document-registry')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-file-certificate mr-2"></i>
+                                Document Registry
+                            </button>
                         </div>
                         
                         <!-- PPM Dashboard Subtab -->
@@ -1942,6 +1947,24 @@
                             </div>
                             <div class="iframe-container">
                                 <iframe data-src="https://overtime-calculator-alpro.pages.dev/upload" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- Document Registry Subtab -->
+                        <div id="documentRegistrySubtab" class="ppm-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Document Registry</h3>
+                                    <p class="text-gray-600">Official document verification and registry system</p>
+                                </div>
+                                <button onclick="openInNewTab('https://05200dfb-aaa5-40f9-81c8-71edafe5fa52.vip.gensparksite.com/')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe data-src="https://05200dfb-aaa5-40f9-81c8-71edafe5fa52.vip.gensparksite.com/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
                             </div>
                         </div>
                     </div>
@@ -6952,7 +6975,8 @@
                 'salary-calculator': 'salaryCalculatorSubtab',
                 'incentive-calculator': 'incentiveCalculatorSubtab',
                 'product-incentive-calculator': 'productIncentiveCalculatorSubtab',
-                'ot-calculator': 'otCalculatorSubtab'
+                'ot-calculator': 'otCalculatorSubtab',
+                'document-registry': 'documentRegistrySubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
