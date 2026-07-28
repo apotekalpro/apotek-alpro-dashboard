@@ -1391,6 +1391,13 @@
     </div>
   </div>
 
+  <!-- Payroll Component Line Trend -->
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div class="chart-title">📈 Payroll Component Trends (Line) <span class="data-badge real">✅ Real Data</span></div>
+    <div class="chart-subtitle">Jan 2025 – Jan 2026 · THP / Incentive / Denda / Konsultan · THR, BPJS, Tax excluded for clarity</div>
+    <canvas id="chart-comp-line" style="max-height:260px;"></canvas>
+  </div>
+
   <!-- Total Gaji by PT + OT Analysis -->
   <div class="chart-grid chart-grid-2">
     <div class="chart-card">
@@ -3256,6 +3263,65 @@ function renderROI() {
           title: { display: true, text: 'Rp (Juta)', font: { size: 9 } }
         }
       }
+    }
+  });
+
+  // ── Chart 4b: Payroll Component Line Trend (THP / Incentive / Denda / Konsultan) ──
+  // THR, BPJS, Tax PPh excluded per user request (too stable / spike-only)
+  createChart('chart-comp-line', {
+    type: 'line',
+    data: {
+      labels: compMonths,
+      datasets: [
+        {
+          label: 'THP',
+          data: compTHP,
+          borderColor: '#3b82f6', backgroundColor: '#3b82f620',
+          tension: 0.3, borderWidth: 2.5, pointRadius: 4, fill: false
+        },
+        {
+          label: 'Incentive',
+          data: compInc,
+          borderColor: '#10b981', backgroundColor: '#10b98120',
+          tension: 0.3, borderWidth: 2, pointRadius: 4, fill: false
+        },
+        {
+          label: 'Denda',
+          data: compDenda,
+          borderColor: '#ef4444', backgroundColor: '#ef444420',
+          tension: 0.3, borderWidth: 2, pointRadius: 4, fill: false,
+          borderDash: [5, 3]
+        },
+        {
+          label: 'Konsultan',
+          data: compKonsul,
+          borderColor: '#06b6d4', backgroundColor: '#06b6d420',
+          tension: 0.3, borderWidth: 2, pointRadius: 4, fill: false,
+          borderDash: [3, 3]
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+        tooltip: {
+          mode: 'index', intersect: false,
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + fmtJutaVal(ctx.parsed.y)
+          }
+        },
+        datalabels: { display: false }
+      },
+      scales: {
+        x: { ticks: { font: { size: 9 } } },
+        y: {
+          beginAtZero: false,
+          ticks: { callback: v => fmtJutaVal(v), font: { size: 9 } },
+          title: { display: true, text: 'Rp (Juta)', font: { size: 9 } }
+        }
+      },
+      interaction: { mode: 'index', intersect: false }
     }
   });
 
