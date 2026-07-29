@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loss Sales Tracker</title>
+    <title>Price Comparison Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -151,10 +151,10 @@
             <div class="flex justify-between items-center">
                 <div>
                     <h1 class="text-4xl font-bold text-gray-800 flex items-center mb-2">
-                        <i class="fas fa-chart-line mr-4 text-blue-600"></i>
-                        Loss Sales Tracker
+                        <i class="fas fa-tags mr-4 text-blue-600"></i>
+                        Price Comparison Tracker
                     </h1>
-                    <p class="text-gray-600">Track and analyze loss sales data across outlets and products</p>
+                    <p class="text-gray-600">Track and analyze price comparisons data across outlets and products</p>
                 </div>
                 <div class="text-sm">
                     <button onclick="location.reload()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
@@ -170,10 +170,10 @@
             <div class="stat-card">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm opacity-80">Total Loss Sales</p>
-                        <h3 id="totalLossSales" class="text-3xl font-bold mt-2">-</h3>
+                        <p class="text-sm opacity-80">Total Price Comparisons</p>
+                        <h3 id="totalPriceRecords" class="text-3xl font-bold mt-2">-</h3>
                     </div>
-                    <i class="fas fa-exclamation-triangle text-4xl opacity-50"></i>
+                    <i class="fas fa-dollar-sign text-4xl opacity-50"></i>
                 </div>
             </div>
             <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
@@ -188,10 +188,10 @@
             <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm opacity-80">Outlets Affected</p>
-                        <h3 id="outletsAffected" class="text-3xl font-bold mt-2">-</h3>
+                        <p class="text-sm opacity-80">Competitors Tracked</p>
+                        <h3 id="competitorsTracked" class="text-3xl font-bold mt-2">-</h3>
                     </div>
-                    <i class="fas fa-store text-4xl opacity-50"></i>
+                    <i class="fas fa-building text-4xl opacity-50"></i>
                 </div>
             </div>
             <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
@@ -219,9 +219,9 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Outlet</label>
-                    <select id="outletFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">All Outlets</option>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Competitor</label>
+                    <select id="competitorFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Competitors</option>
                     </select>
                 </div>
                 <div class="flex items-end">
@@ -245,11 +245,11 @@
             </div>
         </div>
 
-        <!-- Monthly Loss Sales Count Card -->
+        <!-- Monthly Price Comparisons Count Card -->
         <div class="chart-container">
             <h3 class="text-xl font-bold text-gray-800 mb-4">
                 <i class="fas fa-calendar-alt mr-2 text-purple-600"></i>
-                Loss Sales Count by Month
+                Price Comparisons Count by Month
             </h3>
             <div id="monthlyCountsContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                 <div class="loading">
@@ -275,7 +275,7 @@
         <div class="chart-container">
             <h3 class="text-xl font-bold text-gray-800 mb-4">
                 <i class="fas fa-table mr-2 text-blue-600"></i>
-                All Loss Sales Data
+                All Price Comparisons Data
             </h3>
             <div class="table-container">
                 <table id="lossSalesTable">
@@ -284,9 +284,9 @@
                             <th>Rank</th>
                             <th>Product Name</th>
                             <th>Normalized Name</th>
-                            <th>Loss Count</th>
+                            <th>Price Comparison Count</th>
                             <th>Month</th>
-                            <th>Outlets</th>
+                            <th>Competitors</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -306,7 +306,7 @@
     <script>
         // Google Sheets Configuration
         const SHEET_ID = '1Mr42a0pG4fQGsxTj77FmaTapE4_utQJ8mXO4DRYU2i0';
-        const SHEET1_GID = '1075651210'; // Main loss sales data GID
+        const SHEET1_GID = '1075651210'; // Main price comparisons data GID
         const PRICE_SHEET_GID = '0'; // Price sheet GID (usually 0 for first sheet, adjust if needed)
         
         let allData = [];
@@ -390,17 +390,17 @@
                 
                 // Get current filter values
                 const monthFilter = document.getElementById('monthFilter').value;
-                const outletFilter = document.getElementById('outletFilter').value;
+                const competitorFilter = document.getElementById('competitorFilter').value;
                 
-                console.log(`📋 Filters - Month: ${monthFilter || 'All'}, Outlet: ${outletFilter || 'All'}`);
+                console.log(`📋 Filters - Month: ${monthFilter || 'All'}, Competitor: ${competitorFilter || 'All'}`);
                 
                 // Apply filters if any
                 let dataToExport = processedData;
                 if (monthFilter) {
                     dataToExport = dataToExport.filter(item => item.month === monthFilter);
                 }
-                if (outletFilter) {
-                    dataToExport = dataToExport.filter(item => item.outlets.includes(outletFilter));
+                if (competitorFilter) {
+                    dataToExport = dataToExport.filter(item => item.competitors.includes(competitorFilter));
                 }
                 
                 console.log(`📊 Exporting ${dataToExport.length} items`);
@@ -411,7 +411,7 @@
                 }
                 
                 // CSV Header
-                let csv = 'Rank,Product Name,Normalized Name,Loss Count,Month,Year,Outlets,Outlet Count\n';
+                let csv = 'Rank,Product Name,Normalized Name,Loss Count,Month,Year,Competitors,Competitor Count\n';
                 
                 // CSV Data
                 dataToExport.forEach((item, index) => {
@@ -421,8 +421,8 @@
                     const count = item.count;
                     const month = item.month;
                     const year = getYearForMonth(item.month);
-                    const outlets = `"${item.outlets.join(', ').replace(/"/g, '""')}"`;
-                    const outletCount = item.outlets.length;
+                    const outlets = `"${item.competitors.join(', ').replace(/"/g, '""')}"`;
+                    const outletCount = item.competitors.length;
                     
                     csv += `${rank},${productName},${normalizedName},${count},${month},${year},${outlets},${outletCount}\n`;
                 });
@@ -518,17 +518,17 @@
                 
                 // Get current filter values
                 const monthFilter = document.getElementById('monthFilter').value;
-                const outletFilter = document.getElementById('outletFilter').value;
+                const competitorFilter = document.getElementById('competitorFilter').value;
                 
-                console.log(`📋 Filters - Month: ${monthFilter || 'All'}, Outlet: ${outletFilter || 'All'}`);
+                console.log(`📋 Filters - Month: ${monthFilter || 'All'}, Competitor: ${competitorFilter || 'All'}`);
                 
                 // Apply filters if any
                 let dataToExport = processedData;
                 if (monthFilter) {
                     dataToExport = dataToExport.filter(item => item.month === monthFilter);
                 }
-                if (outletFilter) {
-                    dataToExport = dataToExport.filter(item => item.outlets.includes(outletFilter));
+                if (competitorFilter) {
+                    dataToExport = dataToExport.filter(item => item.competitors.includes(competitorFilter));
                 }
                 
                 console.log(`📊 Exporting ${dataToExport.length} items`);
@@ -539,7 +539,7 @@
                 }
                 
                 // Create HTML table for Excel
-                let html = '<html><head><meta charset="utf-8"><title>Loss Sales Tracker</title></head><body>';
+                let html = '<html><head><meta charset="utf-8"><title>Price Comparison Tracker</title></head><body>';
                 html += '<table border="1" style="border-collapse: collapse;"><thead><tr>';
                 html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Rank</th>';
                 html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Product Name</th>';
@@ -547,8 +547,8 @@
                 html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Loss Count</th>';
                 html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Month</th>';
                 html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Year</th>';
-                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Outlets</th>';
-                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Outlet Count</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Competitors</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Competitor Count</th>';
                 html += '</tr></thead><tbody>';
                 
                 dataToExport.forEach((item, index) => {
@@ -559,8 +559,8 @@
                     html += `<td style="padding: 8px;">${item.count}</td>`;
                     html += `<td style="padding: 8px;">${item.month}</td>`;
                     html += `<td style="padding: 8px;">${getYearForMonth(item.month)}</td>`;
-                    html += `<td style="padding: 8px;">${item.outlets.join(', ')}</td>`;
-                    html += `<td style="padding: 8px;">${item.outlets.length}</td>`;
+                    html += `<td style="padding: 8px;">${item.competitors.join(', ')}</td>`;
+                    html += `<td style="padding: 8px;">${item.competitors.length}</td>`;
                     html += '</tr>';
                 });
                 
@@ -718,14 +718,14 @@
                         originalNames: [],
                         count: 0,
                         month: item.month,
-                        outlets: new Set()
+                        competitors: new Set()
                     });
                 }
                 
                 const group = groupMap.get(key);
                 group.originalNames.push(item.original);
                 group.count++;
-                group.outlets.add(item.outlet);
+                group.outlets.add(item.competitor);
             });
             
             console.log(`✅ Created ${groupMap.size} groups`);
@@ -733,8 +733,8 @@
             // Convert to array
             return Array.from(groupMap.values()).map(group => ({
                 ...group,
-                outlets: Array.from(group.outlets),
-                outlet: Array.from(group.outlets)[0] // For compatibility
+                competitors: Array.from(group.outlets),
+                competitor: Array.from(group.outlets)[0] // For compatibility
             }));
         }
 
@@ -771,7 +771,7 @@
                 updateLoadingText('Connecting to Google Sheets...');
                 
                 // Fetch main sheet by GID
-                updateLoadingText('Fetching loss sales data...');
+                updateLoadingText('Fetching price comparisons data...');
                 const sheet1Data = await fetchSheetDataByGid(SHEET1_GID, 'Main Sheet');
                 console.log(`📊 Main sheet data rows: ${sheet1Data.length}`);
                 
@@ -803,7 +803,7 @@
                         combinedData.push({
                             original: itemName,
                             normalized: normalizeItemName(itemName),
-                            outlet: outletCode || 'N/A',
+                            competitor: outletCode || 'N/A',
                             month: month || 'N/A'
                         });
                     }
@@ -825,7 +825,7 @@
                             combinedData.push({
                                 original: itemName,
                                 normalized: normalizeItemName(itemName),
-                                outlet: outletCode || 'N/A',
+                                competitor: outletCode || 'N/A',
                                 month: month || 'N/A'
                             });
                         }
@@ -848,7 +848,7 @@
                     originalNames: group.originalNames,
                     count: group.count,
                     month: group.month,
-                    outlets: group.outlets
+                    competitors: group.outlets
                 }));
                 
                 // Sort by count descending
@@ -884,13 +884,13 @@
 
         // Update statistics cards
         function updateUI() {
-            document.getElementById('totalLossSales').textContent = allData.length.toLocaleString();
+            document.getElementById('totalPriceRecords').textContent = allData.length.toLocaleString();
             
             const uniqueProducts = new Set(processedData.map(item => item.normalizedName));
             document.getElementById('uniqueProducts').textContent = uniqueProducts.size.toLocaleString();
             
-            const uniqueOutlets = new Set(allData.map(item => item.outlet));
-            document.getElementById('outletsAffected').textContent = uniqueOutlets.size.toLocaleString();
+            const uniqueCompetitors = new Set(allData.map(item => item.competitor));
+            document.getElementById('competitorsTracked').textContent = uniqueCompetitors.size.toLocaleString();
             
             // Always show current month, even if no data exists yet
             const { currentMonth } = getCurrentDateInfo();
@@ -912,10 +912,10 @@
             // Sort months chronologically
             months = sortMonths(months);
             
-            const outlets = [...new Set(allData.map(item => item.outlet))].filter(o => o !== 'N/A').sort();
+            const competitors = [...new Set(allData.map(item => item.competitor))].filter(o => o !== 'N/A').sort();
             
             const monthFilter = document.getElementById('monthFilter');
-            const outletFilter = document.getElementById('outletFilter');
+            const competitorFilter = document.getElementById('competitorFilter');
             
             months.forEach(month => {
                 const option = document.createElement('option');
@@ -932,18 +932,18 @@
                 setTimeout(() => applyFilters(), 100);
             }
             
-            outlets.forEach(outlet => {
+            competitors.forEach(competitor => {
                 const option = document.createElement('option');
-                option.value = outlet;
-                option.textContent = outlet;
-                outletFilter.appendChild(option);
+                option.value = competitor;
+                option.textContent = competitor;
+                competitorFilter.appendChild(option);
             });
         }
 
         // Apply filters
         function applyFilters() {
             const monthFilter = document.getElementById('monthFilter').value;
-            const outletFilter = document.getElementById('outletFilter').value;
+            const competitorFilter = document.getElementById('competitorFilter').value;
             
             let filtered = processedData;
             
@@ -951,8 +951,8 @@
                 filtered = filtered.filter(item => item.month === monthFilter);
             }
             
-            if (outletFilter) {
-                filtered = filtered.filter(item => item.outlets.includes(outletFilter));
+            if (competitorFilter) {
+                filtered = filtered.filter(item => item.competitors.includes(competitorFilter));
             }
             
             renderTable(filtered);
@@ -966,7 +966,7 @@
             console.log('📊 Charts rendering skipped (removed from UI)');
         }
 
-        // Render monthly loss sales counts
+        // Render monthly price comparisons counts
         function renderMonthlyCounts() {
             // Get months from data
             let months = [...new Set(processedData.map(item => item.month))];
@@ -1021,7 +1021,7 @@
                 card.innerHTML = `
                     <div class="month-name">${formatMonthWithYear(month)}</div>
                     <div class="count">${count.toLocaleString()}</div>
-                    <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">loss sales</div>
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 4px;">price comparisons</div>
                 `;
                 
                 container.appendChild(card);
@@ -1061,7 +1061,7 @@
                 if (monthData.length === 0) {
                     const noDataMsg = document.createElement('p');
                     noDataMsg.className = 'text-gray-500 italic py-4 px-4 bg-gray-50 rounded';
-                    noDataMsg.textContent = 'No loss sales data recorded for this month yet.';
+                    noDataMsg.textContent = 'No price comparisons data recorded for this month yet.';
                     monthSection.appendChild(noDataMsg);
                     container.appendChild(monthSection);
                     return;
@@ -1075,7 +1075,7 @@
                             <th class="px-4 py-2 text-left">Rank</th>
                             <th class="px-4 py-2 text-left">Product Name</th>
                             <th class="px-4 py-2 text-left">Loss Count</th>
-                            <th class="px-4 py-2 text-left">Outlets</th>
+                            <th class="px-4 py-2 text-left">Competitors</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1088,7 +1088,7 @@
                                 <td class="px-4 py-2">
                                     <span class="badge badge-success">${item.count}</span>
                                 </td>
-                                <td class="px-4 py-2 text-sm text-gray-600">${item.outlets.length} outlets</td>
+                                <td class="px-4 py-2 text-sm text-gray-600">${item.competitors.length} outlets</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -1122,7 +1122,7 @@
                     <td><span class="badge badge-primary">${item.normalizedName}</span></td>
                     <td><span class="badge badge-success">${item.count}</span></td>
                     <td>${formatMonthWithYear(item.month)}</td>
-                    <td class="text-sm text-gray-600">${item.outlets.slice(0, 3).join(', ')} ${item.outlets.length > 3 ? `+${item.outlets.length - 3}` : ''}</td>
+                    <td class="text-sm text-gray-600">${item.competitors.slice(0, 3).join(', ')} ${item.competitors.length > 3 ? `+${item.competitors.length - 3}` : ''}</td>
                 `;
                 tbody.appendChild(row);
             });
