@@ -188,7 +188,7 @@
             <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm opacity-80">Competitors Tracked</p>
+                        <p class="text-sm opacity-80">Outlets Tracked</p>
                         <h3 id="competitorsTracked" class="text-3xl font-bold mt-2">-</h3>
                     </div>
                     <i class="fas fa-building text-4xl opacity-50"></i>
@@ -219,9 +219,9 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Competitor</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Outlet</label>
                     <select id="competitorFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">All Competitors</option>
+                        <option value="">All Outlets</option>
                     </select>
                 </div>
                 <div class="flex items-end">
@@ -286,7 +286,7 @@
                             <th>Normalized Name</th>
                             <th>Price Comparison Count</th>
                             <th>Month</th>
-                            <th>Competitors</th>
+                            <th>Outlets & Competitors</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -718,6 +718,7 @@
                         originalNames: [],
                         count: 0,
                         month: item.month,
+                        outlets: new Set(),
                         competitors: new Set()
                     });
                 }
@@ -725,8 +726,11 @@
                 const group = groupMap.get(key);
                 group.originalNames.push(item.original);
                 group.count++;
-                if (item.competitor) {
-                    group.competitors.add(item.competitor);
+                if (item.outlet) {
+                    group.outlets.add(item.outlet);
+                }
+                if (item.competitorName && item.competitorName !== 'Unknown') {
+                    group.competitors.add(item.competitorName);
                 }
             });
             
@@ -735,8 +739,9 @@
             // Convert to array
             return Array.from(groupMap.values()).map(group => ({
                 ...group,
+                outlets: Array.from(group.outlets),
                 competitors: Array.from(group.competitors),
-                competitor: Array.from(group.competitors)[0] // For compatibility
+                outlet: Array.from(group.outlets)[0] // Primary outlet
             }));
         }
 
@@ -789,7 +794,7 @@
                 // Combine data from both sheets
                 const combinedData = [];
                 
-                // Process Sheet1 (Column K = item name, N = competitor name, I = month)
+                // Process Sheet1 (Column K = item name, M = competitor name, I = month)
                 updateLoadingText(`Processing ${sheet1Data.length} rows...`);
                 console.log('🔍 Processing Sheet1 data...');
                 sheet1Data.forEach((row, index) => {
@@ -798,43 +803,50 @@
                         return; // Skip header
                     }
                     const itemName = row[10]; // Column K (0-indexed = 10)
-                    const competitorName = row[13]; // Column N (Nama Kompetitor)
+                    const outletCode = row[1]; // Column B (Outlet Code)
+                    const competitorPrice = row[11]; // Column L (Harga Kompetitor)
+                    const competitorName = row[12]; // Column M (Nama Kompetitor)
                     const month = row[8]; // Column I
                     
-                    if (itemName && itemName.trim() !== '') {
-                        const dataItem = {
-                            original: itemName,
-                            normalized: normalizeItemName(itemName),
-                            competitor: competitorName || 'Unknown',
-                            month: month || 'N/A'
-                        };
-                        if (index <= 3) { // Log first few items for debugging
-                            console.log(`Sample item ${index}:`, dataItem);
-                        }
-                        combinedData.push(dataItem);
+                    // Track ALL entries (with or without item name)
+                    // Item name is optional, but we still count the entry
+                    const dataItem = {
+                        original: itemName || 'Price Check',
+                        normalized: itemName ? normalizeItemName(itemName) : 'PRICE CHECK',
+                        outlet: outletCode || 'Unknown',
+                        competitorName: competitorName || 'Unknown',
+                        competitorPrice: competitorPrice || null,
+                        month: month || 'N/A'
+                    };
+                    if (index <= 3) { // Log first few items for debugging
+                        console.log(`Sample item ${index}:`, dataItem);
                     }
+                    combinedData.push(dataItem);
                 });
                 
                 console.log(`✅ Processed ${combinedData.length} items from Sheet1`);
 
-                // Process Price Sheet (Column K = item name, N = competitor name, I = month)
+                // Process Price Sheet (Column K = item name, M = competitor name, I = month)
                 if (priceSheetData.length > 0) {
                     console.log('🔍 Processing Price sheet data...');
                     const beforeCount = combinedData.length;
                     priceSheetData.forEach((row, index) => {
                         if (index === 0) return; // Skip header
                         const itemName = row[10]; // Column K
-                        const competitorName = row[13]; // Column N (Nama Kompetitor)
+                        const outletCode = row[1]; // Column B (Outlet Code)
+                        const competitorPrice = row[11]; // Column L (Harga Kompetitor)
+                        const competitorName = row[12]; // Column M (Nama Kompetitor)
                         const month = row[8]; // Column I
                         
-                        if (itemName && itemName.trim() !== '') {
-                            combinedData.push({
-                                original: itemName,
-                                normalized: normalizeItemName(itemName),
-                                competitor: competitorName || 'Unknown',
-                                month: month || 'N/A'
-                            });
-                        }
+                        // Track ALL entries (with or without item name)
+                        combinedData.push({
+                            original: itemName || 'Price Check',
+                            normalized: itemName ? normalizeItemName(itemName) : 'PRICE CHECK',
+                            outlet: outletCode || 'Unknown',
+                            competitorName: competitorName || 'Unknown',
+                            competitorPrice: competitorPrice || null,
+                            month: month || 'N/A'
+                        });
                     });
                     console.log(`✅ Added ${combinedData.length - beforeCount} items from Price sheet`);
                 }
@@ -854,6 +866,7 @@
                     originalNames: group.originalNames,
                     count: group.count,
                     month: group.month,
+                    outlets: group.outlets,
                     competitors: group.competitors
                 }));
                 
@@ -895,8 +908,8 @@
             const uniqueProducts = new Set(processedData.map(item => item.normalizedName));
             document.getElementById('uniqueProducts').textContent = uniqueProducts.size.toLocaleString();
             
-            const uniqueCompetitors = new Set(allData.map(item => item.competitor));
-            document.getElementById('competitorsTracked').textContent = uniqueCompetitors.size.toLocaleString();
+            const uniqueOutlets = new Set(allData.map(item => item.outlet));
+            document.getElementById('competitorsTracked').textContent = uniqueOutlets.size.toLocaleString();
             
             // Always show current month, even if no data exists yet
             const { currentMonth } = getCurrentDateInfo();
@@ -918,7 +931,7 @@
             // Sort months chronologically
             months = sortMonths(months);
             
-            const competitors = [...new Set(allData.map(item => item.competitor))].filter(o => o !== 'N/A').sort();
+            const outlets = [...new Set(allData.map(item => item.outlet))].filter(o => o !== 'Unknown').sort();
             
             const monthFilter = document.getElementById('monthFilter');
             const competitorFilter = document.getElementById('competitorFilter');
@@ -938,10 +951,10 @@
                 setTimeout(() => applyFilters(), 100);
             }
             
-            competitors.forEach(competitor => {
+            outlets.forEach(outlet => {
                 const option = document.createElement('option');
-                option.value = competitor;
-                option.textContent = competitor;
+                option.value = outlet;
+                option.textContent = outlet;
                 competitorFilter.appendChild(option);
             });
         }
@@ -958,7 +971,7 @@
             }
             
             if (competitorFilter) {
-                filtered = filtered.filter(item => item.competitors.includes(competitorFilter));
+                filtered = filtered.filter(item => item.outlets.includes(competitorFilter));
             }
             
             renderTable(filtered);
@@ -1128,7 +1141,10 @@
                     <td><span class="badge badge-primary">${item.normalizedName}</span></td>
                     <td><span class="badge badge-success">${item.count}</span></td>
                     <td>${formatMonthWithYear(item.month)}</td>
-                    <td class="text-sm text-gray-600">${item.competitors.slice(0, 3).join(', ')} ${item.competitors.length > 3 ? `+${item.competitors.length - 3}` : ''}</td>
+                    <td class="text-sm text-gray-600">
+                        <strong>Outlets:</strong> ${item.outlets.slice(0, 3).join(', ')} ${item.outlets.length > 3 ? `+${item.outlets.length - 3}` : ''}
+                        ${item.competitors.length > 0 ? `<br><span class="text-xs text-gray-500">Competitors: ${item.competitors.slice(0, 2).join(', ')}${item.competitors.length > 2 ? '...' : ''}</span>` : ''}
+                    </td>
                 `;
                 tbody.appendChild(row);
             });
