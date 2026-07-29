@@ -1390,6 +1390,11 @@
                                 <i class="fas fa-file-certificate mr-2"></i>
                                 Document Registry
                             </button>
+                            <button onclick="showPpmSubtab('e-signature')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-signature mr-2"></i>
+                                E-Signature PPM
+                            </button>
                         </div>
                         
                         <!-- PPM Dashboard Subtab -->
@@ -1957,14 +1962,32 @@
                                     <h3 class="text-xl font-semibold text-gray-800">Document Registry</h3>
                                     <p class="text-gray-600">Official document verification and registry system</p>
                                 </div>
-                                <button onclick="openInNewTab('https://05200dfb-aaa5-40f9-81c8-71edafe5fa52.vip.gensparksite.com/')" 
+                                <button onclick="openInNewTab('https://verify.ppmalpro.web.id/')" 
                                         class="btn-primary text-white px-4 py-2 rounded-lg">
                                     <i class="fas fa-external-link-alt mr-2"></i>
                                     Open in New Tab
                                 </button>
                             </div>
                             <div class="iframe-container">
-                                <iframe data-src="https://05200dfb-aaa5-40f9-81c8-71edafe5fa52.vip.gensparksite.com/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                                <iframe data-src="https://verify.ppmalpro.web.id/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- E-Signature PPM Subtab -->
+                        <div id="eSignatureSubtab" class="ppm-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">E-Signature PPM</h3>
+                                    <p class="text-gray-600">Electronic signature and document signing system</p>
+                                </div>
+                                <button onclick="openInNewTab('https://signature.ppmalpro.web.id/')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe data-src="https://signature.ppmalpro.web.id/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
                             </div>
                         </div>
                     </div>
@@ -6976,7 +6999,8 @@
                 'incentive-calculator': 'incentiveCalculatorSubtab',
                 'product-incentive-calculator': 'productIncentiveCalculatorSubtab',
                 'ot-calculator': 'otCalculatorSubtab',
-                'document-registry': 'documentRegistrySubtab'
+                'document-registry': 'documentRegistrySubtab',
+                'e-signature': 'eSignatureSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
