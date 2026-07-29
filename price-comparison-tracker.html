@@ -725,7 +725,9 @@
                 const group = groupMap.get(key);
                 group.originalNames.push(item.original);
                 group.count++;
-                group.competitors.add(item.competitor);
+                if (item.competitor) {
+                    group.competitors.add(item.competitor);
+                }
             });
             
             console.log(`✅ Created ${groupMap.size} groups`);
@@ -800,12 +802,16 @@
                     const month = row[8]; // Column I
                     
                     if (itemName && itemName.trim() !== '') {
-                        combinedData.push({
+                        const dataItem = {
                             original: itemName,
                             normalized: normalizeItemName(itemName),
-                            competitor: competitorName || 'N/A',
+                            competitor: competitorName || 'Unknown',
                             month: month || 'N/A'
-                        });
+                        };
+                        if (index <= 3) { // Log first few items for debugging
+                            console.log(`Sample item ${index}:`, dataItem);
+                        }
+                        combinedData.push(dataItem);
                     }
                 });
                 
@@ -825,7 +831,7 @@
                             combinedData.push({
                                 original: itemName,
                                 normalized: normalizeItemName(itemName),
-                                competitor: competitorName || 'N/A',
+                                competitor: competitorName || 'Unknown',
                                 month: month || 'N/A'
                             });
                         }
