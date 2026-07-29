@@ -725,7 +725,7 @@
                 const group = groupMap.get(key);
                 group.originalNames.push(item.original);
                 group.count++;
-                group.outlets.add(item.competitor);
+                group.competitors.add(item.competitor);
             });
             
             console.log(`✅ Created ${groupMap.size} groups`);
@@ -733,8 +733,8 @@
             // Convert to array
             return Array.from(groupMap.values()).map(group => ({
                 ...group,
-                competitors: Array.from(group.outlets),
-                competitor: Array.from(group.outlets)[0] // For compatibility
+                competitors: Array.from(group.competitors),
+                competitor: Array.from(group.competitors)[0] // For compatibility
             }));
         }
 
@@ -787,7 +787,7 @@
                 // Combine data from both sheets
                 const combinedData = [];
                 
-                // Process Sheet1 (Column K = item name, B = outlet code, I = month)
+                // Process Sheet1 (Column K = item name, N = competitor name, I = month)
                 updateLoadingText(`Processing ${sheet1Data.length} rows...`);
                 console.log('🔍 Processing Sheet1 data...');
                 sheet1Data.forEach((row, index) => {
@@ -796,14 +796,14 @@
                         return; // Skip header
                     }
                     const itemName = row[10]; // Column K (0-indexed = 10)
-                    const outletCode = row[1]; // Column B
+                    const competitorName = row[13]; // Column N (Nama Kompetitor)
                     const month = row[8]; // Column I
                     
                     if (itemName && itemName.trim() !== '') {
                         combinedData.push({
                             original: itemName,
                             normalized: normalizeItemName(itemName),
-                            competitor: outletCode || 'N/A',
+                            competitor: competitorName || 'N/A',
                             month: month || 'N/A'
                         });
                     }
@@ -811,21 +811,21 @@
                 
                 console.log(`✅ Processed ${combinedData.length} items from Sheet1`);
 
-                // Process Price Sheet (assuming similar structure)
+                // Process Price Sheet (Column K = item name, N = competitor name, I = month)
                 if (priceSheetData.length > 0) {
                     console.log('🔍 Processing Price sheet data...');
                     const beforeCount = combinedData.length;
                     priceSheetData.forEach((row, index) => {
                         if (index === 0) return; // Skip header
                         const itemName = row[10]; // Column K
-                        const outletCode = row[1]; // Column B
+                        const competitorName = row[13]; // Column N (Nama Kompetitor)
                         const month = row[8]; // Column I
                         
                         if (itemName && itemName.trim() !== '') {
                             combinedData.push({
                                 original: itemName,
                                 normalized: normalizeItemName(itemName),
-                                competitor: outletCode || 'N/A',
+                                competitor: competitorName || 'N/A',
                                 month: month || 'N/A'
                             });
                         }
@@ -848,7 +848,7 @@
                     originalNames: group.originalNames,
                     count: group.count,
                     month: group.month,
-                    competitors: group.outlets
+                    competitors: group.competitors
                 }));
                 
                 // Sort by count descending
