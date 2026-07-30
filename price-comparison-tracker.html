@@ -285,7 +285,8 @@
                             <th>Product Name</th>
                             <th>Normalized Name</th>
                             <th>Price Comparison Count</th>
-                            <th>Price Range (Rp)</th>
+                            <th>Min Price (Rp)</th>
+                            <th>Max Price (Rp)</th>
                             <th>Month</th>
                             <th>Outlets & Competitors</th>
                         </tr>
@@ -1214,7 +1215,7 @@
             tbody.innerHTML = '';
             
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">No data available</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">No data available</td></tr>';
                 return;
             }
             
@@ -1232,24 +1233,16 @@
             data.forEach((item, index) => {
                 const row = document.createElement('tr');
                 
-                // Format price range
-                let priceDisplay = '<span class="text-gray-400 text-xs">No price data</span>';
+                // Format min and max prices separately
+                let minPriceDisplay = '<span class="text-gray-400 text-xs">-</span>';
+                let maxPriceDisplay = '<span class="text-gray-400 text-xs">-</span>';
+                
                 if (item.priceRange && item.priceRange.count > 0) {
                     const minFormatted = new Intl.NumberFormat('id-ID').format(item.priceRange.min);
                     const maxFormatted = new Intl.NumberFormat('id-ID').format(item.priceRange.max);
-                    const avgFormatted = new Intl.NumberFormat('id-ID').format(Math.round(item.priceRange.avg));
                     
-                    if (item.priceRange.min === item.priceRange.max) {
-                        // Single price
-                        priceDisplay = `<span class="font-semibold text-green-700">Rp ${minFormatted}</span>`;
-                    } else {
-                        // Price range
-                        priceDisplay = `
-                            <span class="text-xs text-gray-600">Min:</span> <span class="font-medium text-blue-600">Rp ${minFormatted}</span><br>
-                            <span class="text-xs text-gray-600">Max:</span> <span class="font-medium text-red-600">Rp ${maxFormatted}</span><br>
-                            <span class="text-xs text-gray-600">Avg:</span> <span class="font-medium text-green-600">Rp ${avgFormatted}</span>
-                        `;
-                    }
+                    minPriceDisplay = `<span class="font-semibold text-blue-700">Rp ${minFormatted}</span>`;
+                    maxPriceDisplay = `<span class="font-semibold text-red-700">Rp ${maxFormatted}</span>`;
                 }
                 
                 row.innerHTML = `
@@ -1262,9 +1255,8 @@
                     </td>
                     <td><span class="badge badge-primary">${item.normalizedName}</span></td>
                     <td><span class="badge badge-success">${item.count}</span></td>
-                    <td class="text-sm">
-                        ${priceDisplay}
-                    </td>
+                    <td class="text-sm">${minPriceDisplay}</td>
+                    <td class="text-sm">${maxPriceDisplay}</td>
                     <td>${formatMonthWithYear(item.month)}</td>
                     <td class="text-sm text-gray-600">
                         <strong>Outlets:</strong> ${item.outlets.slice(0, 3).join(', ')} ${item.outlets.length > 3 ? `+${item.outlets.length - 3}` : ''}
