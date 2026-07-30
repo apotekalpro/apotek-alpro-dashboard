@@ -756,6 +756,27 @@
             
             console.log(`✅ Created ${groupMap.size} groups`);
             
+            // Debug: Log groups with prices
+            let groupsWithPrices = 0;
+            let totalPricesCollected = 0;
+            groupMap.forEach((group, key) => {
+                if (group.prices && group.prices.length > 0) {
+                    groupsWithPrices++;
+                    totalPricesCollected += group.prices.length;
+                    if (groupsWithPrices <= 5) {
+                        console.log(`Group "${group.normalizedName}" (${group.month}):`, {
+                            count: group.count,
+                            priceCount: group.prices.length,
+                            prices: group.prices,
+                            min: Math.min(...group.prices),
+                            max: Math.max(...group.prices)
+                        });
+                    }
+                }
+            });
+            console.log(`📊 Groups with prices: ${groupsWithPrices} / ${groupMap.size}`);
+            console.log(`📊 Total prices collected: ${totalPricesCollected}`);
+            
             // Convert to array and calculate price ranges
             return Array.from(groupMap.values()).map(group => {
                 const prices = group.prices.filter(p => p > 0); // Filter out zero/invalid prices
