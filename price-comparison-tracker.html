@@ -305,9 +305,11 @@
 
     <script>
         // Google Sheets Configuration
-        const SHEET_ID = '1Mr42a0pG4fQGsxTj77FmaTapE4_utQJ8mXO4DRYU2i0';
-        const SHEET1_GID = '1075651210'; // Main price comparisons data GID
-        const PRICE_SHEET_GID = '0'; // Price sheet GID (usually 0 for first sheet, adjust if needed)
+        const SHEET_ID = '1Mr42a0pG4fQGsxTj77FmaTapE4_utQJ8mXO4DRYU2i0'; // Google Sheets ID
+        
+        // Possible GIDs for Price sheet - will try these in order until we find one with ~73 rows
+        const POSSIBLE_PRICE_GIDS = ['426540732', '0', '1', '2'];
+        let PRICE_SHEET_GID = null; // Will be determined automatically
         
         let allData = [];
         let processedData = [];
@@ -771,84 +773,102 @@
             }
         }
 
+        // Auto-detect the correct Price sheet GID
+        async function findPriceSheetGID() {
+            console.log('🔍 Auto-detecting Price sheet GID...');
+            
+            for (const gid of POSSIBLE_PRICE_GIDS) {
+                try {
+                    console.log(`  Testing GID: ${gid}`);
+                    const testData = await fetchSheetDataByGid(gid, `Test-${gid}`);
+                    console.log(`  GID ${gid} has ${testData.length} rows`);
+                    
+                    // Price sheet should have around 73-75 rows (including header)
+                    if (testData.length >= 70 && testData.length <= 80) {
+                        console.log(`  ✅ Found Price sheet at GID: ${gid} (${testData.length} rows)`);
+                        return gid;
+                    }
+                } catch (error) {
+                    console.log(`  ❌ GID ${gid} failed:`, error.message);
+                }
+            }
+            
+            console.error('❌ Could not find Price sheet with ~73 rows in any of the tested GIDs');
+            throw new Error('Price sheet not found. Please verify the correct GID.');
+        }
+        
         // Process data
         async function processData() {
             try {
                 console.log('🔄 Starting data processing...');
                 updateLoadingText('Connecting to Google Sheets...');
                 
-                // Fetch main sheet by GID
-                updateLoadingText('Fetching price comparisons data...');
-                const sheet1Data = await fetchSheetDataByGid(SHEET1_GID, 'Main Sheet');
-                console.log(`📊 Main sheet data rows: ${sheet1Data.length}`);
+                // Auto-detect correct Price sheet GID if not already found
+                if (!PRICE_SHEET_GID) {
+                    updateLoadingText('Detecting correct Price sheet...');
+                    PRICE_SHEET_GID = await findPriceSheetGID();
+                }
                 
-                // Try to fetch Price sheet by GID (optional)
-                let priceSheetData = [];
-                try {
-                    priceSheetData = await fetchSheetDataByGid(PRICE_SHEET_GID, 'Price Sheet');
-                    console.log(`📊 Price sheet data rows: ${priceSheetData.length}`);
-                } catch (error) {
-                    console.warn('⚠️ Price sheet not found or not accessible, continuing with main sheet only');
+                // Fetch ONLY Price sheet data (NOT Loss Sales sheet)
+                updateLoadingText('Fetching price comparison data from Price sheet...');
+                console.log('📥 Fetching from Price sheet only (GID:', PRICE_SHEET_GID, ')');
+                
+                const priceSheetData = await fetchSheetDataByGid(PRICE_SHEET_GID, 'Price Sheet');
+                console.log(`📊 Price sheet data rows: ${priceSheetData.length}`);
+                console.log('⚠️ Note: Price Comparison Tracker uses ONLY Price sheet, NOT Loss Sales sheet');
+                
+                // Verify we're not using Loss Sales GID
+                if (PRICE_SHEET_GID === '1075651210') {
+                    console.error('❌ ERROR: Using Loss Sales GID instead of Price sheet GID!');
+                    throw new Error('Wrong sheet detected! This is the Loss Sales sheet, not Price sheet.');
+                }
+                
+                // Verify row count is reasonable for Price sheet (~73 rows)
+                if (priceSheetData.length > 1000) {
+                    console.error(`❌ ERROR: Too many rows (${priceSheetData.length})! This looks like Loss Sales data, not Price data.`);
+                    throw new Error(`Wrong sheet detected! Price sheet should have ~73 rows, but found ${priceSheetData.length} rows.`);
                 }
 
-                // Combine data from both sheets
+                // Process data from Price sheet ONLY
                 const combinedData = [];
                 
-                // Process Sheet1 (Column K = item name, M = competitor name, I = month)
-                updateLoadingText(`Processing ${sheet1Data.length} rows...`);
-                console.log('🔍 Processing Sheet1 data...');
-                sheet1Data.forEach((row, index) => {
-                    if (index === 0) {
-                        console.log('📋 Header row:', row);
-                        return; // Skip header
-                    }
-                    const itemName = row[10]; // Column K (0-indexed = 10)
-                    const outletCode = row[1]; // Column B (Outlet Code)
-                    const competitorPrice = row[11]; // Column L (Harga Kompetitor)
-                    const competitorName = row[12]; // Column M (Nama Kompetitor)
-                    const month = row[8]; // Column I
-                    
-                    // Track ALL entries (with or without item name)
-                    // Item name is optional, but we still count the entry
-                    const dataItem = {
-                        original: itemName || 'Price Check',
-                        normalized: itemName ? normalizeItemName(itemName) : 'PRICE CHECK',
-                        outlet: outletCode || 'Unknown',
-                        competitorName: competitorName || 'Unknown',
-                        competitorPrice: competitorPrice || null,
-                        month: month || 'N/A'
-                    };
-                    if (index <= 3) { // Log first few items for debugging
-                        console.log(`Sample item ${index}:`, dataItem);
-                    }
-                    combinedData.push(dataItem);
-                });
-                
-                console.log(`✅ Processed ${combinedData.length} items from Sheet1`);
-
                 // Process Price Sheet (Column K = item name, M = competitor name, I = month)
+                updateLoadingText(`Processing ${priceSheetData.length} price comparison rows...`);
+                console.log('🔍 Processing Price sheet data ONLY...');
+                
                 if (priceSheetData.length > 0) {
-                    console.log('🔍 Processing Price sheet data...');
-                    const beforeCount = combinedData.length;
                     priceSheetData.forEach((row, index) => {
-                        if (index === 0) return; // Skip header
+                        if (index === 0) {
+                            console.log('📋 Price sheet header:', row);
+                            return; // Skip header
+                        }
                         const itemName = row[10]; // Column K
                         const outletCode = row[1]; // Column B (Outlet Code)
                         const competitorPrice = row[11]; // Column L (Harga Kompetitor)
                         const competitorName = row[12]; // Column M (Nama Kompetitor)
                         const month = row[8]; // Column I
                         
-                        // Track ALL entries (with or without item name)
-                        combinedData.push({
+                        // Track ALL price comparison entries (with or without item name)
+                        const dataItem = {
                             original: itemName || 'Price Check',
                             normalized: itemName ? normalizeItemName(itemName) : 'PRICE CHECK',
                             outlet: outletCode || 'Unknown',
                             competitorName: competitorName || 'Unknown',
                             competitorPrice: competitorPrice || null,
                             month: month || 'N/A'
-                        });
+                        };
+                        
+                        // Log first few items for debugging
+                        if (index <= 5) {
+                            console.log(`Price entry ${index}:`, dataItem);
+                        }
+                        
+                        combinedData.push(dataItem);
                     });
-                    console.log(`✅ Added ${combinedData.length - beforeCount} items from Price sheet`);
+                    console.log(`✅ Processed ${combinedData.length} price comparison entries from Price sheet`);
+                } else {
+                    console.error('❌ Price sheet is empty!');
+                    throw new Error('Price sheet has no data');
                 }
 
                 allData = combinedData;
