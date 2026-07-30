@@ -829,13 +829,27 @@
                     priceSheetData.forEach((row, index) => {
                         if (index === 0) {
                             console.log('📋 Price sheet header:', row);
+                            console.log('📋 Column K (index 10):', row[10]);
+                            console.log('📋 Column L (index 11):', row[11]);
+                            console.log('📋 Column M (index 12):', row[12]);
+                            console.log('📋 Column N (index 13):', row[13]);
                             return; // Skip header
                         }
                         const itemName = row[10]; // Column K
                         const outletCode = row[1]; // Column B (Outlet Code)
-                        const competitorPrice = row[11]; // Column L (Harga Kompetitor)
-                        const competitorName = row[12]; // Column M (Nama Kompetitor)
+                        const competitorPrice = row[11]; // Column L (Harga Kompetitor - OR IS IT?)
+                        const competitorName = row[12]; // Column M (Nama Kompetitor - OR IS IT?)
                         const month = row[8]; // Column I
+                        
+                        // Parse competitor price - handle text that might contain numbers
+                        let parsedPrice = null;
+                        if (competitorPrice) {
+                            // Try to parse as number
+                            const priceNum = parseFloat(String(competitorPrice).replace(/[^0-9.-]/g, ''));
+                            if (!isNaN(priceNum) && priceNum > 0) {
+                                parsedPrice = priceNum;
+                            }
+                        }
                         
                         // Track ALL price comparison entries (with or without item name)
                         const dataItem = {
@@ -843,13 +857,24 @@
                             normalized: itemName ? normalizeItemName(itemName) : 'PRICE CHECK',
                             outlet: outletCode || 'Unknown',
                             competitorName: competitorName || 'Unknown',
-                            competitorPrice: competitorPrice || null,
+                            competitorPrice: parsedPrice,
                             month: month || 'N/A'
                         };
                         
-                        // Log first few items for debugging
-                        if (index <= 5) {
-                            console.log(`Price entry ${index}:`, dataItem);
+                        // Log first few items for debugging with ALL columns
+                        if (index <= 10) {
+                            console.log(`Row ${index} full data:`, {
+                                'Col A (0)': row[0],
+                                'Col B (1) - Outlet': row[1],
+                                'Col C (2)': row[2],
+                                'Col I (8) - Month': row[8],
+                                'Col K (10) - Nama SKU': row[10],
+                                'Col L (11) - Harga Kompetitor': row[11],
+                                'Col M (12) - Nama Kompetitor': row[12],
+                                'Col N (13)': row[13],
+                                'Parsed Price': parsedPrice,
+                                'Data Item': dataItem
+                            });
                         }
                         
                         combinedData.push(dataItem);
