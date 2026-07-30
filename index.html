@@ -1395,6 +1395,11 @@
                                 <i class="fas fa-signature mr-2"></i>
                                 E-Signature PPM
                             </button>
+                            <button onclick="showPpmSubtab('outlet-tracker')" 
+                                    class="subtab-button px-4 py-2">
+                                <i class="fas fa-store mr-2"></i>
+                                Outlet Opening Tracker
+                            </button>
                         </div>
                         
                         <!-- PPM Dashboard Subtab -->
@@ -1988,6 +1993,24 @@
                             </div>
                             <div class="iframe-container">
                                 <iframe data-src="https://signature.ppmalpro.web.id/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+                            </div>
+                        </div>
+                        
+                        <!-- Outlet Opening Tracker Subtab -->
+                        <div id="outletTrackerSubtab" class="ppm-subtab hidden">
+                            <div class="flex justify-between items-center mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">Outlet Opening Tracker</h3>
+                                    <p class="text-gray-600">Track and monitor new outlet openings and progress</p>
+                                </div>
+                                <button onclick="openInNewTab('https://outlet.ppmalpro.web.id/')" 
+                                        class="btn-primary text-white px-4 py-2 rounded-lg">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Open in New Tab
+                                </button>
+                            </div>
+                            <div class="iframe-container">
+                                <iframe data-src="https://outlet.ppmalpro.web.id/" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
                             </div>
                         </div>
                     </div>
@@ -7000,7 +7023,8 @@
                 'product-incentive-calculator': 'productIncentiveCalculatorSubtab',
                 'ot-calculator': 'otCalculatorSubtab',
                 'document-registry': 'documentRegistrySubtab',
-                'e-signature': 'eSignatureSubtab'
+                'e-signature': 'eSignatureSubtab',
+                'outlet-tracker': 'outletTrackerSubtab'
             };
             
             const targetSubtab = document.getElementById(subtabMap[subtabId]);
