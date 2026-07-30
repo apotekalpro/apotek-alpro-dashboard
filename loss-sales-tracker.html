@@ -924,12 +924,12 @@
                 monthFilter.appendChild(option);
             });
             
-            // Set default filter to latest month (first in sorted array)
+            // Set default: Show current month + last month only (performance optimization)
             if (months.length > 0) {
-                monthFilter.value = months[0];
-                console.log(`📅 Default filter set to latest month: ${months[0]}`);
-                // Apply filter automatically
-                setTimeout(() => applyFilters(), 100);
+                // Don't set monthFilter.value - this will show all months in dropdown but filter data
+                console.log(`📅 Default: Showing latest 2 months only (${months.slice(0, 2).join(', ')})`);
+                // Apply default filter to show only last 2 months
+                setTimeout(() => applyDefaultFilter(months), 100);
             }
             
             outlets.forEach(outlet => {
@@ -940,6 +940,18 @@
             });
         }
 
+        // Apply default filter (show only last 2 months)
+        function applyDefaultFilter(months) {
+            console.log('🔄 Applying default filter: Latest 2 months');
+            const latestTwoMonths = months.slice(0, 2); // Get first 2 months (sorted newest first)
+            
+            let filtered = processedData.filter(item => latestTwoMonths.includes(item.month));
+            console.log(`📊 Filtered to ${filtered.length} items from ${latestTwoMonths.join(' & ')}`);
+            
+            renderTable(filtered);
+            renderCharts(filtered);
+        }
+        
         // Apply filters
         function applyFilters() {
             const monthFilter = document.getElementById('monthFilter').value;
@@ -949,6 +961,7 @@
             
             if (monthFilter) {
                 filtered = filtered.filter(item => item.month === monthFilter);
+                console.log(`📊 Filtered by month "${monthFilter}": ${filtered.length} items`);
             }
             
             if (outletFilter) {
