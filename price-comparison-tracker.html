@@ -922,7 +922,8 @@
                     count: group.count,
                     month: group.month,
                     outlets: group.outlets,
-                    competitors: group.competitors
+                    competitors: group.competitors,
+                    priceRange: group.priceRange // ✅ CRITICAL: Include price range data!
                 }));
                 
                 // Sort by count descending
@@ -1024,6 +1025,7 @@
             
             renderTable(filtered);
             renderCharts(filtered);
+            renderMonthlyTables(filtered); // Pass filtered data to monthly tables
         }
         
         // Apply filters
@@ -1045,6 +1047,7 @@
             
             renderTable(filtered);
             renderCharts(filtered);
+            renderMonthlyTables(filtered); // Pass filtered data to monthly tables
         }
 
         // Render charts
@@ -1117,9 +1120,9 @@
         }
         
         // Render monthly top 10 tables
-        function renderMonthlyTables() {
-            // Get months from data
-            let months = [...new Set(processedData.map(item => item.month))];
+        function renderMonthlyTables(data = processedData) {
+            // Get months from filtered data (not all processedData)
+            let months = [...new Set(data.map(item => item.month))];
             
             // Always include current month (even if no data exists yet)
             const { currentMonth } = getCurrentDateInfo();
@@ -1135,7 +1138,7 @@
             container.innerHTML = '';
             
             months.forEach(month => {
-                const monthData = processedData.filter(item => item.month === month).slice(0, 10);
+                const monthData = data.filter(item => item.month === month).slice(0, 10);
                 
                 const monthSection = document.createElement('div');
                 monthSection.className = 'border-t pt-4';

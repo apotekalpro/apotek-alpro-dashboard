@@ -950,6 +950,7 @@
             
             renderTable(filtered);
             renderCharts(filtered);
+            renderMonthlyTables(filtered); // Pass filtered data to monthly tables
         }
         
         // Apply filters
@@ -966,10 +967,12 @@
             
             if (outletFilter) {
                 filtered = filtered.filter(item => item.outlets.includes(outletFilter));
+                console.log(`📊 Filtered by outlet "${outletFilter}": ${filtered.length} items`);
             }
             
             renderTable(filtered);
             renderCharts(filtered);
+            renderMonthlyTables(filtered); // Pass filtered data to monthly tables
         }
 
         // Render charts
@@ -1042,9 +1045,9 @@
         }
         
         // Render monthly top 10 tables
-        function renderMonthlyTables() {
-            // Get months from data
-            let months = [...new Set(processedData.map(item => item.month))];
+        function renderMonthlyTables(data = processedData) {
+            // Get months from filtered data (not all processedData)
+            let months = [...new Set(data.map(item => item.month))];
             
             // Always include current month (even if no data exists yet)
             const { currentMonth } = getCurrentDateInfo();
@@ -1060,7 +1063,7 @@
             container.innerHTML = '';
             
             months.forEach(month => {
-                const monthData = processedData.filter(item => item.month === month).slice(0, 10);
+                const monthData = data.filter(item => item.month === month).slice(0, 10);
                 
                 const monthSection = document.createElement('div');
                 monthSection.className = 'border-t pt-4';
