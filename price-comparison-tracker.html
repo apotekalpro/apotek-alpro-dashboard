@@ -285,6 +285,8 @@
                             <th>Product Name</th>
                             <th>Normalized Name</th>
                             <th>Price Comparison Count</th>
+                            <th>Min Price (Rp)</th>
+                            <th>Max Price (Rp)</th>
                             <th>Month</th>
                             <th>Outlets & Competitors</th>
                         </tr>
@@ -306,10 +308,7 @@
     <script>
         // Google Sheets Configuration
         const SHEET_ID = '1Mr42a0pG4fQGsxTj77FmaTapE4_utQJ8mXO4DRYU2i0'; // Google Sheets ID
-        
-        // Possible GIDs for Price sheet - will try these in order until we find one with ~73 rows
-        const POSSIBLE_PRICE_GIDS = ['426540732', '0', '1', '2'];
-        let PRICE_SHEET_GID = null; // Will be determined automatically
+        const PRICE_SHEET_GID = '1075651210'; // Price sheet GID (confirmed: 3,650 rows)
         
         let allData = [];
         let processedData = [];
@@ -413,7 +412,7 @@
                 }
                 
                 // CSV Header
-                let csv = 'Rank,Product Name,Normalized Name,Loss Count,Month,Year,Competitors,Competitor Count\n';
+                let csv = 'Rank,Product Name,Normalized Name,Comparison Count,Min Price (Rp),Max Price (Rp),Avg Price (Rp),Price Data Count,Month,Year,Outlets,Outlet Count,Competitors\n';
                 
                 // CSV Data
                 dataToExport.forEach((item, index) => {
@@ -421,12 +420,17 @@
                     const productName = `"${item.originalNames.join(', ').replace(/"/g, '""')}"`;
                     const normalizedName = `"${item.normalizedName.replace(/"/g, '""')}"`;
                     const count = item.count;
+                    const minPrice = item.priceRange && item.priceRange.min ? item.priceRange.min : '';
+                    const maxPrice = item.priceRange && item.priceRange.max ? item.priceRange.max : '';
+                    const avgPrice = item.priceRange && item.priceRange.avg ? Math.round(item.priceRange.avg) : '';
+                    const priceCount = item.priceRange ? item.priceRange.count : 0;
                     const month = item.month;
                     const year = getYearForMonth(item.month);
-                    const outlets = `"${item.competitors.join(', ').replace(/"/g, '""')}"`;
-                    const outletCount = item.competitors.length;
+                    const outlets = `"${item.outlets.join(', ').replace(/"/g, '""')}"`;
+                    const outletCount = item.outlets.length;
+                    const competitors = `"${item.competitors.join(', ').replace(/"/g, '""')}"`;
                     
-                    csv += `${rank},${productName},${normalizedName},${count},${month},${year},${outlets},${outletCount}\n`;
+                    csv += `${rank},${productName},${normalizedName},${count},${minPrice},${maxPrice},${avgPrice},${priceCount},${month},${year},${outlets},${outletCount},${competitors}\n`;
                 });
                 
                 console.log(`✅ CSV data generated (${csv.length} characters)`);
@@ -434,7 +438,7 @@
                 // Create download
                 const timestamp = new Date().toISOString().slice(0, 10);
                 const filterSuffix = monthFilter ? `_${monthFilter}` : '';
-                const filename = `loss-sales-tracker${filterSuffix}_${timestamp}.csv`;
+                const filename = `price-comparison-tracker${filterSuffix}_${timestamp}.csv`;
                 
                 // Method 1: Try blob download
                 try {
@@ -546,11 +550,16 @@
                 html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Rank</th>';
                 html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Product Name</th>';
                 html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Normalized Name</th>';
-                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Loss Count</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Comparison Count</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Min Price (Rp)</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Max Price (Rp)</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Avg Price (Rp)</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Price Data Count</th>';
                 html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Month</th>';
                 html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Year</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Outlets</th>';
+                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Outlet Count</th>';
                 html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Competitors</th>';
-                html += '<th style="background-color: #4472c4; color: white; padding: 8px;">Competitor Count</th>';
                 html += '</tr></thead><tbody>';
                 
                 dataToExport.forEach((item, index) => {
@@ -559,10 +568,15 @@
                     html += `<td style="padding: 8px;">${item.originalNames.join(', ')}</td>`;
                     html += `<td style="padding: 8px;">${item.normalizedName}</td>`;
                     html += `<td style="padding: 8px;">${item.count}</td>`;
+                    html += `<td style="padding: 8px;">${item.priceRange && item.priceRange.min ? item.priceRange.min : ''}</td>`;
+                    html += `<td style="padding: 8px;">${item.priceRange && item.priceRange.max ? item.priceRange.max : ''}</td>`;
+                    html += `<td style="padding: 8px;">${item.priceRange && item.priceRange.avg ? Math.round(item.priceRange.avg) : ''}</td>`;
+                    html += `<td style="padding: 8px;">${item.priceRange ? item.priceRange.count : 0}</td>`;
                     html += `<td style="padding: 8px;">${item.month}</td>`;
                     html += `<td style="padding: 8px;">${getYearForMonth(item.month)}</td>`;
+                    html += `<td style="padding: 8px;">${item.outlets.join(', ')}</td>`;
+                    html += `<td style="padding: 8px;">${item.outlets.length}</td>`;
                     html += `<td style="padding: 8px;">${item.competitors.join(', ')}</td>`;
-                    html += `<td style="padding: 8px;">${item.competitors.length}</td>`;
                     html += '</tr>';
                 });
                 
@@ -573,7 +587,7 @@
                 // Create download
                 const timestamp = new Date().toISOString().slice(0, 10);
                 const filterSuffix = monthFilter ? `_${monthFilter}` : '';
-                const filename = `loss-sales-tracker${filterSuffix}_${timestamp}.xls`;
+                const filename = `price-comparison-tracker${filterSuffix}_${timestamp}.xls`;
                 
                 // Method 1: Try blob download
                 try {
@@ -721,7 +735,8 @@
                         count: 0,
                         month: item.month,
                         outlets: new Set(),
-                        competitors: new Set()
+                        competitors: new Set(),
+                        prices: [] // Collect all competitor prices
                     });
                 }
                 
@@ -734,17 +749,55 @@
                 if (item.competitorName && item.competitorName !== 'Unknown') {
                     group.competitors.add(item.competitorName);
                 }
+                // Collect competitor price if it exists and is a valid number
+                if (item.competitorPrice && !isNaN(parseFloat(item.competitorPrice))) {
+                    group.prices.push(parseFloat(item.competitorPrice));
+                }
             });
             
             console.log(`✅ Created ${groupMap.size} groups`);
             
-            // Convert to array
-            return Array.from(groupMap.values()).map(group => ({
-                ...group,
-                outlets: Array.from(group.outlets),
-                competitors: Array.from(group.competitors),
-                outlet: Array.from(group.outlets)[0] // Primary outlet
-            }));
+            // Debug: Log groups with prices
+            let groupsWithPrices = 0;
+            let totalPricesCollected = 0;
+            groupMap.forEach((group, key) => {
+                if (group.prices && group.prices.length > 0) {
+                    groupsWithPrices++;
+                    totalPricesCollected += group.prices.length;
+                    if (groupsWithPrices <= 5) {
+                        console.log(`Group "${group.normalizedName}" (${group.month}):`, {
+                            count: group.count,
+                            priceCount: group.prices.length,
+                            prices: group.prices,
+                            min: Math.min(...group.prices),
+                            max: Math.max(...group.prices)
+                        });
+                    }
+                }
+            });
+            console.log(`📊 Groups with prices: ${groupsWithPrices} / ${groupMap.size}`);
+            console.log(`📊 Total prices collected: ${totalPricesCollected}`);
+            
+            // Convert to array and calculate price ranges
+            return Array.from(groupMap.values()).map(group => {
+                const prices = group.prices.filter(p => p > 0); // Filter out zero/invalid prices
+                const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+                const maxPrice = prices.length > 0 ? Math.max(...prices) : null;
+                const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
+                
+                return {
+                    ...group,
+                    outlets: Array.from(group.outlets),
+                    competitors: Array.from(group.competitors),
+                    outlet: Array.from(group.outlets)[0], // Primary outlet
+                    priceRange: {
+                        min: minPrice,
+                        max: maxPrice,
+                        avg: avgPrice,
+                        count: prices.length
+                    }
+                };
+            });
         }
 
         // Fetch data from Google Sheets by GID
@@ -773,61 +826,19 @@
             }
         }
 
-        // Auto-detect the correct Price sheet GID
-        async function findPriceSheetGID() {
-            console.log('🔍 Auto-detecting Price sheet GID...');
-            
-            for (const gid of POSSIBLE_PRICE_GIDS) {
-                try {
-                    console.log(`  Testing GID: ${gid}`);
-                    const testData = await fetchSheetDataByGid(gid, `Test-${gid}`);
-                    console.log(`  GID ${gid} has ${testData.length} rows`);
-                    
-                    // Price sheet should have around 73-75 rows (including header)
-                    if (testData.length >= 70 && testData.length <= 80) {
-                        console.log(`  ✅ Found Price sheet at GID: ${gid} (${testData.length} rows)`);
-                        return gid;
-                    }
-                } catch (error) {
-                    console.log(`  ❌ GID ${gid} failed:`, error.message);
-                }
-            }
-            
-            console.error('❌ Could not find Price sheet with ~73 rows in any of the tested GIDs');
-            throw new Error('Price sheet not found. Please verify the correct GID.');
-        }
-        
         // Process data
         async function processData() {
             try {
                 console.log('🔄 Starting data processing...');
                 updateLoadingText('Connecting to Google Sheets...');
                 
-                // Auto-detect correct Price sheet GID if not already found
-                if (!PRICE_SHEET_GID) {
-                    updateLoadingText('Detecting correct Price sheet...');
-                    PRICE_SHEET_GID = await findPriceSheetGID();
-                }
-                
-                // Fetch ONLY Price sheet data (NOT Loss Sales sheet)
+                // Fetch Price sheet data (GID: 1075651210 - confirmed 3,650 rows)
                 updateLoadingText('Fetching price comparison data from Price sheet...');
-                console.log('📥 Fetching from Price sheet only (GID:', PRICE_SHEET_GID, ')');
+                console.log('📥 Fetching from Price sheet (GID:', PRICE_SHEET_GID, ')');
                 
                 const priceSheetData = await fetchSheetDataByGid(PRICE_SHEET_GID, 'Price Sheet');
                 console.log(`📊 Price sheet data rows: ${priceSheetData.length}`);
-                console.log('⚠️ Note: Price Comparison Tracker uses ONLY Price sheet, NOT Loss Sales sheet');
-                
-                // Verify we're not using Loss Sales GID
-                if (PRICE_SHEET_GID === '1075651210') {
-                    console.error('❌ ERROR: Using Loss Sales GID instead of Price sheet GID!');
-                    throw new Error('Wrong sheet detected! This is the Loss Sales sheet, not Price sheet.');
-                }
-                
-                // Verify row count is reasonable for Price sheet (~73 rows)
-                if (priceSheetData.length > 1000) {
-                    console.error(`❌ ERROR: Too many rows (${priceSheetData.length})! This looks like Loss Sales data, not Price data.`);
-                    throw new Error(`Wrong sheet detected! Price sheet should have ~73 rows, but found ${priceSheetData.length} rows.`);
-                }
+                console.log('✅ Using correct Price sheet with Nama SKU, Harga Kompetitor, Nama Kompetitor columns');
 
                 // Process data from Price sheet ONLY
                 const combinedData = [];
@@ -840,13 +851,27 @@
                     priceSheetData.forEach((row, index) => {
                         if (index === 0) {
                             console.log('📋 Price sheet header:', row);
+                            console.log('📋 Column K (index 10):', row[10]);
+                            console.log('📋 Column L (index 11):', row[11]);
+                            console.log('📋 Column M (index 12):', row[12]);
+                            console.log('📋 Column N (index 13):', row[13]);
                             return; // Skip header
                         }
                         const itemName = row[10]; // Column K
                         const outletCode = row[1]; // Column B (Outlet Code)
-                        const competitorPrice = row[11]; // Column L (Harga Kompetitor)
-                        const competitorName = row[12]; // Column M (Nama Kompetitor)
+                        const competitorPrice = row[11]; // Column L (Harga Kompetitor - OR IS IT?)
+                        const competitorName = row[12]; // Column M (Nama Kompetitor - OR IS IT?)
                         const month = row[8]; // Column I
+                        
+                        // Parse competitor price - handle text that might contain numbers
+                        let parsedPrice = null;
+                        if (competitorPrice) {
+                            // Try to parse as number
+                            const priceNum = parseFloat(String(competitorPrice).replace(/[^0-9.-]/g, ''));
+                            if (!isNaN(priceNum) && priceNum > 0) {
+                                parsedPrice = priceNum;
+                            }
+                        }
                         
                         // Track ALL price comparison entries (with or without item name)
                         const dataItem = {
@@ -854,13 +879,24 @@
                             normalized: itemName ? normalizeItemName(itemName) : 'PRICE CHECK',
                             outlet: outletCode || 'Unknown',
                             competitorName: competitorName || 'Unknown',
-                            competitorPrice: competitorPrice || null,
+                            competitorPrice: parsedPrice,
                             month: month || 'N/A'
                         };
                         
-                        // Log first few items for debugging
-                        if (index <= 5) {
-                            console.log(`Price entry ${index}:`, dataItem);
+                        // Log first few items for debugging with ALL columns
+                        if (index <= 10) {
+                            console.log(`Row ${index} full data:`, {
+                                'Col A (0)': row[0],
+                                'Col B (1) - Outlet': row[1],
+                                'Col C (2)': row[2],
+                                'Col I (8) - Month': row[8],
+                                'Col K (10) - Nama SKU': row[10],
+                                'Col L (11) - Harga Kompetitor': row[11],
+                                'Col M (12) - Nama Kompetitor': row[12],
+                                'Col N (13)': row[13],
+                                'Parsed Price': parsedPrice,
+                                'Data Item': dataItem
+                            });
                         }
                         
                         combinedData.push(dataItem);
@@ -887,7 +923,8 @@
                     count: group.count,
                     month: group.month,
                     outlets: group.outlets,
-                    competitors: group.competitors
+                    competitors: group.competitors,
+                    priceRange: group.priceRange // ✅ CRITICAL: Include price range data!
                 }));
                 
                 // Sort by count descending
@@ -963,12 +1000,12 @@
                 monthFilter.appendChild(option);
             });
             
-            // Set default filter to latest month (first in sorted array)
+            // Set default: Show current month + last month only (performance optimization)
             if (months.length > 0) {
-                monthFilter.value = months[0];
-                console.log(`📅 Default filter set to latest month: ${months[0]}`);
-                // Apply filter automatically
-                setTimeout(() => applyFilters(), 100);
+                // Don't set monthFilter.value - this will show all months in dropdown but filter data
+                console.log(`📅 Default: Showing latest 2 months only (${months.slice(0, 2).join(', ')})`);
+                // Apply default filter to show only last 2 months
+                setTimeout(() => applyDefaultFilter(months), 100);
             }
             
             outlets.forEach(outlet => {
@@ -979,6 +1016,19 @@
             });
         }
 
+        // Apply default filter (show only last 2 months)
+        function applyDefaultFilter(months) {
+            console.log('🔄 Applying default filter: Latest 2 months');
+            const latestTwoMonths = months.slice(0, 2); // Get first 2 months (sorted newest first)
+            
+            let filtered = processedData.filter(item => latestTwoMonths.includes(item.month));
+            console.log(`📊 Filtered to ${filtered.length} items from ${latestTwoMonths.join(' & ')}`);
+            
+            renderTable(filtered);
+            renderCharts(filtered);
+            renderMonthlyTables(filtered); // Pass filtered data to monthly tables
+        }
+        
         // Apply filters
         function applyFilters() {
             const monthFilter = document.getElementById('monthFilter').value;
@@ -988,14 +1038,17 @@
             
             if (monthFilter) {
                 filtered = filtered.filter(item => item.month === monthFilter);
+                console.log(`📊 Filtered by month "${monthFilter}": ${filtered.length} items`);
             }
             
             if (competitorFilter) {
                 filtered = filtered.filter(item => item.outlets.includes(competitorFilter));
+                console.log(`📊 Filtered by outlet "${competitorFilter}": ${filtered.length} items`);
             }
             
             renderTable(filtered);
             renderCharts(filtered);
+            renderMonthlyTables(filtered); // Pass filtered data to monthly tables
         }
 
         // Render charts
@@ -1068,9 +1121,9 @@
         }
         
         // Render monthly top 10 tables
-        function renderMonthlyTables() {
-            // Get months from data
-            let months = [...new Set(processedData.map(item => item.month))];
+        function renderMonthlyTables(data = processedData) {
+            // Get months from filtered data (not all processedData)
+            let months = [...new Set(data.map(item => item.month))];
             
             // Always include current month (even if no data exists yet)
             const { currentMonth } = getCurrentDateInfo();
@@ -1086,7 +1139,7 @@
             container.innerHTML = '';
             
             months.forEach(month => {
-                const monthData = processedData.filter(item => item.month === month).slice(0, 10);
+                const monthData = data.filter(item => item.month === month).slice(0, 10);
                 
                 const monthSection = document.createElement('div');
                 monthSection.className = 'border-t pt-4';
@@ -1113,23 +1166,41 @@
                         <tr>
                             <th class="px-4 py-2 text-left">Rank</th>
                             <th class="px-4 py-2 text-left">Product Name</th>
-                            <th class="px-4 py-2 text-left">Loss Count</th>
-                            <th class="px-4 py-2 text-left">Competitors</th>
+                            <th class="px-4 py-2 text-left">Comparison Count</th>
+                            <th class="px-4 py-2 text-left">Price Range (Rp)</th>
+                            <th class="px-4 py-2 text-left">Outlets</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${monthData.map((item, index) => `
-                            <tr class="border-b hover:bg-gray-50">
-                                <td class="px-4 py-2">
-                                    ${index < 3 ? `<span class="badge badge-warning">#${index + 1}</span>` : `#${index + 1}`}
-                                </td>
-                                <td class="px-4 py-2 font-medium">${item.normalizedName}</td>
-                                <td class="px-4 py-2">
-                                    <span class="badge badge-success">${item.count}</span>
-                                </td>
-                                <td class="px-4 py-2 text-sm text-gray-600">${item.competitors.length} outlets</td>
-                            </tr>
-                        `).join('')}
+                        ${monthData.map((item, index) => {
+                            // Format price range for this item
+                            let priceCell = '<span class="text-gray-400 text-xs">N/A</span>';
+                            if (item.priceRange && item.priceRange.count > 0) {
+                                const minFormatted = new Intl.NumberFormat('id-ID').format(item.priceRange.min);
+                                const maxFormatted = new Intl.NumberFormat('id-ID').format(item.priceRange.max);
+                                if (item.priceRange.min === item.priceRange.max) {
+                                    priceCell = `<span class="font-semibold text-green-700">Rp ${minFormatted}</span>`;
+                                } else {
+                                    priceCell = `<span class="text-blue-600">Rp ${minFormatted}</span> - <span class="text-red-600">Rp ${maxFormatted}</span>`;
+                                }
+                            }
+                            
+                            return `
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">
+                                        ${index < 3 ? `<span class="badge badge-warning">#${index + 1}</span>` : `#${index + 1}`}
+                                    </td>
+                                    <td class="px-4 py-2 font-medium">${item.normalizedName}</td>
+                                    <td class="px-4 py-2">
+                                        <span class="badge badge-success">${item.count}</span>
+                                    </td>
+                                    <td class="px-4 py-2 text-sm">
+                                        ${priceCell}
+                                    </td>
+                                    <td class="px-4 py-2 text-sm text-gray-600">${item.outlets.length} outlets</td>
+                                </tr>
+                            `;
+                        }).join('')}
                     </tbody>
                 `;
                 
@@ -1144,12 +1215,36 @@
             tbody.innerHTML = '';
             
             if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No data available</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">No data available</td></tr>';
                 return;
+            }
+            
+            // Debug: Check first few items
+            console.log('🔍 Rendering table with', data.length, 'items');
+            if (data.length > 0) {
+                console.log('First 3 items priceRange data:', data.slice(0, 3).map(item => ({
+                    name: item.normalizedName,
+                    priceRange: item.priceRange,
+                    hasPriceRange: !!item.priceRange,
+                    priceCount: item.priceRange ? item.priceRange.count : 0
+                })));
             }
             
             data.forEach((item, index) => {
                 const row = document.createElement('tr');
+                
+                // Format min and max prices separately
+                let minPriceDisplay = '<span class="text-gray-400 text-xs">-</span>';
+                let maxPriceDisplay = '<span class="text-gray-400 text-xs">-</span>';
+                
+                if (item.priceRange && item.priceRange.count > 0) {
+                    const minFormatted = new Intl.NumberFormat('id-ID').format(item.priceRange.min);
+                    const maxFormatted = new Intl.NumberFormat('id-ID').format(item.priceRange.max);
+                    
+                    minPriceDisplay = `<span class="font-semibold text-blue-700">Rp ${minFormatted}</span>`;
+                    maxPriceDisplay = `<span class="font-semibold text-red-700">Rp ${maxFormatted}</span>`;
+                }
+                
                 row.innerHTML = `
                     <td>
                         ${index < 10 ? `<span class="badge badge-warning">#${index + 1}</span>` : `#${index + 1}`}
@@ -1160,6 +1255,8 @@
                     </td>
                     <td><span class="badge badge-primary">${item.normalizedName}</span></td>
                     <td><span class="badge badge-success">${item.count}</span></td>
+                    <td class="text-sm">${minPriceDisplay}</td>
+                    <td class="text-sm">${maxPriceDisplay}</td>
                     <td>${formatMonthWithYear(item.month)}</td>
                     <td class="text-sm text-gray-600">
                         <strong>Outlets:</strong> ${item.outlets.slice(0, 3).join(', ')} ${item.outlets.length > 3 ? `+${item.outlets.length - 3}` : ''}

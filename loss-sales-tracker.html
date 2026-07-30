@@ -924,12 +924,12 @@
                 monthFilter.appendChild(option);
             });
             
-            // Set default filter to latest month (first in sorted array)
+            // Set default: Show current month + last month only (performance optimization)
             if (months.length > 0) {
-                monthFilter.value = months[0];
-                console.log(`📅 Default filter set to latest month: ${months[0]}`);
-                // Apply filter automatically
-                setTimeout(() => applyFilters(), 100);
+                // Don't set monthFilter.value - this will show all months in dropdown but filter data
+                console.log(`📅 Default: Showing latest 2 months only (${months.slice(0, 2).join(', ')})`);
+                // Apply default filter to show only last 2 months
+                setTimeout(() => applyDefaultFilter(months), 100);
             }
             
             outlets.forEach(outlet => {
@@ -940,6 +940,19 @@
             });
         }
 
+        // Apply default filter (show only last 2 months)
+        function applyDefaultFilter(months) {
+            console.log('🔄 Applying default filter: Latest 2 months');
+            const latestTwoMonths = months.slice(0, 2); // Get first 2 months (sorted newest first)
+            
+            let filtered = processedData.filter(item => latestTwoMonths.includes(item.month));
+            console.log(`📊 Filtered to ${filtered.length} items from ${latestTwoMonths.join(' & ')}`);
+            
+            renderTable(filtered);
+            renderCharts(filtered);
+            renderMonthlyTables(filtered); // Pass filtered data to monthly tables
+        }
+        
         // Apply filters
         function applyFilters() {
             const monthFilter = document.getElementById('monthFilter').value;
@@ -949,14 +962,17 @@
             
             if (monthFilter) {
                 filtered = filtered.filter(item => item.month === monthFilter);
+                console.log(`📊 Filtered by month "${monthFilter}": ${filtered.length} items`);
             }
             
             if (outletFilter) {
                 filtered = filtered.filter(item => item.outlets.includes(outletFilter));
+                console.log(`📊 Filtered by outlet "${outletFilter}": ${filtered.length} items`);
             }
             
             renderTable(filtered);
             renderCharts(filtered);
+            renderMonthlyTables(filtered); // Pass filtered data to monthly tables
         }
 
         // Render charts
@@ -1029,9 +1045,9 @@
         }
         
         // Render monthly top 10 tables
-        function renderMonthlyTables() {
-            // Get months from data
-            let months = [...new Set(processedData.map(item => item.month))];
+        function renderMonthlyTables(data = processedData) {
+            // Get months from filtered data (not all processedData)
+            let months = [...new Set(data.map(item => item.month))];
             
             // Always include current month (even if no data exists yet)
             const { currentMonth } = getCurrentDateInfo();
@@ -1047,7 +1063,7 @@
             container.innerHTML = '';
             
             months.forEach(month => {
-                const monthData = processedData.filter(item => item.month === month).slice(0, 10);
+                const monthData = data.filter(item => item.month === month).slice(0, 10);
                 
                 const monthSection = document.createElement('div');
                 monthSection.className = 'border-t pt-4';
