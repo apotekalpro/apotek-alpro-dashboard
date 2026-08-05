@@ -366,6 +366,7 @@
     <span class="filter-tag" id="periodLabel">Feb 2026 – Jul 2026</span>
     <div style="font-size:11px;color:#64748b;">
       ⚠️ KPI cards reflect selected period · 12M Turnover Rate always uses rolling 12-month data
+      · <span id="data-staleness-note" style="color:#ca8a04;font-weight:600;"></span>
     </div>
     <div style="font-size:11px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;">
       <span style="font-weight:600;color:#374151;">Data Legend:</span>
@@ -1596,33 +1597,122 @@ const MONTH_LABELS = MONTHS_6.map(m => m.label);
 // PERIOD SLICE ENGINE
 // DATA arrays cover: Feb, Mar, Apr, May, Jun, Jul 2026 (indices 0–5)
 // Feb=0, Mar=1, Apr=2, May=3, Jun=4, Jul=5
+//
+// DATA_LATEST_YEAR / DATA_LATEST_MONTH define the last month of
+// available snapshot data. Update these each time new data is loaded.
+// All period labels are computed dynamically from NOW vs DATA_LATEST,
+// so the dashboard stays honest as calendar days advance.
 // ============================================================
-const MONTH_FULL_LABELS = ['Feb 2026','Mar 2026','Apr 2026','Mei 2026','Jun 2026','Jul 2026'];
+const DATA_LATEST_YEAR  = 2026;
+const DATA_LATEST_MONTH = 6;   // 0-based: 0=Jan … 6=Jul → Jul 2026
+
+const MONTH_FULL_LABELS  = ['Feb 2026','Mar 2026','Apr 2026','Mei 2026','Jun 2026','Jul 2026'];
 const MONTH_SHORT_LABELS = ['Feb','Mar','Apr','Mei','Jun','Jul'];
 
-// Returns { start, end, indices, label, shortLabel, isSingleMonth }
+// Indonesian month names (short)
+const ID_MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const ID_MONTHS_FULL  = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+// Helper: format a Date or {year,month} as "Jul 2026"
+function fmtMonYr(year, month0) {
+  return ID_MONTHS_SHORT[month0] + ' ' + year;
+}
+
+// DATA_LATEST as a Date (set to last day of that month)
+const DATA_LATEST_DATE = new Date(DATA_LATEST_YEAR, DATA_LATEST_MONTH + 1, 0);
+
+// Returns true if NOW is past the data latest month
+const IS_PAST_DATA = (NOW.getFullYear() > DATA_LATEST_YEAR) ||
+                     (NOW.getFullYear() === DATA_LATEST_YEAR && NOW.getMonth() > DATA_LATEST_MONTH);
+
+// The "current" month for labelling purposes:
+// — if we're still within the data range → use NOW's month
+// — if we've moved past data → cap at DATA_LATEST for data purposes,
+//   but show real calendar month for MTD label
+const TODAY_DAY   = NOW.getDate();
+const TODAY_MONTH = NOW.getMonth();   // 0-based
+const TODAY_YEAR  = NOW.getFullYear();
+
+// Build MTD label: "Month to Date · 1–5 Agu 2026 (data s/d Jul 2026)"
+function buildMtdLabel() {
+  const dayStr = `1–${TODAY_DAY} ${fmtMonYr(TODAY_YEAR, TODAY_MONTH)}`;
+  if (IS_PAST_DATA) {
+    return `Month to Date · ${dayStr} · data s/d ${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}`;
+  }
+  return `Month to Date · ${dayStr}`;
+}
+
+// Build a short period label from array indices  e.g. [2,3,4] → "Apr–Jun 2026"
+function buildRangeLabel(indices) {
+  if (indices.length === 1) return MONTH_FULL_LABELS[indices[0]];
+  return MONTH_SHORT_LABELS[indices[0]] + '–' + MONTH_FULL_LABELS[indices[indices.length - 1]];
+}
+
+// Returns { start, end, indices, label, shortLabel, isMTD, useYTD, use12M }
 function getPeriodSlice() {
   const period = document.getElementById('periodMonths').value;
-  // All monthly arrays have 6 entries: index 0=Feb, 1=Mar, 2=Apr, 3=May, 4=Jun, 5=Jul
-  // MTD = current partial month only  = Jul 2026 = index 5  (day 1–today, dynamic date)
-  // 1M  = last COMPLETED month        = Jun 2026 = index 4  (full month, not current partial)
-  // 3M  = 3 last completed months     = Apr, Mei, Jun = indices 2,3,4
-  // 6M  = 6 months incl. current MTD  = Feb–Jul = indices 0–5
-  // YTD = Jan–Jul 2026 (use pre-aggregated YTD totals)
-  // 12M = Aug 2025–Jul 2026 (use pre-aggregated 12M totals)
 
-  // Dynamic MTD label: always uses real today's date
-  const todayDate = new Date();
-  const todayDay  = todayDate.getDate();
-  const mtdLabel  = `Month to Date · 1\u2013${todayDay} Jul 2026`;
+  // All monthly arrays: index 0=Feb … 5=Jul 2026 (always 6 entries)
+  // MTD  = latest available month (Jul = index 5), partial current month
+  // 1M   = last COMPLETED month in data = Jun (index 4)
+  // 3M   = last 3 completed months in data = Apr–Jun (indices 2,3,4)
+  // 6M   = all 6 months in data = Feb–Jul (indices 0–5)
+  // YTD  = Jan–Jul 2026 (use pre-aggregated YTD totals)
+  // 12M  = Aug 2025–Jul 2026 (use pre-aggregated 12M totals)
+
+  // For 1M/3M: "last completed" means last FULL month in data snapshot
+  // When IS_PAST_DATA: the "1M" is still Jul 2026 (most recent full month in data)
+  //                    NOT the current calendar month (Aug 2026 has no data yet)
+  const latestFullIdx = IS_PAST_DATA ? 5 : 4; // latest COMPLETE month index in data
+  // (Jul=5 is complete because IS_PAST_DATA; Jun=4 is latest complete when we're still in Jul)
+
+  const mtdIdx  = 5;  // always Jul 2026 (latest in data)
+  const oneM    = [latestFullIdx];
+  const threeM  = latestFullIdx >= 2 ? [latestFullIdx-2, latestFullIdx-1, latestFullIdx] : [2,3,4];
+  const sixM    = [0,1,2,3,4,5];
+
+  // Date-aware note suffix for data staleness
+  const staleNote = IS_PAST_DATA
+    ? ` · data s/d ${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}`
+    : '';
 
   const slices = {
-    mtd:  { indices: [5],           label: mtdLabel,                          shortLabel: 'MTD',  isMTD: true  },
-    '1':  { indices: [4],           label: '1 Bulan · Jun 2026',              shortLabel: '1M',   isMTD: false },
-    '3':  { indices: [2,3,4],       label: '3 Bulan · Apr–Jun 2026',          shortLabel: '3M',   isMTD: false },
-    '6':  { indices: [0,1,2,3,4,5], label: '6 Bulan · Feb–Jul 2026',          shortLabel: '6M',   isMTD: false },
-    ytd:  { indices: [0,1,2,3,4,5], label: 'YTD · Jan–Jul 2026',              shortLabel: 'YTD',  isMTD: false, useYTD: true },
-    '12': { indices: [0,1,2,3,4,5], label: '12 Bulan · Agu 2025–Jul 2026',    shortLabel: '12M',  isMTD: false, use12M: true },
+    mtd:  {
+      indices: [mtdIdx],
+      label: buildMtdLabel(),
+      shortLabel: 'MTD',
+      isMTD: true
+    },
+    '1':  {
+      indices: oneM,
+      label: `1 Bulan · ${buildRangeLabel(oneM)}${staleNote}`,
+      shortLabel: '1M',
+      isMTD: false
+    },
+    '3':  {
+      indices: threeM,
+      label: `3 Bulan · ${buildRangeLabel(threeM)}${staleNote}`,
+      shortLabel: '3M',
+      isMTD: false
+    },
+    '6':  {
+      indices: sixM,
+      label: `6 Bulan · ${buildRangeLabel(sixM)}${staleNote}`,
+      shortLabel: '6M',
+      isMTD: false
+    },
+    ytd:  {
+      indices: sixM,
+      label: `YTD · Jan–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}${staleNote}`,
+      shortLabel: 'YTD',
+      isMTD: false, useYTD: true
+    },
+    '12': {
+      indices: sixM,
+      label: `12 Bulan · Agu 2025–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}${staleNote}`,
+      shortLabel: '12M',
+      isMTD: false, use12M: true
+    },
   };
   return slices[period] || slices['6'];
 }
@@ -2158,11 +2248,11 @@ function renderRetention() {
   const use12M = slice.use12M;
   if (use12M) {
     exitCount      = DATA.exitTotal12M;
-    exitCountSub   = `12M total (Nov 2025–Jul 2026)`;
+    exitCountSub   = `12M total (Nov 2025–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)})`;
     exitReasonData = DATA.exitReasons.map(e => ({ reason: e.reason, color: e.color, count: e.m12 }));
   } else if (useYTD) {
     exitCount      = DATA.exitTotalYTD;
-    exitCountSub   = `YTD total (Jan–Jul 2026)`;
+    exitCountSub   = `YTD total (Jan–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)})`;
     exitReasonData = DATA.exitReasons.map(e => ({ reason: e.reason, color: e.color, count: e.ytd }));
   } else {
     exitCount      = exitPeriodCount(idx);
@@ -3755,7 +3845,7 @@ function renderOverview() {
   });
 
   // ── CHART 2: Exit Reasons Donut (period-aware) ────────────────────
-  set('ov-exit-subtitle', slice.use12M ? '12M · Nov 2025–Jul 2026' : slice.useYTD ? 'YTD · Jan–Jul 2026' : `${pLabel} · period-aware`);
+  set('ov-exit-subtitle', slice.use12M ? `12M · Nov 2025–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}` : slice.useYTD ? `YTD · Jan–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}` : `${pLabel} · period-aware`);
   const exitColors = exitReasonData.map(e => e.color);
   const exitCounts = exitReasonData.map(e => e.count);
   const exitTotal  = exitCounts.reduce((a,b)=>a+b,0);
@@ -4004,6 +4094,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set date badge
   const opts = { day: '2-digit', month: 'short', year: 'numeric' };
   document.getElementById('currentDateBadge').textContent = NOW.toLocaleDateString('id-ID', opts);
+
+  // Data staleness notice: show when calendar has moved past data latest month
+  const staleEl = document.getElementById('data-staleness-note');
+  if (staleEl) {
+    if (IS_PAST_DATA) {
+      staleEl.textContent = `📦 Snapshot: data terakhir ${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)} · update diperlukan untuk ${ID_MONTHS_SHORT[TODAY_MONTH]} ${TODAY_YEAR}`;
+    } else {
+      staleEl.textContent = '';
+    }
+  }
 
   // Ensure Overview nav tab is marked active on init
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
