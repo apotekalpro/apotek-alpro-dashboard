@@ -367,6 +367,7 @@
     <div style="font-size:11px;color:#64748b;">
       ⚠️ KPI cards reflect selected period · 12M Turnover Rate always uses rolling 12-month data
       · <span id="data-staleness-note" style="color:#ca8a04;font-weight:600;"></span>
+      · <span id="live-fetch-status" style="font-weight:600;"></span>
     </div>
     <div style="font-size:11px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px;">
       <span style="font-weight:600;color:#374151;">Data Legend:</span>
@@ -1560,6 +1561,63 @@
 
 <script>
 // ============================================================
+// LIVE SHEET CONFIG
+// ============================================================
+// Set PAYROLL_SHEET_ID to the Google Sheets spreadsheet ID (the long hash in the URL).
+// The sheet MUST be shared publicly ("Anyone with the link can view").
+// Leave as empty string '' to disable live fetch (dashboard uses snapshot data).
+//
+// Sheet: "Trend Summary Payroll" tab — used rows:
+//   Row 11 (index 10) = TOTAL payroll ALL PT   (Rp)
+//   Row 14 (index 13) = SALES-PKU (M)          (Rp) — component of Revenue
+//   Row 15 (index 14) = SALES-PRI (M)          (Rp) — component of Revenue
+//   Row 16 (index 15) = TOTAL SALES (M)        (Rp)
+//   Row 17 (index 16) = Payroll Cost %         (decimal, e.g. 0.1945)
+//   Row 44 (index 43) = Revenue ALL PT (M)     (Rp) — alternative revenue source
+//   Row 45 (index 44) = Gross Margin % ALL PT  (decimal)
+//
+// Column mapping (0-based, gviz preserves hidden cols):
+//   Col A (0) = label/company
+//   Cols B-H (1-7) = hidden/collapsed (dates/metadata)
+//   Col I (8)  = Aug 2025
+//   Col J (9)  = Sep 2025
+//   Col K (10) = Okt 2025
+//   Col L (11) = Nov 2025
+//   Col M (12) = Des 2025
+//   Col N (13) = Jan 2026   ← DATA start
+//   Col O (14) = Feb 2026
+//   Col P (15) = Mar 2026
+//   Col Q (16) = Apr 2026
+//   Col R (17) = Mei 2026
+//   Col S (18) = Jun 2026
+//   Col T (19) = Jul 2026   ← current latest
+//   Col U (20) = Aug 2026   ← auto-detected next month
+//   Col V (21) = Sep 2026   ...and so on
+//
+// ROI DATA arrays (Jan-Jul = indices 0-6) map to gviz columns N-T (13-19).
+// Each new month adds one more column: Aug=U(20), Sep=V(21), Oct=W(22), etc.
+const LIVE_SHEET_CONFIG = {
+  // ↓↓ PASTE YOUR SPREADSHEET ID HERE ↓↓
+  // e.g. '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms'
+  PAYROLL_SHEET_ID: '1S4uqo11FidtOHXqRJQNdd_NAQhDPSfW57qxL4llXLlc',
+  SHEET_NAME:  'Trend Summary Payroll',
+
+  // Row indices (0-based) in the ACTUAL gviz CSV output.
+  // NOTE: gviz strips hidden columns, so indices differ from spreadsheet column letters.
+  // Confirmed by live inspection of the CSV (Aug 2026):
+  ROW_TOTAL_PAYROLL:  10,   // gviz row 10 = "TOTAL" (payroll ALL PT)
+  ROW_REVENUE:        35,   // gviz row 35 = "Revenue" in SUMMARY ALL PT section — has Jul 26 ✅
+  ROW_MARGIN:         36,   // gviz row 36 = "Margin" (Gross Margin %) — has Jul 26 ✅
+  // NOTE: Row 13 = "TOTAL SALES (M)" in the per-PT section shows Rp0 for Jul 26 — do NOT use.
+  // Row 35/36 are the SUMMARY ALL PT aggregates and are fully populated.
+
+  // Column index (0-based) of the FIRST data month (Jan 2026 = Col N)
+  COL_JAN_2026:    13,
+  // Jan 2026 is ROI array index 0; each subsequent column adds one month
+  // Col N(13)=Jan26(0), O(14)=Feb26(1), ..., T(19)=Jul26(6), U(20)=Aug26(7) ...
+};
+
+// ============================================================
 // DATA ENGINE
 // ============================================================
 const NOW = new Date(); // always use real today's date
@@ -2028,23 +2086,26 @@ const DATA = {
   roiMonths: ['Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'Mei 2026', 'Jun 2026', 'Jul 2026'],
   roiMonthShort: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'],
 
-  // Total payroll (Row 9 TOTAL from Master Data / Row 32 Trend Summary ALL PT) — Rp juta
-  // ALL months Jan–Jun 26 now confirmed from Master Data screenshot Row 9
-  // Jan=7,791 | Feb=7,573 | Mar=10,521 (THR/bonus spike) | Apr=7,836 | Mei=7,103 | Jun=7,558 | Jul=7,791
-  totalGajiMonthly: [7791, 7573, 10521, 7836, 7103, 7558, 7791],  // Rp juta, Jan-Jul 2026
+  // Total payroll (gviz row 10 = "TOTAL" ALL PT) — Trend Summary Payroll sheet — Rp juta
+  // Jan=7,791 | Feb=7,573 | Mar=10,521 (THR spike) | Apr=7,836 | Mei=7,103 | Jun=7,558 | Jul=7,453
+  // All values confirmed from live gviz CSV (Aug 2026) ✅
+  totalGajiMonthly: [7791, 7573, 10521, 7836, 7103, 7558, 7453],  // Rp juta, Jan-Jul 2026 — all actual ✅
 
-  // Revenue (Row 35) — FULL Jan–Jun 2026 confirmed from screenshot
-  // Jan=36,711,120,636 | Feb=35,566,990,323 | Mar=43,169,499,535
-  // Apr=39,243,499,006 | Mei=40,254,174,989 | Jun=38,852,561,501
-  revenueMonthly: [36711, 35567, 43169, 39243, 40254, 38853, null],  // Rp juta, Jan-Jul 2026
+  // Revenue (gviz row 35 = "Revenue" in SUMMARY ALL PT section)
+  // Jan=36,711 | Feb=35,567 | Mar=43,169 | Apr=39,243 | Mei=40,254 | Jun=38,853 | Jul=40,062
+  // Jul 2026: Row 35 col 19 = 40,062,391,024 — CONFIRMED real data ✅
+  // Note: Row 13 (TOTAL SALES per-PT) shows Rp0 for Jul — we use Row 35 instead
+  revenueMonthly: [36711, 35567, 43169, 39243, 40254, 38853, 40062],  // Rp juta, Jan-Jul 2026 — all actual ✅
 
-  // Gross Margin % (Row 36) — FULL Jan–Jun 2026 confirmed from screenshot
-  // Jan=24.20% | Feb=24.65% | Mar=23.44% | Apr=24.29% | Mei=25.48% | Jun=25.26%
-  grossMarginPct: [24.20, 24.65, 23.44, 24.29, 25.48, 25.26, null],  // %, Jan-Jul 2026
+  // Gross Margin % (gviz row 36 = "Margin" in SUMMARY ALL PT section)
+  // Jan=24.20% | Feb=24.65% | Mar=23.44% | Apr=24.29% | Mei=25.48% | Jun=25.26% | Jul=26.70%
+  // Jul 2026: Row 36 col 19 = 26.70% — CONFIRMED real data ✅
+  grossMarginPct: [24.20, 24.65, 23.44, 24.29, 25.48, 25.26, 26.70],  // %, Jan-Jul 2026 — all actual ✅
 
-  // Manpower ratio (Payroll÷Revenue×100) — ALL months now computable Jan–Jun 2026
-  // Jan=21.22% | Feb=21.29% | Mar=24.37%(THR) | Apr=19.97% | Mei=17.64% | Jun=19.45%
-  manpowerRatioPct: [21.22, 21.29, 24.37, 19.97, 17.64, 19.45, null], // %, Jan-Jul 2026
+  // Manpower ratio (Payroll÷Revenue×100) — computed from totalGaji / revenue
+  // Jan=21.22 | Feb=21.29 | Mar=24.37(THR) | Apr=19.97 | Mei=17.64 | Jun=19.45
+  // Jul=18.60% (7453 / 40062 × 100 = 18.604%) — all confirmed ✅
+  manpowerRatioPct: [21.22, 21.29, 24.37, 19.97, 17.65, 19.45, 18.60], // %, Jan-Jul 2026 — all actual ✅
 
   // ── 2025 Historical data — ALL PT SUMMARY (Rows 31-40 + 43-45 of Trend Summary Payroll) ──────
   // Source: screenshot 2026-07-28, Row 40=Total payroll, Row 44=Revenue, Row 45=Gross Margin %
@@ -2158,6 +2219,203 @@ const DATA = {
   pkpaTable: null,
   mouTable: null,
 };
+
+// ============================================================
+// LIVE FETCH ENGINE
+// ============================================================
+
+// Parse a gviz CSV value: strip quotes, handle Rp formatting, #DIV/0!, empty
+function parseGvizNum(raw) {
+  if (!raw) return null;
+  const s = raw.replace(/^"|"$/g, '').trim();
+  if (!s || s === '#DIV/0!' || s === '#N/A' || s === '#VALUE!' || s === '#REF!') return null;
+  // Remove Rp, commas, spaces, thousand separators
+  const cleaned = s.replace(/[Rp\s,]/g, '').replace(/\./g, '');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? null : n;
+}
+
+// Parse gviz CSV text into array of row arrays (handles quoted fields with commas)
+function parseGvizCSV(text) {
+  const rows = [];
+  const lines = text.split('\n');
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const cols = [];
+    let inQ = false, cur = '';
+    for (let c = 0; c < line.length; c++) {
+      const ch = line[c];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { cols.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    cols.push(cur);
+    rows.push(cols);
+  }
+  return rows;
+}
+
+// Update live-fetch status badge in filter bar
+function setFetchStatus(state, msg) {
+  const el = document.getElementById('live-fetch-status');
+  if (!el) return;
+  const styles = {
+    loading: 'color:#2563eb',
+    ok:      'color:#16a34a',
+    warn:    'color:#ca8a04',
+    error:   'color:#dc2626',
+    off:     'color:#94a3b8',
+  };
+  el.style.cssText = `font-weight:600;${styles[state] || styles.off}`;
+  el.textContent = msg;
+}
+
+// Main live fetch: fetches Trend Summary Payroll sheet via gviz CSV API,
+// parses Row 10 (TOTAL payroll), Row 35 (Revenue), Row 36 (Margin%) dynamically
+// starting from Jan 2026 (gviz col 13) and extending for each new month.
+async function fetchLivePayrollData() {
+  const { PAYROLL_SHEET_ID, SHEET_NAME,
+          ROW_TOTAL_PAYROLL, ROW_REVENUE, ROW_MARGIN,
+          COL_JAN_2026 } = LIVE_SHEET_CONFIG;
+
+  if (!PAYROLL_SHEET_ID) {
+    setFetchStatus('off', '📦 Snapshot mode — tambahkan PAYROLL_SHEET_ID untuk live data');
+    return;
+  }
+
+  setFetchStatus('loading', '🔄 Fetching live data dari Google Sheets…');
+
+  const url = `https://docs.google.com/spreadsheets/d/${PAYROLL_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}`;
+
+  let rows;
+  try {
+    const resp = await fetch(url, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const text = await resp.text();
+    rows = parseGvizCSV(text);
+  } catch (err) {
+    setFetchStatus('error', `❌ Gagal fetch: ${err.message} — menggunakan snapshot`);
+    console.warn('[LiveFetch] fetch error:', err);
+    return;
+  }
+
+  if (!rows || rows.length < Math.max(ROW_TOTAL_PAYROLL, ROW_REVENUE, ROW_MARGIN) + 1) {
+    setFetchStatus('error', '❌ Respons sheet tidak valid — menggunakan snapshot');
+    return;
+  }
+
+  const payrollRow = rows[ROW_TOTAL_PAYROLL] || [];
+  const revenueRow = rows[ROW_REVENUE]       || [];
+  const marginRow  = rows[ROW_MARGIN]        || [];
+
+  // Scan columns from Jan 2026 (col index 13) onwards.
+  // col index = COL_JAN_2026 + roiIdx, where roiIdx 0=Jan, 1=Feb, …
+  // Stop when we hit 2 consecutive null/zero columns (no more data)
+  const newPayroll = [];   // Rp juta, index 0=Jan 2026 onwards
+  const newRevenue = [];   // Rp juta, index 0=Jan 2026 onwards
+  const newGM      = [];   // Gross Margin %, index 0=Jan 2026 onwards
+  let latestNonNullRev  = -1;
+  let latestNonNullGaji = -1;
+  const MAX_LOOKAHEAD = 24; // scan up to 24 future months
+
+  for (let i = 0; i < MAX_LOOKAHEAD; i++) {
+    const colIdx = COL_JAN_2026 + i;
+    const gajiRaw = payrollRow[colIdx];
+    const revRaw  = revenueRow[colIdx];
+
+    const gajiVal = parseGvizNum(gajiRaw); // Rp (absolute)
+    const revVal  = parseGvizNum(revRaw);
+
+    // Convert from Rp to Rp juta (round to integer juta)
+    const gajiJuta = gajiVal != null ? Math.round(gajiVal / 1e6) : null;
+    const revJuta  = revVal  != null && revVal > 0 ? Math.round(revVal  / 1e6) : null;
+
+    // Parse Gross Margin % (row 36 stores as "26.70%" or plain "26.70")
+    const marginRaw = marginRow[colIdx];
+    const marginStr = marginRaw ? marginRaw.replace(/^"|"$/g,'').trim() : '';
+    let   gmPct = null;
+    if (marginStr && marginStr !== '#DIV/0!' && marginStr !== '') {
+      gmPct = parseFloat(marginStr.replace('%',''));
+      if (isNaN(gmPct)) gmPct = null;
+    }
+
+    newPayroll.push(gajiJuta);
+    newRevenue.push(revJuta);
+    newGM.push(gmPct);
+
+    if (gajiJuta != null && gajiJuta > 0) latestNonNullGaji = i;
+    if (revJuta  != null && revJuta  > 0) latestNonNullRev  = i;
+
+    // Stop scanning when we've gone 3 months past the last non-null in BOTH arrays
+    if (i > Math.max(latestNonNullGaji, latestNonNullRev) + 2 && i >= 6) break;
+  }
+
+  // Trim trailing nulls from both arrays to the last known month (+1 for the null)
+  const trimLen = Math.max(latestNonNullGaji, latestNonNullRev) + 2; // keep one null after latest
+  const trimmedPayroll = newPayroll.slice(0, trimLen);
+  const trimmedRevenue = newRevenue.slice(0, trimLen);
+  const trimmedGM      = newGM.slice(0, trimLen);
+
+  if (trimmedPayroll.length === 0) {
+    setFetchStatus('warn', '⚠️ Tidak ada data bulan di sheet — menggunakan snapshot');
+    return;
+  }
+
+  // Compute manpowerRatioPct from live payroll + revenue
+  const trimmedRatio = trimmedPayroll.map((g, i) => {
+    const r = trimmedRevenue[i];
+    return (g != null && r != null && r > 0) ? parseFloat((g / r * 100).toFixed(2)) : null;
+  });
+
+  // Determine DATA_LATEST from the live data (last month with payroll data)
+  // roiIdx 0=Jan2026, 1=Feb2026, … → month0 = (0+0)=Jan=0, 1=Feb=1 …
+  const newLatestRoiIdx   = latestNonNullGaji; // e.g. 6 = Jul 2026
+  const newLatestMonth0   = newLatestRoiIdx;   // 0=Jan,1=Feb,...,6=Jul,7=Aug...
+  const newLatestYear     = 2026 + Math.floor(newLatestMonth0 / 12);
+  const newLatestMonth0Yr = newLatestMonth0 % 12;
+
+  // Patch DATA arrays in-place with live values
+  Object.assign(DATA, {
+    totalGajiMonthly:  trimmedPayroll,
+    revenueMonthly:    trimmedRevenue,
+    grossMarginPct:    trimmedGM,        // live from row 36 — has Jul 26 = 26.70% ✅
+    manpowerRatioPct:  trimmedRatio,
+  });
+
+  // Extend roiMonths / roiMonthShort labels to match new array length
+  const extMonths = [], extShort = [];
+  for (let i = 0; i < trimmedPayroll.length; i++) {
+    const yr  = 2026 + Math.floor(i / 12);
+    const mo  = i % 12; // 0=Jan
+    extMonths.push(ID_MONTHS_SHORT[mo] + ' ' + yr);
+    extShort.push(ID_MONTHS_SHORT[mo]);
+  }
+  DATA.roiMonths      = extMonths;
+  DATA.roiMonthShort  = extShort;
+
+  // Update DATA_LATEST constants so period engine reflects new data
+  // (We reassign the module-level vars; const → use Object.defineProperty trick)
+  try {
+    // DATA_LATEST_YEAR/MONTH are const — patch via closure-captured object
+    LIVE_SHEET_CONFIG._liveLatestYear  = newLatestYear;
+    LIVE_SHEET_CONFIG._liveLatestMonth = newLatestMonth0Yr;
+    LIVE_SHEET_CONFIG._liveRoiLatest   = newLatestRoiIdx;
+  } catch(e) { /* ignore */ }
+
+  // Status message
+  const latestLabel = fmtMonYr(newLatestYear, newLatestMonth0Yr);
+  const nMonthsLoaded = trimmedPayroll.filter(v => v != null).length;
+  const revMonths = trimmedRevenue.filter(v => v != null).length;
+  setFetchStatus('ok',
+    `✅ Live data: ${nMonthsLoaded} bln payroll, ${revMonths} bln revenue — s/d ${latestLabel}`);
+
+  console.log('[LiveFetch] Updated DATA.totalGajiMonthly:', DATA.totalGajiMonthly);
+  console.log('[LiveFetch] Updated DATA.revenueMonthly:',    DATA.revenueMonthly);
+  console.log('[LiveFetch] Latest data month:', latestLabel);
+
+  // Re-render active tab with fresh data
+  updateDashboard();
+}
 
 // ============================================================
 // CHART HELPERS
@@ -3628,21 +3886,28 @@ function renderOverview() {
   const nbRetRate   = nbRecruited > 0 ? (nbRetained / nbRecruited * 100).toFixed(1) : null;
   const compRetention = (100 - parseFloat(turnoverRate12)).toFixed(1);
 
-  // ROI — use corrected Jan–Jul 2026 arrays; compute from non-null values only
-  const roiGajiArr  = DATA.totalGajiMonthly;   // [7791,null,null,null,6963,7558,7791] Rp juta
-  const roiRevArr   = DATA.revenueMonthly;     // [36711,null,null,null,null,38853,null]
-  const roiGMArr    = DATA.grossMarginPct;     // [null,null,null,null,null,25.26,null]
-  const roiRatArr   = DATA.manpowerRatioPct;   // [21.22,null,null,null,null,19.45,null]
+  // ROI — use live-updated arrays (updated by fetchLivePayrollData if sheet ID provided)
+  const roiGajiArr  = DATA.totalGajiMonthly;   // Rp juta, index 0=Jan 2026 …
+  const roiRevArr   = DATA.revenueMonthly;     // Rp juta
+  const roiGMArr    = DATA.grossMarginPct;     // %
+  const roiRatArr   = DATA.manpowerRatioPct;   // %
   const roiWD       = DATA.roiWorkingDaysPerMonth; // 26
 
-  // Use Jun 2026 (index 5) as the "latest complete" reference for Overview ROI pillar
-  const ovLatestGaji  = roiGajiArr[5];   // 7558 juta
-  const ovLatestRev   = roiRevArr[5];    // 38853 juta
-  const ovLatestGM    = roiGMArr[5];     // 25.26%
-  const ovLatestRatio = roiRatArr[5];    // 19.45%
+  // Dynamic: find the latest month index with BOTH payroll AND revenue data
+  // Falls back to latest payroll-only index if revenue not yet entered for that month
+  let ovLatestIdx = 5; // default: Jun 2026 (index 5, always has data)
+  for (let i = roiGajiArr.length - 1; i >= 0; i--) {
+    if (roiGajiArr[i] != null && roiRevArr[i] != null) { ovLatestIdx = i; break; }
+  }
+  // For pillar display, use the overview latest index
+  const ovLatestGaji  = roiGajiArr[ovLatestIdx];
+  const ovLatestRev   = roiRevArr[ovLatestIdx];
+  const ovLatestGM    = roiGMArr[ovLatestIdx]   != null ? roiGMArr[ovLatestIdx]   : roiGMArr[5];
+  const ovLatestRatio = roiRatArr[ovLatestIdx]  != null ? roiRatArr[ovLatestIdx]  : roiRatArr[5];
 
-  // Derived Jun 2026
-  const ovHC          = DATA.activeHCMonthly[5] || DATA.activeHC;              // Jun HC = 875
+  // HC for the overview month (use activeHCMonthly if available, else current active)
+  const ovHC = (DATA.activeHCMonthly[ovLatestIdx] != null ? DATA.activeHCMonthly[ovLatestIdx] : null)
+               || DATA.activeHCMonthly[5] || DATA.activeHC;
   const ovGP          = ovLatestRev * (ovLatestGM / 100);                     // Rp juta
   const ovGPperHC     = Math.round(ovGP * 1e6 / ovHC);                        // Rp per person
   const ovSalPerHC    = Math.round(ovLatestGaji * 1e6 / ovHC);                // Rp per person
@@ -4104,6 +4369,9 @@ document.addEventListener('DOMContentLoaded', () => {
       staleEl.textContent = '';
     }
   }
+
+  // Kick off live fetch from Google Sheets (non-blocking; re-renders on success)
+  fetchLivePayrollData();
 
   // Ensure Overview nav tab is marked active on init
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
