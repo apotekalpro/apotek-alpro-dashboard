@@ -1599,15 +1599,17 @@
 const LIVE_SHEET_CONFIG = {
   // ↓↓ PASTE YOUR SPREADSHEET ID HERE ↓↓
   // e.g. '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms'
-  PAYROLL_SHEET_ID: '',
+  PAYROLL_SHEET_ID: '1S4uqo11FidtOHXqRJQNdd_NAQhDPSfW57qxL4llXLlc',
   SHEET_NAME:  'Trend Summary Payroll',
 
-  // Row indices (0-based) in the gviz CSV for key data rows
-  ROW_TOTAL_PAYROLL:  10,   // Row 11 — TOTAL ALL PT payroll
-  ROW_SALES_PKU:      13,   // Row 14 — SALES-PKU (M)
-  ROW_SALES_PRI:      14,   // Row 15 — SALES-PRI (M)
-  ROW_TOTAL_SALES:    15,   // Row 16 — TOTAL SALES (M)
-  ROW_PAYROLL_PCT:    16,   // Row 17 — Payroll Cost %
+  // Row indices (0-based) in the ACTUAL gviz CSV output.
+  // NOTE: gviz strips hidden columns, so indices differ from spreadsheet column letters.
+  // Confirmed by live inspection of the CSV (Aug 2026):
+  ROW_TOTAL_PAYROLL:  10,   // gviz row 10 = "TOTAL" (payroll ALL PT)
+  ROW_REVENUE:        35,   // gviz row 35 = "Revenue" in SUMMARY ALL PT section — has Jul 26 ✅
+  ROW_MARGIN:         36,   // gviz row 36 = "Margin" (Gross Margin %) — has Jul 26 ✅
+  // NOTE: Row 13 = "TOTAL SALES (M)" in the per-PT section shows Rp0 for Jul 26 — do NOT use.
+  // Row 35/36 are the SUMMARY ALL PT aggregates and are fully populated.
 
   // Column index (0-based) of the FIRST data month (Jan 2026 = Col N)
   COL_JAN_2026:    13,
@@ -2084,24 +2086,26 @@ const DATA = {
   roiMonths: ['Jan 2026', 'Feb 2026', 'Mar 2026', 'Apr 2026', 'Mei 2026', 'Jun 2026', 'Jul 2026'],
   roiMonthShort: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'],
 
-  // Total payroll Row 11 (TOTAL ALL PT) — Trend Summary Payroll sheet — Rp juta
-  // Confirmed from screenshot Col T (Jul 26) = Rp 7,453,059,591 = 7453jt
+  // Total payroll (gviz row 10 = "TOTAL" ALL PT) — Trend Summary Payroll sheet — Rp juta
   // Jan=7,791 | Feb=7,573 | Mar=10,521 (THR spike) | Apr=7,836 | Mei=7,103 | Jun=7,558 | Jul=7,453
-  totalGajiMonthly: [7791, 7573, 10521, 7836, 7103, 7558, 7453],  // Rp juta, Jan-Jul 2026 — all confirmed
+  // All values confirmed from live gviz CSV (Aug 2026) ✅
+  totalGajiMonthly: [7791, 7573, 10521, 7836, 7103, 7558, 7453],  // Rp juta, Jan-Jul 2026 — all actual ✅
 
-  // Revenue (Row 16 TOTAL SALES — same as Row 44 in the ALL PT section)
-  // Jan=36,711 | Feb=35,567 | Mar=43,170 | Apr=39,249 | Mei=39,754 | Jun=38,853
-  // Jul 2026: Row 16 Col T = Rp 0 in sheet (SALES-PKU/PRI not yet entered) — null until sheet updated
-  revenueMonthly: [36711, 35567, 43170, 39249, 39754, 38853, null],  // Rp juta, Jan-Jul 2026
+  // Revenue (gviz row 35 = "Revenue" in SUMMARY ALL PT section)
+  // Jan=36,711 | Feb=35,567 | Mar=43,169 | Apr=39,243 | Mei=40,254 | Jun=38,853 | Jul=40,062
+  // Jul 2026: Row 35 col 19 = 40,062,391,024 — CONFIRMED real data ✅
+  // Note: Row 13 (TOTAL SALES per-PT) shows Rp0 for Jul — we use Row 35 instead
+  revenueMonthly: [36711, 35567, 43169, 39243, 40254, 38853, 40062],  // Rp juta, Jan-Jul 2026 — all actual ✅
 
-  // Gross Margin % (Row 17 Payroll Cost% inverse, or dedicated GM row in ALL PT section)
-  // Jan=24.20% | Feb=24.65% | Mar=23.44% | Apr=24.29% | Mei=25.48% | Jun=25.26%
-  // Jul 2026: #DIV/0! in sheet (Revenue=0) — null until Revenue entered
-  grossMarginPct: [24.20, 24.65, 23.44, 24.29, 25.48, 25.26, null],  // %, Jan-Jul 2026
+  // Gross Margin % (gviz row 36 = "Margin" in SUMMARY ALL PT section)
+  // Jan=24.20% | Feb=24.65% | Mar=23.44% | Apr=24.29% | Mei=25.48% | Jun=25.26% | Jul=26.70%
+  // Jul 2026: Row 36 col 19 = 26.70% — CONFIRMED real data ✅
+  grossMarginPct: [24.20, 24.65, 23.44, 24.29, 25.48, 25.26, 26.70],  // %, Jan-Jul 2026 — all actual ✅
 
-  // Manpower ratio (Payroll÷Revenue×100) — computed from above; Jul=null until Revenue available
-  // Jan=21.22% | Feb=21.29% | Mar=24.37%(THR) | Apr=19.97% | Mei=17.64% | Jun=19.45%
-  manpowerRatioPct: [21.22, 21.29, 24.37, 19.97, 17.64, 19.45, null], // %, Jan-Jul 2026
+  // Manpower ratio (Payroll÷Revenue×100) — computed from totalGaji / revenue
+  // Jan=21.22 | Feb=21.29 | Mar=24.37(THR) | Apr=19.97 | Mei=17.64 | Jun=19.45
+  // Jul=18.60% (7453 / 40062 × 100 = 18.604%) — all confirmed ✅
+  manpowerRatioPct: [21.22, 21.29, 24.37, 19.97, 17.65, 19.45, 18.60], // %, Jan-Jul 2026 — all actual ✅
 
   // ── 2025 Historical data — ALL PT SUMMARY (Rows 31-40 + 43-45 of Trend Summary Payroll) ──────
   // Source: screenshot 2026-07-28, Row 40=Total payroll, Row 44=Revenue, Row 45=Gross Margin %
@@ -2267,11 +2271,11 @@ function setFetchStatus(state, msg) {
 }
 
 // Main live fetch: fetches Trend Summary Payroll sheet via gviz CSV API,
-// parses Row 11 (payroll) and Row 16 (revenue) dynamically for each month
-// starting from Jan 2026 (Col N=13) and extending until columns have no data.
+// parses Row 10 (TOTAL payroll), Row 35 (Revenue), Row 36 (Margin%) dynamically
+// starting from Jan 2026 (gviz col 13) and extending for each new month.
 async function fetchLivePayrollData() {
   const { PAYROLL_SHEET_ID, SHEET_NAME,
-          ROW_TOTAL_PAYROLL, ROW_TOTAL_SALES,
+          ROW_TOTAL_PAYROLL, ROW_REVENUE, ROW_MARGIN,
           COL_JAN_2026 } = LIVE_SHEET_CONFIG;
 
   if (!PAYROLL_SHEET_ID) {
@@ -2295,19 +2299,21 @@ async function fetchLivePayrollData() {
     return;
   }
 
-  if (!rows || rows.length < Math.max(ROW_TOTAL_PAYROLL, ROW_TOTAL_SALES) + 1) {
+  if (!rows || rows.length < Math.max(ROW_TOTAL_PAYROLL, ROW_REVENUE, ROW_MARGIN) + 1) {
     setFetchStatus('error', '❌ Respons sheet tidak valid — menggunakan snapshot');
     return;
   }
 
   const payrollRow = rows[ROW_TOTAL_PAYROLL] || [];
-  const revenueRow = rows[ROW_TOTAL_SALES]   || [];
+  const revenueRow = rows[ROW_REVENUE]       || [];
+  const marginRow  = rows[ROW_MARGIN]        || [];
 
   // Scan columns from Jan 2026 (col index 13) onwards.
   // col index = COL_JAN_2026 + roiIdx, where roiIdx 0=Jan, 1=Feb, …
   // Stop when we hit 2 consecutive null/zero columns (no more data)
   const newPayroll = [];   // Rp juta, index 0=Jan 2026 onwards
   const newRevenue = [];   // Rp juta, index 0=Jan 2026 onwards
+  const newGM      = [];   // Gross Margin %, index 0=Jan 2026 onwards
   let latestNonNullRev  = -1;
   let latestNonNullGaji = -1;
   const MAX_LOOKAHEAD = 24; // scan up to 24 future months
@@ -2324,8 +2330,18 @@ async function fetchLivePayrollData() {
     const gajiJuta = gajiVal != null ? Math.round(gajiVal / 1e6) : null;
     const revJuta  = revVal  != null && revVal > 0 ? Math.round(revVal  / 1e6) : null;
 
+    // Parse Gross Margin % (row 36 stores as "26.70%" or plain "26.70")
+    const marginRaw = marginRow[colIdx];
+    const marginStr = marginRaw ? marginRaw.replace(/^"|"$/g,'').trim() : '';
+    let   gmPct = null;
+    if (marginStr && marginStr !== '#DIV/0!' && marginStr !== '') {
+      gmPct = parseFloat(marginStr.replace('%',''));
+      if (isNaN(gmPct)) gmPct = null;
+    }
+
     newPayroll.push(gajiJuta);
     newRevenue.push(revJuta);
+    newGM.push(gmPct);
 
     if (gajiJuta != null && gajiJuta > 0) latestNonNullGaji = i;
     if (revJuta  != null && revJuta  > 0) latestNonNullRev  = i;
@@ -2338,6 +2354,7 @@ async function fetchLivePayrollData() {
   const trimLen = Math.max(latestNonNullGaji, latestNonNullRev) + 2; // keep one null after latest
   const trimmedPayroll = newPayroll.slice(0, trimLen);
   const trimmedRevenue = newRevenue.slice(0, trimLen);
+  const trimmedGM      = newGM.slice(0, trimLen);
 
   if (trimmedPayroll.length === 0) {
     setFetchStatus('warn', '⚠️ Tidak ada data bulan di sheet — menggunakan snapshot');
@@ -2361,8 +2378,8 @@ async function fetchLivePayrollData() {
   Object.assign(DATA, {
     totalGajiMonthly:  trimmedPayroll,
     revenueMonthly:    trimmedRevenue,
+    grossMarginPct:    trimmedGM,        // live from row 36 — has Jul 26 = 26.70% ✅
     manpowerRatioPct:  trimmedRatio,
-    // grossMarginPct: keep existing snapshot (not in this sheet's Trend Summary Payroll rows 11/16)
   });
 
   // Extend roiMonths / roiMonthShort labels to match new array length
