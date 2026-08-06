@@ -1099,25 +1099,7 @@
   </div>
 
   <!-- HC Summary KPI -->
-  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:14px;">
-    <div class="kpi-card" style="border-color:#2563eb;">
-      <div class="kpi-icon">👥</div>
-      <div class="kpi-label">Current Updated HC</div>
-      <div class="kpi-value" style="color:#2563eb;" id="hc-current">—</div>
-      <div class="kpi-sub">Semua outlet aktif</div>
-    </div>
-    <div class="kpi-card" style="border-color:#16a34a;">
-      <div class="kpi-icon">🎯</div>
-      <div class="kpi-label">Headcount Optimum</div>
-      <div class="kpi-value" style="color:#16a34a;" id="hc-optimum">—</div>
-      <div class="kpi-sub">Target HC</div>
-    </div>
-    <div class="kpi-card" style="border-color:#f59e0b;">
-      <div class="kpi-icon">📊</div>
-      <div class="kpi-label">Total Needed HC</div>
-      <div class="kpi-value" style="color:#f59e0b;" id="hc-needed-total">—</div>
-      <div class="kpi-sub">Current + Kebutuhan Hiring</div>
-    </div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px;">
     <div class="kpi-card" style="border-color:#dc2626;">
       <div class="kpi-icon">⚠️</div>
       <div class="kpi-label">Kebutuhan Hiring</div>
@@ -3409,9 +3391,6 @@ function renderRecruitment() {
 
   // ── OPS X PPM HEADCOUNT DASHBOARD ────────────────────────────────
   const hc = DATA.opsHC;
-  document.getElementById('hc-current').textContent     = hc.currentHC.toLocaleString('id');
-  document.getElementById('hc-optimum').textContent     = (hc.currentHC + hc.hiringNeeded).toLocaleString('id');
-  document.getElementById('hc-needed-total').textContent= (hc.currentHC + hc.hiringNeeded).toLocaleString('id');
   document.getElementById('hc-hire-needed').textContent = hc.hiringNeeded;
   document.getElementById('hc-ok-count').textContent    = hc.okCount + hc.surplusCount;
   document.getElementById('hc-need-hire-count').textContent = hc.needHireCount;
@@ -4240,7 +4219,13 @@ function renderOverview() {
   }
 
   set('ov-onboarded', periodOnboarded);
-  set('ov-mp-ratio',  ovLatestRatio.toFixed(2) + '%');  // Jun 2026 actual
+  // Period-aware MP Ratio: avg over selected period (same roiPeriodIdx logic as renderROI)
+  const ovRoiPeriodIdx   = idx.map(i => i + 1);  // period[0=Feb]→roiIdx[1], ..., period[5=Jul]→roiIdx[6]
+  const ovPeriodRatioVals = ovRoiPeriodIdx.map(i => roiRatArr[i]).filter(v => v != null);
+  const ovPeriodAvgRatio  = ovPeriodRatioVals.length > 0
+    ? ovPeriodRatioVals.reduce((a,b)=>a+b,0) / ovPeriodRatioVals.length
+    : ovLatestRatio;
+  set('ov-mp-ratio',  ovPeriodAvgRatio.toFixed(2) + '%');  // period-aware avg
 
   const nbRateEl = document.getElementById('ov-nb-rate');
   if (nbRateEl) {
@@ -4398,7 +4383,7 @@ function renderOverview() {
       scales: {
         y:  { position: 'left',  beginAtZero: true, title: { display: true, text: 'Headcount', font: { size: 10 } } },
         y2: { position: 'right', title: { display: true, text: '% Ratio', font: { size: 10 } },
-              ticks: { callback: v => v + '%' }, grid: { drawOnChartArea: false }, min: 20, max: 35, suggestedMin: 20 }
+              ticks: { callback: v => v + '%' }, grid: { drawOnChartArea: false }, suggestedMin: 14, suggestedMax: 28 }
       }
     }
   });
