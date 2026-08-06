@@ -2109,7 +2109,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="text-center text-xs text-gray-500 border-t pt-2">
-                                                    Company Target: <span class="font-semibold text-blue-600" id="pshCompanyTarget">0%</span>
+                                                    Company Growth: <span class="font-semibold text-blue-600" id="pshCompanyTarget">0%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -2133,7 +2133,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="text-center text-xs text-gray-500 border-t pt-2">
-                                                    Company Target: <span class="font-semibold text-blue-600" id="pshCompanyTarget2">0%</span>
+                                                    Company Growth: <span class="font-semibold text-blue-600" id="pshCompanyTarget2">0%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -2157,7 +2157,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="text-center text-xs text-gray-500 border-t pt-2">
-                                                    Company Target: <span class="font-semibold text-blue-600" id="pshCompanyTarget3">0%</span>
+                                                    Company Growth: <span class="font-semibold text-blue-600" id="pshCompanyTarget3">0%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -2191,6 +2191,9 @@
                                                 <tr>
                                                     <th onclick="sortPSHTable('outlet')" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 cursor-pointer hover:bg-gray-100">
                                                         Outlet <i class="fas fa-sort ml-1"></i>
+                                                    </th>
+                                                    <th onclick="sortPSHTable('companyGrowth')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100 cursor-pointer hover:bg-gray-200">
+                                                        Company<br><span class="text-xs font-normal">Growth %</span> <i class="fas fa-sort ml-1"></i>
                                                     </th>
                                                     <th onclick="sortPSHTable('baselineRevenue')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-100 cursor-pointer hover:bg-blue-200">
                                                         Baseline<br><span class="text-xs font-normal">Revenue</span> <i class="fas fa-sort ml-1"></i>
@@ -2232,7 +2235,7 @@
                                             </thead>
                                             <tbody id="pshTableBody" class="bg-white divide-y divide-gray-200">
                                                 <tr>
-                                                    <td colspan="13" class="px-6 py-4 text-center text-gray-500">
+                                                    <td colspan="14" class="px-6 py-4 text-center text-gray-500">
                                                         Loading outlet data...
                                                     </td>
                                                 </tr>
@@ -16274,28 +16277,48 @@ Ready for deployment! 🚀
             const month3TranoGrowth = totalBaselineTrano > 0 ? ((totalMonth3Trano - totalBaselineTrano) / totalBaselineTrano * 100) : 0;
             const month3PSHGrowth = calculatePSHGrowthPercent(totalMonth3PSH, totalBaselinePSH);
             
-            // Get company growth target (from first outlet, as it should be same for all)
-            const companyTarget = pshProjectData[0]?.companyGrowthTarget || 0;
+            // Calculate company growth reference for each month (weighted average)
+            // Company growth is cumulative over 3 months, so we divide by 3 for monthly average
+            // Different outlets may have different company growth % (e.g., 9.18% vs 2.22%)
+            // We calculate weighted average based on outlets with data in each month
+            
+            // Month 1: outlets with month1 data
+            const month1Outlets = pshProjectData.filter(o => o.month1.revenue > 0);
+            const month1CompanyGrowth = month1Outlets.length > 0 
+                ? month1Outlets.reduce((sum, o) => sum + (o.companyGrowthTarget / 3), 0) / month1Outlets.length 
+                : 0;
+            
+            // Month 2: outlets with month2 data
+            const month2Outlets = pshProjectData.filter(o => o.month2.revenue > 0);
+            const month2CompanyGrowth = month2Outlets.length > 0 
+                ? month2Outlets.reduce((sum, o) => sum + ((o.companyGrowthTarget / 3) * 2), 0) / month2Outlets.length 
+                : 0;
+            
+            // Month 3: outlets with month3 data  
+            const month3Outlets = pshProjectData.filter(o => o.month3.revenue > 0);
+            const month3CompanyGrowth = month3Outlets.length > 0 
+                ? month3Outlets.reduce((sum, o) => sum + o.companyGrowthTarget, 0) / month3Outlets.length 
+                : 0;
             
             // Update Month 1 cards
             updateGrowthElement('pshMonth1RevenueGrowth', month1RevenueGrowth);
             updateGrowthElement('pshMonth1TranoGrowth', month1TranoGrowth);
             updateGrowthElement('pshMonth1PSHGrowth', month1PSHGrowth);
-            document.getElementById('pshCompanyTarget').textContent = `${companyTarget.toFixed(2)}%`;
+            document.getElementById('pshCompanyTarget').textContent = `${month1CompanyGrowth.toFixed(2)}%`;
             
             // Update Month 2 cards
             updateGrowthElement('pshMonth2RevenueGrowth', month2RevenueGrowth);
             updateGrowthElement('pshMonth2TranoGrowth', month2TranoGrowth);
             updateGrowthElement('pshMonth2PSHGrowth', month2PSHGrowth);
-            document.getElementById('pshCompanyTarget2').textContent = `${companyTarget.toFixed(2)}%`;
+            document.getElementById('pshCompanyTarget2').textContent = `${month2CompanyGrowth.toFixed(2)}%`;
             
             // Update Month 3 cards
             updateGrowthElement('pshMonth3RevenueGrowth', month3RevenueGrowth);
             updateGrowthElement('pshMonth3TranoGrowth', month3TranoGrowth);
             updateGrowthElement('pshMonth3PSHGrowth', month3PSHGrowth);
-            document.getElementById('pshCompanyTarget3').textContent = `${companyTarget.toFixed(2)}%`;
+            document.getElementById('pshCompanyTarget3').textContent = `${month3CompanyGrowth.toFixed(2)}%`;
             
-            console.log('📊 Updated PSH summary cards with monthly growth percentages and company target');
+            console.log('📊 Updated PSH summary cards with monthly growth percentages and company growth reference');
         }
         
         // Helper function to calculate PSH growth percentage
@@ -16323,7 +16346,7 @@ Ready for deployment! 🚀
             if (!pshFilteredData || pshFilteredData.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="13" class="px-6 py-4 text-center text-gray-500">
+                        <td colspan="14" class="px-6 py-4 text-center text-gray-500">
                             No outlet data available
                         </td>
                     </tr>
@@ -16346,6 +16369,10 @@ Ready for deployment! 🚀
                         <td class="px-4 py-3 sticky left-0 ${rowClass}">
                             <div class="font-semibold text-gray-800">${outlet.outletCode}</div>
                             <div class="text-xs text-gray-600">${outlet.outletName}</div>
+                        </td>
+                        <td class="px-4 py-3 text-center bg-gray-100">
+                            <div class="text-sm font-semibold text-blue-600">${outlet.companyGrowthTarget.toFixed(2)}%</div>
+                            <div class="text-xs text-gray-500">3-mo cumulative</div>
                         </td>
                         
                         <!-- Baseline -->
@@ -16483,6 +16510,10 @@ Ready for deployment! 🚀
                     case 'outlet':
                         aVal = a.outletCode;
                         bVal = b.outletCode;
+                        break;
+                    case 'companyGrowth':
+                        aVal = a.companyGrowthTarget;
+                        bVal = b.companyGrowthTarget;
                         break;
                     case 'baselineRevenue':
                         aVal = a.baseline.revenue;
