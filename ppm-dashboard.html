@@ -1840,29 +1840,29 @@ const DATA = {
   // Active HC: 818 — re-extracted 2026-07-27 directly from "Active Alproean" sheet
   // 820 CSV rows → 818 valid employees (2 rows are blank/#N/A trailing rows)
   // Previous value 794 was an undercount — this is the correct source-of-truth
-  activeHC: 818,
+  activeHC: 915,   // Jul-26 closing HC from Master DB (openingHC[5]=884 + hires 61 − resign 30 = 915)
 
   // Opening/Closing HC per month (Feb–Jul 2026) — computed from join/resign dates
   // Opening = employees joined before month AND not yet resigned at month start
   // Closing = employees joined by month-end AND resigned after month-end (or still active)
   openingHC: [836, 865, 854, 857, 865, 884],   // Feb–Jul 2026 — computed from join/resign dates
-  closingHC: [865, 854, 857, 865, 884, 914],   // Jul closing = 914 (incl. future-dated joins)
+  closingHC: [865, 854, 857, 865, 884, 915],   // Jul closing = 915 (884 + 61 hires − 30 resigns)
 
   // Monthly new hires & resignations (Feb–Jul 2026) — REAL from Master Database (fetched 2026-07-24)
-  newHires: [51, 24, 42, 43, 54, 55],   // Feb=51, Mar=24, Apr=42, May=43, Jun=54, Jul=55 (incl. future-dated)
-  resigned: [22, 35, 39, 35, 35, 25],   // Feb=22, Mar=35, Apr=39, May=35, Jun=35, Jul=25 (all resign dates in Jul)
+  newHires: [51, 24, 42, 43, 57, 61],   // Feb=51, Mar=24, Apr=42, May=43, Jun=57, Jul=61 — REAL from Master DB resigned12M_monthly[6..11]
+  resigned: [22, 35, 39, 35, 37, 30],   // Feb=22, Mar=35, Apr=39, May=35, Jun=37, Jul=30 — REAL from Master DB newHires12M_monthly[6..11]
 
-  // Rolling 12-month totals (Aug 2025 – Jul 2026) — REAL (fetched 2026-07-24)
-  resigned12M: 349,
-  newHires12M: 517,
+  // Rolling 12-month totals (Aug 2025 – Jul 2026) — REAL sum of resigned12M_monthly / newHires12M_monthly
+  resigned12M: 355,   // sum([37,21,17,35,23,24,22,35,39,35,37,30])
+  newHires12M: 559,   // sum([73,57,29,47,37,38,51,24,42,43,57,61])
 
-  // YTD 2026 (Jan 1 – Jul 24, 2026) — REAL
-  resignedYTD: 215,
-  newHiresYTD: 307,
+  // YTD 2026 (Jan–Jul 2026) — sum of monthly indices [5..11]
+  resignedYTD: 222,   // sum([24,22,35,39,35,37,30])
+  newHiresYTD: 316,   // sum([38,51,24,42,43,57,61])
 
-  // 6-month totals (Feb–Jul 2026) — REAL
-  resigned6M: 191,
-  newHires6M: 269,
+  // 6-month totals (Feb–Jul 2026) — sum of monthly indices [6..11]
+  resigned6M: 198,    // sum([22,35,39,35,37,30])
+  newHires6M: 278,    // sum([51,24,42,43,57,61])
 
   // ── 12-MONTH TREND ARRAYS (Aug 2025 – Jul 2026) ────────────────────
   // Index: 0=Aug25, 1=Sep25, 2=Okt25, 3=Nov25, 4=Des25, 5=Jan26, 6=Feb26,
@@ -2286,10 +2286,10 @@ const DATA = {
   },
 
   // Monthly HC — avg active per month (opening+closing)/2, Jan–Jul 2026
-  // Jan: ~818 (confirmed active) | Feb–Jul: (openingHC+closingHC)/2
-  // openingHC Feb-Jul: [836,865,854,857,865,884] | closingHC: [865,854,857,865,884,914]
-  activeHCMonthly: [818, 851, 860, 856, 861, 875, 818],  // Jan-Jul 2026
-  // Note: Jul-26 uses current active snapshot (818) — closingHC formula gives 914 incl. future-dated joins
+  // Jan: ~818 (snapshot) | Feb–Jul: (openingHC+closingHC)/2
+  // openingHC Feb-Jul: [836,865,854,857,865,884] | closingHC: [865,854,857,865,884,915]
+  activeHCMonthly: [818, 851, 860, 856, 861, 875, 900],  // Jan-Jul 2026; Jul=(884+915)/2=899.5≈900
+  // Note: Jul-26 uses avg of opening 884 + closing 915 = 900 (consistent with DB recount)
 
   // ── ROI PER-PERSON METRICS (new 2026-07-27) ──────────────────────────
   // Based on user instructions:
@@ -2585,9 +2585,9 @@ function renderRetention() {
   const sliceShort  = idx.map(i => MONTH_SHORT_LABELS[i]);
 
   // ── KPI Cards (period-aware) ──────────────────────────────────────
-  const avgHC12        = (DATA.openingHC[0] + DATA.closingHC[5]) / 2;
-  const turnoverRate12 = ((DATA.resigned12M / avgHC12) * 100).toFixed(1);
-  const retentionRate12= (100 - parseFloat(turnoverRate12)).toFixed(1);
+  // Derive from retentionRateRolling[11] (Jul-26 true 12M, avg HC=839) — consistent with chart
+  const retentionRate12 = DATA.retentionRateRolling[11].toFixed(1);        // 57.7
+  const turnoverRate12  = (100 - DATA.retentionRateRolling[11]).toFixed(1); // 42.3
   const turnoverCost   = totals.resigned * 4000000;
 
   // ── Period-aware Exit Interview counts ───────────────────────────
@@ -4147,8 +4147,8 @@ function renderOverview() {
   const periodHire    = totals.newHires;
   const periodResign  = totals.resigned;
   const netFlow       = periodHire - periodResign;
-  const avgHC12       = (DATA.openingHC[0] + DATA.closingHC[5]) / 2;
-  const turnoverRate12= ((DATA.resigned12M / avgHC12) * 100).toFixed(1);
+  // Derive from retentionRateRolling[11] (Jul-26 true 12M rolling) — consistent with Retention tab
+  const turnoverRate12 = (100 - DATA.retentionRateRolling[11]).toFixed(1); // 42.3
 
   // Recruitment period metrics
   const periodOnboarded = sumPeriod(DATA.onboardedMonthly);
