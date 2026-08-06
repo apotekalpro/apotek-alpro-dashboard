@@ -1835,41 +1835,68 @@
                                 </div>
 
                                 <!-- Summary Cards -->
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" id="pshSummaryCards">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" id="pshSummaryCards">
                                     <div class="content-card p-4">
                                         <div class="flex items-center justify-between">
-                                            <div>
-                                                <p class="text-sm text-gray-600">Total Outlets</p>
-                                                <p class="text-2xl font-bold text-gray-800" id="pshTotalOutlets">0</p>
+                                            <div class="w-full">
+                                                <p class="text-sm text-gray-600 mb-2">Month 1 Growth vs Baseline</p>
+                                                <div class="grid grid-cols-3 gap-2">
+                                                    <div class="text-center">
+                                                        <p class="text-xs text-gray-500">Revenue</p>
+                                                        <p class="text-lg font-bold text-green-600" id="pshMonth1RevenueGrowth">0%</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <p class="text-xs text-gray-500">Trano</p>
+                                                        <p class="text-lg font-bold text-green-600" id="pshMonth1TranoGrowth">0%</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <p class="text-xs text-gray-500">PSH</p>
+                                                        <p class="text-lg font-bold text-green-600" id="pshMonth1PSHGrowth">0%</p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <i class="fas fa-store text-3xl text-blue-600 opacity-50"></i>
                                         </div>
                                     </div>
                                     <div class="content-card p-4">
                                         <div class="flex items-center justify-between">
-                                            <div>
-                                                <p class="text-sm text-gray-600">Total Baseline Revenue</p>
-                                                <p class="text-lg font-bold text-gray-800" id="pshBaselineRevenue">Rp 0</p>
+                                            <div class="w-full">
+                                                <p class="text-sm text-gray-600 mb-2">Month 2 Growth vs Baseline</p>
+                                                <div class="grid grid-cols-3 gap-2">
+                                                    <div class="text-center">
+                                                        <p class="text-xs text-gray-500">Revenue</p>
+                                                        <p class="text-lg font-bold text-yellow-600" id="pshMonth2RevenueGrowth">0%</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <p class="text-xs text-gray-500">Trano</p>
+                                                        <p class="text-lg font-bold text-yellow-600" id="pshMonth2TranoGrowth">0%</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <p class="text-xs text-gray-500">PSH</p>
+                                                        <p class="text-lg font-bold text-yellow-600" id="pshMonth2PSHGrowth">0%</p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <i class="fas fa-chart-bar text-3xl text-green-600 opacity-50"></i>
                                         </div>
                                     </div>
                                     <div class="content-card p-4">
                                         <div class="flex items-center justify-between">
-                                            <div>
-                                                <p class="text-sm text-gray-600">Latest Month Revenue</p>
-                                                <p class="text-lg font-bold text-green-600" id="pshCurrentForecast">Rp 0</p>
+                                            <div class="w-full">
+                                                <p class="text-sm text-gray-600 mb-2">Month 3 Growth vs Baseline</p>
+                                                <div class="grid grid-cols-3 gap-2">
+                                                    <div class="text-center">
+                                                        <p class="text-xs text-gray-500">Revenue</p>
+                                                        <p class="text-lg font-bold text-orange-600" id="pshMonth3RevenueGrowth">0%</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <p class="text-xs text-gray-500">Trano</p>
+                                                        <p class="text-lg font-bold text-orange-600" id="pshMonth3TranoGrowth">0%</p>
+                                                    </div>
+                                                    <div class="text-center">
+                                                        <p class="text-xs text-gray-500">PSH</p>
+                                                        <p class="text-lg font-bold text-orange-600" id="pshMonth3PSHGrowth">0%</p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <i class="fas fa-chart-line text-3xl text-purple-600 opacity-50"></i>
-                                        </div>
-                                    </div>
-                                    <div class="content-card p-4">
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <p class="text-sm text-gray-600">Overall Growth</p>
-                                                <p class="text-2xl font-bold text-blue-600" id="pshOverallGrowth">0%</p>
-                                            </div>
-                                            <i class="fas fa-trending-up text-3xl text-blue-600 opacity-50"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -13584,20 +13611,74 @@ Ready for deployment! 🚀
                 return;
             }
             
-            const totalOutlets = pshProjectData.length;
-            const totalBaseline = pshProjectData.reduce((sum, o) => sum + o.baseline.revenue, 0);
-            const totalLatest = pshProjectData.reduce((sum, o) => sum + o.latestMonth.revenue, 0);
-            const overallGrowth = totalBaseline > 0 ? ((totalLatest - totalBaseline) / totalBaseline * 100) : 0;
+            // Calculate totals for baseline
+            const totalBaselineRevenue = pshProjectData.reduce((sum, o) => sum + o.baseline.revenue, 0);
+            const totalBaselineTrano = pshProjectData.reduce((sum, o) => sum + o.baseline.trano, 0);
+            const totalBaselinePSH = pshProjectData.reduce((sum, o) => sum + o.baseline.psh, 0);
             
-            document.getElementById('pshTotalOutlets').textContent = totalOutlets;
-            document.getElementById('pshBaselineRevenue').textContent = formatCurrency(totalBaseline);
-            document.getElementById('pshCurrentForecast').textContent = formatCurrency(totalLatest);
+            // Calculate totals for Month 1
+            const totalMonth1Revenue = pshProjectData.reduce((sum, o) => sum + o.month1.revenue, 0);
+            const totalMonth1Trano = pshProjectData.reduce((sum, o) => sum + o.month1.trano, 0);
+            const totalMonth1PSH = pshProjectData.reduce((sum, o) => sum + o.month1.psh, 0);
             
-            const growthElement = document.getElementById('pshOverallGrowth');
-            growthElement.textContent = `${overallGrowth >= 0 ? '+' : ''}${overallGrowth.toFixed(1)}%`;
-            growthElement.className = `text-2xl font-bold ${overallGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`;
+            // Calculate totals for Month 2
+            const totalMonth2Revenue = pshProjectData.reduce((sum, o) => sum + o.month2.revenue, 0);
+            const totalMonth2Trano = pshProjectData.reduce((sum, o) => sum + o.month2.trano, 0);
+            const totalMonth2PSH = pshProjectData.reduce((sum, o) => sum + o.month2.psh, 0);
             
-            console.log('📊 Updated PSH summary cards');
+            // Calculate totals for Month 3
+            const totalMonth3Revenue = pshProjectData.reduce((sum, o) => sum + o.month3.revenue, 0);
+            const totalMonth3Trano = pshProjectData.reduce((sum, o) => sum + o.month3.trano, 0);
+            const totalMonth3PSH = pshProjectData.reduce((sum, o) => sum + o.month3.psh, 0);
+            
+            // Calculate growth percentages for Month 1
+            const month1RevenueGrowth = totalBaselineRevenue > 0 ? ((totalMonth1Revenue - totalBaselineRevenue) / totalBaselineRevenue * 100) : 0;
+            const month1TranoGrowth = totalBaselineTrano > 0 ? ((totalMonth1Trano - totalBaselineTrano) / totalBaselineTrano * 100) : 0;
+            const month1PSHGrowth = calculatePSHGrowthPercent(totalMonth1PSH, totalBaselinePSH);
+            
+            // Calculate growth percentages for Month 2
+            const month2RevenueGrowth = totalBaselineRevenue > 0 ? ((totalMonth2Revenue - totalBaselineRevenue) / totalBaselineRevenue * 100) : 0;
+            const month2TranoGrowth = totalBaselineTrano > 0 ? ((totalMonth2Trano - totalBaselineTrano) / totalBaselineTrano * 100) : 0;
+            const month2PSHGrowth = calculatePSHGrowthPercent(totalMonth2PSH, totalBaselinePSH);
+            
+            // Calculate growth percentages for Month 3
+            const month3RevenueGrowth = totalBaselineRevenue > 0 ? ((totalMonth3Revenue - totalBaselineRevenue) / totalBaselineRevenue * 100) : 0;
+            const month3TranoGrowth = totalBaselineTrano > 0 ? ((totalMonth3Trano - totalBaselineTrano) / totalBaselineTrano * 100) : 0;
+            const month3PSHGrowth = calculatePSHGrowthPercent(totalMonth3PSH, totalBaselinePSH);
+            
+            // Update Month 1 cards
+            updateGrowthElement('pshMonth1RevenueGrowth', month1RevenueGrowth);
+            updateGrowthElement('pshMonth1TranoGrowth', month1TranoGrowth);
+            updateGrowthElement('pshMonth1PSHGrowth', month1PSHGrowth);
+            
+            // Update Month 2 cards
+            updateGrowthElement('pshMonth2RevenueGrowth', month2RevenueGrowth);
+            updateGrowthElement('pshMonth2TranoGrowth', month2TranoGrowth);
+            updateGrowthElement('pshMonth2PSHGrowth', month2PSHGrowth);
+            
+            // Update Month 3 cards
+            updateGrowthElement('pshMonth3RevenueGrowth', month3RevenueGrowth);
+            updateGrowthElement('pshMonth3TranoGrowth', month3TranoGrowth);
+            updateGrowthElement('pshMonth3PSHGrowth', month3PSHGrowth);
+            
+            console.log('📊 Updated PSH summary cards with monthly growth percentages');
+        }
+        
+        // Helper function to calculate PSH growth percentage
+        function calculatePSHGrowthPercent(current, baseline) {
+            if (baseline === 0) return 0;
+            // For PSH (negative values), improvement is when value becomes less negative
+            // So growth = (baseline - current) / baseline * 100
+            return ((baseline - current) / Math.abs(baseline)) * 100;
+        }
+        
+        // Helper function to update growth element with color coding
+        function updateGrowthElement(elementId, growthValue) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            element.textContent = `${growthValue >= 0 ? '+' : ''}${growthValue.toFixed(1)}%`;
+            element.className = `text-lg font-bold ${growthValue >= 0 ? 'text-green-600' : 'text-red-600'}`;
         }
 
         function displayPSHTable() {
