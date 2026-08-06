@@ -1840,7 +1840,7 @@
                                         <div class="flex items-center justify-between">
                                             <div class="w-full">
                                                 <p class="text-sm text-gray-600 mb-2">Month 1 Growth vs Baseline</p>
-                                                <div class="grid grid-cols-3 gap-2">
+                                                <div class="grid grid-cols-3 gap-2 mb-2">
                                                     <div class="text-center">
                                                         <p class="text-xs text-gray-500">Revenue</p>
                                                         <p class="text-lg font-bold text-green-600" id="pshMonth1RevenueGrowth">0%</p>
@@ -1854,6 +1854,9 @@
                                                         <p class="text-lg font-bold text-green-600" id="pshMonth1PSHGrowth">0%</p>
                                                     </div>
                                                 </div>
+                                                <div class="text-center text-xs text-gray-500 border-t pt-2">
+                                                    Company Target: <span class="font-semibold text-blue-600" id="pshCompanyTarget">0%</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1861,7 +1864,7 @@
                                         <div class="flex items-center justify-between">
                                             <div class="w-full">
                                                 <p class="text-sm text-gray-600 mb-2">Month 2 Growth vs Baseline</p>
-                                                <div class="grid grid-cols-3 gap-2">
+                                                <div class="grid grid-cols-3 gap-2 mb-2">
                                                     <div class="text-center">
                                                         <p class="text-xs text-gray-500">Revenue</p>
                                                         <p class="text-lg font-bold text-yellow-600" id="pshMonth2RevenueGrowth">0%</p>
@@ -1875,6 +1878,9 @@
                                                         <p class="text-lg font-bold text-yellow-600" id="pshMonth2PSHGrowth">0%</p>
                                                     </div>
                                                 </div>
+                                                <div class="text-center text-xs text-gray-500 border-t pt-2">
+                                                    Company Target: <span class="font-semibold text-blue-600" id="pshCompanyTarget2">0%</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -1882,7 +1888,7 @@
                                         <div class="flex items-center justify-between">
                                             <div class="w-full">
                                                 <p class="text-sm text-gray-600 mb-2">Month 3 Growth vs Baseline</p>
-                                                <div class="grid grid-cols-3 gap-2">
+                                                <div class="grid grid-cols-3 gap-2 mb-2">
                                                     <div class="text-center">
                                                         <p class="text-xs text-gray-500">Revenue</p>
                                                         <p class="text-lg font-bold text-orange-600" id="pshMonth3RevenueGrowth">0%</p>
@@ -1895,6 +1901,9 @@
                                                         <p class="text-xs text-gray-500">PSH</p>
                                                         <p class="text-lg font-bold text-orange-600" id="pshMonth3PSHGrowth">0%</p>
                                                     </div>
+                                                </div>
+                                                <div class="text-center text-xs text-gray-500 border-t pt-2">
+                                                    Company Target: <span class="font-semibold text-blue-600" id="pshCompanyTarget3">0%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1965,20 +1974,11 @@
                                                     <th onclick="sortPSHTable('month3PSH')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-orange-100 cursor-pointer hover:bg-orange-200">
                                                         Month 3<br><span class="text-xs font-normal">PSH</span> <i class="fas fa-sort ml-1"></i>
                                                     </th>
-                                                    <th onclick="sortPSHTable('latestRevenue')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-100 cursor-pointer hover:bg-purple-200">
-                                                        Latest Month<br><span class="text-xs font-normal">Revenue</span> <i class="fas fa-sort ml-1"></i>
-                                                    </th>
-                                                    <th onclick="sortPSHTable('latestTrano')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-100 cursor-pointer hover:bg-purple-200">
-                                                        Latest Month<br><span class="text-xs font-normal">Trano</span> <i class="fas fa-sort ml-1"></i>
-                                                    </th>
-                                                    <th onclick="sortPSHTable('latestPSH')" class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider bg-purple-100 cursor-pointer hover:bg-purple-200">
-                                                        Latest Month<br><span class="text-xs font-normal">PSH</span> <i class="fas fa-sort ml-1"></i>
-                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody id="pshTableBody" class="bg-white divide-y divide-gray-200">
                                                 <tr>
-                                                    <td colspan="15" class="px-6 py-4 text-center text-gray-500">
+                                                    <td colspan="13" class="px-6 py-4 text-center text-gray-500">
                                                         Loading outlet data...
                                                     </td>
                                                 </tr>
@@ -13493,6 +13493,9 @@ Ready for deployment! 🚀
                     // Skip if no outlet code
                     if (!outletCode) continue;
                     
+                    // Parse company growth target (column G = index 6)
+                    const companyGrowthTarget = parseFloat(values[6]?.replace(/%/g, '')) || 0;
+                    
                     // Parse baseline data (columns H, I, J = indices 7, 8, 9)
                     const baselineRevenue = parseFloat(values[7]?.replace(/,/g, '')) || 0;
                     const baselineTrano = parseInt(values[8]?.replace(/,/g, '')) || 0;
@@ -13521,6 +13524,7 @@ Ready for deployment! 🚀
                     const record = {
                         outletCode,
                         outletName: outletName || outletCode,
+                        companyGrowthTarget: companyGrowthTarget,
                         baseline: {
                             revenue: baselineRevenue,
                             trano: baselineTrano,
@@ -13646,30 +13650,38 @@ Ready for deployment! 🚀
             const month3TranoGrowth = totalBaselineTrano > 0 ? ((totalMonth3Trano - totalBaselineTrano) / totalBaselineTrano * 100) : 0;
             const month3PSHGrowth = calculatePSHGrowthPercent(totalMonth3PSH, totalBaselinePSH);
             
+            // Get company growth target (from first outlet, as it should be same for all)
+            const companyTarget = pshProjectData[0]?.companyGrowthTarget || 0;
+            
             // Update Month 1 cards
             updateGrowthElement('pshMonth1RevenueGrowth', month1RevenueGrowth);
             updateGrowthElement('pshMonth1TranoGrowth', month1TranoGrowth);
             updateGrowthElement('pshMonth1PSHGrowth', month1PSHGrowth);
+            document.getElementById('pshCompanyTarget').textContent = `${companyTarget.toFixed(2)}%`;
             
             // Update Month 2 cards
             updateGrowthElement('pshMonth2RevenueGrowth', month2RevenueGrowth);
             updateGrowthElement('pshMonth2TranoGrowth', month2TranoGrowth);
             updateGrowthElement('pshMonth2PSHGrowth', month2PSHGrowth);
+            document.getElementById('pshCompanyTarget2').textContent = `${companyTarget.toFixed(2)}%`;
             
             // Update Month 3 cards
             updateGrowthElement('pshMonth3RevenueGrowth', month3RevenueGrowth);
             updateGrowthElement('pshMonth3TranoGrowth', month3TranoGrowth);
             updateGrowthElement('pshMonth3PSHGrowth', month3PSHGrowth);
+            document.getElementById('pshCompanyTarget3').textContent = `${companyTarget.toFixed(2)}%`;
             
-            console.log('📊 Updated PSH summary cards with monthly growth percentages');
+            console.log('📊 Updated PSH summary cards with monthly growth percentages and company target');
         }
         
         // Helper function to calculate PSH growth percentage
         function calculatePSHGrowthPercent(current, baseline) {
             if (baseline === 0) return 0;
             // For PSH (negative values), improvement is when value becomes less negative
-            // So growth = (baseline - current) / baseline * 100
-            return ((baseline - current) / Math.abs(baseline)) * 100;
+            // Example: baseline -40,000 → current -10,000 = improvement (positive growth)
+            // Formula: (current - baseline) / |baseline| * 100
+            // (-10,000 - (-40,000)) / 40,000 * 100 = 30,000 / 40,000 * 100 = +75%
+            return ((current - baseline) / Math.abs(baseline)) * 100;
         }
         
         // Helper function to update growth element with color coding
@@ -13687,7 +13699,7 @@ Ready for deployment! 🚀
             if (!pshFilteredData || pshFilteredData.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="16" class="px-6 py-4 text-center text-gray-500">
+                        <td colspan="13" class="px-6 py-4 text-center text-gray-500">
                             No outlet data available
                         </td>
                     </tr>
@@ -13797,32 +13809,6 @@ Ready for deployment! 🚀
                                 <div class="text-gray-700">${formatNumber(outlet.month3.psh)}</div>
                                 <div class="text-xs ${getPSHGrowthColorClass(outlet.month3.psh, outlet.baseline.psh)}">
                                     ${formatPSHGrowth(outlet.month3.psh, outlet.baseline.psh)}
-                                </div>
-                            ` : '<span class="text-gray-400">-</span>'}
-                        </td>
-                        
-                        <!-- Latest Month -->
-                        <td class="px-4 py-3 text-center bg-purple-50">
-                            ${outlet.latestMonth.revenue > 0 ? `
-                                <div class="font-semibold text-gray-800">${formatCurrencyShort(outlet.latestMonth.revenue)}</div>
-                                <div class="text-xs ${getGrowthColorClass(outlet.latestMonth.revenue, outlet.baseline.revenue)}">
-                                    ${formatGrowth(outlet.latestMonth.revenue, outlet.baseline.revenue)}
-                                </div>
-                            ` : '<span class="text-gray-400">-</span>'}
-                        </td>
-                        <td class="px-4 py-3 text-center bg-purple-50">
-                            ${outlet.latestMonth.trano > 0 ? `
-                                <div class="text-gray-700">${outlet.latestMonth.trano.toLocaleString()}</div>
-                                <div class="text-xs ${getGrowthColorClass(outlet.latestMonth.trano, outlet.baseline.trano)}">
-                                    ${formatGrowth(outlet.latestMonth.trano, outlet.baseline.trano)}
-                                </div>
-                            ` : '<span class="text-gray-400">-</span>'}
-                        </td>
-                        <td class="px-4 py-3 text-center bg-purple-50">
-                            ${outlet.latestMonth.psh !== 0 ? `
-                                <div class="text-gray-700">${formatNumber(outlet.latestMonth.psh)}</div>
-                                <div class="text-xs ${getPSHGrowthColorClass(outlet.latestMonth.psh, outlet.baseline.psh)}">
-                                    ${formatPSHGrowth(outlet.latestMonth.psh, outlet.baseline.psh)}
                                 </div>
                             ` : '<span class="text-gray-400">-</span>'}
                         </td>
