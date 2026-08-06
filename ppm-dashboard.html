@@ -1840,17 +1840,17 @@ const DATA = {
   // Active HC: 818 — re-extracted 2026-07-27 directly from "Active Alproean" sheet
   // 820 CSV rows → 818 valid employees (2 rows are blank/#N/A trailing rows)
   // Previous value 794 was an undercount — this is the correct source-of-truth
-  activeHC: 915,   // Jul-26 closing HC from Master DB (openingHC[5]=884 + hires 61 − resign 30 = 915)
+  activeHC: 818,   // live count from Active Alproean sheet (current reading date snapshot)
 
   // Opening/Closing HC per month (Feb–Jul 2026) — computed from join/resign dates
   // Opening = employees joined before month AND not yet resigned at month start
   // Closing = employees joined by month-end AND resigned after month-end (or still active)
   openingHC: [836, 865, 854, 857, 865, 884],   // Feb–Jul 2026 — computed from join/resign dates
-  closingHC: [865, 854, 857, 865, 884, 915],   // Jul closing = 915 (884 + 61 hires − 30 resigns)
+  closingHC: [865, 854, 857, 865, 884, 914],   // Jul closing = 914 — computed from Master DB (active at end of Jul)
 
   // Monthly new hires & resignations (Feb–Jul 2026) — REAL from Master Database (fetched 2026-07-24)
-  newHires: [51, 24, 42, 43, 57, 61],   // Feb=51, Mar=24, Apr=42, May=43, Jun=57, Jul=61 — REAL from Master DB resigned12M_monthly[6..11]
-  resigned: [22, 35, 39, 35, 37, 30],   // Feb=22, Mar=35, Apr=39, May=35, Jun=37, Jul=30 — REAL from Master DB newHires12M_monthly[6..11]
+  newHires: [51, 24, 42, 43, 57, 61],   // Feb=51, Mar=24, Apr=42, May=43, Jun=57, Jul=61 — REAL from Master DB newHires12M_monthly[6..11]
+  resigned: [22, 35, 39, 35, 37, 30],   // Feb=22, Mar=35, Apr=39, May=35, Jun=37, Jul=30 — REAL from Master DB resigned12M_monthly[6..11]
 
   // Rolling 12-month totals (Aug 2025 – Jul 2026) — REAL sum of resigned12M_monthly / newHires12M_monthly
   resigned12M: 355,   // sum([37,21,17,35,23,24,22,35,39,35,37,30])
@@ -2287,9 +2287,9 @@ const DATA = {
 
   // Monthly HC — avg active per month (opening+closing)/2, Jan–Jul 2026
   // Jan: ~818 (snapshot) | Feb–Jul: (openingHC+closingHC)/2
-  // openingHC Feb-Jul: [836,865,854,857,865,884] | closingHC: [865,854,857,865,884,915]
-  activeHCMonthly: [818, 851, 860, 856, 861, 875, 900],  // Jan-Jul 2026; Jul=(884+915)/2=899.5≈900
-  // Note: Jul-26 uses avg of opening 884 + closing 915 = 900 (consistent with DB recount)
+  // openingHC Feb-Jul: [836,865,854,857,865,884] | closingHC: [865,854,857,865,884,914]
+  activeHCMonthly: [818, 851, 860, 856, 861, 875, 818],  // Jan-Jul 2026; Jul uses live sheet snapshot (818)
+  // Note: activeHCMonthly[6] = activeHC snapshot — closing 914 is DB end-of-month active count
 
   // ── ROI PER-PERSON METRICS (new 2026-07-27) ──────────────────────────
   // Based on user instructions:
