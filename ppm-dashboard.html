@@ -638,8 +638,8 @@
   <div class="chart-card" style="margin-bottom:14px;">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
       <div>
-        <div class="chart-title">📉 12-Month People Flow Trend <span class="data-badge real">✅ Real Data</span> <span class="data-badge est" style="font-size:10px;">⚠️ Aug-Jan Est.</span></div>
-        <div class="chart-subtitle" id="ov-12m-trend-subtitle">Retention Rate % · New Hire · Resigned · Aug 2025–Jul 2026 rolling</div>
+        <div class="chart-title">📉 Trailing Rolling Retention Rate % <span class="data-badge real">✅ Jul-26 = 12M Real</span> <span class="data-badge est" style="font-size:10px;">⚠️ Aug-Jan resign Est.</span></div>
+        <div class="chart-subtitle" id="ov-12m-trend-subtitle">Trailing rolling window annualised · Jul-26 = true 12M rolling 57.1% · Aug 2025–Jul 2026</div>
       </div>
     </div>
     <canvas id="chart-ov-12m-trend" style="max-height:200px;"></canvas>
@@ -794,16 +794,16 @@
 
   <!-- ── NEW: 12-Month Trend — Retention Rate + Hire + Resign ────── -->
   <div class="chart-card" style="margin-bottom:14px;">
-    <div class="chart-title">📉 12-Month Retention & People Flow Trend <span class="data-badge real">✅ Real</span> <span class="data-badge est" style="font-size:10px;">⚠️ Aug–Jan Est.</span></div>
-    <div class="chart-subtitle">Retention Rate % (kiri) · New Hire &amp; Resigned count (kanan) · Aug 2025–Jul 2026</div>
+    <div class="chart-title">📉 Trailing Rolling Retention Rate % <span class="data-badge real">✅ Jul-26 = 12M Real</span> <span class="data-badge est" style="font-size:10px;">⚠️ Aug–Jan resign Est.</span></div>
+    <div class="chart-subtitle">Trailing rolling window annualised per month · Jul-26 = true 12M rolling (57.1%) · earlier months = growing window · Aug 2025–Jul 2026</div>
     <canvas id="chart-ret-12m-trend" style="max-height:220px;"></canvas>
   </div>
 
   <!-- ── NEW: Per-Position Retention Rate Line Chart ──────────────── -->
   <div class="chart-card" style="margin-bottom:14px;">
-    <div class="chart-title">👥 Retention Rate % by Position — 12 Months <span class="data-badge est">⚠️ Estimated distribution</span></div>
-    <div class="chart-subtitle">Monthly retention rate per key position · Health Advisor · Apoteker · AM/AAM · TTK · Branch Manager<br>
-      <span style="font-size:10px;color:#9ca3af;">⚠️ Per-position monthly split dihitung proporsional dari 12M total — untuk angka pasti, tambahkan kolom Posisi pada query DB</span>
+    <div class="chart-title">👥 Per-Position Trailing Rolling Retention % <span class="data-badge est">⚠️ Resign distribution Est.</span></div>
+    <div class="chart-subtitle">Trailing rolling window annualised per position · Jul-26 = 12M rolling · HA 63.8% · Apt 47.9% · TTK 51.7% · BM 87.5% · AM/AAM 55.2%<br>
+      <span style="font-size:10px;color:#9ca3af;">⚠️ Per-position monthly resign split proporsional dari 12M total — untuk angka exact, tambahkan kolom Posisi pada query DB</span>
     </div>
     <canvas id="chart-ret-pos-retention" style="max-height:240px;"></canvas>
     <div id="ret-pos-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11px;"></div>
@@ -1867,51 +1867,58 @@ const DATA = {
   // ── 12-MONTH TREND ARRAYS (Aug 2025 – Jul 2026) ────────────────────
   // Index: 0=Aug25, 1=Sep25, 2=Okt25, 3=Nov25, 4=Des25, 5=Jan26, 6=Feb26,
   //        7=Mar26,  8=Apr26,  9=Mei26, 10=Jun26, 11=Jul26
-  // Labels for charts:
+  // Aug25–Jan26 resign/hire: ⚠️ Estimated (back-calc from 12M totals)
+  // Feb26–Jul26 resign/hire: ✅ REAL from Master DB
   trend12MLabels: ['Agu-25','Sep-25','Okt-25','Nov-25','Des-25','Jan-26',
                    'Feb-26','Mar-26','Apr-26','Mei-26','Jun-26','Jul-26'],
-  // Aug25–Jan26: back-calculated from 12M totals minus known 6M (Feb-Jul).
-  //   12M resign=349, 6M(Feb-Jul)=191 → Aug25–Jan26=158 → spread as ⚠️ Estimated
-  //   12M hire=517,   6M(Feb-Jul)=269 → Aug25–Jan26=248 → spread as ⚠️ Estimated
-  // Feb–Jul 2026: REAL from Master DB. Combined array:
-  newHires12M_monthly: [38, 42, 44, 38, 40, 46, 51, 24, 42, 43, 54, 55],  // ⚠️ Estimated Aug25-Jan26, ✅ REAL Feb-Jul26
-  resigned12M_monthly: [22, 28, 26, 30, 27, 25, 22, 35, 39, 35, 35, 25],  // ⚠️ Estimated Aug25-Jan26, ✅ REAL Feb-Jul26
-  // Note: Aug25-Jan26 values estimated to sum to 248 hires / 158 resigns (consistent with 12M totals)
-  // Retention Rate % = (1 - resign/avgHC) * 100 rolling; approximated per month as:
-  //   RetRate% = 100 - (resigned / ((openingHC+closingHC)/2) * 100)
-  //   For Aug25–Jan26 (estimated), avg HC ~790–836 (gradual growth from ~790 to 836)
-  //   For Feb–Jul 2026: use openingHC/closingHC from existing arrays
-  // Computed retention rate per month:
-  retentionRate12M_monthly: [97.2, 96.5, 96.8, 96.3, 96.7, 97.0,  // Aug25–Jan26 ⚠️ Estimated
-                              97.4, 95.9, 95.4, 95.9, 96.0, 97.2], // Feb–Jul26 ✅ Computed from real HC
+  newHires12M_monthly: [38, 42, 44, 38, 40, 46, 51, 24, 42, 43, 54, 55],
+  resigned12M_monthly: [22, 28, 26, 30, 27, 25, 22, 35, 39, 35, 35, 25],
 
-  // ── PER-POSITION MONTHLY RESIGN (12M, Aug25–Jul26) ─────────────────
-  // Source: 12M totals from positions[] array distributed proportionally per month.
-  // Position weights (12M): HA=129, APT=116, TTK=29, SBM=7, AM=6, BM=5, CE=4 → total=296
-  // (Note: 296 identified by position; 53 unclassified = Other/Admin/etc.)
-  // Monthly distribution = total × monthly resign share; Aug25–Jan26 ⚠️ Estimated
-  // Feb–Jul26 ⚠️ Estimated (per-position monthly breakdown not available in current DB extract)
-  // To get REAL per-position monthly: add Position column cross-tab to Master DB query
+  // ── TRAILING ROLLING RETENTION (growing window, annualised) ────────
+  // Formula per point i (0-based):
+  //   windowMonths = i + 1
+  //   sumResign    = sum(resigned_all[0..i])
+  //   avgHC        = avg(openingHC_reconstructed[0..i])   ← back-stepped from openingFeb26=836
+  //   annlTurnover = sumResign / avgHC / windowMonths * 12 * 100
+  //   retention    = 100 − annlTurnover
+  // Point at Jul-26 (i=11) = true 12M rolling window (Aug25–Jul26) → 57.1% ✅
+  // Earlier points = growing partial window annualised (honest, clearly labelled)
+  // Aug25–Jan26 resign values are ⚠️ Estimated; Feb26–Jul26 are ✅ Real
+  retentionRateRolling: [64.0, 59.5, 59.4, 57.9, 58.0, 58.9,  // 1M–6M annualised (⚠️ Est resign)
+                          60.3, 59.1, 57.5, 56.8, 56.3, 57.1], // 7M–12M rolling (✅ Real resign)
+  // Window size label per point — shown in tooltip
+  rollingWindowLabels: ['1M ann.','2M ann.','3M ann.','4M ann.','5M ann.','6M ann.',
+                         '7M ann.','8M ann.','9M ann.','10M ann.','11M ann.','12M rolling'],
+  // Resign count used for each rolling point (cumulative sum)
+  rollingResignCumul:  [22, 50, 76, 106, 133, 158, 180, 215, 254, 289, 324, 349],
+  // Avg HC used for each rolling point
+  rollingAvgHC:        [733, 740, 748, 755, 761, 769, 778, 789, 796, 802, 808, 814],
+
+  // ── PER-POSITION TRAILING ROLLING RETENTION ────────────────────────
+  // Same growing-window annualised formula, applied per position.
+  // posHC used as fixed denominator (no per-position monthly HC available).
+  // All values ⚠️ Estimated distribution (per-position monthly resign not in DB extract).
   positionMonthlyResign: {
-    // Health Advisor — 12M total 129 (largest group, ~37% of classified)
-    'Health Advisor':   [8, 10, 10, 11, 10,  9,  8, 13, 14, 13, 13,  9],
-    // Apoteker — 12M total 116 (~33% of classified)
-    'Apoteker':         [8,  9,  9, 11,  9,  9,  8, 13, 14, 13, 12,  9],
-    // TTK — 12M total 29 (~8%)
-    'TTK':              [2,  2,  2,  3,  2,  2,  2,  3,  3,  3,  3,  2],
-    // Branch Manager — 12M total 5 (~1%)
-    'Branch Manager':   [0,  1,  1,  0,  1,  0,  0,  1,  0,  0,  1,  0],
-    // AM/AAM (Area Manager + Senior BM) — 12M total 13 (~4%)
-    'AM / AAM':         [1,  1,  1,  1,  1,  1,  1,  1,  2,  1,  1,  1],
+    'Health Advisor':  [8, 10, 10, 11, 10,  9,  8, 13, 14, 13, 13,  9],
+    'Apoteker':        [8,  9,  9, 11,  9,  9,  8, 13, 14, 13, 12,  9],
+    'TTK':             [2,  2,  2,  3,  2,  2,  2,  3,  3,  3,  3,  2],
+    'Branch Manager':  [0,  1,  1,  0,  1,  0,  0,  1,  0,  0,  1,  0],
+    'AM / AAM':        [1,  1,  1,  1,  1,  1,  1,  1,  2,  1,  1,  1],
   },
-  // Headcount per position (approximate, for retention rate calculation)
-  // HA~354, Apoteker~238, TTK~60, BM~40, AM/AAM~15+14=29
   positionHC: {
     'Health Advisor': 354,
     'Apoteker':       238,
     'TTK':             60,
     'Branch Manager':  40,
     'AM / AAM':        29,
+  },
+  // Pre-computed rolling retention per position (same formula as retentionRateRolling)
+  positionRollingRetention: {
+    'Health Advisor':  [72.9, 69.5, 68.4, 66.9, 66.8, 67.2, 68.0, 66.5, 65.0, 64.1, 63.3, 63.8],
+    'Apoteker':        [59.7, 57.1, 56.3, 53.4, 53.6, 53.8, 54.6, 52.1, 49.6, 48.1, 47.3, 47.9],
+    'TTK':             [60.0, 60.0, 60.0, 55.0, 56.0, 56.7, 57.1, 55.0, 53.3, 52.0, 50.9, 51.7],
+    'Branch Manager':  [100.0, 85.0, 80.0, 85.0, 82.0, 85.0, 87.1, 85.0, 86.7, 88.0, 86.4, 87.5],
+    'AM / AAM':        [58.6, 58.6, 58.6, 58.6, 58.6, 58.6, 58.6, 58.6, 54.0, 54.5, 54.9, 55.2],
   },
 
   // ── HQ vs OUTLET — REAL DATA ───────────────────────────────────────
@@ -2883,66 +2890,69 @@ function renderRetention() {
     </tr>`
   ).join('');
 
-  // ── CHART: 12-Month Retention & People Flow Trend ────────────────
+  // ── CHART: 12-Month Trailing Rolling Retention + Hire/Resign ─────
+  // Same formula as Overview CHART 6 — trailing window annualised per month.
+  // Jul-26 = true 12M rolling (57.1% ✅). Earlier = growing partial window.
   createChart('chart-ret-12m-trend', {
     type: 'bar',
     data: {
       labels: DATA.trend12MLabels,
       datasets: [
         {
-          type: 'bar',
-          label: '🆕 New Hire',
+          type: 'bar', label: '🆕 New Hire',
           data: DATA.newHires12M_monthly,
-          backgroundColor: '#3b82f655',
-          borderColor: '#3b82f6',
-          borderWidth: 1,
-          borderRadius: 4,
-          yAxisID: 'y2'
+          backgroundColor: '#3b82f633', borderColor: '#3b82f6',
+          borderWidth: 1, borderRadius: 4, yAxisID: 'y2'
         },
         {
-          type: 'bar',
-          label: '📤 Resigned',
+          type: 'bar', label: '📤 Resigned',
           data: DATA.resigned12M_monthly,
-          backgroundColor: '#ef444455',
-          borderColor: '#ef4444',
-          borderWidth: 1,
-          borderRadius: 4,
-          yAxisID: 'y2'
+          backgroundColor: '#ef444433', borderColor: '#ef4444',
+          borderWidth: 1, borderRadius: 4, yAxisID: 'y2'
         },
         {
-          type: 'line',
-          label: '🔄 Retention Rate %',
-          data: DATA.retentionRate12M_monthly,
-          borderColor: '#7c3aed',
-          backgroundColor: '#7c3aed15',
-          fill: true,
-          borderWidth: 2.5,
-          tension: 0.4,
-          pointRadius: function(ctx) { return ctx.dataIndex >= 6 ? 5 : 3; },
-          pointBackgroundColor: function(ctx) { return ctx.dataIndex >= 6 ? '#7c3aed' : '#a78bfa'; },
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          spanGaps: true,
-          yAxisID: 'y'
+          type: 'line', label: '🔄 Retention (trailing rolling)',
+          data: DATA.retentionRateRolling,
+          borderColor: '#7c3aed', backgroundColor: '#7c3aed12',
+          fill: true, borderWidth: 2.5, tension: 0.35,
+          pointRadius: function(ctx) {
+            return ctx.dataIndex === 11 ? 7 : (ctx.dataIndex >= 6 ? 4 : 3);
+          },
+          pointBackgroundColor: function(ctx) {
+            return ctx.dataIndex === 11 ? '#7c3aed' : (ctx.dataIndex >= 6 ? '#a855f7' : '#c4b5fd');
+          },
+          pointBorderColor: '#fff', pointBorderWidth: 2,
+          spanGaps: true, yAxisID: 'y'
         }
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
+      responsive: true, maintainAspectRatio: true,
       plugins: {
-        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
-        datalabels: { display: false },
+        legend: { position: 'top', labels: { boxWidth: 11, font: { size: 10 } } },
+        datalabels: {
+          display: function(ctx) { return ctx.dataset.type === 'line' && ctx.dataIndex === 11; },
+          color: '#7c3aed', font: { weight: 'bold', size: 12 },
+          formatter: function(v) { return v.toFixed(1) + '%'; },
+          anchor: 'end', align: 'top', offset: 4
+        },
         tooltip: {
           callbacks: {
+            label: function(ctx) {
+              if (ctx.dataset.type === 'line') {
+                const i = ctx.dataIndex;
+                const win = DATA.rollingWindowLabels[i];
+                const tag = i === 11 ? '✅ 12M rolling' : (i >= 6 ? '✅ real resign' : '⚠️ est. resign');
+                return 'Retention: ' + ctx.parsed.y.toFixed(1) + '%  [' + win + '] ' + tag;
+              }
+              return ctx.dataset.label + ': ' + ctx.parsed.y;
+            },
             afterBody: function(items) {
-              if (!items.length) return [];
               const i = items[0].dataIndex;
-              const isEst = i < 6;
               return [
-                isEst ? '⚠️ Aug–Jan: Estimated' : '✅ Feb–Jul: Real data',
-                `Hire: ${DATA.newHires12M_monthly[i]}  |  Resign: ${DATA.resigned12M_monthly[i]}`,
-                `Retention: ${DATA.retentionRate12M_monthly[i]}%`
+                'Resign (cumulative): ' + DATA.rollingResignCumul[i],
+                'Avg HC: ' + DATA.rollingAvgHC[i],
+                'Window: ' + DATA.rollingWindowLabels[i]
               ];
             }
           }
@@ -2950,18 +2960,15 @@ function renderRetention() {
       },
       scales: {
         y: {
-          position: 'left',
-          min: 93,
-          max: 100,
-          title: { display: true, text: 'Retention Rate %', font: { size: 10 }, color: '#7c3aed' },
-          ticks: { callback: function(v) { return v + '%'; }, color: '#7c3aed', font: { size: 10 } },
-          grid: { color: '#e2e8f0' }
+          position: 'left', min: 40, max: 100,
+          title: { display: true, text: 'Retention % (rolling)', font: { size: 10 }, color: '#7c3aed' },
+          ticks: { callback: function(v) { return v + '%'; }, font: { size: 10 }, stepSize: 10 },
+          grid: { color: '#e2e8f020' }
         },
         y2: {
-          position: 'right',
-          beginAtZero: true,
+          position: 'right', beginAtZero: true,
           title: { display: true, text: 'Headcount', font: { size: 10 }, color: '#64748b' },
-          ticks: { precision: 0, color: '#64748b', font: { size: 10 } },
+          ticks: { precision: 0, font: { size: 10 }, color: '#64748b' },
           grid: { drawOnChartArea: false }
         },
         x: {
@@ -2974,7 +2981,10 @@ function renderRetention() {
     }
   });
 
-  // ── CHART: Per-Position Retention Rate — 12 Months ───────────────
+  // ── CHART: Per-Position Trailing Rolling Retention ────────────────
+  // Same growing-window annualised formula applied per position.
+  // Data from DATA.positionRollingRetention (pre-computed).
+  // Jul-26 = 12M rolling per position ✅. Earlier = partial window annualised.
   const POS_COLORS = {
     'Health Advisor': '#ef4444',
     'Apoteker':       '#3b82f6',
@@ -2982,65 +2992,66 @@ function renderRetention() {
     'Branch Manager': '#10b981',
     'AM / AAM':       '#8b5cf6'
   };
-  const posRetDatasets = Object.entries(DATA.positionMonthlyResign).map(function(entry) {
-    const pos = entry[0];
-    const resignArr = entry[1];
-    const hc  = DATA.positionHC[pos];
-    const retArr = resignArr.map(function(r) {
-      return parseFloat((100 - (r / hc) * 100).toFixed(1));
-    });
+  const posRollingDatasets = Object.entries(DATA.positionRollingRetention).map(function(entry) {
+    const pos   = entry[0];
+    const retArr = entry[1];
+    const color = POS_COLORS[pos] || '#64748b';
     return {
       label: pos,
       data: retArr,
-      borderColor: POS_COLORS[pos] || '#64748b',
+      borderColor: color,
       backgroundColor: 'transparent',
-      borderWidth: 2,
-      tension: 0.4,
-      pointRadius: function(ctx) { return ctx.dataIndex >= 6 ? 4 : 2; },
-      pointBackgroundColor: POS_COLORS[pos] || '#64748b',
-      pointBorderColor: '#fff',
-      pointBorderWidth: 1.5,
+      borderWidth: 2.5,
+      tension: 0.35,
+      pointRadius: function(ctx) {
+        return ctx.dataIndex === 11 ? 6 : (ctx.dataIndex >= 6 ? 3 : 2);
+      },
+      pointBackgroundColor: function(ctx) {
+        return ctx.dataIndex >= 6 ? color : color + '66';
+      },
+      pointBorderColor: '#fff', pointBorderWidth: 1.5,
       spanGaps: true
     };
   });
 
   createChart('chart-ret-pos-retention', {
     type: 'line',
-    data: {
-      labels: DATA.trend12MLabels,
-      datasets: posRetDatasets
-    },
+    data: { labels: DATA.trend12MLabels, datasets: posRollingDatasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: true,
+      responsive: true, maintainAspectRatio: true,
       plugins: {
         legend: { display: false },
-        datalabels: { display: false },
+        datalabels: {
+          display: function(ctx) { return ctx.dataIndex === 11; },
+          color: function(ctx) { return POS_COLORS[ctx.dataset.label] || '#64748b'; },
+          font: { weight: 'bold', size: 10 },
+          formatter: function(v) { return v.toFixed(1) + '%'; },
+          anchor: 'end', align: 'right', offset: 4
+        },
         tooltip: {
           callbacks: {
             title: function(items) {
               const i = items[0].dataIndex;
-              return DATA.trend12MLabels[i] + (i < 6 ? ' (Est.)' : ' (Real)');
+              const win = DATA.rollingWindowLabels[i];
+              const tag = i >= 6 ? '✅' : '⚠️ est.';
+              return DATA.trend12MLabels[i] + '  [' + win + '] ' + tag;
             },
             label: function(ctx) {
-              const pos = ctx.dataset.label;
-              const hc  = DATA.positionHC[pos];
-              const resign = DATA.positionMonthlyResign[pos][ctx.dataIndex];
-              return `${pos}: ${ctx.parsed.y}%  (resign ${resign}/${hc})`;
+              const pos    = ctx.dataset.label;
+              const i      = ctx.dataIndex;
+              const resign = DATA.positionMonthlyResign[pos].slice(0, i + 1).reduce(function(a,b){return a+b;}, 0);
+              const hc     = DATA.positionHC[pos];
+              return pos + ': ' + ctx.parsed.y.toFixed(1) + '%  (cum.resign ' + resign + '/' + hc + ')';
             }
           }
         }
       },
       scales: {
         y: {
-          min: 93,
-          max: 100.5,
-          title: { display: true, text: 'Retention Rate %', font: { size: 10 } },
-          ticks: {
-            callback: function(v) { return v + '%'; },
-            font: { size: 10 }
-          },
-          grid: { color: '#e2e8f0' }
+          min: 40, max: 105,
+          title: { display: true, text: 'Retention % (trailing rolling)', font: { size: 10 } },
+          ticks: { callback: function(v) { return v + '%'; }, font: { size: 10 }, stepSize: 10 },
+          grid: { color: '#e2e8f020' }
         },
         x: {
           ticks: {
@@ -3052,22 +3063,23 @@ function renderRetention() {
     }
   });
 
-  // ── Per-Position Legend ───────────────────────────────────────────
+  // ── Per-Position Legend (trailing rolling, Jul-26 value) ─────────
   const legendEl = document.getElementById('ret-pos-legend');
   if (legendEl) {
     legendEl.innerHTML = Object.entries(POS_COLORS).map(function(entry) {
-      const pos = entry[0];
+      const pos   = entry[0];
       const color = entry[1];
-      const hc = DATA.positionHC[pos];
-      const lastResign = DATA.positionMonthlyResign[pos][11];
-      const lastRet = (100 - (lastResign / hc) * 100).toFixed(1);
-      return `<div style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:#f8fafc;border-radius:20px;border:1px solid #e2e8f0;">` +
-        `<span style="width:14px;height:3px;background:${color};border-radius:2px;display:inline-block;"></span>` +
-        `<span style="font-weight:600;color:#1e293b;">${pos}</span>` +
-        `<span style="color:#64748b;">HC: ${hc}</span>` +
-        `<span style="color:${color};font-weight:700;">${lastRet}%</span>` +
-        `<span style="color:#9ca3af;font-size:10px;">Jul</span>` +
-        `</div>`;
+      const hc    = DATA.positionHC[pos];
+      const ret12M = DATA.positionRollingRetention[pos][11];
+      const resign12M = DATA.positionMonthlyResign[pos].reduce(function(a,b){return a+b;}, 0);
+      return '<div style="display:flex;align-items:center;gap:5px;padding:4px 10px;' +
+             'background:#f8fafc;border-radius:20px;border:1px solid #e2e8f0;">' +
+        '<span style="width:20px;height:3px;background:' + color + ';border-radius:2px;display:inline-block;"></span>' +
+        '<span style="font-weight:600;color:#1e293b;">' + pos + '</span>' +
+        '<span style="color:#64748b;font-size:10px;">HC ' + hc + '</span>' +
+        '<span style="color:' + color + ';font-weight:700;">' + ret12M.toFixed(1) + '%</span>' +
+        '<span style="color:#9ca3af;font-size:10px;">12M · resign ' + resign12M + '</span>' +
+        '</div>';
     }).join('');
   }
 }
@@ -4531,12 +4543,15 @@ function renderOverview() {
     }
   });
 
-  // ── CHART 6: 12-Month People Flow Trend (Overview) ───────────────
-  // Shows Retention Rate % (line, left axis) + New Hire + Resigned (bars, right axis)
-  // Aug 2025–Jul 2026 full 12-month rolling
+  // ── CHART 6: 12-Month Rolling Retention Trend (Overview) ────────
+  // Retention line = trailing rolling window annualised per month:
+  //   point i = sum(resign[0..i]) / avgHC[0..i] / (i+1) * 12  → annualised turnover
+  //   retention = 100 - annualised turnover
+  // Jul-26 point = true 12M rolling (Aug25–Jul26) = 57.1% ✅
+  // Earlier points = growing partial window (honest, clearly labelled in tooltip)
   set('ov-12m-trend-subtitle',
-    `Retention Rate % (kiri) · Hire &amp; Resign count (kanan) · Aug 2025–Jul 2026 · ` +
-    `⚠️ Aug–Jan estimasi dari 12M totals`);
+    `Trailing rolling retention % · Hire &amp; Resign count · ` +
+    `Aug-25→Jul-26 · Jul-26 = 12M rolling 57.1% ✅ · earlier = partial window annualised`);
 
   createChart('chart-ov-12m-trend', {
     type: 'bar',
@@ -4544,22 +4559,24 @@ function renderOverview() {
       labels: DATA.trend12MLabels,
       datasets: [
         {
-          type: 'bar',  label: '🆕 New Hire',
+          type: 'bar', label: '🆕 New Hire',
           data: DATA.newHires12M_monthly,
-          backgroundColor: '#3b82f655', borderRadius: 4, yAxisID: 'y2'
+          backgroundColor: '#3b82f633', borderColor: '#3b82f6',
+          borderWidth: 1, borderRadius: 4, yAxisID: 'y2'
         },
         {
-          type: 'bar',  label: '📤 Resigned',
+          type: 'bar', label: '📤 Resigned',
           data: DATA.resigned12M_monthly,
-          backgroundColor: '#ef444455', borderRadius: 4, yAxisID: 'y2'
+          backgroundColor: '#ef444433', borderColor: '#ef4444',
+          borderWidth: 1, borderRadius: 4, yAxisID: 'y2'
         },
         {
-          type: 'line', label: '🔄 Retention Rate %',
-          data: DATA.retentionRate12M_monthly,
-          borderColor: '#7c3aed', backgroundColor: '#7c3aed15',
-          fill: true, borderWidth: 2.5, tension: 0.4,
-          pointRadius: ctx => ctx.dataIndex >= 6 ? 5 : 3,
-          pointBackgroundColor: ctx => ctx.dataIndex >= 6 ? '#7c3aed' : '#a78bfa',
+          type: 'line', label: '🔄 Retention (trailing rolling)',
+          data: DATA.retentionRateRolling,
+          borderColor: '#7c3aed', backgroundColor: '#7c3aed12',
+          fill: true, borderWidth: 2.5, tension: 0.35,
+          pointRadius: ctx => ctx.dataIndex === 11 ? 7 : (ctx.dataIndex >= 6 ? 4 : 3),
+          pointBackgroundColor: ctx => ctx.dataIndex === 11 ? '#7c3aed' : (ctx.dataIndex >= 6 ? '#a855f7' : '#c4b5fd'),
           pointBorderColor: '#fff', pointBorderWidth: 2,
           spanGaps: true, yAxisID: 'y'
         }
@@ -4569,17 +4586,30 @@ function renderOverview() {
       responsive: true, maintainAspectRatio: true,
       plugins: {
         legend: { position: 'top', labels: { boxWidth: 11, font: { size: 10 } } },
-        datalabels: { display: false },
+        datalabels: {
+          display: ctx => ctx.dataset.type === 'line' && ctx.dataIndex === 11,
+          color: '#7c3aed', font: { weight: 'bold', size: 11 },
+          formatter: v => v.toFixed(1) + '%',
+          anchor: 'end', align: 'top', offset: 4
+        },
         tooltip: {
           callbacks: {
+            label: (ctx) => {
+              if (ctx.dataset.type === 'line') {
+                const i = ctx.dataIndex;
+                const win = DATA.rollingWindowLabels[i];
+                const isFullYear = i === 11;
+                const tag = isFullYear ? '✅ 12M rolling' : (i >= 6 ? '✅ real resign' : '⚠️ est. resign');
+                return `Retention: ${ctx.parsed.y.toFixed(1)}%  [${win}] ${tag}`;
+              }
+              return `${ctx.dataset.label}: ${ctx.parsed.y}`;
+            },
             afterBody: (items) => {
-              const mi = items[0].dataIndex;
-              const h  = DATA.newHires12M_monthly[mi];
-              const r  = DATA.resigned12M_monthly[mi];
-              const isEst = mi < 6;
+              const i = items[0].dataIndex;
               return [
-                `Net Flow: ${h > r ? '+' : ''}${h - r}`,
-                isEst ? '⚠️ Aug–Jan: estimasi' : '✅ Feb–Jul: data real'
+                `Resign used: ${DATA.rollingResignCumul[i]} cumulative`,
+                `Avg HC used: ${DATA.rollingAvgHC[i]}`,
+                `Window: ${DATA.rollingWindowLabels[i]}`
               ];
             }
           }
@@ -4588,20 +4618,21 @@ function renderOverview() {
       scales: {
         y: {
           position: 'left',
-          min: 93, max: 100,
-          ticks: { callback: v => v + '%', font: { size: 10 } },
-          title: { display: true, text: 'Retention Rate %', font: { size: 10 } }
+          min: 40, max: 100,
+          ticks: { callback: v => v + '%', font: { size: 10 }, stepSize: 10 },
+          title: { display: true, text: 'Retention % (rolling)', font: { size: 10 }, color: '#7c3aed' },
+          grid: { color: '#e2e8f020' }
         },
         y2: {
           position: 'right',
           beginAtZero: true,
-          title: { display: true, text: 'Headcount', font: { size: 10 } },
+          title: { display: true, text: 'Headcount', font: { size: 10 }, color: '#64748b' },
           grid: { drawOnChartArea: false },
-          ticks: { font: { size: 10 } }
+          ticks: { font: { size: 10 }, color: '#64748b' }
         },
         x: {
           ticks: {
-            font: { size: 10 },
+            font: ctx => ({ size: 10, weight: ctx.index >= 6 ? '600' : '400' }),
             color: ctx => ctx.index >= 6 ? '#1e293b' : '#94a3b8'
           }
         }
