@@ -4219,7 +4219,13 @@ function renderOverview() {
   }
 
   set('ov-onboarded', periodOnboarded);
-  set('ov-mp-ratio',  ovLatestRatio.toFixed(2) + '%');  // Jun 2026 actual
+  // Period-aware MP Ratio: avg over selected period (same roiPeriodIdx logic as renderROI)
+  const ovRoiPeriodIdx   = idx.map(i => i + 1);  // period[0=Feb]→roiIdx[1], ..., period[5=Jul]→roiIdx[6]
+  const ovPeriodRatioVals = ovRoiPeriodIdx.map(i => roiRatArr[i]).filter(v => v != null);
+  const ovPeriodAvgRatio  = ovPeriodRatioVals.length > 0
+    ? ovPeriodRatioVals.reduce((a,b)=>a+b,0) / ovPeriodRatioVals.length
+    : ovLatestRatio;
+  set('ov-mp-ratio',  ovPeriodAvgRatio.toFixed(2) + '%');  // period-aware avg
 
   const nbRateEl = document.getElementById('ov-nb-rate');
   if (nbRateEl) {
@@ -4377,7 +4383,7 @@ function renderOverview() {
       scales: {
         y:  { position: 'left',  beginAtZero: true, title: { display: true, text: 'Headcount', font: { size: 10 } } },
         y2: { position: 'right', title: { display: true, text: '% Ratio', font: { size: 10 } },
-              ticks: { callback: v => v + '%' }, grid: { drawOnChartArea: false }, min: 20, max: 35, suggestedMin: 20 }
+              ticks: { callback: v => v + '%' }, grid: { drawOnChartArea: false }, suggestedMin: 14, suggestedMax: 28 }
       }
     }
   });
