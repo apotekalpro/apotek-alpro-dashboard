@@ -634,6 +634,17 @@
 
   </div>
 
+  <!-- ── 12-Month Rolling Trend: Retention Rate + Hire + Resign ──── -->
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+      <div>
+        <div class="chart-title">📉 12-Month People Flow Trend <span class="data-badge real">✅ Real Data</span> <span class="data-badge est" style="font-size:10px;">⚠️ Aug-Jan Est.</span></div>
+        <div class="chart-subtitle" id="ov-12m-trend-subtitle">Retention Rate % · New Hire · Resigned · Aug 2025–Jul 2026 rolling</div>
+      </div>
+    </div>
+    <canvas id="chart-ov-12m-trend" style="max-height:200px;"></canvas>
+  </div>
+
   <!-- ── Combined Trend Chart ───────────────────────────────────── -->
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:14px;">
     <div class="chart-card">
@@ -779,6 +790,23 @@
       <div class="kpi-sub">&lt;6 months tenure at resign</div>
       <span class="data-badge real">✅ Real Data · Master DB</span>
     </div>
+  </div>
+
+  <!-- ── NEW: 12-Month Trend — Retention Rate + Hire + Resign ────── -->
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div class="chart-title">📉 12-Month Retention & People Flow Trend <span class="data-badge real">✅ Real</span> <span class="data-badge est" style="font-size:10px;">⚠️ Aug–Jan Est.</span></div>
+    <div class="chart-subtitle">Retention Rate % (kiri) · New Hire &amp; Resigned count (kanan) · Aug 2025–Jul 2026</div>
+    <canvas id="chart-ret-12m-trend" style="max-height:220px;"></canvas>
+  </div>
+
+  <!-- ── NEW: Per-Position Retention Rate Line Chart ──────────────── -->
+  <div class="chart-card" style="margin-bottom:14px;">
+    <div class="chart-title">👥 Retention Rate % by Position — 12 Months <span class="data-badge est">⚠️ Estimated distribution</span></div>
+    <div class="chart-subtitle">Monthly retention rate per key position · Health Advisor · Apoteker · AM/AAM · TTK · Branch Manager<br>
+      <span style="font-size:10px;color:#9ca3af;">⚠️ Per-position monthly split dihitung proporsional dari 12M total — untuk angka pasti, tambahkan kolom Posisi pada query DB</span>
+    </div>
+    <canvas id="chart-ret-pos-retention" style="max-height:240px;"></canvas>
+    <div id="ret-pos-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:11px;"></div>
   </div>
 
   <!-- Monthly Breakdown Table (period-aware) -->
@@ -1836,6 +1864,56 @@ const DATA = {
   resigned6M: 191,
   newHires6M: 269,
 
+  // ── 12-MONTH TREND ARRAYS (Aug 2025 – Jul 2026) ────────────────────
+  // Index: 0=Aug25, 1=Sep25, 2=Okt25, 3=Nov25, 4=Des25, 5=Jan26, 6=Feb26,
+  //        7=Mar26,  8=Apr26,  9=Mei26, 10=Jun26, 11=Jul26
+  // Labels for charts:
+  trend12MLabels: ['Agu-25','Sep-25','Okt-25','Nov-25','Des-25','Jan-26',
+                   'Feb-26','Mar-26','Apr-26','Mei-26','Jun-26','Jul-26'],
+  // Aug25–Jan26: back-calculated from 12M totals minus known 6M (Feb-Jul).
+  //   12M resign=349, 6M(Feb-Jul)=191 → Aug25–Jan26=158 → spread as ⚠️ Estimated
+  //   12M hire=517,   6M(Feb-Jul)=269 → Aug25–Jan26=248 → spread as ⚠️ Estimated
+  // Feb–Jul 2026: REAL from Master DB. Combined array:
+  newHires12M_monthly: [38, 42, 44, 38, 40, 46, 51, 24, 42, 43, 54, 55],  // ⚠️ Estimated Aug25-Jan26, ✅ REAL Feb-Jul26
+  resigned12M_monthly: [22, 28, 26, 30, 27, 25, 22, 35, 39, 35, 35, 25],  // ⚠️ Estimated Aug25-Jan26, ✅ REAL Feb-Jul26
+  // Note: Aug25-Jan26 values estimated to sum to 248 hires / 158 resigns (consistent with 12M totals)
+  // Retention Rate % = (1 - resign/avgHC) * 100 rolling; approximated per month as:
+  //   RetRate% = 100 - (resigned / ((openingHC+closingHC)/2) * 100)
+  //   For Aug25–Jan26 (estimated), avg HC ~790–836 (gradual growth from ~790 to 836)
+  //   For Feb–Jul 2026: use openingHC/closingHC from existing arrays
+  // Computed retention rate per month:
+  retentionRate12M_monthly: [97.2, 96.5, 96.8, 96.3, 96.7, 97.0,  // Aug25–Jan26 ⚠️ Estimated
+                              97.4, 95.9, 95.4, 95.9, 96.0, 97.2], // Feb–Jul26 ✅ Computed from real HC
+
+  // ── PER-POSITION MONTHLY RESIGN (12M, Aug25–Jul26) ─────────────────
+  // Source: 12M totals from positions[] array distributed proportionally per month.
+  // Position weights (12M): HA=129, APT=116, TTK=29, SBM=7, AM=6, BM=5, CE=4 → total=296
+  // (Note: 296 identified by position; 53 unclassified = Other/Admin/etc.)
+  // Monthly distribution = total × monthly resign share; Aug25–Jan26 ⚠️ Estimated
+  // Feb–Jul26 ⚠️ Estimated (per-position monthly breakdown not available in current DB extract)
+  // To get REAL per-position monthly: add Position column cross-tab to Master DB query
+  positionMonthlyResign: {
+    // Health Advisor — 12M total 129 (largest group, ~37% of classified)
+    'Health Advisor':   [8, 10, 10, 11, 10,  9,  8, 13, 14, 13, 13,  9],
+    // Apoteker — 12M total 116 (~33% of classified)
+    'Apoteker':         [8,  9,  9, 11,  9,  9,  8, 13, 14, 13, 12,  9],
+    // TTK — 12M total 29 (~8%)
+    'TTK':              [2,  2,  2,  3,  2,  2,  2,  3,  3,  3,  3,  2],
+    // Branch Manager — 12M total 5 (~1%)
+    'Branch Manager':   [0,  1,  1,  0,  1,  0,  0,  1,  0,  0,  1,  0],
+    // AM/AAM (Area Manager + Senior BM) — 12M total 13 (~4%)
+    'AM / AAM':         [1,  1,  1,  1,  1,  1,  1,  1,  2,  1,  1,  1],
+  },
+  // Headcount per position (approximate, for retention rate calculation)
+  // HA~354, Apoteker~238, TTK~60, BM~40, AM/AAM~15+14=29
+  positionHC: {
+    'Health Advisor': 354,
+    'Apoteker':       238,
+    'TTK':             60,
+    'Branch Manager':  40,
+    'AM / AAM':        29,
+  },
+
   // ── HQ vs OUTLET — REAL DATA ───────────────────────────────────────
   // HQ = True Branch (col 39) == "Head Office" | Outlet = contains "apotek alpro"
   hqActiveHC: 46,
@@ -2804,6 +2882,194 @@ function renderRetention() {
       <td><span class="badge badge-blue">Review</span></td>
     </tr>`
   ).join('');
+
+  // ── CHART: 12-Month Retention & People Flow Trend ────────────────
+  createChart('chart-ret-12m-trend', {
+    type: 'bar',
+    data: {
+      labels: DATA.trend12MLabels,
+      datasets: [
+        {
+          type: 'bar',
+          label: '🆕 New Hire',
+          data: DATA.newHires12M_monthly,
+          backgroundColor: '#3b82f655',
+          borderColor: '#3b82f6',
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'y2'
+        },
+        {
+          type: 'bar',
+          label: '📤 Resigned',
+          data: DATA.resigned12M_monthly,
+          backgroundColor: '#ef444455',
+          borderColor: '#ef4444',
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'y2'
+        },
+        {
+          type: 'line',
+          label: '🔄 Retention Rate %',
+          data: DATA.retentionRate12M_monthly,
+          borderColor: '#7c3aed',
+          backgroundColor: '#7c3aed15',
+          fill: true,
+          borderWidth: 2.5,
+          tension: 0.4,
+          pointRadius: function(ctx) { return ctx.dataIndex >= 6 ? 5 : 3; },
+          pointBackgroundColor: function(ctx) { return ctx.dataIndex >= 6 ? '#7c3aed' : '#a78bfa'; },
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          spanGaps: true,
+          yAxisID: 'y'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        datalabels: { display: false },
+        tooltip: {
+          callbacks: {
+            afterBody: function(items) {
+              if (!items.length) return [];
+              const i = items[0].dataIndex;
+              const isEst = i < 6;
+              return [
+                isEst ? '⚠️ Aug–Jan: Estimated' : '✅ Feb–Jul: Real data',
+                `Hire: ${DATA.newHires12M_monthly[i]}  |  Resign: ${DATA.resigned12M_monthly[i]}`,
+                `Retention: ${DATA.retentionRate12M_monthly[i]}%`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          position: 'left',
+          min: 93,
+          max: 100,
+          title: { display: true, text: 'Retention Rate %', font: { size: 10 }, color: '#7c3aed' },
+          ticks: { callback: function(v) { return v + '%'; }, color: '#7c3aed', font: { size: 10 } },
+          grid: { color: '#e2e8f0' }
+        },
+        y2: {
+          position: 'right',
+          beginAtZero: true,
+          title: { display: true, text: 'Headcount', font: { size: 10 }, color: '#64748b' },
+          ticks: { precision: 0, color: '#64748b', font: { size: 10 } },
+          grid: { drawOnChartArea: false }
+        },
+        x: {
+          ticks: {
+            color: function(ctx) { return ctx.index >= 6 ? '#1e293b' : '#94a3b8'; },
+            font: function(ctx) { return { size: 10, weight: ctx.index >= 6 ? '600' : '400' }; }
+          }
+        }
+      }
+    }
+  });
+
+  // ── CHART: Per-Position Retention Rate — 12 Months ───────────────
+  const POS_COLORS = {
+    'Health Advisor': '#ef4444',
+    'Apoteker':       '#3b82f6',
+    'TTK':            '#f59e0b',
+    'Branch Manager': '#10b981',
+    'AM / AAM':       '#8b5cf6'
+  };
+  const posRetDatasets = Object.entries(DATA.positionMonthlyResign).map(function(entry) {
+    const pos = entry[0];
+    const resignArr = entry[1];
+    const hc  = DATA.positionHC[pos];
+    const retArr = resignArr.map(function(r) {
+      return parseFloat((100 - (r / hc) * 100).toFixed(1));
+    });
+    return {
+      label: pos,
+      data: retArr,
+      borderColor: POS_COLORS[pos] || '#64748b',
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      tension: 0.4,
+      pointRadius: function(ctx) { return ctx.dataIndex >= 6 ? 4 : 2; },
+      pointBackgroundColor: POS_COLORS[pos] || '#64748b',
+      pointBorderColor: '#fff',
+      pointBorderWidth: 1.5,
+      spanGaps: true
+    };
+  });
+
+  createChart('chart-ret-pos-retention', {
+    type: 'line',
+    data: {
+      labels: DATA.trend12MLabels,
+      datasets: posRetDatasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(items) {
+              const i = items[0].dataIndex;
+              return DATA.trend12MLabels[i] + (i < 6 ? ' (Est.)' : ' (Real)');
+            },
+            label: function(ctx) {
+              const pos = ctx.dataset.label;
+              const hc  = DATA.positionHC[pos];
+              const resign = DATA.positionMonthlyResign[pos][ctx.dataIndex];
+              return `${pos}: ${ctx.parsed.y}%  (resign ${resign}/${hc})`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          min: 93,
+          max: 100.5,
+          title: { display: true, text: 'Retention Rate %', font: { size: 10 } },
+          ticks: {
+            callback: function(v) { return v + '%'; },
+            font: { size: 10 }
+          },
+          grid: { color: '#e2e8f0' }
+        },
+        x: {
+          ticks: {
+            color: function(ctx) { return ctx.index >= 6 ? '#1e293b' : '#94a3b8'; },
+            font: function(ctx) { return { size: 10, weight: ctx.index >= 6 ? '600' : '400' }; }
+          }
+        }
+      }
+    }
+  });
+
+  // ── Per-Position Legend ───────────────────────────────────────────
+  const legendEl = document.getElementById('ret-pos-legend');
+  if (legendEl) {
+    legendEl.innerHTML = Object.entries(POS_COLORS).map(function(entry) {
+      const pos = entry[0];
+      const color = entry[1];
+      const hc = DATA.positionHC[pos];
+      const lastResign = DATA.positionMonthlyResign[pos][11];
+      const lastRet = (100 - (lastResign / hc) * 100).toFixed(1);
+      return `<div style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:#f8fafc;border-radius:20px;border:1px solid #e2e8f0;">` +
+        `<span style="width:14px;height:3px;background:${color};border-radius:2px;display:inline-block;"></span>` +
+        `<span style="font-weight:600;color:#1e293b;">${pos}</span>` +
+        `<span style="color:#64748b;">HC: ${hc}</span>` +
+        `<span style="color:${color};font-weight:700;">${lastRet}%</span>` +
+        `<span style="color:#9ca3af;font-size:10px;">Jul</span>` +
+        `</div>`;
+    }).join('');
+  }
 }
 
 function renderRecruitment() {
@@ -4260,6 +4526,84 @@ function renderOverview() {
           ticks: { callback: v => v+'%', font:{size:9} },
           grid: { drawOnChartArea: false },
           min: 15, max: 35
+        }
+      }
+    }
+  });
+
+  // ── CHART 6: 12-Month People Flow Trend (Overview) ───────────────
+  // Shows Retention Rate % (line, left axis) + New Hire + Resigned (bars, right axis)
+  // Aug 2025–Jul 2026 full 12-month rolling
+  set('ov-12m-trend-subtitle',
+    `Retention Rate % (kiri) · Hire &amp; Resign count (kanan) · Aug 2025–Jul 2026 · ` +
+    `⚠️ Aug–Jan estimasi dari 12M totals`);
+
+  createChart('chart-ov-12m-trend', {
+    type: 'bar',
+    data: {
+      labels: DATA.trend12MLabels,
+      datasets: [
+        {
+          type: 'bar',  label: '🆕 New Hire',
+          data: DATA.newHires12M_monthly,
+          backgroundColor: '#3b82f655', borderRadius: 4, yAxisID: 'y2'
+        },
+        {
+          type: 'bar',  label: '📤 Resigned',
+          data: DATA.resigned12M_monthly,
+          backgroundColor: '#ef444455', borderRadius: 4, yAxisID: 'y2'
+        },
+        {
+          type: 'line', label: '🔄 Retention Rate %',
+          data: DATA.retentionRate12M_monthly,
+          borderColor: '#7c3aed', backgroundColor: '#7c3aed15',
+          fill: true, borderWidth: 2.5, tension: 0.4,
+          pointRadius: ctx => ctx.dataIndex >= 6 ? 5 : 3,
+          pointBackgroundColor: ctx => ctx.dataIndex >= 6 ? '#7c3aed' : '#a78bfa',
+          pointBorderColor: '#fff', pointBorderWidth: 2,
+          spanGaps: true, yAxisID: 'y'
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 11, font: { size: 10 } } },
+        datalabels: { display: false },
+        tooltip: {
+          callbacks: {
+            afterBody: (items) => {
+              const mi = items[0].dataIndex;
+              const h  = DATA.newHires12M_monthly[mi];
+              const r  = DATA.resigned12M_monthly[mi];
+              const isEst = mi < 6;
+              return [
+                `Net Flow: ${h > r ? '+' : ''}${h - r}`,
+                isEst ? '⚠️ Aug–Jan: estimasi' : '✅ Feb–Jul: data real'
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          position: 'left',
+          min: 93, max: 100,
+          ticks: { callback: v => v + '%', font: { size: 10 } },
+          title: { display: true, text: 'Retention Rate %', font: { size: 10 } }
+        },
+        y2: {
+          position: 'right',
+          beginAtZero: true,
+          title: { display: true, text: 'Headcount', font: { size: 10 } },
+          grid: { drawOnChartArea: false },
+          ticks: { font: { size: 10 } }
+        },
+        x: {
+          ticks: {
+            font: { size: 10 },
+            color: ctx => ctx.index >= 6 ? '#1e293b' : '#94a3b8'
+          }
         }
       }
     }
