@@ -12443,6 +12443,7 @@
                     }
                     
                     const csvData = await response.text();
+                    console.log('📄 AM Daily Progress CSV preview:', csvData.substring(0, 500));
                     const lines = csvData.split('\n');
                     
                     // Parse outlet types (skip first 2 header rows)
@@ -12451,17 +12452,44 @@
                         if (!line) continue;
                         
                         const values = this.parseCSVLine(line);
-                        if (values.length >= 15) {
-                            const outlet = values[0]?.trim(); // Col A: Outlet code
-                            const outletType = values[14]?.trim(); // Col O (14): TYPE (0-indexed, so column O is index 14)
-                            
-                            if (outlet && outletType) {
-                                // Add type to existing targetData or create new entry
-                                if (!this.targetData[outlet]) {
-                                    this.targetData[outlet] = {};
+                        
+                        // Debug first row to see column structure
+                        if (i === 2) {
+                            console.log('📊 First data row columns:', values.length);
+                            console.log('📊 Column A (0):', values[0]);
+                            console.log('📊 Column B (1):', values[1]);
+                            console.log('📊 Column N (13):', values[13]);
+                            console.log('📊 Column O (14):', values[14]);
+                        }
+                        
+                        const outletCode = values[0]?.trim(); // Col A: Outlet code
+                        const outletName = values[1]?.trim(); // Col B: Outlet name
+                        const outletType = values[13]?.trim(); // Col N (13): TYPE
+                        
+                        if ((outletCode || outletName) && outletType) {
+                            // Try to match by outlet code first
+                            if (outletCode && this.targetData[outletCode]) {
+                                this.targetData[outletCode].outletType = outletType;
+                                console.log(`🏪 Loaded type for ${outletCode} (by code): ${outletType}`);
+                            }
+                            // Fallback: try to find by outlet name
+                            else if (outletName) {
+                                // Search in targetData for matching outlet name
+                                for (const [key, data] of Object.entries(this.targetData)) {
+                                    if (data.storeName && data.storeName.toLowerCase() === outletName.toLowerCase()) {
+                                        data.outletType = outletType;
+                                        console.log(`🏪 Loaded type for ${key} (by name match: ${outletName}): ${outletType}`);
+                                        break;
+                                    }
                                 }
-                                this.targetData[outlet].outletType = outletType;
-                                console.log(`🏪 Loaded type for ${outlet}: ${outletType}`);
+                            }
+                            // If not in targetData yet, store with outlet code as key
+                            else if (outletCode) {
+                                if (!this.targetData[outletCode]) {
+                                    this.targetData[outletCode] = {};
+                                }
+                                this.targetData[outletCode].outletType = outletType;
+                                console.log(`🏪 Created new entry for ${outletCode}: ${outletType}`);
                             }
                         }
                     }
