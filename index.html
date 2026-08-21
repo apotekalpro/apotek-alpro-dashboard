@@ -12407,7 +12407,7 @@
                                 this.targetData[shortCode] = {
                                     storeName: storeName || '',
                                     newAM: newAM || '',
-                                    mt: mt || 'N/A',
+                                    mt: mt || '',
                                     l1Target: l1Target,
                                     l2Target: l2Target,
                                     l3Target: l3Target
@@ -12453,7 +12453,7 @@
                         const values = this.parseCSVLine(line);
                         if (values.length >= 15) {
                             const outlet = values[0]?.trim(); // Col A: Outlet code
-                            const outletType = values[13]?.trim(); // Col N (13): TYPE
+                            const outletType = values[14]?.trim(); // Col O (14): TYPE (0-indexed, so column O is index 14)
                             
                             if (outlet && outletType) {
                                 // Add type to existing targetData or create new entry
@@ -12571,8 +12571,8 @@
                         // Get L1/L2/L3 targets, MT, type, and new AM from target data
                         const targetInfo = this.targetData[outlet] || {};
                         const newAM = targetInfo.newAM || amName; // Use new AM if available, fallback to old AM
-                        const mt = targetInfo.mt || 'N/A';
-                        const outletType = targetInfo.outletType || 'N/A';
+                        const mt = targetInfo.mt || '';
+                        const outletType = targetInfo.outletType || '';
                         const l1Target = targetInfo.l1Target || 0;
                         const l2Target = targetInfo.l2Target || 0;
                         const l3Target = targetInfo.l3Target || monthlyTarget; // Use L3 as main target, fallback to old target
@@ -12959,16 +12959,11 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${am.outletName}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                ${am.outletType}
-                            </span>
+                            ${am.outletType ? '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">' + am.outletType + '</span>' : '<span class="text-gray-400">-</span>'}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">${am.amName}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            <div class="flex items-center">
-                                <i class="fas fa-user-graduate mr-1 text-indigo-500"></i>
-                                ${am.mt}
-                            </div>
+                            ${am.mt ? '<div class="flex items-center"><i class="fas fa-user-graduate mr-1 text-indigo-500"></i>' + am.mt + '</div>' : '<span class="text-gray-400">-</span>'}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${am.monthlyTargetDisplay}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${am.dailySalesUpToDateDisplay}</td>
@@ -13041,19 +13036,9 @@
                                 <span class="text-sm font-medium">${am.outletName}</span>
                             </div>
                             
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Type:</span>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                    ${am.outletType}
-                                </span>
-                            </div>
+                            ${am.outletType ? '<div class="flex justify-between items-center"><span class="text-sm text-gray-600">Type:</span><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">' + am.outletType + '</span></div>' : ''}
                             
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">MT:</span>
-                                <span class="text-sm font-medium text-indigo-600">
-                                    <i class="fas fa-user-graduate mr-1"></i>${am.mt}
-                                </span>
-                            </div>
+                            ${am.mt ? '<div class="flex justify-between items-center"><span class="text-sm text-gray-600">MT:</span><span class="text-sm font-medium text-indigo-600"><i class="fas fa-user-graduate mr-1"></i>' + am.mt + '</span></div>' : ''}
                             
                             <div class="flex justify-between items-center">
                                 <span class="text-sm text-gray-600">Monthly Target:</span>
@@ -13114,8 +13099,8 @@
                     const matchesSearch = am.amName.toLowerCase().includes(searchTerm) ||
                                         am.outlet.toLowerCase().includes(searchTerm) ||
                                         am.outletName.toLowerCase().includes(searchTerm) ||
-                                        am.mt.toLowerCase().includes(searchTerm) ||
-                                        am.outletType.toLowerCase().includes(searchTerm);
+                                        (am.mt && am.mt.toLowerCase().includes(searchTerm)) ||
+                                        (am.outletType && am.outletType.toLowerCase().includes(searchTerm));
                     
                     // Type filter
                     const matchesType = !typeFilter || am.outletType === typeFilter;
@@ -13133,23 +13118,19 @@
             // Populate filter dropdowns with unique values
             populateFilters() {
                 // Get unique outlet types
-                const types = [...new Set(this.performanceData.map(am => am.outletType))].sort();
+                const types = [...new Set(this.performanceData.map(am => am.outletType).filter(t => t))].sort();
                 const typeSelect = document.getElementById('amTrackerTypeFilter');
                 typeSelect.innerHTML = '<option value="">All Types</option>';
                 types.forEach(type => {
-                    if (type && type !== 'N/A') {
-                        typeSelect.innerHTML += `<option value="${type}">${type}</option>`;
-                    }
+                    typeSelect.innerHTML += `<option value="${type}">${type}</option>`;
                 });
                 
                 // Get unique MTs
-                const mts = [...new Set(this.performanceData.map(am => am.mt))].sort();
+                const mts = [...new Set(this.performanceData.map(am => am.mt).filter(m => m))].sort();
                 const mtSelect = document.getElementById('amTrackerMTFilter');
                 mtSelect.innerHTML = '<option value="">All MTs</option>';
                 mts.forEach(mt => {
-                    if (mt && mt !== 'N/A') {
-                        mtSelect.innerHTML += `<option value="${mt}">${mt}</option>`;
-                    }
+                    mtSelect.innerHTML += `<option value="${mt}">${mt}</option>`;
                 });
             },
             
