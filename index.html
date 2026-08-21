@@ -871,12 +871,26 @@
 
                             <!-- Filters and Controls -->
                             <div class="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Search AM</label>
-                                        <input type="text" id="amTrackerSearchInput" placeholder="Search by AM name..." 
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                                        <input type="text" id="amTrackerSearchInput" placeholder="Search by AM, outlet..." 
                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
                                                oninput="amTracker.filterData()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Outlet Type</label>
+                                        <select id="amTrackerTypeFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                onchange="amTracker.filterData()">
+                                            <option value="">All Types</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">MT (Managerial Trainee)</label>
+                                        <select id="amTrackerMTFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                                onchange="amTracker.filterData()">
+                                            <option value="">All MTs</option>
+                                        </select>
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
@@ -888,6 +902,10 @@
                                             <option value="forecast-asc">Forecast % (Low to High)</option>
                                             <option value="revenue-desc">Best Forecasted Revenue (High to Low)</option>
                                             <option value="revenue-asc">Best Forecasted Revenue (Low to High)</option>
+                                            <option value="type-asc">Outlet Type (A to Z)</option>
+                                            <option value="type-desc">Outlet Type (Z to A)</option>
+                                            <option value="mt-asc">MT Name (A to Z)</option>
+                                            <option value="mt-desc">MT Name (Z to A)</option>
                                             <option value="name-asc">AM Name (A to Z)</option>
                                             <option value="name-desc">AM Name (Z to A)</option>
                                         </select>
@@ -917,7 +935,9 @@
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outlet</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Outlet Name</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AM Name</th>
+                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MT</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Target</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Up to Date Revenue</th>
                                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Best Forecasted Revenue</th>
@@ -12347,7 +12367,7 @@
             
             // Fetch L1/L2/L3 targets from Goal Jan 2026 to Dec 2026 sheet
             async fetchTargets() {
-                console.log('🎯 AM Tracker: Fetching L1/L2/L3 targets...');
+                console.log('🎯 AM Tracker: Fetching L1/L2/L3 targets and MT...');
                 
                 try {
                     const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
@@ -12375,20 +12395,24 @@
                         
                         const values = this.parseCSVLine(line);
                         if (values.length >= 17) {
-                            const outletCode = values[3]?.trim(); // Col 3: Short Name (Outlet Code)
+                            const shortCode = values[3]?.trim(); // Col D (3): Short Name (Outlet Code)
+                            const storeName = values[4]?.trim(); // Col E (4): Store Name
                             const newAM = values[8]?.trim(); // Col 8: New AM
+                            const mt = values[11]?.trim(); // Col L (11): Managerial Trainee
                             const l3Target = parseFloat(values[13]?.replace(/,/g, '').trim()) || 0; // Col 13: L3 Target
                             const l2Target = parseFloat(values[14]?.replace(/,/g, '').trim()) || 0; // Col 14: L2 Target
                             const l1Target = parseFloat(values[15]?.replace(/,/g, '').trim()) || 0; // Col 15: L1 Target
                             
-                            if (outletCode) {
-                                this.targetData[outletCode] = {
+                            if (shortCode) {
+                                this.targetData[shortCode] = {
+                                    storeName: storeName || '',
                                     newAM: newAM || '',
+                                    mt: mt || 'N/A',
                                     l1Target: l1Target,
                                     l2Target: l2Target,
                                     l3Target: l3Target
                                 };
-                                console.log(`📊 Loaded targets for ${outletCode}: L1=${l1Target.toLocaleString()}, L2=${l2Target.toLocaleString()}, L3=${l3Target.toLocaleString()}`);
+                                console.log(`📊 Loaded for ${shortCode}: MT=${mt}, L1=${l1Target.toLocaleString()}, L2=${l2Target.toLocaleString()}, L3=${l3Target.toLocaleString()}`);
                             }
                         }
                     }
@@ -12396,6 +12420,55 @@
                     console.log('✅ Targets loaded:', Object.keys(this.targetData).length, 'outlets');
                 } catch (error) {
                     console.error('❌ Error fetching targets:', error);
+                }
+            },
+            
+            async fetchOutletTypes() {
+                console.log('🏪 AM Tracker: Fetching outlet types...');
+                
+                try {
+                    const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
+                    const timestamp = new Date().getTime();
+                    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=AM+Daily+Progress&timestamp=${timestamp}`;
+                    
+                    const response = await fetch(csvUrl, {
+                        method: 'GET',
+                        cache: 'no-store',
+                        redirect: 'follow'
+                    });
+                    
+                    if (!response.ok) {
+                        console.error('❌ AM Tracker: Failed to fetch outlet types');
+                        return;
+                    }
+                    
+                    const csvData = await response.text();
+                    const lines = csvData.split('\n');
+                    
+                    // Parse outlet types (skip first 2 header rows)
+                    for (let i = 2; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const values = this.parseCSVLine(line);
+                        if (values.length >= 15) {
+                            const outlet = values[0]?.trim(); // Col A: Outlet code
+                            const outletType = values[13]?.trim(); // Col N (13): TYPE
+                            
+                            if (outlet && outletType) {
+                                // Add type to existing targetData or create new entry
+                                if (!this.targetData[outlet]) {
+                                    this.targetData[outlet] = {};
+                                }
+                                this.targetData[outlet].outletType = outletType;
+                                console.log(`🏪 Loaded type for ${outlet}: ${outletType}`);
+                            }
+                        }
+                    }
+                    
+                    console.log('✅ Outlet types loaded');
+                } catch (error) {
+                    console.error('❌ Error fetching outlet types:', error);
                 }
             },
             
@@ -12407,8 +12480,11 @@
                     document.getElementById('amTrackerLoading').classList.remove('hidden');
                     document.getElementById('amTrackerError').classList.add('hidden');
                     
-                    // First fetch L1/L2/L3 targets
+                    // First fetch L1/L2/L3 targets and MT
                     await this.fetchTargets();
+                    
+                    // Then fetch outlet types
+                    await this.fetchOutletTypes();
                     
                     const sheetId = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
                     const gid = '353860854';
@@ -12445,6 +12521,9 @@
                     this.displayOverview();
                     this.updateOverviewPagination();
                     this.updateSummaryCards();
+                    
+                    // Populate filter dropdowns
+                    this.populateFilters();
                     
                     document.getElementById('amTrackerSortBySelect').value = 'growth-desc';
                     this.sortData(false);
@@ -12489,9 +12568,11 @@
                         
                         if (!outlet) continue;
                         
-                        // Get L1/L2/L3 targets and new AM from target data
+                        // Get L1/L2/L3 targets, MT, type, and new AM from target data
                         const targetInfo = this.targetData[outlet] || {};
                         const newAM = targetInfo.newAM || amName; // Use new AM if available, fallback to old AM
+                        const mt = targetInfo.mt || 'N/A';
+                        const outletType = targetInfo.outletType || 'N/A';
                         const l1Target = targetInfo.l1Target || 0;
                         const l2Target = targetInfo.l2Target || 0;
                         const l3Target = targetInfo.l3Target || monthlyTarget; // Use L3 as main target, fallback to old target
@@ -12522,6 +12603,8 @@
                             outletName: outletName || outlet,
                             amName: newAM, // Use new AM
                             oldAM: amName, // Keep old AM for reference
+                            mt: mt,
+                            outletType: outletType,
                             monthlyTarget: l3Target, // Use L3 as main target
                             monthlyTargetDisplay: l3Target > 0 ? l3Target.toLocaleString() : 'N/A',
                             l1Target,
@@ -12875,7 +12958,18 @@
                             ${am.outlet}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${am.outletName}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                ${am.outletType}
+                            </span>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">${am.amName}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            <div class="flex items-center">
+                                <i class="fas fa-user-graduate mr-1 text-indigo-500"></i>
+                                ${am.mt}
+                            </div>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${am.monthlyTargetDisplay}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${am.dailySalesUpToDateDisplay}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">${am.forecastSalesEndOfMonthDisplay}</td>
@@ -12948,6 +13042,20 @@
                             </div>
                             
                             <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Type:</span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    ${am.outletType}
+                                </span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">MT:</span>
+                                <span class="text-sm font-medium text-indigo-600">
+                                    <i class="fas fa-user-graduate mr-1"></i>${am.mt}
+                                </span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
                                 <span class="text-sm text-gray-600">Monthly Target:</span>
                                 <span class="text-sm font-medium">${am.monthlyTargetDisplay}</span>
                             </div>
@@ -12998,15 +13106,51 @@
             // Filter data based on search
             filterData() {
                 const searchTerm = document.getElementById('amTrackerSearchInput').value.toLowerCase();
+                const typeFilter = document.getElementById('amTrackerTypeFilter').value;
+                const mtFilter = document.getElementById('amTrackerMTFilter').value;
                 
-                this.filteredData = this.performanceData.filter(am => 
-                    am.amName.toLowerCase().includes(searchTerm) ||
-                    am.outlet.toLowerCase().includes(searchTerm) ||
-                    am.outletName.toLowerCase().includes(searchTerm)
-                );
+                this.filteredData = this.performanceData.filter(am => {
+                    // Search filter
+                    const matchesSearch = am.amName.toLowerCase().includes(searchTerm) ||
+                                        am.outlet.toLowerCase().includes(searchTerm) ||
+                                        am.outletName.toLowerCase().includes(searchTerm) ||
+                                        am.mt.toLowerCase().includes(searchTerm) ||
+                                        am.outletType.toLowerCase().includes(searchTerm);
+                    
+                    // Type filter
+                    const matchesType = !typeFilter || am.outletType === typeFilter;
+                    
+                    // MT filter
+                    const matchesMT = !mtFilter || am.mt === mtFilter;
+                    
+                    return matchesSearch && matchesType && matchesMT;
+                });
                 
                 this.currentPage = 1;
                 this.sortData(false);
+            },
+            
+            // Populate filter dropdowns with unique values
+            populateFilters() {
+                // Get unique outlet types
+                const types = [...new Set(this.performanceData.map(am => am.outletType))].sort();
+                const typeSelect = document.getElementById('amTrackerTypeFilter');
+                typeSelect.innerHTML = '<option value="">All Types</option>';
+                types.forEach(type => {
+                    if (type && type !== 'N/A') {
+                        typeSelect.innerHTML += `<option value="${type}">${type}</option>`;
+                    }
+                });
+                
+                // Get unique MTs
+                const mts = [...new Set(this.performanceData.map(am => am.mt))].sort();
+                const mtSelect = document.getElementById('amTrackerMTFilter');
+                mtSelect.innerHTML = '<option value="">All MTs</option>';
+                mts.forEach(mt => {
+                    if (mt && mt !== 'N/A') {
+                        mtSelect.innerHTML += `<option value="${mt}">${mt}</option>`;
+                    }
+                });
             },
             
             // Sort data based on selection
@@ -13027,6 +13171,14 @@
                             return b.forecastSalesEndOfMonth - a.forecastSalesEndOfMonth;
                         case 'revenue-asc':
                             return a.forecastSalesEndOfMonth - b.forecastSalesEndOfMonth;
+                        case 'type-asc':
+                            return a.outletType.localeCompare(b.outletType);
+                        case 'type-desc':
+                            return b.outletType.localeCompare(a.outletType);
+                        case 'mt-asc':
+                            return a.mt.localeCompare(b.mt);
+                        case 'mt-desc':
+                            return b.mt.localeCompare(a.mt);
                         case 'name-asc':
                             return a.amName.localeCompare(b.amName);
                         case 'name-desc':
@@ -13157,7 +13309,7 @@
                 const am = this.overviewData.find(a => a.amName === amName);
                 if (!am) return;
                 
-                alert(`AM Details: ${amName}\n\nOutlets Managed: ${am.outletCount}\nAverage Growth: ${am.avgGrowth.toFixed(1)}%\nDays Remaining: ${am.daysRemaining} days\n\nAchievement vs L3 Target: ${am.l3Achievement.toFixed(1)}%\nTotal Forecast: Rp ${(am.totalForecastSales / 1000000000).toFixed(2)}M\n\nTarget Levels:\nL3 Target: Rp ${(am.totalL3Target / 1000000000).toFixed(2)}M\n${am.gapToL3 > 0 ? '   Gap: Rp ' + (am.gapToL3 / 1000000000).toFixed(2) + 'M (Need +' + (am.dailyGapL3 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nL2 Target: Rp ${(am.totalL2Target / 1000000000).toFixed(2)}M\n${am.gapToL2 > 0 ? '   Gap: Rp ' + (am.gapToL2 / 1000000000).toFixed(2) + 'M (Need +' + (am.dailyGapL2 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nL1 Target: Rp ${(am.totalL1Target / 1000000000).toFixed(2)}M\n${am.gapToL1 > 0 ? '   Gap: Rp ' + (am.gapToL1 / 1000000000).toFixed(2) + 'M (Need +' + (am.dailyGapL1 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nOutlets:\n${am.outlets.map(o => `• ${o.outlet} (${o.outletName}): Growth ${o.growthPercent.toFixed(1)}%, Forecast ${o.forecastPercent.toFixed(1)}%`).join('\n')}`);
+                alert(`AM Details: ${amName}\n\nOutlets Managed: ${am.outletCount}\nAverage Growth: ${am.avgGrowth.toFixed(1)}%\nDays Remaining: ${am.daysRemaining} days\n\nAchievement vs L3 Target: ${am.l3Achievement.toFixed(1)}%\nTotal Forecast: Rp ${(am.totalForecastSales / 1000000000).toFixed(2)}M\n\nTarget Levels:\nL3 Target: Rp ${(am.totalL3Target / 1000000000).toFixed(2)}M\n${am.gapToL3 > 0 ? '   Gap: Rp ' + (am.gapToL3 / 1000000000).toFixed(2) + 'M (Need +' + (am.dailyGapL3 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nL2 Target: Rp ${(am.totalL2Target / 1000000000).toFixed(2)}M\n${am.gapToL2 > 0 ? '   Gap: Rp ' + (am.gapToL2 / 1000000000).toFixed(2) + 'M (Need +' + (am.dailyGapL2 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nL1 Target: Rp ${(am.totalL1Target / 1000000000).toFixed(2)}M\n${am.gapToL1 > 0 ? '   Gap: Rp ' + (am.gapToL1 / 1000000000).toFixed(2) + 'M (Need +' + (am.dailyGapL1 / 1000000).toFixed(1) + 'Jt/day)' : '   ✓ Achieved'}\n\nOutlets:\n${am.outlets.map(o => `• ${o.outlet} (${o.outletName}) - Type: ${o.outletType}, MT: ${o.mt}\n   Growth ${o.growthPercent.toFixed(1)}%, Forecast ${o.forecastPercent.toFixed(1)}%`).join('\n')}`);
             },
             
             // Filter by specific AM
