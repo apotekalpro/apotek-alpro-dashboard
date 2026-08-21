@@ -120,7 +120,7 @@
       </div>
       <div>
         <h1 class="text-xl font-bold text-gray-800">Pillar Tracker</h1>
-        <p class="text-xs text-gray-500">GPO · MK · R.R Performance Dashboard</p>
+        <p class="text-xs text-gray-500">Pillar 1 · Pillar 2 · Pillar 3 Performance Dashboard</p>
       </div>
     </div>
     <div class="flex items-center gap-3">
@@ -173,7 +173,7 @@
         <i class="fas fa-trophy text-yellow-300 text-xl"></i>
         <div>
           <h2 class="text-lg font-bold">Area Manager Leaderboard</h2>
-          <p class="text-blue-200 text-xs">Combined % = Total Achievement / Total Target across all pillars</p>
+          <p class="text-blue-200 text-xs">Combined % = Average of outlets hitting ≥100% across all 3 pillars</p>
         </div>
       </div>
 
@@ -224,9 +224,9 @@
           <thead>
             <tr>
               <th colspan="4" class="th-group-info"></th>
-              <th colspan="3" class="th-group-gpo">Pillar 1 – GPO</th>
-              <th colspan="3" class="th-group-mk">Pillar 2 – MK</th>
-              <th colspan="2" class="th-group-rr">Pillar 3 – R.R</th>
+              <th colspan="2" class="th-group-gpo">Pillar 1</th>
+              <th colspan="2" class="th-group-mk">Pillar 2</th>
+              <th colspan="2" class="th-group-rr">Pillar 3</th>
               <th colspan="1" class="th-group-combo">Overall</th>
             </tr>
             <tr>
@@ -234,14 +234,12 @@
               <th onclick="amColSort('am')"     id="amth_am">Area Manager</th>
               <th onclick="amColSort('outlets')" id="amth_outlets" style="width:70px">Outlets</th>
               <th style="width:8px; padding:0; cursor:default;"></th>
-              <th onclick="amColSort('gpo_target')" id="amth_gpo_target" class="th-gpo text-right">Target</th>
-              <th onclick="amColSort('gpo_ach')"    id="amth_gpo_ach"    class="th-gpo text-right">Ach.</th>
+              <th onclick="amColSort('gpo_hit')"    id="amth_gpo_hit"    class="th-gpo text-center" style="width:72px">Hit Outlets</th>
               <th onclick="amColSort('gpo_pct')"    id="amth_gpo_pct"    class="th-gpo">Hit %</th>
-              <th onclick="amColSort('mk_target')"  id="amth_mk_target"  class="th-mk text-right">Target</th>
-              <th onclick="amColSort('mk_ach')"     id="amth_mk_ach"     class="th-mk text-right">Ach.</th>
+              <th onclick="amColSort('mk_hit')"     id="amth_mk_hit"     class="th-mk text-center"  style="width:72px">Hit Outlets</th>
               <th onclick="amColSort('mk_pct')"     id="amth_mk_pct"     class="th-mk">Hit %</th>
-              <th onclick="amColSort('rr_avg')"     id="amth_rr_avg"     class="th-rr">Avg Ach%</th>
-              <th onclick="amColSort('rr_valid')"   id="amth_rr_valid"   class="th-rr" style="width:64px">Outlets</th>
+              <th onclick="amColSort('rr_hit')"     id="amth_rr_hit"     class="th-rr text-center"  style="width:72px">Hit Outlets</th>
+              <th onclick="amColSort('rr_avg')"     id="amth_rr_avg"     class="th-rr">Hit %</th>
               <th onclick="amColSort('combo')"      id="amth_combo"      class="th-combo">Combined %</th>
             </tr>
           </thead>
@@ -261,13 +259,13 @@
       <!-- Pillar Selector -->
       <div class="flex flex-wrap gap-2 mb-5">
         <button class="pillar-tab active-p1" id="outletP1Btn" onclick="outletPillarSwitch(1)">
-          <i class="fas fa-circle text-xs mr-1"></i> Pillar 1 – GPO
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 1
         </button>
         <button class="pillar-tab" id="outletP2Btn" onclick="outletPillarSwitch(2)">
-          <i class="fas fa-circle text-xs mr-1"></i> Pillar 2 – MK
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 2
         </button>
         <button class="pillar-tab" id="outletP3Btn" onclick="outletPillarSwitch(3)">
-          <i class="fas fa-circle text-xs mr-1"></i> Pillar 3 – R.R
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 3
         </button>
       </div>
 
@@ -300,12 +298,12 @@
         </select>
         <select id="outletSort" class="min-w-40" onchange="outletTableRender()">
           <option value="">Sort by...</option>
-          <option value="gpo_pct_desc">GPO % ↓</option>
-          <option value="gpo_pct_asc">GPO % ↑</option>
-          <option value="mk_pct_desc">MK % ↓</option>
-          <option value="mk_pct_asc">MK % ↑</option>
-          <option value="rr_pct_desc">R.R % ↓</option>
-          <option value="rr_pct_asc">R.R % ↑</option>
+          <option value="gpo_pct_desc">Pillar 1 % ↓</option>
+          <option value="gpo_pct_asc">Pillar 1 % ↑</option>
+          <option value="mk_pct_desc">Pillar 2 % ↓</option>
+          <option value="mk_pct_asc">Pillar 2 % ↑</option>
+          <option value="rr_pct_desc">Pillar 3 % ↓</option>
+          <option value="rr_pct_asc">Pillar 3 % ↑</option>
           <option value="combo_desc">Combined % ↓</option>
           <option value="combo_asc">Combined % ↑</option>
         </select>
@@ -318,9 +316,9 @@
             <!-- Row 1: group labels -->
             <tr>
               <th colspan="4" class="th-group-info"></th>
-              <th colspan="3" class="th-group-gpo"><i class="fas fa-circle text-xs mr-1"></i> Pillar 1 – GPO</th>
-              <th colspan="3" class="th-group-mk"><i class="fas fa-circle text-xs mr-1"></i> Pillar 2 – MK</th>
-              <th colspan="3" class="th-group-rr"><i class="fas fa-circle text-xs mr-1"></i> Pillar 3 – R.R</th>
+              <th colspan="3" class="th-group-gpo"><i class="fas fa-circle text-xs mr-1"></i> Pillar 1</th>
+              <th colspan="3" class="th-group-mk"><i class="fas fa-circle text-xs mr-1"></i> Pillar 2</th>
+              <th colspan="3" class="th-group-rr"><i class="fas fa-circle text-xs mr-1"></i> Pillar 3</th>
               <th colspan="1" class="th-group-combo">Overall</th>
             </tr>
             <!-- Row 2: column headers -->
@@ -364,13 +362,13 @@
       <!-- Pillar Selector -->
       <div class="flex flex-wrap gap-2 mb-5">
         <button class="pillar-tab active-p1" id="personalP1Btn" onclick="personalPillarSwitch(1)">
-          <i class="fas fa-circle text-xs mr-1"></i> Pillar 1 – GPO
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 1
         </button>
         <button class="pillar-tab" id="personalP2Btn" onclick="personalPillarSwitch(2)">
-          <i class="fas fa-circle text-xs mr-1"></i> Pillar 2 – MK
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 2
         </button>
         <button class="pillar-tab" id="personalP3Btn" onclick="personalPillarSwitch(3)">
-          <i class="fas fa-circle text-xs mr-1"></i> Pillar 3 – R.R
+          <i class="fas fa-circle text-xs mr-1"></i> Pillar 3
         </button>
       </div>
 
@@ -399,12 +397,12 @@
         </select>
         <select id="personalSort" class="min-w-40" onchange="personalTableRender()">
           <option value="">Sort by...</option>
-          <option value="gpo_pct_desc">GPO % ↓</option>
-          <option value="gpo_pct_asc">GPO % ↑</option>
-          <option value="mk_pct_desc">MK % ↓</option>
-          <option value="mk_pct_asc">MK % ↑</option>
-          <option value="rr_pct_desc">R.R % ↓</option>
-          <option value="rr_pct_asc">R.R % ↑</option>
+          <option value="gpo_pct_desc">Pillar 1 % ↓</option>
+          <option value="gpo_pct_asc">Pillar 1 % ↑</option>
+          <option value="mk_pct_desc">Pillar 2 % ↓</option>
+          <option value="mk_pct_asc">Pillar 2 % ↑</option>
+          <option value="rr_pct_desc">Pillar 3 % ↓</option>
+          <option value="rr_pct_asc">Pillar 3 % ↑</option>
         </select>
         <span class="text-xs text-gray-400" id="personalTableCount"></span>
       </div>
@@ -415,9 +413,9 @@
             <!-- Row 1: group labels -->
             <tr>
               <th colspan="3" class="th-group-info"></th>
-              <th colspan="3" class="th-group-gpo"><i class="fas fa-circle text-xs mr-1"></i> Pillar 1 – GPO</th>
-              <th colspan="3" class="th-group-mk"><i class="fas fa-circle text-xs mr-1"></i> Pillar 2 – MK</th>
-              <th colspan="3" class="th-group-rr"><i class="fas fa-circle text-xs mr-1"></i> Pillar 3 – R.R</th>
+              <th colspan="3" class="th-group-gpo"><i class="fas fa-circle text-xs mr-1"></i> Pillar 1</th>
+              <th colspan="3" class="th-group-mk"><i class="fas fa-circle text-xs mr-1"></i> Pillar 2</th>
+              <th colspan="3" class="th-group-rr"><i class="fas fa-circle text-xs mr-1"></i> Pillar 3</th>
             </tr>
             <!-- Row 2: column headers -->
             <tr>
@@ -627,28 +625,42 @@ function parsePersonalRows(rows) {
 // Then average the 3 pillar % for final combo
 // ============================================================
 function computeAMLeaderboard(data) {
+  // New logic: hit rate = how many outlets scored ≥100% on that pillar / total outlets with a valid target for that pillar
   const amMap = {};
   for (const row of data) {
     if (!row.am) continue;
     if (!amMap[row.am]) amMap[row.am] = {
       am: row.am, outlets: 0,
-      gpo_target: 0, gpo_ach: 0,
-      mk_target: 0, mk_ach: 0,
-      rr_valid: 0, rr_pct_sum: 0, rr_ach_sum: 0
+      // GPO (Pillar 1)
+      gpo_total: 0, gpo_hit: 0,
+      // MK  (Pillar 2)
+      mk_total: 0,  mk_hit: 0,
+      // RR  (Pillar 3)
+      rr_total: 0,  rr_hit: 0
     };
     const e = amMap[row.am];
     e.outlets++;
-    if (row.gpo_target !== null) e.gpo_target += row.gpo_target;
-    if (row.gpo_ach !== null)    e.gpo_ach    += row.gpo_ach;
-    if (row.mk_target !== null)  e.mk_target  += row.mk_target;
-    if (row.mk_ach !== null)     e.mk_ach     += row.mk_ach;
-    if (row.rr_ach !== null) { e.rr_ach_sum += row.rr_ach; e.rr_valid++; }
+    // Pillar 1 – GPO: count outlets that have a target AND hit ≥100%
+    if (row.gpo_target !== null && row.gpo_target > 0) {
+      e.gpo_total++;
+      if (row.gpo_pct !== null && row.gpo_pct >= 100) e.gpo_hit++;
+    }
+    // Pillar 2 – MK: count outlets that have a target AND hit ≥100%
+    if (row.mk_target !== null && row.mk_target > 0) {
+      e.mk_total++;
+      if (row.mk_pct !== null && row.mk_pct >= 100) e.mk_hit++;
+    }
+    // Pillar 3 – RR: count outlets with a valid RR achievement that hit ≥100%
+    if (row.rr_ach !== null) {
+      e.rr_total++;
+      if (row.rr_ach >= 100) e.rr_hit++;
+    }
   }
 
   return Object.values(amMap).map(e => {
-    const gpo_pct = e.gpo_target > 0 ? (e.gpo_ach / e.gpo_target * 100) : null;
-    const mk_pct  = e.mk_target  > 0 ? (e.mk_ach  / e.mk_target  * 100) : null;
-    const rr_avg  = e.rr_valid   > 0 ? (e.rr_ach_sum / e.rr_valid)      : null;
+    const gpo_pct = e.gpo_total > 0 ? (e.gpo_hit / e.gpo_total * 100) : null;
+    const mk_pct  = e.mk_total  > 0 ? (e.mk_hit  / e.mk_total  * 100) : null;
+    const rr_avg  = e.rr_total  > 0 ? (e.rr_hit  / e.rr_total  * 100) : null;
 
     const vals = [gpo_pct, mk_pct, rr_avg].filter(v => v !== null);
     const combo = vals.length > 0 ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
@@ -679,9 +691,9 @@ function renderAMLeaderboard(list, containerId, isTop) {
           <span class="font-bold text-sm ml-2 ${isTop ? 'text-green-600' : 'text-red-600'}">${fmtPct(row.combo)}</span>
         </div>
         <div class="flex gap-3 text-xs text-gray-500 mt-0.5">
-          <span>GPO: ${fmtPct(row.gpo_pct,0)}</span>
-          <span>MK: ${fmtPct(row.mk_pct,0)}</span>
-          <span>R.R: ${fmtPct(row.rr_avg,0)}</span>
+          <span>P1: ${fmtPct(row.gpo_pct,0)}</span>
+          <span>P2: ${fmtPct(row.mk_pct,0)}</span>
+          <span>P3: ${fmtPct(row.rr_avg,0)}</span>
           <span class="text-gray-400">${row.outlets} outlets</span>
         </div>
         ${miniBar(row.combo, isTop ? 'fill-combo' : 'fill-p3')}
@@ -700,9 +712,9 @@ function renderOutletPillarLb(pillar) {
   const data = state.outletData;
 
   let keyPct, keyTarget, keyAch, label, fillClass;
-  if (pillar === 1) { keyPct='gpo_pct'; keyTarget='gpo_target'; keyAch='gpo_ach'; label='GPO'; fillClass='fill-p1'; }
-  if (pillar === 2) { keyPct='mk_pct';  keyTarget='mk_target';  keyAch='mk_ach';  label='MK';  fillClass='fill-p2'; }
-  if (pillar === 3) { keyPct='rr_ach';  keyTarget='rr_target';  keyAch='rr_pct';  label='R.R'; fillClass='fill-p3'; }
+  if (pillar === 1) { keyPct='gpo_pct'; keyTarget='gpo_target'; keyAch='gpo_ach'; label='Pillar 1'; fillClass='fill-p1'; }
+  if (pillar === 2) { keyPct='mk_pct';  keyTarget='mk_target';  keyAch='mk_ach';  label='Pillar 2'; fillClass='fill-p2'; }
+  if (pillar === 3) { keyPct='rr_ach';  keyTarget='rr_target';  keyAch='rr_pct';  label='Pillar 3'; fillClass='fill-p3'; }
 
   const valid = data.filter(r => r[keyPct] !== null).sort((a,b) => b[keyPct] - a[keyPct]);
   const top5 = valid.slice(0, 5);
@@ -767,9 +779,9 @@ function renderPersonalPillarLb(pillar) {
   const data = state.personalData;
 
   let keyPct, keyTarget, label, fillClass, excl;
-  if (pillar === 1) { keyPct='gpo_pct'; keyTarget='gpo_target'; label='GPO'; fillClass='fill-p1'; excl = r => (r.gpo_target||0) === 0; }
-  if (pillar === 2) { keyPct='mk_pct';  keyTarget='mk_target';  label='MK';  fillClass='fill-p2'; excl = r => (r.mk_target||0) === 0; }
-  if (pillar === 3) { keyPct='rr_ach';  keyTarget='rr_target';  label='R.R'; fillClass='fill-p3'; excl = r => (r.rr_target||0) === 0; }
+  if (pillar === 1) { keyPct='gpo_pct'; keyTarget='gpo_target'; label='Pillar 1'; fillClass='fill-p1'; excl = r => (r.gpo_target||0) === 0; }
+  if (pillar === 2) { keyPct='mk_pct';  keyTarget='mk_target';  label='Pillar 2'; fillClass='fill-p2'; excl = r => (r.mk_target||0) === 0; }
+  if (pillar === 3) { keyPct='rr_ach';  keyTarget='rr_target';  label='Pillar 3'; fillClass='fill-p3'; excl = r => (r.rr_target||0) === 0; }
 
   const valid = data.filter(r => !excl(r) && r[keyPct] !== null).sort((a,b) => b[keyPct] - a[keyPct]);
   const top10 = valid.slice(0, 10);
@@ -924,7 +936,7 @@ function amTableRender() {
   if (search) amList = amList.filter(r => r.am.toLowerCase().includes(search));
 
   // Column sort
-  const numCols = ['outlets','gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_avg','rr_valid','combo','_rank'];
+  const numCols = ['outlets','gpo_hit','gpo_total','gpo_pct','mk_hit','mk_total','mk_pct','rr_hit','rr_total','rr_avg','combo','_rank'];
   if (colSort) {
     if (numCols.includes(colSort)) {
       amList.sort((a,b) => colDir === 'asc' ? (a[colSort]||0)-(b[colSort]||0) : (b[colSort]||0)-(a[colSort]||0));
@@ -951,7 +963,7 @@ function amTableRender() {
   if (!tbody) return;
 
   if (!amList.length) {
-    tbody.innerHTML = '<tr><td colspan="13" class="text-center text-gray-400 py-8">No area managers found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="text-center text-gray-400 py-8">No area managers found</td></tr>';
     return;
   }
 
@@ -960,6 +972,9 @@ function amTableRender() {
     const rank = r._rank;
     const medalHtml = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `<span class="text-xs font-bold text-gray-500">${rank}</span>`;
     const rankBg = rank <= 3 ? 'background:#FEF3C7;color:#92400E;' : rank <= 5 ? 'background:#DBEAFE;color:#1D4ED8;' : '';
+
+    const hitFraction = (hit, total) =>
+      `<span class="text-xs font-semibold text-gray-700">${hit}</span><span class="text-gray-400 text-xs">/${total}</span>`;
 
     return `<tr>
       <td style="text-align:center;">
@@ -970,14 +985,12 @@ function amTableRender() {
         <span class="inline-block bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 font-medium">${r.outlets}</span>
       </td>
       <td style="width:8px; padding:0;"></td>
-      <td class="text-right td-gpo text-xs text-gray-600">${fmtNum(r.gpo_target)}</td>
-      <td class="text-right text-xs text-gray-600">${fmtNum(r.gpo_ach)}</td>
+      <td class="text-center td-gpo">${hitFraction(r.gpo_hit, r.gpo_total)}</td>
       <td class="td-gpo">${pctPill(r.gpo_pct)}</td>
-      <td class="text-right td-mk text-xs text-gray-600">${fmtNum(r.mk_target)}</td>
-      <td class="text-right text-xs text-gray-600">${fmtNum(r.mk_ach)}</td>
+      <td class="text-center td-mk">${hitFraction(r.mk_hit, r.mk_total)}</td>
       <td class="td-mk">${pctPill(r.mk_pct)}</td>
+      <td class="text-center td-rr">${hitFraction(r.rr_hit, r.rr_total)}</td>
       <td class="td-rr">${pctPill(r.rr_avg)}</td>
-      <td class="text-center text-xs text-gray-500 td-rr">${r.rr_valid}</td>
       <td class="td-combo">${pctPill(r.combo)}</td>
     </tr>`;
   }).join('');
@@ -1128,9 +1141,9 @@ function renderKPIs(containerId, data, isPersonal) {
 
   const kpis = [
     { icon: isPersonal ? 'fas fa-users' : 'fas fa-store', label: isPersonal ? 'Active Personal' : 'Total Outlets', value: total, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { icon: 'fas fa-circle text-blue-500', label: 'Avg GPO %', value: fmtPct(avgGPO), color: 'text-blue-600', bg: 'bg-blue-50' },
-    { icon: 'fas fa-circle text-green-500', label: 'Avg MK %', value: fmtPct(avgMK), color: 'text-green-600', bg: 'bg-green-50' },
-    { icon: 'fas fa-circle text-yellow-500', label: 'Avg R.R Ach%', value: fmtPct(avgRR), color: 'text-yellow-600', bg: 'bg-yellow-50' },
+    { icon: 'fas fa-circle text-blue-500', label: 'Avg Pillar 1 %', value: fmtPct(avgGPO), color: 'text-blue-600', bg: 'bg-blue-50' },
+    { icon: 'fas fa-circle text-green-500', label: 'Avg Pillar 2 %', value: fmtPct(avgMK), color: 'text-green-600', bg: 'bg-green-50' },
+    { icon: 'fas fa-circle text-yellow-500', label: 'Avg Pillar 3 %', value: fmtPct(avgRR), color: 'text-yellow-600', bg: 'bg-yellow-50' },
   ];
 
   el.innerHTML = kpis.map(k => `
