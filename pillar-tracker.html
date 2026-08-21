@@ -636,6 +636,8 @@ function computeAMLeaderboard(data) {
   const amMap = {};
   for (const row of data) {
     if (!row.am) continue;
+    // Skip invalid AM names: #N/A, N/A, -, -- etc.
+    if (/^[#\-]*n\/?a[#\-]*$/i.test(row.am.trim()) || row.am.trim() === '-' || row.am.trim() === '--') continue;
     if (!amMap[row.am]) amMap[row.am] = {
       am: row.am, outlets: 0,
       // GPO (Pillar 1)
