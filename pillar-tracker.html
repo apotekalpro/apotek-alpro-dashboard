@@ -293,6 +293,11 @@
         <select id="outletFilterAM" class="min-w-44" onchange="outletTableRender()">
           <option value="">All Area Managers</option>
         </select>
+        <select id="outletFilterMT" class="min-w-44" onchange="outletTableRender()">
+          <option value="">All MT</option>
+          <option value="__with_mt__">Has MT assigned</option>
+          <option value="__no_mt__">No MT assigned</option>
+        </select>
         <select id="outletSort" class="min-w-40" onchange="outletTableRender()">
           <option value="">Sort by...</option>
           <option value="gpo_pct_desc">GPO % ↓</option>
@@ -312,7 +317,7 @@
           <thead>
             <!-- Row 1: group labels -->
             <tr>
-              <th colspan="3" class="th-group-info"></th>
+              <th colspan="4" class="th-group-info"></th>
               <th colspan="3" class="th-group-gpo"><i class="fas fa-circle text-xs mr-1"></i> Pillar 1 – GPO</th>
               <th colspan="3" class="th-group-mk"><i class="fas fa-circle text-xs mr-1"></i> Pillar 2 – MK</th>
               <th colspan="3" class="th-group-rr"><i class="fas fa-circle text-xs mr-1"></i> Pillar 3 – R.R</th>
@@ -323,6 +328,7 @@
               <th onclick="outletColSort('code')" id="th_code">Outlet Code</th>
               <th onclick="outletColSort('name')" id="th_name">Outlet Name</th>
               <th onclick="outletColSort('am')" id="th_am">Area Manager</th>
+              <th onclick="outletColSort('mt')" id="th_mt">MT</th>
               <th onclick="outletColSort('gpo_target')" id="th_gpo_target" class="th-gpo">Target</th>
               <th onclick="outletColSort('gpo_ach')" id="th_gpo_ach" class="th-gpo">Achievement</th>
               <th onclick="outletColSort('gpo_pct')" id="th_gpo_pct" class="th-gpo">Hit %</th>
@@ -563,12 +569,13 @@ function parseOutletRows(rows) {
     const rr_target  = parsePct(r[16]);
     const rr_pct     = parsePct(r[17]);
     const rr_ach     = parsePct(r[18]);
+    const mt         = (r[23] || '').trim(); // Column X = Managerial Trainee
 
     // Combined % = average of the 3 pillar achievements
     const vals = [gpo_pct, mk_pct, rr_ach].filter(v => v !== null);
     const combo = vals.length > 0 ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
 
-    data.push({ code, name, am, gpo_target, gpo_ach, gpo_pct, mk_target, mk_ach, mk_pct, rr_target, rr_pct, rr_ach, combo });
+    data.push({ code, name, am, mt, gpo_target, gpo_ach, gpo_pct, mk_target, mk_ach, mk_pct, rr_target, rr_pct, rr_ach, combo });
   }
   return data;
 }
@@ -823,6 +830,7 @@ function renderPersonalPillarLb(pillar) {
 function outletTableRender() {
   const search = (document.getElementById('outletSearch')?.value || '').toLowerCase();
   const filterAM = document.getElementById('outletFilterAM')?.value || '';
+  const filterMT = document.getElementById('outletFilterMT')?.value || '';
   const sortVal = document.getElementById('outletSort')?.value || '';
   const colSort = state.outletColSort;
   const colDir  = state.outletColDir;
@@ -830,8 +838,11 @@ function outletTableRender() {
   let data = [...state.outletData];
 
   // Filter
-  if (search) data = data.filter(r => r.name.toLowerCase().includes(search) || r.code.toLowerCase().includes(search) || r.am.toLowerCase().includes(search));
+  if (search) data = data.filter(r => r.name.toLowerCase().includes(search) || r.code.toLowerCase().includes(search) || r.am.toLowerCase().includes(search) || (r.mt||'').toLowerCase().includes(search));
   if (filterAM) data = data.filter(r => r.am === filterAM);
+  if (filterMT === '__with_mt__') data = data.filter(r => r.mt && r.mt.length > 0);
+  else if (filterMT === '__no_mt__') data = data.filter(r => !r.mt || r.mt.length === 0);
+  else if (filterMT) data = data.filter(r => r.mt === filterMT);
 
   // Sort
   const sortMap = {
@@ -869,6 +880,7 @@ function outletTableRender() {
       <td class="font-mono text-xs text-blue-600 font-semibold">${r.code}</td>
       <td class="font-medium text-gray-800 text-sm">${r.name}</td>
       <td class="text-gray-600 text-sm">${r.am}</td>
+      <td class="text-xs">${r.mt ? `<span class="inline-block bg-purple-100 text-purple-700 rounded-full px-2 py-0.5 font-medium whitespace-nowrap">${r.mt}</span>` : '<span class="text-gray-300">—</span>'}</td>
       <td class="text-right td-gpo">${fmtNum(r.gpo_target)}</td>
       <td class="text-right">${fmtNum(r.gpo_ach)}</td>
       <td>${pctPill(r.gpo_pct)}</td>
@@ -1065,6 +1077,15 @@ function populateOutletFilters() {
   if (sel) {
     sel.innerHTML = '<option value="">All Area Managers</option>' +
       ams.map(a => `<option value="${a}">${a}</option>`).join('');
+  }
+  const mts = [...new Set(state.outletData.map(r => r.mt).filter(Boolean))].sort();
+  const selMT = document.getElementById('outletFilterMT');
+  if (selMT) {
+    selMT.innerHTML = '<option value="">All MT</option>' +
+      '<option value="__with_mt__">Has MT assigned</option>' +
+      '<option value="__no_mt__">No MT assigned</option>' +
+      (mts.length ? '<option disabled>── By name ──</option>' : '') +
+      mts.map(m => `<option value="${m}">${m}</option>`).join('');
   }
 }
 
