@@ -1022,14 +1022,14 @@
         <div class="kpi-icon">🚀</div>
         <div class="kpi-label" id="kpi-nb-recruited-label">Recruited Newbies</div>
         <div class="kpi-value" style="color:#16a34a;font-size:1.6rem;" id="kpi-nb-recruited">—</div>
-        <div class="kpi-sub">New hires · all are newbies on day 1</div>
+        <div class="kpi-sub">Hired in cohort months · all are newbies day 1</div>
         <span class="data-badge real">✅ Real Data</span>
       </div>
       <div class="kpi-card" style="border-color:#dc2626;padding:10px 12px;">
         <div class="kpi-icon">📤</div>
         <div class="kpi-label" id="kpi-nb-resigned-label">Resigned Newbies</div>
         <div class="kpi-value" style="color:#dc2626;font-size:1.6rem;" id="kpi-nb-resigned">—</div>
-        <div class="kpi-sub">Left within 6 months of joining</div>
+        <div class="kpi-sub">Hired but no longer active from cohort</div>
         <span class="data-badge real">✅ Real Data</span>
       </div>
       <div class="kpi-card" style="border-color:#0ea5e9;padding:10px 12px;">
@@ -1044,7 +1044,7 @@
         <div class="kpi-label" id="kpi-nb-rate-label">Newbie Retention Rate</div>
         <div class="kpi-value" style="font-size:1.6rem;" id="kpi-nb-rate">—</div>
         <div class="kpi-sub" id="kpi-nb-rate-sub">vs company turnover rate</div>
-        <span class="data-badge est">⚠️ Estimated</span>
+        <span class="data-badge real">✅ Real Data</span>
       </div>
       <div class="kpi-card" style="border-color:#f59e0b;padding:10px 12px;">
         <div class="kpi-icon">🏢</div>
@@ -3198,29 +3198,41 @@ function renderRecruitment() {
   document.getElementById('kpi-hr-interview').closest('.kpi-card').querySelector('.kpi-label').textContent  = `HR Interviewed (${pLabel})`;
   document.getElementById('kpi-offered').closest('.kpi-card').querySelector('.kpi-label').textContent       = `Offering Stage (${pLabel})`;
 
-  // ── Newbie Retention KPIs (period-aware) ─────────────────────────
-  // Recruited newbies = same as new hires (all new joins are newbies day 1)
-  const nbRecruited  = periodOnboarded;   // same array: onboardedMonthly = newHires
-  // Resigned newbies for the period (newbie6M already monthly-indexed)
-  const nbResigned   = idx.reduce((acc, i) => acc + (DATA.newbie6M[i] || 0), 0);
-  // Active newbies still employed (joined in period AND not yet resigned)
-  // For current snapshot periods: use newbieActiveMonthly for Feb-Jul joins
-  const nbActive     = idx.reduce((acc, i) => acc + (DATA.newbieActiveMonthly[i] || 0), 0);
-  // Newbie retention rate = (recruited - resigned_newbies) / recruited * 100
-  // This counts newbies who are STILL employed from that cohort
-  const nbRetained   = nbRecruited - nbResigned;
+  // ── Newbie Retention KPIs — 6-month cohort survival rate ─────────────────
+  // Concept: each cohort's retention = % of that month's new hires still employed today.
+  // Period filter selects WHICH cohorts to include, starting from the OLDEST available:
+  //   1M  → 1 oldest cohort (Feb) — ~6 months since joining, most mature window
+  //   3M  → 3 oldest cohorts (Feb, Mar, Apr)
+  //   6M/YTD/12M → all 6 cohorts (Feb–Jul)
+  //   MTD → same as 1M (Feb cohort)
+  // This gives a DECREASING trend as filter widens (older cohorts have more attrition).
+  const TOTAL_COHORTS = DATA.onboardedMonthly.length; // 6 (Feb–Jul)
+  const nCohorts = (slice.isMTD || slice.shortLabel === '1M') ? 1
+                 : (slice.shortLabel === '3M') ? 3
+                 : TOTAL_COHORTS;  // 6M / YTD / 12M → all cohorts
+  // Cohort indices: always take the N OLDEST (lowest indices = most time elapsed)
+  const cohortIdx = Array.from({length: nCohorts}, (_, k) => k);  // [0], [0,1,2], [0..5]
+  const cohortMonths = cohortIdx.map(i => MONTH_SHORT_LABELS[i]);
+  const nbRecruited  = cohortIdx.reduce((a, i) => a + (DATA.onboardedMonthly[i] || 0), 0);
+  const nbActive     = cohortIdx.reduce((a, i) => a + (DATA.newbieActiveMonthly[i] || 0), 0);
+  const nbRetained   = nbActive;   // retained = still active from that cohort today
+  const nbResigned   = nbRecruited - nbActive;  // left = hired - still active
   const nbRetRate    = nbRecruited > 0 ? (nbRetained / nbRecruited * 100).toFixed(1) : null;
+  // Subtitle: show which cohorts are included
+  const cohortLabel  = cohortMonths.length === 1
+    ? `Cohort ${cohortMonths[0]} (6M window)`
+    : `Cohorts ${cohortMonths[0]}–${cohortMonths[cohortMonths.length-1]}`;
   // Company overall turnover rate for comparison (12M rolling)
   const companyTurnover = ((DATA.resigned12M / DATA.activeHC) * 100).toFixed(1);
 
   // Section header period label
   const nbSectionEl = document.getElementById('newbie-section-period');
-  if (nbSectionEl) nbSectionEl.textContent = `· ${slice.label}`;
+  if (nbSectionEl) nbSectionEl.textContent = `· ${cohortLabel} · 6M survival rate`;
 
-  document.getElementById('kpi-nb-recruited-label').textContent = `Recruited (${pLabel})`;
+  document.getElementById('kpi-nb-recruited-label').textContent = `Recruited (${cohortLabel})`;
   document.getElementById('kpi-nb-recruited').textContent       = nbRecruited.toLocaleString('id');
 
-  document.getElementById('kpi-nb-resigned-label').textContent  = `Resigned Newbies (${pLabel})`;
+  document.getElementById('kpi-nb-resigned-label').textContent  = `Left within 6M (${cohortLabel})`;
   document.getElementById('kpi-nb-resigned').textContent        = nbResigned.toLocaleString('id');
 
   // Active newbies — always current snapshot (not period-sliced, since it's live count)
@@ -3231,7 +3243,7 @@ function renderRecruitment() {
   // Newbie retention rate — color-coded vs company rate
   const nbRateEl  = document.getElementById('kpi-nb-rate');
   const nbSubEl   = document.getElementById('kpi-nb-rate-sub');
-  document.getElementById('kpi-nb-rate-label').textContent = `Newbie Retention (${pLabel})`;
+  document.getElementById('kpi-nb-rate-label').textContent = `6M Retention (${cohortLabel})`;
   if (nbRetRate !== null) {
     const nbNum = parseFloat(nbRetRate);
     const compNum = parseFloat(companyTurnover);
@@ -3239,7 +3251,7 @@ function renderRecruitment() {
     const compRetention = 100 - compNum;
     nbRateEl.textContent  = nbRetRate + '%';
     nbRateEl.style.color  = nbNum >= compRetention ? '#16a34a' : '#dc2626';
-    nbSubEl.textContent   = `Company avg: ${compRetention.toFixed(1)}% · ${nbNum >= compRetention ? '✅ Above avg' : '⚠️ Below avg'}`;
+    nbSubEl.textContent   = `6M survival · vs company ${compRetention.toFixed(1)}% · ${nbNum >= compRetention ? '✅ Above avg' : '⚠️ Below avg'}`;
   } else {
     nbRateEl.textContent = 'N/A'; nbRateEl.style.color = '#9ca3af';
     nbSubEl.textContent  = 'No recruitment data for this period';
@@ -4152,10 +4164,14 @@ function renderOverview() {
     exitCount      = exitReasonData.reduce((a,e)=>a+e.count,0);
   }
 
-  // Newbie retention
-  const nbRecruited = periodOnboarded;
-  const nbResigned  = idx.reduce((acc,i)=>acc+(DATA.newbie6M[i]||0),0);
-  const nbRetained  = nbRecruited - nbResigned;
+  // Newbie retention — 6M cohort survival (oldest N cohorts per filter, same as renderRecruitment)
+  const ovNCohorts  = (slice.isMTD || slice.shortLabel === '1M') ? 1
+                    : (slice.shortLabel === '3M') ? 3
+                    : DATA.onboardedMonthly.length; // 6M/YTD/12M → all
+  const ovCohortIdx = Array.from({length: ovNCohorts}, (_, k) => k);
+  const nbRecruited = ovCohortIdx.reduce((a, i) => a + (DATA.onboardedMonthly[i] || 0), 0);
+  const nbActive2   = ovCohortIdx.reduce((a, i) => a + (DATA.newbieActiveMonthly[i] || 0), 0);
+  const nbRetained  = nbActive2;
   const nbRetRate   = nbRecruited > 0 ? (nbRetained / nbRecruited * 100).toFixed(1) : null;
   const compRetention = (100 - parseFloat(turnoverRate12)).toFixed(1);
 
