@@ -334,7 +334,7 @@
               <th onclick="outletColSort('mk_ach')" id="th_mk_ach" class="th-mk">Achievement</th>
               <th onclick="outletColSort('mk_pct')" id="th_mk_pct" class="th-mk">Hit %</th>
               <th onclick="outletColSort('rr_target')" id="th_rr_target" class="th-rr">Target</th>
-              <th onclick="outletColSort('rr_pct')" id="th_rr_pct" class="th-rr">R.R %</th>
+              <th onclick="outletColSort('rr_pct')" id="th_rr_pct" class="th-rr">Achievement</th>
               <th onclick="outletColSort('rr_ach')" id="th_rr_ach" class="th-rr">Hit %</th>
               <th onclick="outletColSort('combo')" id="th_combo" class="th-combo">Combined %</th>
             </tr>
@@ -429,7 +429,7 @@
               <th onclick="personalColSort('mk_ach')" id="pth_mk_ach" class="th-mk">Achievement</th>
               <th onclick="personalColSort('mk_pct')" id="pth_mk_pct" class="th-mk">Hit %</th>
               <th onclick="personalColSort('rr_target')" id="pth_rr_target" class="th-rr">Target</th>
-              <th onclick="personalColSort('rr_pct')" id="pth_rr_pct" class="th-rr">R.R %</th>
+              <th onclick="personalColSort('rr_pct')" id="pth_rr_pct" class="th-rr">Achievement</th>
               <th onclick="personalColSort('rr_ach')" id="pth_rr_ach" class="th-rr">Hit %</th>
             </tr>
           </thead>
@@ -468,6 +468,10 @@ const state = {
   personalColDir: 'desc',
   amColSort: 'combo',
   amColDir: 'desc',
+  // Overall achievement % from the TOTAL row (Row 1) of the sheet
+  totalP1Pct: null,  // M col (index 12)
+  totalP2Pct: null,  // P col (index 15)
+  totalP3Pct: null,  // S col (index 18)
 };
 
 // ============================================================
@@ -484,6 +488,22 @@ function parseNum(val) {
   if (!val || val === '#DIV/0!' || val === 'N/A') return null;
   const n = parseFloat(String(val).replace(/,/g,'').trim());
   return isNaN(n) ? null : n;
+}
+
+// Preserve the original sheet format: returns { v: number, isPct: bool } or null
+// Use for RR Target and RR Achievement where cells can be % or plain number
+function parseRaw(val) {
+  if (!val || val === '#DIV/0!' || val === 'N/A' || String(val).trim() === '') return null;
+  const s = String(val).trim();
+  const isPct = s.includes('%');
+  const n = parseFloat(s.replace('%','').replace(/,/g,''));
+  return isNaN(n) ? null : { v: n, isPct };
+}
+
+// Display a parseRaw result: if isPct show "30.0%", else show the number as-is
+function fmtRaw(raw) {
+  if (!raw) return '—';
+  return raw.isPct ? raw.v.toFixed(1) + '%' : raw.v.toLocaleString();
 }
 
 function fmtPct(v, decimals=1) {
@@ -571,9 +591,9 @@ function parseOutletRows(rows) {
     const mk_target  = parseNum(r[13]);
     const mk_ach     = parseNum(r[14]);
     const mk_pct     = parsePct(r[15]);
-    const rr_target  = parsePct(r[16]);
-    const rr_pct     = parsePct(r[17]);
-    const rr_ach     = parsePct(r[18]);
+    const rr_target  = parseRaw(r[16]);  // raw: some are % some are plain numbers
+    const rr_pct     = parseRaw(r[17]);  // raw: the R.R Achievement value, same mixed format
+    const rr_ach     = parsePct(r[18]);  // always % — used for hit ≥100% logic
     const mt         = (r[23] || '').trim(); // Column X = Managerial Trainee
 
     // Combined % = average of the 3 pillar achievements
@@ -725,6 +745,7 @@ function renderOutletPillarLb(pillar) {
   if (pillar === 2) { keyPct='mk_pct';  keyTarget='mk_target';  keyAch='mk_ach';  label='Pillar 2'; fillClass='fill-p2'; }
   if (pillar === 3) { keyPct='rr_ach';  keyTarget='rr_target';  keyAch='rr_pct';  label='Pillar 3'; fillClass='fill-p3'; }
 
+  // For pillar 3 rr_target is a raw {v, isPct} object; treat null object as 0
   const valid = data.filter(r => r[keyPct] !== null).sort((a,b) => b[keyPct] - a[keyPct]);
   const top5 = valid.slice(0, 5);
   const bot5 = [...valid].reverse().slice(0, 5).reverse();
@@ -880,8 +901,15 @@ function outletTableRender() {
 
   // Column sort
   if (colSort) {
-    const numCols = ['gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_target','rr_pct','rr_ach','combo'];
-    if (numCols.includes(colSort)) {
+    // rr_target and rr_pct are raw objects {v, isPct} — extract .v for sorting
+    const rawCols = ['rr_target','rr_pct'];
+    const numCols = ['gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_ach','combo'];
+    if (rawCols.includes(colSort)) {
+      data.sort((a,b) => {
+        const av = a[colSort]?.v ?? 0, bv = b[colSort]?.v ?? 0;
+        return colDir === 'asc' ? av - bv : bv - av;
+      });
+    } else if (numCols.includes(colSort)) {
       data.sort((a,b) => colDir === 'asc' ? (a[colSort]||0)-(b[colSort]||0) : (b[colSort]||0)-(a[colSort]||0));
     } else {
       data.sort((a,b) => {
@@ -908,8 +936,8 @@ function outletTableRender() {
       <td class="text-right td-mk">${fmtNum(r.mk_target)}</td>
       <td class="text-right">${fmtNum(r.mk_ach)}</td>
       <td>${pctPill(r.mk_pct)}</td>
-      <td class="text-right td-rr">${r.rr_target !== null ? r.rr_target+'%' : '—'}</td>
-      <td class="text-right">${r.rr_pct !== null ? r.rr_pct.toFixed(2)+'%' : '—'}</td>
+      <td class="text-right td-rr">${fmtRaw(r.rr_target)}</td>
+      <td class="text-right">${fmtRaw(r.rr_pct)}</td>
       <td>${pctPill(r.rr_ach)}</td>
       <td class="td-combo">${pctPill(r.combo)}</td>
     </tr>`).join('');
@@ -1141,18 +1169,17 @@ function renderKPIs(containerId, data, isPersonal) {
 
   const total = data.length;
 
-  // For personal cards, GPO/MK/RR % figures are taken from outlet data
-  // so they reflect the same outlet-level reference (avoids personal markup inflation)
-  const refData = isPersonal ? state.outletData : data;
-  const avgGPO = avgOf(refData, 'gpo_pct');
-  const avgMK  = avgOf(refData, 'mk_pct');
-  const avgRR  = avgOf(refData, 'rr_ach');
+  // Pillar achievement %: use the TOTAL row values from the sheet (Row 1)
+  // for both outlet and personal tabs — these are the real grand-total figures
+  const p1Pct = state.totalP1Pct;
+  const p2Pct = state.totalP2Pct;
+  const p3Pct = state.totalP3Pct;
 
   const kpis = [
     { icon: isPersonal ? 'fas fa-users' : 'fas fa-store', label: isPersonal ? 'Active Personal' : 'Total Outlets', value: total, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { icon: 'fas fa-circle text-blue-500', label: 'Avg Pillar 1 %', value: fmtPct(avgGPO), color: 'text-blue-600', bg: 'bg-blue-50' },
-    { icon: 'fas fa-circle text-green-500', label: 'Avg Pillar 2 %', value: fmtPct(avgMK), color: 'text-green-600', bg: 'bg-green-50' },
-    { icon: 'fas fa-circle text-yellow-500', label: 'Avg Pillar 3 %', value: fmtPct(avgRR), color: 'text-yellow-600', bg: 'bg-yellow-50' },
+    { icon: 'fas fa-circle text-blue-500', label: 'Pillar 1 Achievement', value: fmtPct(p1Pct), color: 'text-blue-600', bg: 'bg-blue-50' },
+    { icon: 'fas fa-circle text-green-500', label: 'Pillar 2 Achievement', value: fmtPct(p2Pct), color: 'text-green-600', bg: 'bg-green-50' },
+    { icon: 'fas fa-circle text-yellow-500', label: 'Pillar 3 Achievement', value: fmtPct(p3Pct), color: 'text-yellow-600', bg: 'bg-yellow-50' },
   ];
 
   el.innerHTML = kpis.map(k => `
@@ -1226,6 +1253,15 @@ const pillarTracker = {
       const personalRows = parseCSV(personalCSV);
       state.outletData = parseOutletRows(outletRows);
       state.personalData = parsePersonalRows(personalRows);
+
+      // Extract overall achievement % from TOTAL row (outletRows[1] = row 1 of sheet)
+      // M(12)=Pillar1 Ach%, P(15)=Pillar2 Ach%, S(18)=Pillar3 Ach%
+      const totRow = outletRows[1];
+      if (totRow) {
+        state.totalP1Pct = parsePct(totRow[12]);
+        state.totalP2Pct = parsePct(totRow[15]);
+        state.totalP3Pct = parsePct(totRow[18]);
+      }
 
       // Check personal data columns by inspecting header row
       console.log('Outlet rows sample (row 2):', outletRows[1]);
