@@ -631,14 +631,14 @@ function parsePersonalRows(rows) {
     const mk_target  = parseNum(r[14]);
     const mk_ach     = parseNum(r[15]);
     const mk_pct     = parsePct(r[16]);
-    const rr_target  = parsePct(r[17]);
-    const rr_pct     = parsePct(r[18]);
-    const rr_ach     = parsePct(r[19]);
+    const rr_target  = parseRaw(r[17]);  // mixed % / number format
+    const rr_pct     = parseRaw(r[18]);  // mixed % / number format
+    const rr_ach     = parsePct(r[19]);  // always % — used for hit ≥100% logic
 
     // Exclude if all targets are 0 or null
     const t1 = gpo_target || 0;
     const t2 = mk_target || 0;
-    const t3 = rr_target || 0;
+    const t3 = rr_target?.v || 0;
     if (t1 === 0 && t2 === 0 && t3 === 0) continue;
 
     data.push({ code, name, am, gpo_target, gpo_ach, gpo_pct, mk_target, mk_ach, mk_pct, rr_target, rr_pct, rr_ach });
@@ -811,7 +811,7 @@ function renderPersonalPillarLb(pillar) {
   let keyPct, keyTarget, label, fillClass, excl;
   if (pillar === 1) { keyPct='gpo_pct'; keyTarget='gpo_target'; label='Pillar 1'; fillClass='fill-p1'; excl = r => (r.gpo_target||0) === 0; }
   if (pillar === 2) { keyPct='mk_pct';  keyTarget='mk_target';  label='Pillar 2'; fillClass='fill-p2'; excl = r => (r.mk_target||0) === 0; }
-  if (pillar === 3) { keyPct='rr_ach';  keyTarget='rr_target';  label='Pillar 3'; fillClass='fill-p3'; excl = r => (r.rr_target||0) === 0; }
+  if (pillar === 3) { keyPct='rr_ach';  keyTarget='rr_target';  label='Pillar 3'; fillClass='fill-p3'; excl = r => (r.rr_target?.v||0) === 0; }
 
   const valid = data.filter(r => !excl(r) && r[keyPct] !== null).sort((a,b) => b[keyPct] - a[keyPct]);
   const top10 = valid.slice(0, 10);
@@ -1074,8 +1074,14 @@ function personalTableRender() {
 
   // Column sort
   if (colSort) {
-    const numCols = ['gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_target','rr_pct','rr_ach'];
-    if (numCols.includes(colSort)) {
+    const rawCols = ['rr_target','rr_pct'];
+    const numCols = ['gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_ach'];
+    if (rawCols.includes(colSort)) {
+      data.sort((a,b) => {
+        const av = a[colSort]?.v ?? 0, bv = b[colSort]?.v ?? 0;
+        return colDir === 'asc' ? av - bv : bv - av;
+      });
+    } else if (numCols.includes(colSort)) {
       data.sort((a,b) => colDir === 'asc' ? (a[colSort]||0)-(b[colSort]||0) : (b[colSort]||0)-(a[colSort]||0));
     } else {
       data.sort((a,b) => {
@@ -1101,8 +1107,8 @@ function personalTableRender() {
       <td class="text-right td-mk">${fmtNum(r.mk_target)}</td>
       <td class="text-right">${fmtNum(r.mk_ach)}</td>
       <td>${pctPill(r.mk_pct)}</td>
-      <td class="text-right td-rr">${r.rr_target !== null ? r.rr_target+'%' : '—'}</td>
-      <td class="text-right">${r.rr_pct !== null ? r.rr_pct.toFixed(2)+'%' : '—'}</td>
+      <td class="text-right td-rr">${fmtRaw(r.rr_target)}</td>
+      <td class="text-right">${fmtRaw(r.rr_pct)}</td>
       <td>${pctPill(r.rr_ach)}</td>
     </tr>`).join('');
 }
@@ -1254,17 +1260,15 @@ const pillarTracker = {
       state.outletData = parseOutletRows(outletRows);
       state.personalData = parsePersonalRows(personalRows);
 
-      // Extract overall achievement % from TOTAL row (outletRows[1] = row 1 of sheet)
+      // Extract overall achievement % from TOTAL row (outletRows[0] = row 0, the very first row of the sheet)
       // M(12)=Pillar1 Ach%, P(15)=Pillar2 Ach%, S(18)=Pillar3 Ach%
-      const totRow = outletRows[1];
+      const totRow = outletRows[0];
       if (totRow) {
         state.totalP1Pct = parsePct(totRow[12]);
         state.totalP2Pct = parsePct(totRow[15]);
         state.totalP3Pct = parsePct(totRow[18]);
       }
 
-      // Check personal data columns by inspecting header row
-      console.log('Outlet rows sample (row 2):', outletRows[1]);
       console.log('Personal rows sample (row 2):', personalRows[1]);
       console.log('Outlet data count:', state.outletData.length);
       console.log('Personal data count:', state.personalData.length);
