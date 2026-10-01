@@ -71,6 +71,22 @@
   .data-table th.th-group-combo { background: #8B5CF6; color: white; text-align: center; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; cursor: default; padding: 4px 8px; }
   .data-table th.th-group-info  { background: #F8FAFC; cursor: default; padding: 4px 8px; }
 
+  /* Pillar 3 sub-section group headers (GPO / MK / VIP within P3 amber band) */
+  .data-table th.th-sub-p3-gpo { background: #FDE68A; color: #78350F; text-align: center; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; cursor: default; padding: 3px 6px; border-bottom: 2px solid #F59E0B; font-weight: 700; }
+  .data-table th.th-sub-p3-mk  { background: #FDE68A; color: #78350F; text-align: center; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; cursor: default; padding: 3px 6px; border-bottom: 2px solid #F59E0B; font-weight: 700; }
+  .data-table th.th-sub-p3-vip { background: #FDE68A; color: #78350F; text-align: center; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; cursor: default; padding: 3px 6px; border-bottom: 2px solid #F59E0B; font-weight: 700; }
+  .data-table th.th-sub-blank   { background: #F8FAFC; cursor: default; padding: 3px 6px; }
+  /* Sub-section data cells */
+  .data-table th.th-sub-gpo { background: #FEF3C7; color: #92400E; border-bottom: 2px solid #FBBF24; }
+  .data-table th.th-sub-gpo:hover { background: #FDE68A; }
+  .data-table th.th-sub-mk  { background: #FEF3C7; color: #92400E; border-bottom: 2px solid #FBBF24; }
+  .data-table th.th-sub-mk:hover  { background: #FDE68A; }
+  .data-table th.th-sub-vip { background: #FEF3C7; color: #92400E; border-bottom: 2px solid #FBBF24; }
+  .data-table th.th-sub-vip:hover { background: #FDE68A; }
+  .data-table td.td-sub-gpo { border-left: 3px solid #FCD34D; background: #FFFDF5; }
+  .data-table td.td-sub-mk  { background: #FFFDF5; }
+  .data-table td.td-sub-vip { background: #FFFDF5; }
+
   /* Pill badge */
   .pct-pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
   .pct-high { background: #D1FAE5; color: #065F46; }
@@ -313,15 +329,26 @@
       <div class="table-wrap">
         <table class="data-table" id="outletTable">
           <thead>
-            <!-- Row 1: group labels -->
+            <!-- Row 1: pillar group labels -->
             <tr>
               <th colspan="4" class="th-group-info"></th>
               <th colspan="3" class="th-group-gpo"><i class="fas fa-circle text-xs mr-1"></i> Pillar 1</th>
               <th colspan="3" class="th-group-mk"><i class="fas fa-circle text-xs mr-1"></i> Pillar 2</th>
-              <th colspan="3" class="th-group-rr"><i class="fas fa-circle text-xs mr-1"></i> Pillar 3</th>
+              <th colspan="6" class="th-group-rr"><i class="fas fa-circle text-xs mr-1"></i> Pillar 3</th>
               <th colspan="1" class="th-group-combo">Overall</th>
             </tr>
-            <!-- Row 2: column headers -->
+            <!-- Row 2: sub-group labels (Pillar 3 has GPO / MK / VIP sub-sections) -->
+            <tr>
+              <th colspan="4" class="th-sub-blank"></th>
+              <th colspan="3" class="th-sub-blank"></th>
+              <th colspan="3" class="th-sub-blank"></th>
+              <th colspan="3" class="th-sub-blank" style="border-bottom:2px solid #F59E0B"></th>
+              <th colspan="1" class="th-sub-p3-gpo">GPO</th>
+              <th colspan="1" class="th-sub-p3-mk">MK</th>
+              <th colspan="1" class="th-sub-p3-vip">VIP</th>
+              <th colspan="1" class="th-sub-blank"></th>
+            </tr>
+            <!-- Row 3: column headers -->
             <tr>
               <th onclick="outletColSort('code')" id="th_code">Outlet Code</th>
               <th onclick="outletColSort('name')" id="th_name">Outlet Name</th>
@@ -336,6 +363,9 @@
               <th onclick="outletColSort('rr_target')" id="th_rr_target" class="th-rr">Target</th>
               <th onclick="outletColSort('rr_pct')" id="th_rr_pct" class="th-rr">Achievement</th>
               <th onclick="outletColSort('rr_ach')" id="th_rr_ach" class="th-rr">Hit %</th>
+              <th onclick="outletColSort('sub_gpo_pct')" id="th_sub_gpo_pct" class="th-sub-gpo">Ach %</th>
+              <th onclick="outletColSort('sub_mk_pct')" id="th_sub_mk_pct" class="th-sub-mk">Ach %</th>
+              <th onclick="outletColSort('sub_vip_pct')" id="th_sub_vip_pct" class="th-sub-vip">Ach %</th>
               <th onclick="outletColSort('combo')" id="th_combo" class="th-combo">Combined %</th>
             </tr>
           </thead>
@@ -410,14 +440,24 @@
       <div class="table-wrap">
         <table class="data-table" id="personalTable">
           <thead>
-            <!-- Row 1: group labels -->
+            <!-- Row 1: pillar group labels -->
             <tr>
               <th colspan="3" class="th-group-info"></th>
               <th colspan="3" class="th-group-gpo"><i class="fas fa-circle text-xs mr-1"></i> Pillar 1</th>
               <th colspan="3" class="th-group-mk"><i class="fas fa-circle text-xs mr-1"></i> Pillar 2</th>
-              <th colspan="3" class="th-group-rr"><i class="fas fa-circle text-xs mr-1"></i> Pillar 3</th>
+              <th colspan="6" class="th-group-rr"><i class="fas fa-circle text-xs mr-1"></i> Pillar 3</th>
             </tr>
-            <!-- Row 2: column headers -->
+            <!-- Row 2: sub-group labels (Pillar 3 GPO / MK / VIP sub-sections) -->
+            <tr>
+              <th colspan="3" class="th-sub-blank"></th>
+              <th colspan="3" class="th-sub-blank"></th>
+              <th colspan="3" class="th-sub-blank"></th>
+              <th colspan="3" class="th-sub-blank" style="border-bottom:2px solid #F59E0B"></th>
+              <th colspan="1" class="th-sub-p3-gpo">GPO</th>
+              <th colspan="1" class="th-sub-p3-mk">MK</th>
+              <th colspan="1" class="th-sub-p3-vip">VIP</th>
+            </tr>
+            <!-- Row 3: column headers -->
             <tr>
               <th onclick="personalColSort('code')" id="pth_code">Alproean Name</th>
               <th onclick="personalColSort('name')" id="pth_name">Outlet Name</th>
@@ -431,6 +471,9 @@
               <th onclick="personalColSort('rr_target')" id="pth_rr_target" class="th-rr">Target</th>
               <th onclick="personalColSort('rr_pct')" id="pth_rr_pct" class="th-rr">Achievement</th>
               <th onclick="personalColSort('rr_ach')" id="pth_rr_ach" class="th-rr">Hit %</th>
+              <th onclick="personalColSort('sub_gpo_pct')" id="pth_sub_gpo_pct" class="th-sub-gpo">Ach %</th>
+              <th onclick="personalColSort('sub_mk_pct')" id="pth_sub_mk_pct" class="th-sub-mk">Ach %</th>
+              <th onclick="personalColSort('sub_vip_pct')" id="pth_sub_vip_pct" class="th-sub-vip">Ach %</th>
             </tr>
           </thead>
           <tbody id="personalTableBody"></tbody>
@@ -469,9 +512,13 @@ const state = {
   amColSort: 'combo',
   amColDir: 'desc',
   // Overall achievement % from the TOTAL row (Row 1) of the sheet
-  totalP1Pct: null,  // M col (index 12)
-  totalP2Pct: null,  // P col (index 15)
-  totalP3Pct: null,  // S col (index 18)
+  totalP1Pct: null,  // outlet sheet: M col (index 12)
+  totalP2Pct: null,  // outlet sheet: P col (index 15)
+  totalP3Pct: null,  // outlet sheet: S col (index 18)
+  // Personal sheet TOTAL row — different column positions
+  totalPersonalP1Pct: null,  // personal sheet: col 13
+  totalPersonalP2Pct: null,  // personal sheet: col 16
+  totalPersonalP3Pct: null,  // personal sheet: col 19
 };
 
 // ============================================================
@@ -585,22 +632,26 @@ function parseOutletRows(rows) {
     const am = (r[9] || '').trim();
     if (!name && !am) continue;
 
-    const gpo_target = parseNum(r[10]);
-    const gpo_ach    = parseNum(r[11]);
-    const gpo_pct    = parsePct(r[12]);
-    const mk_target  = parseNum(r[13]);
-    const mk_ach     = parseNum(r[14]);
-    const mk_pct     = parsePct(r[15]);
-    const rr_target  = parseRaw(r[16]);  // raw: some are % some are plain numbers
-    const rr_pct     = parseRaw(r[17]);  // raw: the R.R Achievement value, same mixed format
-    const rr_ach     = parsePct(r[18]);  // always % — used for hit ≥100% logic
-    const mt         = (r[23] || '').trim(); // Column X = Managerial Trainee
+    const gpo_target  = parseNum(r[10]);
+    const gpo_ach     = parseNum(r[11]);
+    const gpo_pct     = parsePct(r[12]);
+    const mk_target   = parseNum(r[13]);
+    const mk_ach      = parseNum(r[14]);
+    const mk_pct      = parsePct(r[15]);
+    const rr_target   = parseRaw(r[16]);  // raw: some are % some are plain numbers
+    const rr_pct      = parseRaw(r[17]);  // raw: the R.R Achievement value, same mixed format
+    const rr_ach      = parsePct(r[18]);  // always % — used for hit ≥100% logic
+    const mt          = (r[23] || '').trim(); // Column X = Managerial Trainee
+    // Pillar 3 sub-sections: AC(28)=GPO Ach%, AF(31)=MK Ach%, AI(34)=VIP Ach%
+    const sub_gpo_pct = parsePct(r[28]);
+    const sub_mk_pct  = parsePct(r[31]);
+    const sub_vip_pct = parsePct(r[34]);
 
     // Combined % = average of the 3 pillar achievements
     const vals = [gpo_pct, mk_pct, rr_ach].filter(v => v !== null);
     const combo = vals.length > 0 ? vals.reduce((a,b) => a+b, 0) / vals.length : null;
 
-    data.push({ code, name, am, mt, gpo_target, gpo_ach, gpo_pct, mk_target, mk_ach, mk_pct, rr_target, rr_pct, rr_ach, combo });
+    data.push({ code, name, am, mt, gpo_target, gpo_ach, gpo_pct, mk_target, mk_ach, mk_pct, rr_target, rr_pct, rr_ach, sub_gpo_pct, sub_mk_pct, sub_vip_pct, combo });
   }
   return data;
 }
@@ -625,15 +676,19 @@ function parsePersonalRows(rows) {
     const am = (r[9] || '').trim();
     if (!name && !am) continue;
 
-    const gpo_target = parseNum(r[11]);
-    const gpo_ach    = parseNum(r[12]);
-    const gpo_pct    = parsePct(r[13]);
-    const mk_target  = parseNum(r[14]);
-    const mk_ach     = parseNum(r[15]);
-    const mk_pct     = parsePct(r[16]);
-    const rr_target  = parseRaw(r[17]);  // mixed % / number format
-    const rr_pct     = parseRaw(r[18]);  // mixed % / number format
-    const rr_ach     = parsePct(r[19]);  // always % — used for hit ≥100% logic
+    const gpo_target  = parseNum(r[11]);
+    const gpo_ach     = parseNum(r[12]);
+    const gpo_pct     = parsePct(r[13]);
+    const mk_target   = parseNum(r[14]);
+    const mk_ach      = parseNum(r[15]);
+    const mk_pct      = parsePct(r[16]);
+    const rr_target   = parseRaw(r[17]);  // mixed % / number format
+    const rr_pct      = parseRaw(r[18]);  // mixed % / number format
+    const rr_ach      = parsePct(r[19]);  // always % — used for hit ≥100% logic
+    // Pillar 3 sub-sections: AC(28)=GPO Ach%, AF(31)=MK Ach%, AI(34)=VIP Ach%
+    const sub_gpo_pct = parsePct(r[28]);
+    const sub_mk_pct  = parsePct(r[31]);
+    const sub_vip_pct = parsePct(r[34]);
 
     // Exclude if all targets are 0 or null
     const t1 = gpo_target || 0;
@@ -641,7 +696,7 @@ function parsePersonalRows(rows) {
     const t3 = rr_target?.v || 0;
     if (t1 === 0 && t2 === 0 && t3 === 0) continue;
 
-    data.push({ code, name, am, gpo_target, gpo_ach, gpo_pct, mk_target, mk_ach, mk_pct, rr_target, rr_pct, rr_ach });
+    data.push({ code, name, am, gpo_target, gpo_ach, gpo_pct, mk_target, mk_ach, mk_pct, rr_target, rr_pct, rr_ach, sub_gpo_pct, sub_mk_pct, sub_vip_pct });
   }
   return data;
 }
@@ -903,7 +958,7 @@ function outletTableRender() {
   if (colSort) {
     // rr_target and rr_pct are raw objects {v, isPct} — extract .v for sorting
     const rawCols = ['rr_target','rr_pct'];
-    const numCols = ['gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_ach','combo'];
+    const numCols = ['gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_ach','combo','sub_gpo_pct','sub_mk_pct','sub_vip_pct'];
     if (rawCols.includes(colSort)) {
       data.sort((a,b) => {
         const av = a[colSort]?.v ?? 0, bv = b[colSort]?.v ?? 0;
@@ -939,6 +994,9 @@ function outletTableRender() {
       <td class="text-right td-rr">${fmtRaw(r.rr_target)}</td>
       <td class="text-right">${fmtRaw(r.rr_pct)}</td>
       <td>${pctPill(r.rr_ach)}</td>
+      <td class="td-sub-gpo">${pctPill(r.sub_gpo_pct)}</td>
+      <td class="td-sub-mk">${pctPill(r.sub_mk_pct)}</td>
+      <td class="td-sub-vip">${pctPill(r.sub_vip_pct)}</td>
       <td class="td-combo">${pctPill(r.combo)}</td>
     </tr>`).join('');
 }
@@ -1075,7 +1133,7 @@ function personalTableRender() {
   // Column sort
   if (colSort) {
     const rawCols = ['rr_target','rr_pct'];
-    const numCols = ['gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_ach'];
+    const numCols = ['gpo_target','gpo_ach','gpo_pct','mk_target','mk_ach','mk_pct','rr_ach','sub_gpo_pct','sub_mk_pct','sub_vip_pct'];
     if (rawCols.includes(colSort)) {
       data.sort((a,b) => {
         const av = a[colSort]?.v ?? 0, bv = b[colSort]?.v ?? 0;
@@ -1110,6 +1168,9 @@ function personalTableRender() {
       <td class="text-right td-rr">${fmtRaw(r.rr_target)}</td>
       <td class="text-right">${fmtRaw(r.rr_pct)}</td>
       <td>${pctPill(r.rr_ach)}</td>
+      <td class="td-sub-gpo">${pctPill(r.sub_gpo_pct)}</td>
+      <td class="td-sub-mk">${pctPill(r.sub_mk_pct)}</td>
+      <td class="td-sub-vip">${pctPill(r.sub_vip_pct)}</td>
     </tr>`).join('');
 }
 
@@ -1175,11 +1236,11 @@ function renderKPIs(containerId, data, isPersonal) {
 
   const total = data.length;
 
-  // Pillar achievement %: use the TOTAL row values from the sheet (Row 1)
-  // for both outlet and personal tabs — these are the real grand-total figures
-  const p1Pct = state.totalP1Pct;
-  const p2Pct = state.totalP2Pct;
-  const p3Pct = state.totalP3Pct;
+  // Pillar achievement %: outlet tab uses outlet TOTAL row (cols 12/15/18)
+  // personal tab uses personal TOTAL row (cols 13/16/19) — different sheet layout
+  const p1Pct = isPersonal ? state.totalPersonalP1Pct : state.totalP1Pct;
+  const p2Pct = isPersonal ? state.totalPersonalP2Pct : state.totalP2Pct;
+  const p3Pct = isPersonal ? state.totalPersonalP3Pct : state.totalP3Pct;
 
   const kpis = [
     { icon: isPersonal ? 'fas fa-users' : 'fas fa-store', label: isPersonal ? 'Active Personal' : 'Total Outlets', value: total, color: 'text-blue-600', bg: 'bg-blue-50' },
@@ -1260,13 +1321,25 @@ const pillarTracker = {
       state.outletData = parseOutletRows(outletRows);
       state.personalData = parsePersonalRows(personalRows);
 
-      // Extract overall achievement % from TOTAL row (outletRows[0] = row 0, the very first row of the sheet)
-      // M(12)=Pillar1 Ach%, P(15)=Pillar2 Ach%, S(18)=Pillar3 Ach%
+      // Extract overall achievement % from TOTAL row (row index 0 = Row 1 in sheet)
+      // Outlet sheet: M(12)=Pillar1 Ach%, P(15)=Pillar2 Ach%, S(18)=Pillar3 Ach%
       const totRow = outletRows[0];
       if (totRow) {
         state.totalP1Pct = parsePct(totRow[12]);
         state.totalP2Pct = parsePct(totRow[15]);
         state.totalP3Pct = parsePct(totRow[18]);
+        console.log('[TOTAL outlet row]', 'col12=', totRow[12], 'col15=', totRow[15], 'col18=', totRow[18]);
+        console.log('[state after outlet TOTAL]', state.totalP1Pct, state.totalP2Pct, state.totalP3Pct);
+      }
+
+      // Personal sheet TOTAL row — col positions differ: 13/16/19
+      const perTotRow = personalRows[0];
+      if (perTotRow) {
+        state.totalPersonalP1Pct = parsePct(perTotRow[13]);
+        state.totalPersonalP2Pct = parsePct(perTotRow[16]);
+        state.totalPersonalP3Pct = parsePct(perTotRow[19]);
+        console.log('[TOTAL personal row]', 'col13=', perTotRow[13], 'col16=', perTotRow[16], 'col19=', perTotRow[19]);
+        console.log('[state after personal TOTAL]', state.totalPersonalP1Pct, state.totalPersonalP2Pct, state.totalPersonalP3Pct);
       }
 
       console.log('Personal rows sample (row 2):', personalRows[1]);
