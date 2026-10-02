@@ -386,8 +386,10 @@
 <div id="tab-overview" class="tab-content active" style="background:#f1f5f9;">
 
   <!-- ── Master KPI Strip — 5×2 grid, full width ───────────────── -->
+  <!-- Row 1: Active HC | CV Received | New Hire | Onboarded | Resigned -->
+  <!-- Row 2: Net Flow  | Exit Interviews | Manpower Ratio | Newbie Retention | Retention Rate -->
   <div class="ov-kpi-strip">
-    <!-- HC -->
+    <!-- Row 1 — Col 1: Active HC -->
     <div class="kpi-card" style="border-color:#2563eb;">
       <div class="kpi-icon">👥</div>
       <div class="kpi-label">Active HC</div>
@@ -395,39 +397,7 @@
       <div class="kpi-sub">Active Alproean sheet</div>
       <span class="data-badge real">✅ Real</span>
     </div>
-    <!-- New Hire -->
-    <div class="kpi-card" style="border-color:#16a34a;">
-      <div class="kpi-icon">🆕</div>
-      <div class="kpi-label" id="ov-newhire-label">New Hire</div>
-      <div class="kpi-value" style="color:#16a34a;" id="ov-newhire">—</div>
-      <div class="kpi-sub" id="ov-newhire-sub">—</div>
-      <span class="data-badge real">✅ Real</span>
-    </div>
-    <!-- Resigned -->
-    <div class="kpi-card" style="border-color:#dc2626;">
-      <div class="kpi-icon">📤</div>
-      <div class="kpi-label" id="ov-resigned-label">Resigned</div>
-      <div class="kpi-value" style="color:#dc2626;" id="ov-resigned">—</div>
-      <div class="kpi-sub" id="ov-resigned-sub">—</div>
-      <span class="data-badge real">✅ Real</span>
-    </div>
-    <!-- Turnover Rate -->
-    <div class="kpi-card" style="border-color:#f59e0b;">
-      <div class="kpi-icon">📊</div>
-      <div class="kpi-label">Turnover Rate</div>
-      <div class="kpi-value" style="color:#f59e0b;" id="ov-turnover">—</div>
-      <div class="kpi-sub">12M rolling</div>
-      <span class="data-badge real">✅ Real</span>
-    </div>
-    <!-- Net Flow -->
-    <div class="kpi-card" style="border-color:#7c3aed;">
-      <div class="kpi-icon">📈</div>
-      <div class="kpi-label" id="ov-net-label">Net HC Flow</div>
-      <div class="kpi-value" id="ov-net">—</div>
-      <div class="kpi-sub">Hire minus Resign</div>
-      <span class="data-badge real">✅ Real</span>
-    </div>
-    <!-- CV Received -->
+    <!-- Row 1 — Col 2: CV Received -->
     <div class="kpi-card" style="border-color:#0d9488;">
       <div class="kpi-icon">📄</div>
       <div class="kpi-label" id="ov-cv-label">CV Received</div>
@@ -435,7 +405,15 @@
       <div class="kpi-sub">Candidates sheet</div>
       <span class="data-badge real">✅ Real</span>
     </div>
-    <!-- Onboarded -->
+    <!-- Row 1 — Col 3: New Hire -->
+    <div class="kpi-card" style="border-color:#16a34a;">
+      <div class="kpi-icon">🆕</div>
+      <div class="kpi-label" id="ov-newhire-label">New Hire</div>
+      <div class="kpi-value" style="color:#16a34a;" id="ov-newhire">—</div>
+      <div class="kpi-sub" id="ov-newhire-sub">—</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- Row 1 — Col 4: Onboarded -->
     <div class="kpi-card" style="border-color:#ca8a04;">
       <div class="kpi-icon">🚀</div>
       <div class="kpi-label" id="ov-onboarded-label">Onboarded</div>
@@ -443,7 +421,31 @@
       <div class="kpi-sub">Join Date · Master DB</div>
       <span class="data-badge real">✅ Real</span>
     </div>
-    <!-- Manpower Cost Ratio -->
+    <!-- Row 1 — Col 5: Resigned -->
+    <div class="kpi-card" style="border-color:#dc2626;">
+      <div class="kpi-icon">📤</div>
+      <div class="kpi-label" id="ov-resigned-label">Resigned</div>
+      <div class="kpi-value" style="color:#dc2626;" id="ov-resigned">—</div>
+      <div class="kpi-sub" id="ov-resigned-sub">—</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- Row 2 — Col 1: Net Flow -->
+    <div class="kpi-card" style="border-color:#7c3aed;">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label" id="ov-net-label">Net HC Flow</div>
+      <div class="kpi-value" id="ov-net">—</div>
+      <div class="kpi-sub">Hire minus Resign</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- Row 2 — Col 2: Exit Interviews -->
+    <div class="kpi-card" style="border-color:#ea580c;">
+      <div class="kpi-icon">💬</div>
+      <div class="kpi-label" id="ov-exit-label">Exit Interviews</div>
+      <div class="kpi-value" style="color:#ea580c;" id="ov-exit">—</div>
+      <div class="kpi-sub">Exit Interview sheet</div>
+      <span class="data-badge real">✅ Real</span>
+    </div>
+    <!-- Row 2 — Col 3: Manpower Ratio -->
     <div class="kpi-card" style="border-color:#4f46e5;">
       <div class="kpi-icon">💰</div>
       <div class="kpi-label">Manpower Ratio</div>
@@ -451,7 +453,7 @@
       <div class="kpi-sub">Payroll ÷ Revenue</div>
       <span class="data-badge real">✅ Real</span>
     </div>
-    <!-- Newbie Retention -->
+    <!-- Row 2 — Col 4: Newbie Retention -->
     <div class="kpi-card" style="border-color:#0ea5e9;">
       <div class="kpi-icon">🌱</div>
       <div class="kpi-label" id="ov-nb-label">Newbie Retention</div>
@@ -459,12 +461,12 @@
       <div class="kpi-sub" id="ov-nb-sub">vs company avg</div>
       <span class="data-badge real">✅ Real</span>
     </div>
-    <!-- Exit Interviews -->
-    <div class="kpi-card" style="border-color:#ea580c;">
-      <div class="kpi-icon">💬</div>
-      <div class="kpi-label" id="ov-exit-label">Exit Interviews</div>
-      <div class="kpi-value" style="color:#ea580c;" id="ov-exit">—</div>
-      <div class="kpi-sub">Exit Interview sheet</div>
+    <!-- Row 2 — Col 5: Retention Rate (replaces Turnover Rate) -->
+    <div class="kpi-card" style="border-color:#16a34a;">
+      <div class="kpi-icon">🛡️</div>
+      <div class="kpi-label">Retention Rate</div>
+      <div class="kpi-value" style="color:#16a34a;" id="ov-retention">—</div>
+      <div class="kpi-sub">12M rolling</div>
       <span class="data-badge real">✅ Real</span>
     </div>
   </div>
@@ -1671,8 +1673,9 @@ const MONTH_LABELS = MONTHS_6.map(m => m.label);
 // All period labels are computed dynamically from NOW vs DATA_LATEST,
 // so the dashboard stays honest as calendar days advance.
 // ============================================================
-const DATA_LATEST_YEAR  = 2026;
-const DATA_LATEST_MONTH = 6;   // 0-based: 0=Jan … 6=Jul → Jul 2026
+let DATA_LATEST_YEAR  = 2026;
+let DATA_LATEST_MONTH = 6;   // 0-based: 0=Jan … 6=Jul → Jul 2026
+// Note: these are updated by fetchLivePayrollData() when live data extends beyond snapshot
 
 const MONTH_FULL_LABELS  = ['Feb 2026','Mar 2026','Apr 2026','Mei 2026','Jun 2026','Jul 2026'];
 const MONTH_SHORT_LABELS = ['Feb','Mar','Apr','Mei','Jun','Jul'];
@@ -1686,12 +1689,16 @@ function fmtMonYr(year, month0) {
   return ID_MONTHS_SHORT[month0] + ' ' + year;
 }
 
-// DATA_LATEST as a Date (set to last day of that month)
-const DATA_LATEST_DATE = new Date(DATA_LATEST_YEAR, DATA_LATEST_MONTH + 1, 0);
+// DATA_LATEST as a Date (set to last day of that month) — recomputed dynamically
+function getDataLatestDate() { return new Date(DATA_LATEST_YEAR, DATA_LATEST_MONTH + 1, 0); }
 
-// Returns true if NOW is past the data latest month
-const IS_PAST_DATA = (NOW.getFullYear() > DATA_LATEST_YEAR) ||
-                     (NOW.getFullYear() === DATA_LATEST_YEAR && NOW.getMonth() > DATA_LATEST_MONTH);
+// IS_PAST_DATA: dynamic getter — re-evaluated after live fetch updates DATA_LATEST_YEAR/MONTH
+// Returns true when NOW has moved past the snapshot's last data month
+function getIsPastData() {
+  return (NOW.getFullYear() > DATA_LATEST_YEAR) ||
+         (NOW.getFullYear() === DATA_LATEST_YEAR && NOW.getMonth() > DATA_LATEST_MONTH);
+}
+Object.defineProperty(window, 'IS_PAST_DATA', { get: getIsPastData, configurable: true });
 
 // The "current" month for labelling purposes:
 // — if we're still within the data range → use NOW's month
@@ -2478,14 +2485,15 @@ async function fetchLivePayrollData() {
   DATA.roiMonths      = extMonths;
   DATA.roiMonthShort  = extShort;
 
-  // Update DATA_LATEST constants so period engine reflects new data
-  // (We reassign the module-level vars; const → use Object.defineProperty trick)
-  try {
-    // DATA_LATEST_YEAR/MONTH are const — patch via closure-captured object
-    LIVE_SHEET_CONFIG._liveLatestYear  = newLatestYear;
-    LIVE_SHEET_CONFIG._liveLatestMonth = newLatestMonth0Yr;
-    LIVE_SHEET_CONFIG._liveRoiLatest   = newLatestRoiIdx;
-  } catch(e) { /* ignore */ }
+  // Update DATA_LATEST so period engine reflects new data from live fetch
+  // DATA_LATEST_YEAR/MONTH are `let` — update them directly
+  DATA_LATEST_YEAR  = newLatestYear;
+  DATA_LATEST_MONTH = newLatestMonth0Yr;
+  // Also store in config for reference
+  LIVE_SHEET_CONFIG._liveLatestYear  = newLatestYear;
+  LIVE_SHEET_CONFIG._liveLatestMonth = newLatestMonth0Yr;
+  LIVE_SHEET_CONFIG._liveRoiLatest   = newLatestRoiIdx;
+  console.log('[LiveFetch] DATA_LATEST updated to:', fmtMonYr(newLatestYear, newLatestMonth0Yr));
 
   // Status message
   const latestLabel = fmtMonYr(newLatestYear, newLatestMonth0Yr);
@@ -4215,10 +4223,11 @@ function renderOverview() {
   // ── TOP KPI STRIP ─────────────────────────────────────────────────
   const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
 
+  const retentionRate12 = DATA.retentionRateRolling[11].toFixed(1); // e.g. 57.7
   set('ov-active-hc',   DATA.activeHC.toLocaleString('id'));
   set('ov-newhire',     periodHire);
   set('ov-resigned',    periodResign);
-  set('ov-turnover',    turnoverRate12 + '%');
+  set('ov-retention',   retentionRate12 + '%');
 
   const netEl = document.getElementById('ov-net');
   if (netEl) {
