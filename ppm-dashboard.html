@@ -1714,12 +1714,15 @@ const TODAY_DAY   = NOW.getDate();
 const TODAY_MONTH = NOW.getMonth();   // 0-based
 const TODAY_YEAR  = NOW.getFullYear();
 
-// Build MTD label: "Month to Date · 1–5 Agu 2026 (data s/d Jul 2026)"
+// Build MTD label: "Month to Date · 1–2 Okt 2026"
+// MTD = current in-progress month (always today's month, whether or not data is live)
 function buildMtdLabel() {
   const dayStr = `1–${TODAY_DAY} ${fmtMonYr(TODAY_YEAR, TODAY_MONTH)}`;
   if (IS_PAST_DATA) {
+    // Data hasn't caught up to current month at all
     return `Month to Date · ${dayStr} · data s/d ${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}`;
   }
+  // Current month IS in the data (e.g. Oct 2 and Oct is in Master DB)
   return `Month to Date · ${dayStr}`;
 }
 
@@ -1734,24 +1737,33 @@ function getPeriodSlice() {
   const period = document.getElementById('periodMonths').value;
 
   // Dynamic: use actual length of monthly arrays (extended by live fetch for Aug/Sep/Oct etc.)
-  const totalMonths  = MONTH_FULL_LABELS.length;           // e.g. 6=Jul, 8=Sep, 9=Oct
-  const lastIdx      = totalMonths - 1;                    // index of latest month in data
-  // MTD  = latest month in data (partial current month)
-  // 1M   = last COMPLETED month = lastIdx (it's always complete once in the data)
-  // 3M   = last 3 months in data
-  // 6M   = last 6 months in data (or all if <6)
-  // YTD  = Jan–latest (use pre-aggregated YTD totals)
-  // 12M  = 12M rolling (use pre-aggregated 12M totals)
+  const totalMonths  = MONTH_FULL_LABELS.length;           // e.g. 9 for Oct2026
 
-  const mtdIdx       = lastIdx;                            // latest available month
-  const latestFullIdx= lastIdx;                            // all months in data are complete
-  const oneM         = [latestFullIdx];
-  const threeM       = latestFullIdx >= 2
+  // ── Determine MTD index vs last COMPLETED month index ──────────────
+  // MONTH_FULL_LABELS[i] corresponds to calendar month:
+  //   label index i → roiIdx = i+1 → month0 = (i+1)%12, year = 2026+floor((i+1)/12)
+  // "Current month" check: does the last label match today's calendar month?
+  // If yes → lastIdx is the CURRENT (partial) month → MTD; latestFullIdx = lastIdx-1
+  // If no  → all months in data are complete; MTD = latestFullIdx = lastIdx
+  const lastIdx = totalMonths - 1;
+  const lastLabelMo = (lastIdx + 1) % 12;            // 0-based month of MONTH_FULL_LABELS[lastIdx]
+  const lastLabelYr = 2026 + Math.floor((lastIdx + 1) / 12);
+  const isCurrentMonthInData = (lastLabelYr === TODAY_YEAR && lastLabelMo === TODAY_MONTH);
+
+  // MTD = current in-progress month (only valid when it's actually in the data)
+  const mtdIdx        = lastIdx;
+  // latestFullIdx = last FULLY COMPLETED month
+  // If current month is in data → step back one; otherwise lastIdx is already complete
+  const latestFullIdx = isCurrentMonthInData && lastIdx > 0 ? lastIdx - 1 : lastIdx;
+
+  // Period arrays always use latestFullIdx as their anchor
+  const oneM   = [latestFullIdx];
+  const threeM = latestFullIdx >= 2
     ? [latestFullIdx-2, latestFullIdx-1, latestFullIdx]
-    : Array.from({length: totalMonths}, (_, k) => k);
-  const sixM         = totalMonths >= 6
-    ? [lastIdx-5, lastIdx-4, lastIdx-3, lastIdx-2, lastIdx-1, lastIdx]
-    : Array.from({length: totalMonths}, (_, k) => k);
+    : Array.from({length: latestFullIdx+1}, (_, k) => k);
+  const sixM   = latestFullIdx >= 5
+    ? [latestFullIdx-5, latestFullIdx-4, latestFullIdx-3, latestFullIdx-2, latestFullIdx-1, latestFullIdx]
+    : Array.from({length: latestFullIdx+1}, (_, k) => k);
 
   // No stale-note needed: IS_PAST_DATA is now dynamic and data updates live
   const slices = {
@@ -1781,13 +1793,13 @@ function getPeriodSlice() {
     },
     ytd:  {
       indices: sixM,
-      label: `YTD · Jan–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}`,
+      label: `YTD · Jan–${MONTH_FULL_LABELS[latestFullIdx]}`,
       shortLabel: 'YTD',
       isMTD: false, useYTD: true
     },
     '12': {
       indices: sixM,
-      label: `12 Bulan · Agu 2025–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}`,
+      label: `12 Bulan · ${MONTH_FULL_LABELS[Math.max(0,latestFullIdx-11)]}–${MONTH_FULL_LABELS[latestFullIdx]}`,
       shortLabel: '12M',
       isMTD: false, use12M: true
     },
