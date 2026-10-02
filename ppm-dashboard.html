@@ -1677,8 +1677,14 @@ let DATA_LATEST_YEAR  = 2026;
 let DATA_LATEST_MONTH = 6;   // 0-based: 0=Jan … 6=Jul → Jul 2026
 // Note: these are updated by fetchLivePayrollData() when live data extends beyond snapshot
 
-const MONTH_FULL_LABELS  = ['Feb 2026','Mar 2026','Apr 2026','Mei 2026','Jun 2026','Jul 2026'];
-const MONTH_SHORT_LABELS = ['Feb','Mar','Apr','Mei','Jun','Jul'];
+// Dynamic month labels — extended by fetchLivePayrollData() as new months are detected
+// Base: Feb–Jul 2026 (6 months, index 0=Feb … 5=Jul)
+let MONTH_FULL_LABELS  = ['Feb 2026','Mar 2026','Apr 2026','Mei 2026','Jun 2026','Jul 2026'];
+let MONTH_SHORT_LABELS = ['Feb','Mar','Apr','Mei','Jun','Jul'];
+// DATA_MONTH_OFFSET: index of MONTH arrays corresponds to which calendar month
+// Index 0 = Feb 2026 (month0=1, year=2026). Offset in 0-based months from Jan 2026:
+// Feb=1, Mar=2, Apr=3, Mei=4, Jun=5, Jul=6 → offset[i] = i+1
+const MONTH_LABEL_OFFSET = 1; // MONTH_FULL_LABELS[0] = Feb 2026 = Jan2026+1
 
 // Indonesian month names (short)
 const ID_MONTHS_SHORT = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -1727,30 +1733,27 @@ function buildRangeLabel(indices) {
 function getPeriodSlice() {
   const period = document.getElementById('periodMonths').value;
 
-  // All monthly arrays: index 0=Feb … 5=Jul 2026 (always 6 entries)
-  // MTD  = latest available month (Jul = index 5), partial current month
-  // 1M   = last COMPLETED month in data = Jun (index 4)
-  // 3M   = last 3 completed months in data = Apr–Jun (indices 2,3,4)
-  // 6M   = all 6 months in data = Feb–Jul (indices 0–5)
-  // YTD  = Jan–Jul 2026 (use pre-aggregated YTD totals)
-  // 12M  = Aug 2025–Jul 2026 (use pre-aggregated 12M totals)
+  // Dynamic: use actual length of monthly arrays (extended by live fetch for Aug/Sep/Oct etc.)
+  const totalMonths  = MONTH_FULL_LABELS.length;           // e.g. 6=Jul, 8=Sep, 9=Oct
+  const lastIdx      = totalMonths - 1;                    // index of latest month in data
+  // MTD  = latest month in data (partial current month)
+  // 1M   = last COMPLETED month = lastIdx (it's always complete once in the data)
+  // 3M   = last 3 months in data
+  // 6M   = last 6 months in data (or all if <6)
+  // YTD  = Jan–latest (use pre-aggregated YTD totals)
+  // 12M  = 12M rolling (use pre-aggregated 12M totals)
 
-  // For 1M/3M: "last completed" means last FULL month in data snapshot
-  // When IS_PAST_DATA: the "1M" is still Jul 2026 (most recent full month in data)
-  //                    NOT the current calendar month (Aug 2026 has no data yet)
-  const latestFullIdx = IS_PAST_DATA ? 5 : 4; // latest COMPLETE month index in data
-  // (Jul=5 is complete because IS_PAST_DATA; Jun=4 is latest complete when we're still in Jul)
+  const mtdIdx       = lastIdx;                            // latest available month
+  const latestFullIdx= lastIdx;                            // all months in data are complete
+  const oneM         = [latestFullIdx];
+  const threeM       = latestFullIdx >= 2
+    ? [latestFullIdx-2, latestFullIdx-1, latestFullIdx]
+    : Array.from({length: totalMonths}, (_, k) => k);
+  const sixM         = totalMonths >= 6
+    ? [lastIdx-5, lastIdx-4, lastIdx-3, lastIdx-2, lastIdx-1, lastIdx]
+    : Array.from({length: totalMonths}, (_, k) => k);
 
-  const mtdIdx  = 5;  // always Jul 2026 (latest in data)
-  const oneM    = [latestFullIdx];
-  const threeM  = latestFullIdx >= 2 ? [latestFullIdx-2, latestFullIdx-1, latestFullIdx] : [2,3,4];
-  const sixM    = [0,1,2,3,4,5];
-
-  // Date-aware note suffix for data staleness
-  const staleNote = IS_PAST_DATA
-    ? ` · data s/d ${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}`
-    : '';
-
+  // No stale-note needed: IS_PAST_DATA is now dynamic and data updates live
   const slices = {
     mtd:  {
       indices: [mtdIdx],
@@ -1760,31 +1763,31 @@ function getPeriodSlice() {
     },
     '1':  {
       indices: oneM,
-      label: `1 Bulan · ${buildRangeLabel(oneM)}${staleNote}`,
+      label: `1 Bulan · ${buildRangeLabel(oneM)}`,
       shortLabel: '1M',
       isMTD: false
     },
     '3':  {
       indices: threeM,
-      label: `3 Bulan · ${buildRangeLabel(threeM)}${staleNote}`,
+      label: `3 Bulan · ${buildRangeLabel(threeM)}`,
       shortLabel: '3M',
       isMTD: false
     },
     '6':  {
       indices: sixM,
-      label: `6 Bulan · ${buildRangeLabel(sixM)}${staleNote}`,
+      label: `6 Bulan · ${buildRangeLabel(sixM)}`,
       shortLabel: '6M',
       isMTD: false
     },
     ytd:  {
       indices: sixM,
-      label: `YTD · Jan–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}${staleNote}`,
+      label: `YTD · Jan–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}`,
       shortLabel: 'YTD',
       isMTD: false, useYTD: true
     },
     '12': {
       indices: sixM,
-      label: `12 Bulan · Agu 2025–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}${staleNote}`,
+      label: `12 Bulan · Agu 2025–${fmtMonYr(DATA_LATEST_YEAR, DATA_LATEST_MONTH)}`,
       shortLabel: '12M',
       isMTD: false, use12M: true
     },
@@ -2495,6 +2498,74 @@ async function fetchLivePayrollData() {
   LIVE_SHEET_CONFIG._liveRoiLatest   = newLatestRoiIdx;
   console.log('[LiveFetch] DATA_LATEST updated to:', fmtMonYr(newLatestYear, newLatestMonth0Yr));
 
+  // ── EXTEND MONTHLY ARRAYS to cover new months detected in live data ──
+  // Snapshot base: index 0=Feb2026 … 5=Jul2026 (6 months).
+  // newLatestRoiIdx is 0-based from Jan2026: Jul=6, Aug=7, Sep=8, Oct=9 …
+  // MONTH_FULL_LABELS[0]=Feb2026 corresponds to roiIdx 1.
+  // So MONTH_FULL_LABELS needs entries up to roiIdx = newLatestRoiIdx → length = newLatestRoiIdx
+  // (since label[i] corresponds to roiIdx i+1, last needed is index newLatestRoiIdx-1)
+  const neededMonthLabels = newLatestRoiIdx; // number of entries in MONTH_FULL_LABELS needed
+  if (MONTH_FULL_LABELS.length < neededMonthLabels) {
+    const startExtIdx = MONTH_FULL_LABELS.length; // first index to add (0-based in labels array)
+    for (let k = startExtIdx; k < neededMonthLabels; k++) {
+      // label index k → roiIdx k+1 → month0 = (k+1) % 12, year = 2026 + floor((k+1)/12)
+      const mo   = (k + 1) % 12;   // 0=Jan … 11=Des
+      const yr   = 2026 + Math.floor((k + 1) / 12);
+      MONTH_FULL_LABELS.push(ID_MONTHS_SHORT[mo] + ' ' + yr);
+      MONTH_SHORT_LABELS.push(ID_MONTHS_SHORT[mo]);
+    }
+    console.log('[LiveFetch] Extended MONTH labels to:', MONTH_FULL_LABELS);
+  }
+
+  // Extend 6-month snapshot arrays (newHires, resigned, openingHC, closingHC,
+  // newbieActiveMonthly, onboardedMonthly, exitReason monthly) with null for new months.
+  // These come from Master DB which is not live-fetched — null = not yet available.
+  const currentSnapshotLen = 6; // Feb–Jul 2026 (original snapshot length)
+  const targetLen = MONTH_FULL_LABELS.length;
+  function extendArrayWithNulls(arr, target) {
+    while (arr && arr.length < target) arr.push(null);
+  }
+  if (targetLen > currentSnapshotLen) {
+    extendArrayWithNulls(DATA.newHires, targetLen);
+    extendArrayWithNulls(DATA.resigned, targetLen);
+    extendArrayWithNulls(DATA.openingHC, targetLen);
+    extendArrayWithNulls(DATA.closingHC, targetLen);
+    extendArrayWithNulls(DATA.newbieActiveMonthly, targetLen);
+    extendArrayWithNulls(DATA.onboardedMonthly, targetLen);
+    extendArrayWithNulls(DATA.activeHCMonthly, targetLen);
+    if (Array.isArray(DATA.newbie6M)) extendArrayWithNulls(DATA.newbie6M, targetLen);
+    if (Array.isArray(DATA.oldbie6M)) extendArrayWithNulls(DATA.oldbie6M, targetLen);
+    // Exit reason monthly arrays
+    if (Array.isArray(DATA.exitReasons)) {
+      DATA.exitReasons.forEach(e => { if (Array.isArray(e.monthly)) extendArrayWithNulls(e.monthly, targetLen); });
+    }
+    console.log('[LiveFetch] Extended snapshot arrays to length:', targetLen, '(new months as null)');
+  }
+
+  // Extend 12M rolling arrays (trend12MLabels, retentionRateRolling, etc.)
+  // trend12MLabels[11] = Jul-26; new months append as Aug-26, Sep-26 etc.
+  // retentionRateRolling values for new months = null (can't compute without Master DB)
+  const current12MLen  = DATA.trend12MLabels.length; // base = 12 (Agu25–Jul26)
+  // new months beyond Jul26: roiIdx 7=Aug26, 8=Sep26 …
+  // trend12MLabels uses short format: 'Agu-26', 'Sep-26' …
+  for (let roiI = 7; roiI <= newLatestRoiIdx; roiI++) {
+    const mo = roiI % 12;  // 0=Jan…
+    const yr = 2026 + Math.floor(roiI / 12);
+    const shortLbl = ID_MONTHS_SHORT[mo] + '-' + String(yr).slice(2); // e.g. 'Agu-26'
+    if (!DATA.trend12MLabels.includes(shortLbl)) {
+      DATA.trend12MLabels.push(shortLbl);
+      DATA.newHires12M_monthly.push(null);
+      DATA.resigned12M_monthly.push(null);
+      DATA.retentionRateRolling.push(null);
+      DATA.rollingAvgHC.push(null);
+      DATA.rollingWindowLabels.push('—');
+      DATA.rollingResignCumul.push(null);
+    }
+  }
+  if (DATA.trend12MLabels.length > current12MLen) {
+    console.log('[LiveFetch] Extended trend12M arrays to:', DATA.trend12MLabels);
+  }
+
   // Status message
   const latestLabel = fmtMonYr(newLatestYear, newLatestMonth0Yr);
   const nMonthsLoaded = trimmedPayroll.filter(v => v != null).length;
@@ -2575,9 +2646,11 @@ function renderRetention() {
   const sliceShort  = idx.map(i => MONTH_SHORT_LABELS[i]);
 
   // ── KPI Cards (period-aware) ──────────────────────────────────────
-  // Derive from retentionRateRolling[11] (Jul-26 true 12M, avg HC=839) — consistent with chart
-  const retentionRate12 = DATA.retentionRateRolling[11].toFixed(1);        // 57.7
-  const turnoverRate12  = (100 - DATA.retentionRateRolling[11]).toFixed(1); // 42.3
+  // Derive from last non-null retentionRateRolling entry (Jul-26 true 12M = index 11)
+  // New months appended as null — find last real value
+  const lastRetIdx = DATA.retentionRateRolling.reduce((last, v, i) => v != null ? i : last, 11);
+  const retentionRate12 = DATA.retentionRateRolling[lastRetIdx].toFixed(1);        // 57.7
+  const turnoverRate12  = (100 - DATA.retentionRateRolling[lastRetIdx]).toFixed(1); // 42.3
   const turnoverCost   = totals.resigned * 4000000;
 
   // ── Period-aware Exit Interview counts ───────────────────────────
@@ -2640,28 +2713,32 @@ function renderRetention() {
   const closeSlice  = sliceData(DATA.closingHC, idx);
 
   tbody.innerHTML = idx.map((dataIdx, i) => {
-    const net = hireSlice[i] - resignSlice[i];
-    const netColor = net >= 0 ? '#16a34a' : '#dc2626';
-    const netSign  = net >= 0 ? '+' : '';
-    const isMTD    = slice.isMTD;
+    // Check if Master DB data is available for this month (null = new month not yet in snapshot)
+    const hasData = DATA.newHires[dataIdx] != null;
+    const fmt     = (v) => hasData ? v : '<span style="color:#9ca3af;font-size:10px;">—</span>';
+    const net     = hasData ? hireSlice[i] - resignSlice[i] : null;
+    const netColor= net == null ? '#9ca3af' : (net >= 0 ? '#16a34a' : '#dc2626');
+    const netStr  = net == null ? '<span style="color:#9ca3af;font-size:10px;">—</span>' : ((net>=0?'+':'') + net);
+    const isMTD   = slice.isMTD;
     return `<tr>
       <td><strong>${sliceLabels[i]}</strong>${isMTD ? ' <span style="font-size:9px;background:#fef9c3;color:#92400e;padding:1px 6px;border-radius:10px;">MTD</span>' : ''}</td>
-      <td style="color:#16a34a;font-weight:700;">${hireSlice[i]}</td>
-      <td style="color:#dc2626;font-weight:700;">${resignSlice[i]}</td>
-      <td style="color:${netColor};font-weight:700;">${netSign}${net}</td>
-      <td style="color:#64748b;">${openSlice[i]}</td>
-      <td style="color:#64748b;">${closeSlice[i]}</td>
-      <td style="color:#f59e0b;">${newbieSlice[i]}</td>
-      <td style="color:#6366f1;">${oldbieSlice[i]}</td>
+      <td style="color:#16a34a;font-weight:700;">${fmt(hireSlice[i])}</td>
+      <td style="color:#dc2626;font-weight:700;">${fmt(resignSlice[i])}</td>
+      <td style="color:${netColor};font-weight:700;">${netStr}</td>
+      <td style="color:#64748b;">${fmt(openSlice[i])}</td>
+      <td style="color:#64748b;">${fmt(closeSlice[i])}</td>
+      <td style="color:#f59e0b;">${fmt(newbieSlice[i])}</td>
+      <td style="color:#6366f1;">${fmt(oldbieSlice[i])}</td>
     </tr>`;
   }).join('');
 
-  // Totals footer
-  const sumHire   = hireSlice.reduce((a,b)=>a+b,0);
-  const sumResign = resignSlice.reduce((a,b)=>a+b,0);
+  // Totals footer — only sum months that have real Master DB data
+  const realIdx   = idx.filter(i => DATA.newHires[i] != null);
+  const sumHire   = realIdx.reduce((a,i) => a + (DATA.newHires[i]||0), 0);
+  const sumResign = realIdx.reduce((a,i) => a + (DATA.resigned[i]||0), 0);
   const sumNet    = sumHire - sumResign;
-  const sumNewbie = newbieSlice.reduce((a,b)=>a+b,0);
-  const sumOldbie = oldbieSlice.reduce((a,b)=>a+b,0);
+  const sumNewbie = realIdx.reduce((a,i) => a + ((DATA.newbie6M && DATA.newbie6M[i]) || 0), 0);
+  const sumOldbie = realIdx.reduce((a,i) => a + ((DATA.oldbie6M && DATA.oldbie6M[i]) || 0), 0);
   const footColor = sumNet >= 0 ? '#16a34a' : '#dc2626';
   tfoot.innerHTML = `<tr style="background:#1e293b;color:white;font-weight:700;">
     <td>TOTAL (${pLabel})</td>
@@ -3214,7 +3291,7 @@ function renderRecruitment() {
   //   6M/YTD/12M → all 6 cohorts (Feb–Jul)
   //   MTD → same as 1M (Feb cohort)
   // This gives a DECREASING trend as filter widens (older cohorts have more attrition).
-  const TOTAL_COHORTS = DATA.onboardedMonthly.length; // 6 (Feb–Jul)
+  const TOTAL_COHORTS = DATA.onboardedMonthly.filter(v => v != null).length; // non-null cohorts only
   const nCohorts = (slice.isMTD || slice.shortLabel === '1M') ? 1
                  : (slice.shortLabel === '3M') ? 3
                  : TOTAL_COHORTS;  // 6M / YTD / 12M → all cohorts
@@ -4146,8 +4223,9 @@ function renderOverview() {
   const periodHire    = totals.newHires;
   const periodResign  = totals.resigned;
   const netFlow       = periodHire - periodResign;
-  // Derive from retentionRateRolling[11] (Jul-26 true 12M rolling) — consistent with Retention tab
-  const turnoverRate12 = (100 - DATA.retentionRateRolling[11]).toFixed(1); // 42.3
+  // Derive from last non-null retentionRateRolling entry (Jul-26 = index 11 while data is snapshot)
+  const lastRetIdx2 = DATA.retentionRateRolling.reduce((last, v, i) => v != null ? i : last, 11);
+  const turnoverRate12 = (100 - DATA.retentionRateRolling[lastRetIdx2]).toFixed(1); // 42.3
 
   // Recruitment period metrics
   const periodOnboarded = sumPeriod(DATA.onboardedMonthly);
@@ -4175,7 +4253,7 @@ function renderOverview() {
   // Newbie retention — 6M cohort survival (oldest N cohorts per filter, same as renderRecruitment)
   const ovNCohorts  = (slice.isMTD || slice.shortLabel === '1M') ? 1
                     : (slice.shortLabel === '3M') ? 3
-                    : DATA.onboardedMonthly.length; // 6M/YTD/12M → all
+                    : DATA.onboardedMonthly.filter(v => v != null).length; // 6M/YTD/12M → all real cohorts
   const ovCohortIdx = Array.from({length: ovNCohorts}, (_, k) => k);
   const nbRecruited = ovCohortIdx.reduce((a, i) => a + (DATA.onboardedMonthly[i] || 0), 0);
   const nbActive2   = ovCohortIdx.reduce((a, i) => a + (DATA.newbieActiveMonthly[i] || 0), 0);
@@ -4192,19 +4270,21 @@ function renderOverview() {
 
   // Dynamic: find the latest month index with BOTH payroll AND revenue data
   // Falls back to latest payroll-only index if revenue not yet entered for that month
-  let ovLatestIdx = 5; // default: Jun 2026 (index 5, always has data)
+  // Dynamic: find last non-null snapshot index (fallback from latest)
+  const roiSnapshotLast = roiGajiArr.reduce((last, v, i) => v != null ? i : last, 0);
+  let ovLatestIdx = roiSnapshotLast; // default: latest month with any data
   for (let i = roiGajiArr.length - 1; i >= 0; i--) {
     if (roiGajiArr[i] != null && roiRevArr[i] != null) { ovLatestIdx = i; break; }
   }
   // For pillar display, use the overview latest index
   const ovLatestGaji  = roiGajiArr[ovLatestIdx];
   const ovLatestRev   = roiRevArr[ovLatestIdx];
-  const ovLatestGM    = roiGMArr[ovLatestIdx]   != null ? roiGMArr[ovLatestIdx]   : roiGMArr[5];
-  const ovLatestRatio = roiRatArr[ovLatestIdx]  != null ? roiRatArr[ovLatestIdx]  : roiRatArr[5];
+  const ovLatestGM    = roiGMArr[ovLatestIdx]   != null ? roiGMArr[ovLatestIdx]   : roiGMArr[roiSnapshotLast];
+  const ovLatestRatio = roiRatArr[ovLatestIdx]  != null ? roiRatArr[ovLatestIdx]  : roiRatArr[roiSnapshotLast];
 
   // HC for the overview month (use activeHCMonthly if available, else current active)
   const ovHC = (DATA.activeHCMonthly[ovLatestIdx] != null ? DATA.activeHCMonthly[ovLatestIdx] : null)
-               || DATA.activeHCMonthly[5] || DATA.activeHC;
+               || DATA.activeHCMonthly[roiSnapshotLast] || DATA.activeHC;
   const ovGP          = ovLatestRev * (ovLatestGM / 100);                     // Rp juta
   const ovGPperHC     = Math.round(ovGP * 1e6 / ovHC);                        // Rp per person
   const ovSalPerHC    = Math.round(ovLatestGaji * 1e6 / ovHC);                // Rp per person
@@ -4223,7 +4303,7 @@ function renderOverview() {
   // ── TOP KPI STRIP ─────────────────────────────────────────────────
   const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
 
-  const retentionRate12 = DATA.retentionRateRolling[11].toFixed(1); // e.g. 57.7
+  const retentionRate12 = DATA.retentionRateRolling[lastRetIdx2].toFixed(1); // e.g. 57.7
   set('ov-active-hc',   DATA.activeHC.toLocaleString('id'));
   set('ov-newhire',     periodHire);
   set('ov-resigned',    periodResign);
