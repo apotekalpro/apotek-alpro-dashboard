@@ -2571,7 +2571,7 @@ async function fetchLivePayrollData() {
   const nMonthsLoaded = trimmedPayroll.filter(v => v != null).length;
   const revMonths = trimmedRevenue.filter(v => v != null).length;
   setFetchStatus('ok',
-    `✅ Live data: ${nMonthsLoaded} bln payroll, ${revMonths} bln revenue — s/d ${latestLabel}`);
+    `✅ Live dari Google Sheets — payroll ${nMonthsLoaded} bln, revenue ${revMonths} bln — s/d ${latestLabel}`);
 
   console.log('[LiveFetch] Updated DATA.totalGajiMonthly:', DATA.totalGajiMonthly);
   console.log('[LiveFetch] Updated DATA.revenueMonthly:',    DATA.revenueMonthly);
@@ -2579,6 +2579,732 @@ async function fetchLivePayrollData() {
 
   // Re-render active tab with fresh data
   updateDashboard();
+}
+
+// ============================================================
+// LIVE FETCH — MASTER DATABASE
+// Reads "Master Database" tab: col[8]=Join Date, col[9]=Resign Date (YYYY-MM-DD)
+// col[4]=Job Position, col[38]=Branch TALENTA
+// Computes per-month new hires, resigns, opening/closing HC, retention rolling
+// ============================================================
+const MASTER_SHEET_ID = '1S4uqo11FidtOHXqRJQNdd_NAQhDPSfW57qxL4llXLlc';
+
+// Helper: convert "YYYY-MM" string to {year, month0} (month0=0-based)
+function parseYearMonth(ymStr) {
+  if (!ymStr || ymStr.length < 7) return null;
+  const yr = parseInt(ymStr.slice(0, 4), 10);
+  const mo = parseInt(ymStr.slice(5, 7), 10) - 1; // 0-based
+  if (isNaN(yr) || isNaN(mo)) return null;
+  return { year: yr, month0: mo };
+}
+
+// Helper: month key "YYYY-MM" from year + 0-based month
+function ymKey(year, month0) {
+  return `${year}-${String(month0 + 1).padStart(2, '0')}`;
+}
+
+// MONTH_FULL_LABELS[i] corresponds to calendar month: roiIdx = i+1
+// (index 0=Feb2026 → roiIdx=1=Feb; roiIdx=0=Jan2026 is NOT in MONTH_FULL_LABELS)
+// Given a {year, month0}, compute its MONTH_FULL_LABELS index:
+//   labelIdx = (year-2026)*12 + month0 - 1   (Feb2026 → 0, Mar→1 … Aug→6 …)
+function toLabelIdx(year, month0) {
+  return (year - 2026) * 12 + month0 - 1;
+}
+
+async function fetchMasterDB() {
+  const url = `https://docs.google.com/spreadsheets/d/${MASTER_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Master%20Database`;
+  let rows;
+  try {
+    const resp = await fetch(url, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    rows = parseGvizCSV(await resp.text());
+  } catch (err) {
+    console.warn('[MasterDB] fetch error:', err);
+    return;
+  }
+
+  if (!rows || rows.length < 2) { console.warn('[MasterDB] empty response'); return; }
+
+  // ── 1. Parse all employees ──────────────────────────────────
+  // Accumulate per-month join/resign counts, and full employee list for HC tracking
+  const joinsByYM  = {};   // "YYYY-MM" → count
+  const resignByYM = {};   // "YYYY-MM" → count
+
+  // For opening/closing HC we need every employee's join+resign date
+  const employees = [];    // [{joinYr, joinMo0, resignYr, resignMo0|null, pos, branch}]
+
+  // For newbie/oldbie (resigned with tenure <6 vs ≥6 months)
+  const newbieResignByYM  = {};  // "YYYY-MM" → count resigns where tenure<6m
+  const oldbieResignByYM  = {};  // "YYYY-MM" → count resigns where tenure≥6m
+
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row || row.length < 9) continue;
+    const name = (row[0] || '').trim();
+    if (!name || name === '#N/A') continue;
+
+    const joinRaw   = (row[8] || '').trim();
+    const resignRaw = (row[9] || '').trim();
+    const pos       = (row[4] || '').trim();
+    const branch    = (row[38] || '').trim();
+
+    // Accept YYYY-MM-DD format (but also guard against stray MM/DD/YYYY)
+    const joinMatch  = joinRaw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!joinMatch) continue;
+    const joinYr  = parseInt(joinMatch[1], 10);
+    const joinMo0 = parseInt(joinMatch[2], 10) - 1;
+
+    let resignYr = null, resignMo0 = null;
+    const resignMatch = resignRaw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (resignMatch) {
+      resignYr  = parseInt(resignMatch[1], 10);
+      resignMo0 = parseInt(resignMatch[2], 10) - 1;
+    }
+
+    employees.push({ joinYr, joinMo0, resignYr, resignMo0, pos, branch });
+
+    // Count join
+    const jk = ymKey(joinYr, joinMo0);
+    joinsByYM[jk] = (joinsByYM[jk] || 0) + 1;
+
+    // Count resign
+    if (resignYr !== null) {
+      const rk = ymKey(resignYr, resignMo0);
+      resignByYM[rk] = (resignByYM[rk] || 0) + 1;
+
+      // Newbie/oldbie: tenure = months between join and resign
+      const tenureMonths = (resignYr - joinYr) * 12 + (resignMo0 - joinMo0);
+      if (tenureMonths < 6) {
+        newbieResignByYM[rk] = (newbieResignByYM[rk] || 0) + 1;
+      } else {
+        oldbieResignByYM[rk] = (oldbieResignByYM[rk] || 0) + 1;
+      }
+    }
+  }
+
+  // ── 2. Determine date range ─────────────────────────────────
+  // Find the latest join/resign month in the data
+  const allYMs = [...Object.keys(joinsByYM), ...Object.keys(resignByYM)]
+    .filter(k => /^\d{4}-\d{2}$/.test(k))
+    .sort();
+  if (allYMs.length === 0) { console.warn('[MasterDB] no valid dates'); return; }
+
+  const latestYM = allYMs[allYMs.length - 1];
+  const latestYMParsed = parseYearMonth(latestYM);
+  if (!latestYMParsed) return;
+
+  // Extend MONTH_FULL_LABELS if live data has months beyond current labels
+  // MONTH_FULL_LABELS[0]=Feb2026 → labelIdx=0; labelIdx = toLabelIdx(yr,mo0)
+  const latestLabelIdx = toLabelIdx(latestYMParsed.year, latestYMParsed.month0);
+  if (latestLabelIdx >= MONTH_FULL_LABELS.length) {
+    for (let k = MONTH_FULL_LABELS.length; k <= latestLabelIdx; k++) {
+      const mo = (k + 1) % 12;
+      const yr = 2026 + Math.floor((k + 1) / 12);
+      MONTH_FULL_LABELS.push(ID_MONTHS_SHORT[mo] + ' ' + yr);
+      MONTH_SHORT_LABELS.push(ID_MONTHS_SHORT[mo]);
+    }
+    console.log('[MasterDB] Extended MONTH labels to:', MONTH_FULL_LABELS);
+  }
+
+  const totalMonths = MONTH_FULL_LABELS.length; // e.g. 9 for Oct2026
+
+  // ── 3. Build per-month arrays (MONTH_FULL_LABELS indexed: 0=Feb2026…) ──
+  const newHiresArr  = new Array(totalMonths).fill(0);
+  const resignedArr  = new Array(totalMonths).fill(0);
+  const newbieResArr = new Array(totalMonths).fill(0);
+  const oldbieResArr = new Array(totalMonths).fill(0);
+
+  for (let i = 0; i < totalMonths; i++) {
+    // MONTH_FULL_LABELS[i] = e.g. "Feb 2026" → roiIdx=i+1 → month0=(i+1)%12, year=2026+floor((i+1)/12)
+    const mo = (i + 1) % 12;
+    const yr = 2026 + Math.floor((i + 1) / 12);
+    const key = ymKey(yr, mo);
+    newHiresArr[i]  = joinsByYM[key]  || 0;
+    resignedArr[i]  = resignByYM[key] || 0;
+    newbieResArr[i] = newbieResignByYM[key] || 0;
+    oldbieResArr[i] = oldbieResignByYM[key] || 0;
+  }
+
+  // ── 4. Compute opening/closing HC per month ─────────────────
+  // Opening HC for month M = employees who joined before M start AND (not resigned OR resigned after M start)
+  // Closing HC for month M = employees who joined on/before M last-day AND (not resigned OR resigned after M last-day)
+  const openingArr = new Array(totalMonths).fill(0);
+  const closingArr = new Array(totalMonths).fill(0);
+
+  for (let i = 0; i < totalMonths; i++) {
+    const mo = (i + 1) % 12;
+    const yr = 2026 + Math.floor((i + 1) / 12);
+    // First day of month: (yr, mo, 1) — employee must have joined BEFORE this date
+    // Last day of month: (yr, mo+1, 0)
+    const monthStart = new Date(yr, mo, 1);      // first day of this month
+    const monthEnd   = new Date(yr, mo + 1, 0);  // last day of this month
+
+    let opening = 0, closing = 0;
+    for (const emp of employees) {
+      const joinDate   = new Date(emp.joinYr, emp.joinMo0, 1);
+      const resignDate = (emp.resignYr !== null)
+        ? new Date(emp.resignYr, emp.resignMo0 + 1, 0)  // last day of resign month
+        : null;
+
+      // Opening: joined strictly before month start, and (no resign OR resign >= month start)
+      if (joinDate < monthStart) {
+        if (!resignDate || resignDate >= monthStart) opening++;
+      }
+      // Closing: joined on/before month end, and (no resign OR resign > month end)
+      if (joinDate <= monthEnd) {
+        if (!resignDate || resignDate > monthEnd) closing++;
+      }
+    }
+    openingArr[i] = opening;
+    closingArr[i] = closing;
+  }
+
+  // ── 5. Extend & rebuild 12M rolling arrays ──────────────────
+  // trend12MLabels[0]=Agu-25 (roiIdx=7 back from latest), extends forward
+  // We rebuild the 12M window arrays dynamically using the full history
+  // Base window: Agu-25 to latest month found in data
+
+  // Build a monthly lookup going back to Aug 2024 for rolling windows
+  // roiIdx: 0=Jan2026, negative allowed conceptually; use year+month key
+  // For the 12M rolling:  for each month M (from Agu-25 onward), window = [M-11..M]
+  // sumResign = sum resignByYM over window; avgHC = avg closingHC over window
+  // retention = 100 - (sumResign / avgHC * 100)
+
+  // We need closingHC per month going back to at least Aug 2024.
+  // Build a per-month closingHC map from employees data
+  function closingHCForYM(yr, mo0) {
+    const monthEnd = new Date(yr, mo0 + 1, 0);
+    let hc = 0;
+    for (const emp of employees) {
+      const joinDate   = new Date(emp.joinYr, emp.joinMo0, 1);
+      const resignDate = (emp.resignYr !== null)
+        ? new Date(emp.resignYr, emp.resignMo0 + 1, 0)
+        : null;
+      if (joinDate <= monthEnd && (!resignDate || resignDate > monthEnd)) hc++;
+    }
+    return hc;
+  }
+
+  // Define the 12M rolling chart months: Agu-25 to latest
+  // Agu-25 = year=2025, month0=7
+  const rolling12MStart = { year: 2025, month0: 7 }; // Agu-25
+  const rolling12MEnd   = latestYMParsed;
+
+  const new12MLabels       = [];
+  const new12MNewHires     = [];
+  const new12MResigned     = [];
+  const newRetentionRolling = [];
+  const newRollingAvgHC    = [];
+  const newRollingWindowLbls = [];
+  const newRollingResignCumul = [];
+
+  let mYr = rolling12MStart.year;
+  let mMo = rolling12MStart.month0;
+
+  while (mYr < rolling12MEnd.year || (mYr === rolling12MEnd.year && mMo <= rolling12MEnd.month0)) {
+    const lbl = ID_MONTHS_SHORT[mMo] + '-' + String(mYr).slice(2);
+    new12MLabels.push(lbl);
+
+    // Window: [mMo-11 … mMo] in terms of months
+    let wHCSum = 0, wResignSum = 0, wHireSum = 0;
+    const windowStart = { year: mYr, month0: mMo };
+    // Step back 11 months
+    let wsYr = mYr, wsMo = mMo - 11;
+    while (wsMo < 0) { wsMo += 12; wsYr--; }
+
+    for (let wi = 0; wi < 12; wi++) {
+      let wY = wsYr, wM = wsMo + wi;
+      while (wM >= 12) { wM -= 12; wY++; }
+      const wKey = ymKey(wY, wM);
+      wResignSum += (resignByYM[wKey] || 0);
+      wHireSum   += (joinsByYM[wKey]  || 0);
+      wHCSum     += closingHCForYM(wY, wM);
+    }
+
+    const avgHC = wHCSum / 12;
+    const retention = avgHC > 0 ? parseFloat((100 - (wResignSum / avgHC * 100)).toFixed(1)) : null;
+
+    new12MNewHires.push(wHireSum);
+    new12MResigned.push(wResignSum);
+    newRetentionRolling.push(retention);
+    newRollingAvgHC.push(Math.round(avgHC));
+    newRollingResignCumul.push(wResignSum);
+
+    // Window label e.g. "Sep-24→Agu-25"
+    const wsLbl = ID_MONTHS_SHORT[wsMo] + '-' + String(wsYr).slice(2);
+    newRollingWindowLbls.push(`${wsLbl}→${lbl}`);
+
+    // Advance month
+    mMo++;
+    if (mMo >= 12) { mMo = 0; mYr++; }
+  }
+
+  // ── 6. Scalar totals ────────────────────────────────────────
+  // 12M = last 12 months from latest
+  const last12Start = { year: mYr, month0: mMo - 12 };  // after final advance above
+  // Actually use the last 12 entries of rolling arrays
+  const r12len = new12MResigned.length;
+  const resigned12M  = r12len >= 12 ? new12MResigned[r12len-1] : new12MResigned.reduce((a,b)=>a+b,0);
+  const newHires12M  = r12len >= 12 ? new12MNewHires[r12len-1] : new12MNewHires.reduce((a,b)=>a+b,0);
+
+  // YTD 2026: Jan 2026 → latest month in data
+  let resignedYTD = 0, newHiresYTD = 0;
+  for (let mo0 = 0; mo0 <= latestYMParsed.month0 || (latestYMParsed.year > 2026 ? mo0 <= 11 : false); mo0++) {
+    if (mo0 > 11) break;
+    const yr = latestYMParsed.year > 2026 ? 2026 : latestYMParsed.year;
+    const k = ymKey(2026, mo0);
+    resignedYTD += (resignByYM[k] || 0);
+    newHiresYTD += (joinsByYM[k] || 0);
+    if (yr === latestYMParsed.year && mo0 >= latestYMParsed.month0) break;
+  }
+  // Simpler: sum all 2026 months up to latest
+  resignedYTD = 0; newHiresYTD = 0;
+  for (let mo0 = 0; mo0 <= 11; mo0++) {
+    const k = ymKey(2026, mo0);
+    if (mo0 > latestYMParsed.month0 && latestYMParsed.year === 2026) break;
+    resignedYTD += (resignByYM[k] || 0);
+    newHiresYTD += (joinsByYM[k] || 0);
+  }
+
+  // 6M = MONTH_FULL_LABELS last 6 entries
+  const sixStart = Math.max(0, totalMonths - 6);
+  const resigned6M  = resignedArr.slice(sixStart).reduce((a,b)=>a+b,0);
+  const newHires6M  = newHiresArr.slice(sixStart).reduce((a,b)=>a+b,0);
+
+  // ── 7. Write back to DATA ────────────────────────────────────
+  // Extend arrays to totalMonths if needed
+  function ensureLength(arr, len) {
+    while (arr.length < len) arr.push(null);
+    return arr;
+  }
+  ensureLength(DATA.newHires, totalMonths);
+  ensureLength(DATA.resigned, totalMonths);
+  ensureLength(DATA.openingHC, totalMonths);
+  ensureLength(DATA.closingHC, totalMonths);
+  ensureLength(DATA.newbie6M, totalMonths);
+  ensureLength(DATA.oldbie6M, totalMonths);
+  ensureLength(DATA.onboardedMonthly, totalMonths);
+  ensureLength(DATA.newbieActiveMonthly, totalMonths);
+  ensureLength(DATA.activeHCMonthly, totalMonths);
+
+  for (let i = 0; i < totalMonths; i++) {
+    DATA.newHires[i]         = newHiresArr[i];
+    DATA.resigned[i]         = resignedArr[i];
+    DATA.openingHC[i]        = openingArr[i];
+    DATA.closingHC[i]        = closingArr[i];
+    DATA.newbie6M[i]         = newbieResArr[i];
+    DATA.oldbie6M[i]         = oldbieResArr[i];
+    DATA.onboardedMonthly[i] = newHiresArr[i]; // join = onboard
+    DATA.activeHCMonthly[i]  = closingArr[i];  // closing HC = active at month-end
+  }
+
+  // Update onboarded6M from last 6 months of onboardedMonthly
+  DATA.onboarded6M = DATA.onboardedMonthly.slice(Math.max(0, totalMonths - 6)).reduce((a,b)=>(a||0)+(b||0),0);
+
+  // Update 12M rolling
+  DATA.trend12MLabels        = new12MLabels;
+  DATA.newHires12M_monthly   = new12MNewHires;
+  DATA.resigned12M_monthly   = new12MResigned;
+  DATA.retentionRateRolling  = newRetentionRolling;
+  DATA.rollingAvgHC          = newRollingAvgHC;
+  DATA.rollingWindowLabels   = newRollingWindowLbls;
+  DATA.rollingResignCumul    = newRollingResignCumul;
+
+  // Update scalar totals
+  DATA.resigned12M  = new12MResigned[new12MResigned.length - 1] || 0;
+  DATA.newHires12M  = new12MNewHires[new12MNewHires.length - 1] || 0;
+  DATA.resignedYTD  = resignedYTD;
+  DATA.newHiresYTD  = newHiresYTD;
+  DATA.resigned6M   = resigned6M;
+  DATA.newHires6M   = newHires6M;
+
+  // Update DATA_LATEST from Master DB data
+  const masterLatestLabelIdx = toLabelIdx(latestYMParsed.year, latestYMParsed.month0);
+  if (masterLatestLabelIdx >= 0) {
+    DATA_LATEST_YEAR  = latestYMParsed.year;
+    DATA_LATEST_MONTH = latestYMParsed.month0;
+  }
+
+  console.log('[MasterDB] Updated newHires:', DATA.newHires);
+  console.log('[MasterDB] Updated resigned:', DATA.resigned);
+  console.log('[MasterDB] retentionRolling:', DATA.retentionRateRolling.slice(-3));
+  console.log('[MasterDB] Latest month:', fmtMonYr(latestYMParsed.year, latestYMParsed.month0));
+}
+
+// ============================================================
+// LIVE FETCH — ACTIVE HC (Active Alproean sheet)
+// Counts valid employee rows → DATA.activeHC
+// ============================================================
+async function fetchActiveHC() {
+  const url = `https://docs.google.com/spreadsheets/d/${MASTER_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Active%20Alproean`;
+  let rows;
+  try {
+    const resp = await fetch(url, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    rows = parseGvizCSV(await resp.text());
+  } catch (err) {
+    console.warn('[ActiveHC] fetch error:', err);
+    return;
+  }
+  if (!rows || rows.length < 2) { console.warn('[ActiveHC] empty response'); return; }
+
+  // Count valid rows: non-blank, non-#N/A employee names (skip header row[0])
+  let activeCount = 0;
+  for (let r = 1; r < rows.length; r++) {
+    const name = (rows[r][0] || '').trim();
+    if (name && name !== '#N/A' && name !== '#REF!') activeCount++;
+  }
+  DATA.activeHC = activeCount;
+  console.log('[ActiveHC] Active HC count:', activeCount);
+}
+
+// ============================================================
+// LIVE FETCH — EXIT INTERVIEWS (Exit Interview Result sheet)
+// col[3]=Main Category, col[4]=Tanggal Pengisian ("September 4, 2026")
+// Updates: DATA.exitReasons[].monthly, DATA.exitTotal12M, DATA.exitTotalYTD
+// ============================================================
+const EN_MONTH_MAP = {
+  january:1, february:2, march:3, april:4, may:5, june:6,
+  july:7, august:8, september:9, october:10, november:11, december:12
+};
+
+async function fetchExitInterviews() {
+  const url = `https://docs.google.com/spreadsheets/d/${MASTER_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Exit%20Interview%20Result`;
+  let rows;
+  try {
+    const resp = await fetch(url, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    rows = parseGvizCSV(await resp.text());
+  } catch (err) {
+    console.warn('[ExitInterviews] fetch error:', err);
+    return;
+  }
+  if (!rows || rows.length < 2) { console.warn('[ExitInterviews] empty response'); return; }
+
+  const totalMonths = MONTH_FULL_LABELS.length;
+
+  // Build lookup: reason → per-month count array (indexed same as MONTH_FULL_LABELS)
+  const reasonMap = {};   // reason string → Array(totalMonths)
+  const byMonth   = new Array(totalMonths).fill(0);  // total per month
+  let total12M = 0, totalYTD = 0;
+
+  // Cutoff: 12M window ends at DATA_LATEST, starts 11 months back
+  const latestMo = DATA_LATEST_MONTH; // 0-based
+  const latestYr = DATA_LATEST_YEAR;
+  let win12Start_mo = latestMo - 11;
+  let win12Start_yr = latestYr;
+  while (win12Start_mo < 0) { win12Start_mo += 12; win12Start_yr--; }
+
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row || row.length < 5) continue;
+    const reason   = (row[3] || '').trim();
+    const dateStr  = (row[4] || '').trim();
+    if (!reason || !dateStr) continue;
+
+    // Parse "September 4, 2026" → month0, year
+    const m = dateStr.match(/^(\w+)\s+\d+,\s+(\d{4})$/);
+    if (!m) continue;
+    const mo1  = EN_MONTH_MAP[m[1].toLowerCase()];
+    const yr   = parseInt(m[2], 10);
+    if (!mo1 || isNaN(yr)) continue;
+    const mo0  = mo1 - 1; // 0-based
+
+    // Map to MONTH_FULL_LABELS index
+    const labelIdx = toLabelIdx(yr, mo0);
+
+    // Ensure reason exists in map
+    if (!reasonMap[reason]) reasonMap[reason] = new Array(totalMonths).fill(0);
+
+    if (labelIdx >= 0 && labelIdx < totalMonths) {
+      reasonMap[reason][labelIdx]++;
+      byMonth[labelIdx]++;
+    }
+
+    // 12M count: window [win12Start_yr/mo … latestYr/latestMo]
+    const isIn12M = (yr > win12Start_yr) ||
+                    (yr === win12Start_yr && mo0 >= win12Start_mo);
+    const isBeforeLatest = (yr < latestYr) ||
+                           (yr === latestYr && mo0 <= latestMo);
+    if (isIn12M && isBeforeLatest) total12M++;
+
+    // YTD: Jan 2026 → DATA_LATEST
+    if (yr === 2026 && mo0 <= latestMo) totalYTD++;
+    else if (yr > 2026 && yr <= latestYr) totalYTD++;
+  }
+
+  // Update DATA.exitReasons[] — match on reason string
+  DATA.exitReasons.forEach(er => {
+    const counts = reasonMap[er.reason];
+    if (counts) {
+      // Ensure array is long enough
+      while (er.monthly.length < totalMonths) er.monthly.push(0);
+      for (let i = 0; i < totalMonths; i++) {
+        er.monthly[i] = counts[i] || 0;
+      }
+      // Update YTD and 12M for this reason
+      er.ytd = 0;
+      er.m12 = 0;
+      for (let i = 0; i < totalMonths; i++) {
+        const mo = (i + 1) % 12;
+        const yr = 2026 + Math.floor((i + 1) / 12);
+        // YTD: 2026 months up to DATA_LATEST
+        if (yr === 2026 && mo <= latestMo) er.ytd += (counts[i] || 0);
+        // 12M: last 12 months
+        const labelIdx12Start = totalMonths - 12;
+        if (i >= Math.max(0, labelIdx12Start)) er.m12 += (counts[i] || 0);
+      }
+    }
+  });
+
+  // Add any new reasons not in DATA.exitReasons
+  for (const [reason, counts] of Object.entries(reasonMap)) {
+    if (!DATA.exitReasons.find(er => er.reason === reason)) {
+      DATA.exitReasons.push({
+        reason, monthly: counts, color: '#94a3b8',
+        ytd: counts.reduce((a,b)=>a+b,0),
+        m12: counts.slice(Math.max(0, totalMonths-12)).reduce((a,b)=>a+b,0),
+      });
+    }
+  }
+
+  DATA.exitTotal12M = total12M;
+  DATA.exitTotalYTD = totalYTD;
+
+  console.log('[ExitInterviews] total12M:', total12M, 'YTD:', totalYTD);
+  console.log('[ExitInterviews] byMonth:', byMonth);
+}
+
+// ============================================================
+// LIVE FETCH — CANDIDATE TRACKER OUTLET
+// col[0]="August 2026", col[1]=stage name
+// Updates: DATA.cvReceivedMonthly, DATA.funnelMonthly, DATA.onboarded6M
+// ============================================================
+const EN_MONTH_LONG_MAP = {
+  january:0, february:1, march:2, april:3, may:4, june:5,
+  july:6, august:7, september:8, october:9, november:10, december:11
+};
+
+async function fetchCandidateTracker() {
+  const url = `https://docs.google.com/spreadsheets/d/${MASTER_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Candidate%20Tracker%20Outlet`;
+  let rows;
+  try {
+    const resp = await fetch(url, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    rows = parseGvizCSV(await resp.text());
+  } catch (err) {
+    console.warn('[CandidateTracker] fetch error:', err);
+    return;
+  }
+  if (!rows || rows.length < 2) { console.warn('[CandidateTracker] empty'); return; }
+
+  const totalMonths = MONTH_FULL_LABELS.length;
+
+  // Stage name aliases for funnel mapping
+  const STAGE_ALIASES = {
+    'CV Received':        'totalCV',
+    'Sourced (Untouched)':'totalCV',    // counts as a CV entry
+    'Invitation Sent':    'invitationSent',
+    'HR Interview':       'hrInterview',
+    'User Interview':     'userInterview',
+    'Offering Stage':     'offeringStage',
+    'Joined':             'joined',
+  };
+
+  // Per-month counters (indexed by MONTH_FULL_LABELS)
+  const totalByMonth  = new Array(totalMonths).fill(0);  // all rows = total CV tracker entries
+  const funnelMonthly = {
+    totalCV:        new Array(totalMonths).fill(0),
+    invitationSent: new Array(totalMonths).fill(0),
+    hrInterview:    new Array(totalMonths).fill(0),
+    userInterview:  new Array(totalMonths).fill(0),
+    offeringStage:  new Array(totalMonths).fill(0),
+    joined:         new Array(totalMonths).fill(0),
+  };
+
+  for (let r = 1; r < rows.length; r++) {
+    const row   = rows[r];
+    if (!row || row.length < 2) continue;
+    const monStr = (row[0] || '').trim();  // "August 2026"
+    const stage  = (row[1] || '').trim();
+
+    // Parse "August 2026"
+    const mp = monStr.match(/^(\w+)\s+(\d{4})$/);
+    if (!mp) continue;
+    const mo0 = EN_MONTH_LONG_MAP[mp[1].toLowerCase()];
+    const yr  = parseInt(mp[2], 10);
+    if (mo0 === undefined || isNaN(yr)) continue;
+
+    const labelIdx = toLabelIdx(yr, mo0);
+    if (labelIdx < 0 || labelIdx >= totalMonths) continue;
+
+    // Every row = one candidate = one CV received
+    totalByMonth[labelIdx]++;
+    funnelMonthly.totalCV[labelIdx]++;
+
+    // Map stage to funnel bucket
+    const fKey = STAGE_ALIASES[stage];
+    if (fKey && fKey !== 'totalCV' && funnelMonthly[fKey]) {
+      funnelMonthly[fKey][labelIdx]++;
+    }
+  }
+
+  // Update DATA
+  // Ensure arrays are long enough
+  while (DATA.cvReceivedMonthly.length < totalMonths) DATA.cvReceivedMonthly.push(null);
+  for (const key of Object.keys(funnelMonthly)) {
+    if (!DATA.funnelMonthly[key]) DATA.funnelMonthly[key] = new Array(totalMonths).fill(null);
+    while (DATA.funnelMonthly[key].length < totalMonths) DATA.funnelMonthly[key].push(null);
+  }
+
+  for (let i = 0; i < totalMonths; i++) {
+    // Only overwrite if we have data for this month
+    if (totalByMonth[i] > 0) {
+      DATA.cvReceivedMonthly[i] = funnelMonthly.totalCV[i];
+      DATA.funnelMonthly.totalCV[i]        = funnelMonthly.totalCV[i];
+      DATA.funnelMonthly.invitationSent[i] = funnelMonthly.invitationSent[i];
+      DATA.funnelMonthly.hrInterview[i]    = funnelMonthly.hrInterview[i];
+      DATA.funnelMonthly.userInterview[i]  = funnelMonthly.userInterview[i];
+      DATA.funnelMonthly.offeringStage[i]  = funnelMonthly.offeringStage[i];
+    }
+  }
+
+  // Update total CV received (6M window or all months)
+  const sixStart = Math.max(0, totalMonths - 6);
+  DATA.totalCVReceived = funnelMonthly.totalCV.slice(sixStart).reduce((a,b)=>a+b,0);
+
+  console.log('[CandidateTracker] totalCV per month:', funnelMonthly.totalCV);
+  console.log('[CandidateTracker] hrInterview per month:', funnelMonthly.hrInterview);
+}
+
+// ============================================================
+// LIVE FETCH — RECRUITMENT SUMMARY (pivot table)
+// Row[1]=month headers (non-consecutive cols), Row[2+]=stage values
+// Updates: DATA.recruitmentFunnel
+// ============================================================
+async function fetchRecruitmentSummary() {
+  const url = `https://docs.google.com/spreadsheets/d/${MASTER_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Recruitment%20Summary`;
+  let rows;
+  try {
+    const resp = await fetch(url, { cache: 'no-store' });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    rows = parseGvizCSV(await resp.text());
+  } catch (err) {
+    console.warn('[RecruitmentSummary] fetch error:', err);
+    return;
+  }
+  if (!rows || rows.length < 3) { console.warn('[RecruitmentSummary] empty'); return; }
+
+  const totalMonths = MONTH_FULL_LABELS.length;
+
+  // Row[1] = month headers: col[0]="Stage", rest = month names (some blank for Aug2026)
+  const headerRow = rows[1] || [];
+
+  // Build col → {year, month0} map from header row
+  // Header format: "August 2026", "September 2026", etc.
+  const colToDate = {};
+  for (let c = 1; c < headerRow.length; c++) {
+    const hdr = (headerRow[c] || '').trim();
+    if (!hdr) continue;
+    const mp = hdr.match(/^(\w+)\s+(\d{4})$/);
+    if (!mp) continue;
+    const mo0 = EN_MONTH_LONG_MAP[mp[1].toLowerCase()];
+    const yr  = parseInt(mp[2], 10);
+    if (mo0 === undefined || isNaN(yr)) continue;
+    colToDate[c] = { year: yr, month0: mo0 };
+  }
+
+  // Stage row indices (0-based in gviz CSV):
+  //   row[1]=header, row[2]=Total CV, row[3]=Untouched, row[4]=Invitation Sent,
+  //   row[5]=HR Interview, row[6]=User Interview, row[7]=Final Interview,
+  //   row[8]=Failed HR, row[9]=Failed User, row[10]=Buffer Candidate, row[11]=KIV,
+  //   row[12]=MIA, row[13]=Offering Stage, row[14]=Done, row[15]=Reject Offer, row[16]=Withdraw
+  const STAGE_ROWS = {
+    totalCV:        2,
+    invitationSent: 4,
+    hrInterview:    5,
+    userInterview:  6,
+    offeringStage:  13,
+    failedHR:       8,
+    failedUser:     9,
+    mia:            12,
+    rejectOffer:    15,
+    withdraw:       16,
+  };
+
+  // Build per-labelIdx value maps
+  const stageData = {};
+  for (const [key, rowIdx] of Object.entries(STAGE_ROWS)) {
+    stageData[key] = new Array(totalMonths).fill(null);
+    const dataRow = rows[rowIdx] || [];
+    for (const [cStr, dateInfo] of Object.entries(colToDate)) {
+      const c = parseInt(cStr, 10);
+      const labelIdx = toLabelIdx(dateInfo.year, dateInfo.month0);
+      if (labelIdx < 0 || labelIdx >= totalMonths) continue;
+      const rawVal = (dataRow[c] || '').trim();
+      if (!rawVal || rawVal === '#VALUE!' || rawVal === '#DIV/0!') continue;
+      const v = parseInt(rawVal, 10);
+      if (!isNaN(v)) stageData[key][labelIdx] = v;
+    }
+  }
+
+  // Also scan data rows to detect Aug 2026 column (header missing in row[1])
+  // Look for any column where Total CV row has a value but no header mapping
+  const augDetected = new Set(Object.keys(colToDate).map(Number));
+  const totalCVRow = rows[2] || [];
+  for (let c = 1; c < totalCVRow.length; c++) {
+    if (augDetected.has(c)) continue;
+    const rawVal = (totalCVRow[c] || '').trim();
+    if (!rawVal || rawVal === '#VALUE!' || rawVal === '0' || rawVal === '') continue;
+    const v = parseInt(rawVal, 10);
+    if (isNaN(v) || v === 0) continue;
+    // This could be a month without a header — try to infer from position
+    // Between the known columns, find where this falls
+    // We know: col[22]=Jul2026(Jul=month0=6,yr=2026), col[24]=Sep2026, col[25]=Oct2026
+    // col[23] has no header but value=197 for Aug2026
+    // Strategy: sort known colToDate entries, look for gaps, assign sequentially
+    const knownCols = Object.keys(colToDate).map(Number).sort((a,b)=>a-b);
+    for (let ki = 0; ki < knownCols.length - 1; ki++) {
+      if (c > knownCols[ki] && c < knownCols[ki+1]) {
+        // Gap between two known months — assume sequential months
+        const prevDate = colToDate[knownCols[ki]];
+        let gapMo = prevDate.month0 + 1;
+        let gapYr = prevDate.year;
+        if (gapMo >= 12) { gapMo -= 12; gapYr++; }
+        const gapPos = c - knownCols[ki] - 1;
+        gapMo += gapPos;
+        while (gapMo >= 12) { gapMo -= 12; gapYr++; }
+        colToDate[c] = { year: gapYr, month0: gapMo };
+        const labelIdx = toLabelIdx(gapYr, gapMo);
+        if (labelIdx >= 0 && labelIdx < totalMonths) {
+          for (const [key, rowIdx] of Object.entries(STAGE_ROWS)) {
+            const dr = rows[rowIdx] || [];
+            const rv = (dr[c] || '').trim();
+            const nv = parseInt(rv, 10);
+            if (!isNaN(nv)) stageData[key][labelIdx] = nv;
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  // Build the months array (only months with data)
+  const fMonths = [];
+  const fData = { months:[], totalCV:[], invitationSent:[], hrInterview:[], userInterview:[],
+                  offeringStage:[], failedHR:[], failedUser:[], mia:[], rejectOffer:[], withdraw:[] };
+  for (let i = 0; i < totalMonths; i++) {
+    if (stageData.totalCV[i] !== null && stageData.totalCV[i] > 0) {
+      fData.months.push(MONTH_FULL_LABELS[i]);
+      for (const key of Object.keys(STAGE_ROWS)) {
+        fData[key].push(stageData[key][i] !== null ? stageData[key][i] : 0);
+      }
+    }
+  }
+
+  DATA.recruitmentFunnel = fData;
+  console.log('[RecruitmentSummary] months:', fData.months);
+  console.log('[RecruitmentSummary] totalCV:', fData.totalCV);
 }
 
 // ============================================================
@@ -4850,16 +5576,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Kick off live fetch from Google Sheets (non-blocking; re-renders on success)
-  fetchLivePayrollData();
-
-  // Ensure Overview nav tab is marked active on init
+  // Render once immediately with snapshot data
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   const overviewBtn = document.querySelector('.nav-tab[onclick*="overview"]');
   if (overviewBtn) overviewBtn.classList.add('active');
-
-  // Initialize period label then render Overview as default
   updateDashboard();
+
+  // ── Live fetch all data sources in parallel ────────────────
+  // Order matters for MONTH_FULL_LABELS extension:
+  //   1. fetchMasterDB first (extends labels from join/resign dates)
+  //   2. fetchActiveHC  (just a count, no label extension)
+  //   3. fetchExitInterviews (uses labels extended by MasterDB)
+  //   4. fetchCandidateTracker (uses labels extended by MasterDB)
+  //   5. fetchRecruitmentSummary (uses labels, reads its own cols)
+  //   6. fetchLivePayrollData (extends labels from payroll months — runs last so it
+  //      doesn't overwrite MasterDB's DATA_LATEST with an earlier payroll month)
+  //
+  // Run MasterDB + ActiveHC first (they set DATA_LATEST and extend labels),
+  // then run the rest in parallel once those two are done, then payroll last.
+  setFetchStatus('loading', '🔄 Fetching live data dari semua Google Sheets…');
+
+  (async () => {
+    try {
+      // Phase 1: MasterDB (extends MONTH labels, sets DATA_LATEST) + ActiveHC in parallel
+      await Promise.all([fetchMasterDB(), fetchActiveHC()]);
+
+      // Phase 2: dependent fetches (need updated MONTH labels) in parallel
+      await Promise.all([
+        fetchExitInterviews(),
+        fetchCandidateTracker(),
+        fetchRecruitmentSummary(),
+        fetchLivePayrollData(),
+      ]);
+
+      // Re-render once all live data is in
+      updateDashboard();
+      console.log('[Init] All live fetches complete — dashboard updated');
+    } catch (err) {
+      console.error('[Init] Live fetch error:', err);
+      setFetchStatus('error', `❌ Sebagian data gagal fetch: ${err.message}`);
+      updateDashboard(); // still re-render with whatever succeeded
+    }
+  })();
 });
 </script>
 </body>
