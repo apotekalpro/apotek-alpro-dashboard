@@ -12398,21 +12398,33 @@
                             const shortCode = values[3]?.trim(); // Col D (3): Short Name (Outlet Code)
                             const storeName = values[4]?.trim(); // Col E (4): Store Name
                             const newAM = values[8]?.trim(); // Col 8: New AM
+                            const openingDateStr = values[9]?.trim(); // Col J (9): Date of Opening
                             const mt = values[11]?.trim(); // Col L (11): Managerial Trainee
                             const l3Target = parseFloat(values[13]?.replace(/,/g, '').trim()) || 0; // Col 13: L3 Target
                             const l2Target = parseFloat(values[14]?.replace(/,/g, '').trim()) || 0; // Col 14: L2 Target
                             const l1Target = parseFloat(values[15]?.replace(/,/g, '').trim()) || 0; // Col 15: L1 Target
                             
+                            // Parse opening date (blank = already open)
+                            let openingDate = null;
+                            if (openingDateStr) {
+                                // Try to parse date (supports formats like: 10/10/2026, 2026-10-10, Oct 10 2026, etc.)
+                                const parsed = new Date(openingDateStr);
+                                if (!isNaN(parsed.getTime())) {
+                                    openingDate = parsed;
+                                }
+                            }
+                            
                             if (shortCode) {
                                 this.targetData[shortCode] = {
                                     storeName: storeName || '',
                                     newAM: newAM || '',
+                                    openingDate: openingDate, // Store parsed date
                                     mt: mt || '',
                                     l1Target: l1Target,
                                     l2Target: l2Target,
                                     l3Target: l3Target
                                 };
-                                console.log(`📊 Loaded for ${shortCode}: MT=${mt}, L1=${l1Target.toLocaleString()}, L2=${l2Target.toLocaleString()}, L3=${l3Target.toLocaleString()}`);
+                                console.log(`📊 Loaded for ${shortCode}: Opening=${openingDateStr || 'Active'}, MT=${mt}, L1=${l1Target.toLocaleString()}, L2=${l2Target.toLocaleString()}, L3=${l3Target.toLocaleString()}`);
                             }
                         }
                     }
@@ -12598,6 +12610,20 @@
                         
                         // Get L1/L2/L3 targets, MT, type, and new AM from target data
                         const targetInfo = this.targetData[outlet] || {};
+                        
+                        // Check opening date - skip if outlet hasn't opened yet
+                        const openingDate = targetInfo.openingDate;
+                        if (openingDate) {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0); // Start of today
+                            
+                            if (openingDate > today) {
+                                // Outlet not yet opened, skip it
+                                continue;
+                            }
+                        }
+                        // If openingDate is null/blank, assume outlet is active and continue normally
+                        
                         const newAM = targetInfo.newAM || amName; // Use new AM if available, fallback to old AM
                         const mt = targetInfo.mt || '';
                         const outletType = targetInfo.outletType || '';
