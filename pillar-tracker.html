@@ -696,6 +696,7 @@ function parsePersonalRows(rows) {
     const name = (r[8] || '').trim();
     const am = (r[9] || '').trim();
     if (!name && !am) continue;
+    if (name.toLowerCase() === 'not found') continue;  // exclude unmatched outlets
 
     const gpo_target  = parseNum(r[11]);
     const gpo_ach     = parseNum(r[12]);
