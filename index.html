@@ -1425,20 +1425,26 @@
                         </div>
                         
                         <!-- PPM Dashboard Subtab -->
+                        <!-- Source: https://github.com/apotekalprodigital/ppm-tools -->
+                        <!-- Any amendments to the PPM dashboard should be made in that repo -->
                         <div id="ppmDashboardSubtab" class="ppm-subtab">
                             <div class="flex justify-between items-center mb-2">
                                 <div>
                                     <h3 class="text-xl font-semibold text-gray-800">PPM Dashboard</h3>
                                     <p class="text-gray-600">People Performance Management · Comprehensive Overview</p>
                                 </div>
-                                <button onclick="openInNewTab('ppm-dashboard.html')" 
+                                <button onclick="openInNewTab('https://apotekalprodigital.github.io/ppm-tools/ppm-dashboard.html')" 
                                         class="btn-primary text-white px-4 py-2 rounded-lg">
                                     <i class="fas fa-external-link-alt mr-2"></i>
                                     Open Full Screen
                                 </button>
                             </div>
                             <div class="iframe-container" style="height:calc(100vh - 180px);min-height:700px;">
-                                <iframe src="ppm-dashboard.html" class="iframe-full" style="width:100%;height:100%;border:none;border-radius:12px;" allow="scripts"></iframe>
+                                <iframe src="https://apotekalprodigital.github.io/ppm-tools/ppm-dashboard.html" 
+                                        class="iframe-full" 
+                                        style="width:100%;height:100%;border:none;border-radius:12px;" 
+                                        allow="scripts"
+                                        title="PPM People Dashboard"></iframe>
                             </div>
                         </div>
                         
