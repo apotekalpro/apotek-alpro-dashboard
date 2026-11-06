@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>BOD Dashboard - Outlet performance</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--ink:#14263f;--ink2:#51627a;--mute:#8a97a8;--line:#e3e8ef;--bg:#f3f6fa;--card:#fff;--navy:#0f3057;--navy2:#16436f;
+--l5:#b5303b;--l4:#d9622b;--l3:#c9951c;--l2:#6f7db0;--l1:#2f7f9a;--up5:#0f7a55;--up4:#2a9467;--up3:#5aa05a;--up2:#80a95a;--up1:#9bb15a;
+--neg:#b5303b;--pos:#0f7a55;--patbg:#eaf5ef;--patink:#17513c}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+button,select,input{font:inherit;color:inherit}
+.wrap{max-width:1500px;margin:0 auto;padding:18px 22px 40px}
+.hidden{display:none!important}
+/* header */
+.eyebrow{font-size:10px;letter-spacing:.14em;color:var(--ink2);font-weight:600;text-transform:uppercase}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{font-size:30px;margin:4px 0 4px;letter-spacing:-.02em}
+.sub{color:var(--ink2);font-size:12px;max-width:760px}
+.topr{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.pbox{background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:11px;display:flex;gap:10px;align-items:center}
+.pbox b{font-size:12px}
+.btn{background:#fff;border:1px solid var(--line);border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:12px;color:var(--ink);text-decoration:none;display:inline-flex;gap:6px;align-items:center}
+.btn:hover{border-color:#b9c4d3;background:#fafcff}
+.btn.sm{padding:5px 10px;font-size:11px}
+/* controls */
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:14px 0 4px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:8px}
+.ctl label{display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
+.ctl select{border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:#fff;min-width:110px;font-size:12px;font-weight:500;text-transform:none;letter-spacing:0}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:6px 11px;cursor:pointer;font-size:12px;font-weight:600;color:var(--ink2)}
+.seg button.on{background:var(--navy);color:#fff}
+.spacer{flex:1}
+/* tabs */
+.tabs{display:flex;gap:26px;border-bottom:1px solid var(--line);margin:14px 0 14px;overflow-x:auto}
+.tab{padding:12px 2px;border:0;background:none;cursor:pointer;font-weight:600;color:var(--ink2);border-bottom:2px solid transparent;white-space:nowrap;font-size:13px}
+.tab.on{color:var(--navy);border-bottom-color:var(--navy)}
+.tab .n{background:#e9eef5;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:5px;color:var(--ink2)}
+/* banners */
+.note{background:#eef5fd;border:1px solid #d3e4f7;border-left:3px solid var(--navy2);border-radius:6px;padding:11px 14px;font-size:12px;color:#243a57;margin-bottom:14px}
+.note b{color:var(--navy)}
+.warn{background:#fff8ea;border-color:#f1dcae;border-left-color:#c9951c;color:#6b4e10}
+.err{background:#fdeeee;border-color:#f3c6c6;border-left-color:var(--neg);color:#7b1f27}
+/* level cards */
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 8px}
+.sec h3{font-size:12px;margin:0;font-weight:700}.sec small{color:var(--mute);margin-left:8px;font-weight:500}
+.sec a{color:var(--navy);font-weight:700;font-size:11px;cursor:pointer;text-decoration:underline}
+.lv{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:6px}
+.lc{background:#fff;border:1px solid var(--line);border-top:3px solid var(--c);border-radius:6px;padding:12px 14px;cursor:pointer;transition:.12s;text-align:left}
+.lc:hover{box-shadow:0 3px 12px rgba(20,38,63,.09)}
+.lc.on{outline:2px solid var(--c);background:#fcfdff}
+.lc .l{color:var(--c);font-weight:700;font-size:12px;letter-spacing:.04em}
+.lc .d{font-size:10.5px;color:var(--ink2);margin-bottom:8px}
+.lc .big{font-size:26px;font-weight:700;line-height:1.1}.lc .big small{font-size:11px;font-weight:500;color:var(--mute);margin-left:3px}
+.lc .f{display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:9px;padding-top:7px;font-size:10.5px;color:var(--mute)}
+.lc .f b{color:var(--c);font-size:13px}
+.hint{font-size:11px;color:var(--ink2);margin:6px 0 14px}
+/* kpi cards */
+.grid{display:grid;gap:12px}
+.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}.g6{grid-template-columns:repeat(6,1fr)}
+.card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.card h4{margin:0 0 3px;font-size:11px;font-weight:600;color:var(--ink2)}
+.kv{font-size:24px;font-weight:700;letter-spacing:-.01em;line-height:1.15;margin:4px 0}
+.kv small{font-size:12px;font-weight:600;color:var(--mute)}
+.kv.neg{color:var(--neg)}.kv.pos{color:var(--pos)}
+.ks{font-size:10.5px;color:var(--mute)}
+.pat{background:var(--patbg);border:1px solid #cfe5d8;border-radius:8px;padding:14px 18px;margin-top:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0}
+.pat>div{padding:0 18px;border-left:1px solid #c6ddd0}.pat>div:first-child{border-left:0;padding-left:0}
+.pat h4{margin:0;font-size:11px;color:#355c4b;font-weight:600}
+.pat .kv{color:var(--patink)}.pat .kv.neg{color:var(--neg)}
+.pat .ks{color:#4d7765}
+.pat p{grid-column:1/-1;margin:10px 0 0;font-size:10.5px;color:#4d7765}
+/* tables */
+.tw{background:#fff;border:1px solid var(--line);border-radius:8px;margin-top:16px;overflow:hidden}
+.th{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;gap:12px;flex-wrap:wrap}
+.th h3{margin:0;font-size:15px}.th p{margin:2px 0 0;font-size:11px;color:var(--ink2)}
+.tx{overflow:auto;max-height:640px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+thead th{position:sticky;top:0;z-index:2;background:var(--navy);color:#fff;font-weight:600;font-size:10.5px;padding:10px 10px;text-align:right;white-space:nowrap;cursor:pointer;user-select:none;border-right:1px solid rgba(255,255,255,.07)}
+thead th.l{text-align:left}
+thead th.pt{background:#1c6a4e}
+thead th small{display:block;font-weight:400;opacity:.7;font-size:9.5px}
+thead th .ar{opacity:.5;margin-left:3px;font-size:9px}
+tbody td{padding:9px 10px;border-bottom:1px solid #edf1f6;text-align:right;white-space:nowrap}
+tbody td.l{text-align:left}
+tbody td.pt{background:#f1f9f5}
+tbody tr{cursor:pointer}tbody tr:hover td{background:#f7faff}tbody tr:hover td.pt{background:#e7f4ed}
+.nm b{display:block;font-size:12.5px}.nm span{color:var(--mute);font-size:10.5px}
+.pill{display:inline-block;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700;background:#eef2f7;color:var(--ink2)}
+.pill.t{background:#e8eefb;color:#2c4d8a}
+.chg{display:inline-block;border-radius:10px;padding:2px 9px;font-weight:700;font-size:11px}
+.chg.neg{background:#fde8e8;color:var(--neg)}.chg.pos{background:#e2f4ea;color:var(--pos)}
+.lvl{display:inline-block;min-width:26px;text-align:center;border-radius:4px;padding:2px 0;font-weight:700;font-size:11px;background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c)}
+td.neg{color:var(--neg);font-weight:600}td.pos{color:var(--pos)}
+.empty{padding:36px;text-align:center;color:var(--mute)}
+/* charts */
+.ch{position:relative;height:260px}.ch.t{height:320px}
+/* drawer */
+.dim{position:fixed;inset:0;background:rgba(15,30,50,.38);z-index:50}
+.dr{position:fixed;top:0;right:0;bottom:0;width:min(980px,96vw);background:var(--bg);z-index:51;overflow:auto;box-shadow:-10px 0 40px rgba(0,0,0,.2);padding:22px 24px 40px}
+.dr h2{margin:0 0 4px;font-size:20px}
+.dx{position:absolute;top:14px;right:18px;border:0;background:#fff;border:1px solid var(--line);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:14px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
+.mt td,.mt th{padding:6px 8px;font-size:11.5px}
+.mt thead th{cursor:default}
+/* flags / alerts */
+.fl{display:inline-block;margin:1px 3px 1px 0;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700}
+.fl.h{background:#fde8e8;color:var(--neg)}.fl.m{background:#fff1dc;color:#9a5b0c}.fl.i{background:#e8eefb;color:#2c4d8a}
+.tile{background:#fff;border:1px solid var(--line);border-left:4px solid var(--c,var(--navy));border-radius:8px;padding:12px 14px;cursor:pointer}
+.tile.on{outline:2px solid var(--c)}
+.tile .n{font-size:24px;font-weight:700}.tile .t{font-size:11.5px;font-weight:600}.tile .d{font-size:10.5px;color:var(--mute)}
+.bar{height:8px;border-radius:4px;background:#e8eef5;position:relative;min-width:90px}
+.bar i{position:absolute;top:0;bottom:0;border-radius:4px}
+.loading{padding:90px 20px;text-align:center;color:var(--ink2)}
+.spin{width:30px;height:30px;border:3px solid #dbe4ef;border-top-color:var(--navy);border-radius:50%;animation:s 1s linear infinite;margin:0 auto 12px}
+@keyframes s{to{transform:rotate(360deg)}}
+.denied{max-width:520px;margin:12vh auto;text-align:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:40px}
+.denied i{font-size:34px;color:var(--neg)}
+.foot{margin-top:26px;font-size:10.5px;color:var(--mute)}
+@media(max-width:1100px){.lv{grid-template-columns:repeat(2,1fr)}.g4,.g6{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr}.g2{grid-template-columns:1fr}.pat{grid-template-columns:1fr}.pat>div{border:0;padding:6px 0}}
+</style>
+</head>
+<body>
+<div id="gate" class="loading"><div class="spin"></div>Verifying access&hellip;</div>
+<div id="denied" class="denied hidden">
+  <i class="fas fa-lock"></i>
+  <h2 style="margin:12px 0 6px">Restricted to Chief level</h2>
+  <p style="color:#51627a">The BOD Dashboard is available to users with the <b>Chief</b> role only. Please sign in to the Executive Dashboard with a Chief account.</p>
+</div>
+
+<div id="app" class="wrap hidden">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Alpro Group / Offline Retail &middot; Board of Directors</div>
+      <h1>Outlet performance</h1>
+      <div class="sub" id="subtitle">Growth, profitability and intervention view across all outlets. One view of sales, transactions, PSH and PAT.</div>
+    </div>
+    <div class="topr">
+      <div class="pbox"><span id="pTag" style="color:#51627a">FY</span><b id="pRange">&nbsp;</b></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn sm" id="btnNotes"><i class="fas fa-circle-info"></i> Data notes</button>
+        <button class="btn sm" id="btnRefresh"><i class="fas fa-rotate"></i> Refresh</button>
+        <a class="btn sm" id="btnSource" target="_blank" rel="noopener">Source workbook <i class="fas fa-arrow-up-right-from-square" style="font-size:9px"></i></a>
+      </div>
+    </div>
+  </header>
+
+  <div class="ctl" id="controls">
+    <label>Year<select id="fYear"></select></label>
+    <label>Period<select id="fPeriod"></select></label>
+    <label id="lMonth" class="hidden">Month<select id="fMonth"></select></label>
+    <label>Year basis<select id="fBasis"><option value="FY">Fiscal (Nov&ndash;Oct)</option><option value="CY">Calendar (Jan&ndash;Dec)</option></select></label>
+    <label>Level driven by<div class="seg" id="fRate"><button data-v="rev" class="on">Revenue</button><button data-v="tx">Transactions</button></div></label>
+    <span class="spacer"></span>
+    <label>Outlet type<select id="fType"></select></label>
+    <label>Area manager<select id="fAm"></select></label>
+    <label>Province<select id="fProv"></select></label>
+  </div>
+
+  <div id="banner"></div>
+  <nav class="tabs" id="tabs"></nav>
+  <main id="view"></main>
+  <div class="foot" id="foot"></div>
+</div>
+
+<div id="drawerHost"></div>
+
+<script src="bod-engine.js"></script>
+<script src="bod-core.js"></script>
+<script src="bod-tabs-outlets.js"></script>
+<script src="bod-tabs-insights.js"></script>
+<script>BOD.boot();</script>
+</body>
+</html>
