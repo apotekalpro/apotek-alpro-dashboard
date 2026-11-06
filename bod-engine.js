@@ -78,11 +78,18 @@
   }
 
   /* ---------- MASTER -> model ---------- */
+  // Fixed info columns are located by their header text (the sheet's columns move when months are added).
+  // Defaults are the positions seen on 2026-11; they only apply if a header cannot be found.
+  var FIXED = [
+    ['code', /^(\d[\d,]*\s+)?Outlet\b/i, 0], ['name', /\bName\b/i, 1], ['start', /Start Date/i, 2], ['am', /^AM\b/i, 4],
+    ['type', /\bTYPE\b/i, 5], ['nature', /\bNATURE\b/i, 6], ['kec', /KECAMATAN/i, 7], ['city', /\bKOTA\b/i, 8],
+    ['prov', /PROVINCE/i, 9], ['size', /\bSize\b/i, 11], ['target', /Target\s+2026/i, 13], ['transformed', /Transformed/i, 14],
+    ['phase', /\bPHASE\b/i, 15], ['tier', /Category/i, 16]
+  ];
   function parseMaster(j) {
     var cols = j.table.cols, rows = j.table.rows;
-    var colMap = {}, minI = 1e9, maxI = -1, i, k;
+    var colMap = {}, minI = 1e9, maxI = -1, i, k, firstMetric = 1e9;
     cols.forEach(function (c, ci) {
-      if (ci < 16) return;
       var lab = (c.label || '').trim();
       var mm = MON_RE.exec(lab);
       if (!mm) return;
@@ -93,27 +100,35 @@
       var idx = (y - 2000) * 12 + (MON[mm[1].toLowerCase()] - 1);
       (colMap[g] = colMap[g] || {})[idx] = ci;
       if (idx < minI) minI = idx; if (idx > maxI) maxI = idx;
+      if (ci < firstMetric) firstMetric = ci;
+    });
+    var fx = {};
+    FIXED.forEach(function (f) {
+      fx[f[0]] = f[2];
+      for (var ci = 0; ci < Math.min(firstMetric, cols.length); ci++) {
+        if (f[1].test((cols[ci].label || '').trim())) { fx[f[0]] = ci; break; }
+      }
     });
     var outlets = [], rowsKept = [];
     rows.forEach(function (r) {
       var c = r.c || [];
-      var code = cellStr(c[0]);
-      if (!code || code === 'ECOM' || code === 'Outlet') return;
+      var code = cellStr(c[fx.code]);
+      if (!code || code === 'ECOM' || code === 'Outlet' || /^(grand\s+)?total\b/i.test(code)) return;
       rowsKept.push(c);
     });
     var no = rowsKept.length, nm = maxI - minI + 1;
     var S = {};
     KEYS.forEach(function (key) { S[key] = new Float64Array(no * nm).fill(NaN); });
     rowsKept.forEach(function (c, oi) {
-      var prov = cellStr(c[9]).toUpperCase();
+      var prov = cellStr(c[fx.prov]).toUpperCase();
       if (prov === 'DKI JAKARTA') prov = 'JAKARTA';
       outlets.push({
-        code: cellStr(c[0]), name: cellStr(c[1]).replace(/^APOTEK ALPRO\s+/i, '').trim() || cellStr(c[1]),
-        fullName: cellStr(c[1]),
-        start: cellDate(c[2]), am: cellStr(c[4]) || 'Unassigned', type: cellStr(c[5]) || 'N/A',
-        nature: cellStr(c[6]) || 'N/A', kec: cellStr(c[7]), city: cellStr(c[8]), prov: prov || 'N/A',
-        size: cellStr(c[11]), target26: cellNum(c[13]), transformed: cellStr(c[14]),
-        phase: cellStr(c[15]), tier: (cellStr(c[16]) || 'N/A').toUpperCase()
+        code: cellStr(c[fx.code]), name: cellStr(c[fx.name]).replace(/^APOTEK ALPRO\s+/i, '').trim() || cellStr(c[fx.name]),
+        fullName: cellStr(c[fx.name]),
+        start: cellDate(c[fx.start]), am: cellStr(c[fx.am]) || 'Unassigned', type: cellStr(c[fx.type]) || 'N/A',
+        nature: cellStr(c[fx.nature]) || 'N/A', kec: cellStr(c[fx.kec]), city: cellStr(c[fx.city]), prov: prov || 'N/A',
+        size: cellStr(c[fx.size]), target26: cellNum(c[fx.target]), transformed: cellStr(c[fx.transformed]),
+        phase: cellStr(c[fx.phase]), tier: (cellStr(c[fx.tier]) || 'N/A').toUpperCase()
       });
       KEYS.forEach(function (key) {
         var cm = colMap[key]; if (!cm) return;
@@ -160,19 +175,61 @@
     return m;
   }
 
-  /* ---------- Exec Dashboard A9:W25 ---------- */
+  /* ---------- Exec Dashboard (rows 9-25, any number of month columns) ---------- */
+  // The row labelled "Month" holds the first month as a date in column B and the following months in the
+  // next columns, one per column. New months are appended on the right, so we read until the last column
+  // that holds data instead of assuming a fixed width.
+  function serialToIdx(v) {                       // Excel/Sheets serial day number -> month index
+    var d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);
+    return (d.getUTCFullYear() - 2000) * 12 + d.getUTCMonth();
+  }
+  function execMonthOf(c) {                       // a header cell -> month index, or null
+    if (!c || c.v === null || c.v === undefined) return null;
+    if (typeof c.v === 'number' && c.v > 30000) return serialToIdx(c.v);
+    if (typeof c.v === 'string') {
+      var m = /^Date\((\d+),(\d+),(\d+)/.exec(c.v);
+      if (m) return (+m[1] - 2000) * 12 + +m[2];
+    }
+    var f = typeof c.f === 'string' ? c.f : (typeof c.v === 'string' ? c.v : '');
+    var mm = MON_RE.exec(f.trim());
+    if (mm) { var y = +mm[2]; if (y < 100) y += 2000; return (y - 2000) * 12 + (MON[mm[1].toLowerCase()] - 1); }
+    return null;
+  }
   function parseExec(j) {
     var rows = j.table.rows, out = { months: [], rows: {}, order: [] };
-    var n = 22, startIdx = (2025 - 2000) * 12; // Jan 2025
-    for (var i = 0; i < n; i++) out.months.push(startIdx + i);
+    var hdr = null;
+    rows.forEach(function (r) { var c = r.c || []; if (!hdr && cellStr(c[0]).toLowerCase() === 'month') hdr = c; });
+    var width = 0;
     rows.forEach(function (r) {
       var c = r.c || [];
-      var label = cellStr(c[0]); if (!label || label === 'Month') return;
+      for (var k = c.length - 1; k >= 1; k--) { if (cellNum(c[k]) === cellNum(c[k])) { if (k > width) width = k; break; } }
+    });
+    var first = hdr ? execMonthOf(hdr[1]) : null;
+    if (first === null) first = (2025 - 2000) * 12;       // header unreadable: last known start (Jan 2025)
+    for (var i = 0; i < width; i++) {
+      var t = first + i, hc = hdr ? execMonthOf(hdr[1 + i]) : null;
+      if (hc !== null && i > 0) t = hc;                    // trust an explicit date if the header carries one
+      out.months.push(t);
+    }
+    rows.forEach(function (r) {
+      var c = r.c || [];
+      var label = cellStr(c[0]); if (!label || label.toLowerCase() === 'month') return;
       var vals = [];
-      for (var k = 1; k <= n; k++) { var v = cellNum(c[k]); vals.push(v === v ? v : null); }
+      for (var k = 1; k <= width; k++) { var v = cellNum(c[k]); vals.push(v === v ? v : null); }
       out.rows[label] = vals; out.order.push(label);
     });
     return out;
+  }
+  // last month (index) in which the Exec row has a value
+  function execLast(exec, label) {
+    var r = exec && exec.rows[label]; if (!r) return null;
+    for (var i = r.length - 1; i >= 0; i--) if (r[i] !== null && r[i] === r[i]) return { t: exec.months[i], v: r[i] };
+    return null;
+  }
+  function execAt(exec, label, t) {
+    var r = exec && exec.rows[label]; if (!r) return NaN;
+    var i = exec.months.indexOf(t); if (i < 0) return NaN;
+    return r[i] === null ? NaN : r[i];
   }
 
   /* ---------- snapshot (fallback when the live sheet is unreachable) ---------- */
@@ -374,6 +431,23 @@
              dPat: a.pat - b.pat, lDPat: la.pat - lb.pat };
   }
 
+
+  // Company-level PSH as published on the Exec Dashboard (per month). For a multi-month period the monthly
+  // figures are weighted by that month's total working hours (from MASTER). Returns {v, src:'sheet'|'rebuilt'}.
+  function companyPsh(model, exec, months) {
+    var num = 0, den = 0, all = [], o;
+    for (o = 0; o < model.outlets.length; o++) all.push(o);
+    for (var i = 0; i < months.length; i++) {
+      var t = months[i], v = execAt(exec, 'PSH', t);
+      if (v !== v) { num = NaN; break; }
+      var w = agg(model, all, [t]).wh; if (!(w > 0)) w = 1;
+      num += v * w; den += w;
+    }
+    if (num === num && den > 0 && months.length) return { v: num / den, src: 'sheet' };
+    var A = agg(model, all, months);
+    return { v: A.psh, src: 'rebuilt' };
+  }
+
   // Month-by-month series for a set of outlets (all months with data)
   function monthly(model, oList) {
     var out = [];
@@ -406,7 +480,8 @@
     resolvePeriod: resolvePeriod, agg: agg, fullSum: fullSum, get: g,
     declineLevel: declineLevel, improveLevel: improveLevel, evaluate: evaluate, dataNotes: dataNotes, groupStats: groupStats, monthly: monthly,
     masterUrl: function () { return 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:json&sheet=MASTER&headers=4'; },
-    execUrl: function () { return 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent('Exec Dashboard') + '&range=A9:W25&headers=0'; }
+    execUrl: function () { return 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:json&sheet=' + encodeURIComponent('Exec Dashboard') + '&range=A9:ZZ25&headers=0'; },
+    execLast: execLast, execAt: execAt, companyPsh: companyPsh
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   root.BODEngine = API;

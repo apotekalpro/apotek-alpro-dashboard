@@ -100,7 +100,13 @@
   };
 
   /* ---------- Financial growth ---------- */
-  var DIMS = { type: ['Outlet type', function (o) { return o.type; }], tier: ['Tier (Category 2026)', function (o) { return o.tier; }], am: ['Area manager', function (o) { return o.am; }], prov: ['Province', function (o) { return o.prov; }], nature: ['Nature', function (o) { return o.nature; }], city: ['City / regency', function (o) { return o.city || 'N/A'; }] };
+  function cohortOf(o) {
+    var t = o.startIdx >= 0 ? o.startIdx : o.firstRev;
+    if (t === undefined || t < 0) return 'Unknown';
+    var y = 2000 + Math.floor(t / 12);
+    return y < 2020 ? 'Before 2020' : String(y);
+  }
+  var DIMS = { cohort: ['Opening year', cohortOf], type: ['Outlet type', function (o) { return o.type; }], tier: ['Tier (Category)', function (o) { return o.tier; }], am: ['Area manager', function (o) { return o.am; }], prov: ['Province', function (o) { return o.prov; }], nature: ['Nature', function (o) { return o.nature; }], city: ['City / regency', function (o) { return o.city || 'N/A'; }] };
   S.dim = S.dim || 'type';
 
   B.tabs.growth = {
@@ -115,6 +121,11 @@
         return '<tr style="cursor:default"><td class="l"><b>' + lab + '</b></td><td class="' + neg + '">' + fmt(a) + '</td><td class="' + (mode === 'abs' && isN(b) && b < 0 ? 'neg' : '') + '">' + (hb ? fmt(b) : '\u2013') + '</td><td class="' + F.cls(d) + '">' + dTxt + '</td></tr>';
       };
       var a = gs.a, b = gs.b;
+      var coP = { a: a.psh, b: b.psh, src: 'rebuilt' };
+      if (!B.isFiltered() && B.exec) {
+        var pa = E.companyPsh(m, B.exec, P.cur), pb = hb ? E.companyPsh(m, B.exec, P.base) : null;
+        if (pa.src === 'sheet') { coP.a = pa.v; coP.src = 'sheet'; if (pb && pb.src === 'sheet') coP.b = pb.v; else coP.b = NaN; }
+      }
       var lflRows = '';
       lflRows += '<tr style="cursor:default"><td class="l"><b>Like-for-like sales</b> (' + gs.nLfl + ' outlets)</td><td>' + F.rp(gs.la.rev) + '</td><td>' + (hb ? F.rp(gs.lb.rev) : '\u2013') + '</td><td class="' + F.cls(gs.lRev) + '">' + F.p(gs.lRev, 1, true) + '</td></tr>';
       lflRows += '<tr style="cursor:default"><td class="l"><b>Like-for-like transactions</b></td><td>' + F.n(gs.la.tx) + '</td><td>' + (hb ? F.n(gs.lb.tx) : '\u2013') + '</td><td class="' + F.cls(gs.lTx) + '">' + F.p(gs.lTx, 1, true) + '</td></tr>';
@@ -122,7 +133,7 @@
         line('Sales', a.rev, b.rev, F.rp) + line('Transactions', a.tx, b.tx, F.n) + line('Basket size (Rp)', a.basket, b.basket, F.n) + line('Gross profit', a.pro, b.pro, F.rp) +
         line('Margin', a.margin, b.margin, function (v) { return F.p(v, 2); }, 'pp') +
         line('<b>PAT (PSH \u00d7 hours)</b>', a.pat, b.pat, F.rp, 'abs') +
-        line('PSH (Rp per staff hour)', a.psh, b.psh, F.n, 'abs') +
+        line('PSH (Rp per staff hour)' + (coP.src === 'sheet' ? ' \u00b7 company, per sheet' : ''), coP.a, coP.b, F.n, 'abs') +
         line('Focus product share of sales', a.focusPct, b.focusPct, function (v) { return F.p(v, 1); }, 'pp') + line('Sales through members', a.memPct, b.memPct, function (v) { return F.p(v, 1); }, 'pp') +
         line('Recruitment rate', a.rrPct, b.rrPct, function (v) { return F.p(v, 1); }, 'pp') + line('New members', a.nm, b.nm, F.n) +
         line('Salary % of sales', a.salPct, b.salPct, function (v) { return F.p(v, 1); }, 'pp') + line('Rental % of sales', a.rentPct, b.rentPct, function (v) { return F.p(v, 1); }, 'pp') + line('Stock loss % of sales', a.slPct, b.slPct, function (v) { return F.p(v, 2); }, 'pp') +
@@ -185,6 +196,51 @@
     }
   };
 
+  /* ---------- Area manager scorecard ---------- */
+  B.tabs.am = {
+    render: function (ctx, view) {
+      var m = ctx.m, P = ctx.P, hb = P.baseAvailable, al = B.computeFlags(ctx);
+      var rows = ctx.rowsF.filter(function (r) { return r.cat !== 'inactive'; }), groups = {};
+      rows.forEach(function (r) { (groups[r.ol.am || 'Unassigned'] = groups[r.ol.am || 'Unassigned'] || []).push(r); });
+      var recs = Object.keys(groups).map(function (k) {
+        var rr = groups[k], g = E.groupStats(m, P, rr);
+        var lf = rr.filter(function (r) { return r.cat === 'lfl'; }), dn = lf.filter(function (r) { return r.dir === 'down'; });
+        var hi = rr.filter(function (r) { return (al.by[r.o] || []).some(function (id) { return DEFS.filter(function (d) { return d.id === id; })[0].sev === 'h'; }); }).length;
+        var deep = dn.filter(function (r) { return r.level >= 4; }).length;
+        return { k: k, g: g, n: rr.length, lf: lf.length, dn: dn.length, deep: deep, hi: hi, ol: { name: k, code: '', am: k }, o: rr[0].o };
+      });
+      var c = function (key, label, sub, get, fmt, tdc, extra) { return Object.assign({ k: key, label: label, sub: sub, get: get, fmt: fmt, tdc: tdc }, extra || {}); };
+      var cols = [
+        { k: 'k', label: 'Area manager', left: true, get: function (x) { return x.k; }, fmt: function (x) { return '<b>' + esc(x.k) + '</b>'; } },
+        c('n', 'Outlets', '', function (x) { return x.n; }, function (x) { return x.n; }),
+        c('rev', 'Sales', 'Rp b', function (x) { return x.g.a.rev; }, function (x) { return (x.g.a.rev / 1e9).toFixed(2); }),
+        c('lr', 'LFL sales', 'change', function (x) { return x.g.lRev; }, function (x) { return F.p(x.g.lRev, 1, true); }, function (x) { return F.cls(x.g.lRev); }),
+        c('lt', 'LFL tx', 'change', function (x) { return x.g.lTx; }, function (x) { return F.p(x.g.lTx, 1, true); }, function (x) { return F.cls(x.g.lTx); }),
+        c('mg', 'Margin', '', function (x) { return x.g.a.margin; }, function (x) { return F.p(x.g.a.margin, 1); }),
+        c('dm', 'LFL margin', 'change', function (x) { return x.g.lMargin; }, function (x) { return F.pp(x.g.lMargin); }, function (x) { return F.cls(x.g.lMargin); }),
+        c('ps', 'PSH', 'Rp/hr', function (x) { return x.g.a.psh; }, function (x) { return F.n(x.g.a.psh); }, function (x) { return F.cls(x.g.a.psh); }),
+        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: 'Rp m', get: function (x) { return x.g.a.pat; }, fmt: function (x) { return F.m(x.g.a.pat); }, tdc: function (x) { return F.cls(x.g.a.pat); } },
+        { k: 'dpat', th: 'pt', cls: 'pt', label: 'PAT change', sub: 'Rp m', get: function (x) { return x.g.dPat; }, fmt: function (x) { return hb ? F.m(x.g.dPat) : '\u2013'; }, tdc: function (x) { return F.cls(x.g.dPat); } },
+        c('dn', 'Declining', '% of LFL', function (x) { return x.lf ? x.dn / x.lf : NaN; }, function (x) { return x.lf ? F.p(x.dn / x.lf, 0) : '\u2013'; }, function (x) { return x.lf && x.dn / x.lf >= 0.5 ? 'neg' : ''; }),
+        c('deep', 'Level 4\u20135', 'outlets', function (x) { return x.deep; }, function (x) { return x.deep; }, function (x) { return x.deep ? 'neg' : ''; }),
+        c('ng', 'Negative PAT', 'outlets', function (x) { return x.g.negPat; }, function (x) { return x.g.negPat; }, function (x) { return x.g.negPat ? 'neg' : ''; }),
+        c('hi', 'High alerts', 'outlets', function (x) { return x.hi; }, function (x) { return x.hi; }, function (x) { return x.hi ? 'neg' : ''; })
+      ];
+      var tbl = B.table('tbl-am', recs, cols, { defSort: 'dn', defDir: -1 });
+      view.innerHTML = '<div class="note"><b>Area manager scorecard.</b> ' + esc(P.tag) + (hb ? ' vs ' + esc(P.baseTag) : '') + '. One row per AM across the outlets in the current filter; <i>declining</i> counts like-for-like outlets that fell on ' + esc(ctx.rateName) + '. Click an AM to see their declining stores.</div>' +
+        '<div class="tw"><div class="th"><div><h3>Area managers</h3><p>' + recs.length + ' area managers \u00b7 sortable \u00b7 PAT = PSH \u00d7 hours</p></div><button class="btn" id="expAm"><i class="fas fa-download"></i> Export</button></div>' + tbl.html + '</div>';
+      var t = view.querySelector('#tbl-am');
+      if (t) {
+        t.querySelectorAll('th').forEach(function (th) { th.onclick = function () { var k = th.dataset.k, cur = S.sort && S.sort.id === 'tbl-am' ? S.sort : { k: 'dn', dir: -1 }; S.sort = { id: 'tbl-am', k: k, dir: cur.k === k ? -cur.dir : 1 }; B.render(); }; });
+        t.querySelectorAll('tbody tr[data-i]').forEach(function (tr) { tr.onclick = function () { var x = tbl.rows[+tr.dataset.i]; S.am = x.k; if (B.syncFilters) B.syncFilters(); S.tab = 'down'; S.level = null; B.render(); }; });
+      }
+      view.querySelector('#expAm').onclick = function () {
+        B.csv('bod-am-scorecard.csv', ['Area manager', 'Outlets', 'Sales', 'LFL sales change', 'LFL tx change', 'Margin', 'LFL margin change', 'PSH', 'PAT', 'PAT change', 'Declining LFL outlets', 'LFL outlets', 'Level 4-5 outlets', 'Negative PAT outlets', 'High alert outlets'],
+          tbl.all.map(function (x) { return [x.k, x.n, Math.round(x.g.a.rev), isN(x.g.lRev) ? x.g.lRev.toFixed(4) : '', isN(x.g.lTx) ? x.g.lTx.toFixed(4) : '', isN(x.g.a.margin) ? x.g.a.margin.toFixed(4) : '', isN(x.g.lMargin) ? x.g.lMargin.toFixed(4) : '', isN(x.g.a.psh) ? Math.round(x.g.a.psh) : '', Math.round(x.g.a.pat), hb ? Math.round(x.g.dPat) : '', x.dn, x.lf, x.deep, x.g.negPat, x.hi]; }));
+      };
+    }
+  };
+
   /* ---------- Store size & profitability (placeholder, as requested) ---------- */
   B.tabs.size = {
     render: function (ctx, view) {
@@ -192,7 +248,7 @@
       view.innerHTML = '<div class="note warn"><b>Store size &amp; profitability is intentionally blank for now.</b> The <i>Size</i> column in MASTER is empty for all ' + ol.length + ' outlets (' + withSize + ' filled), so there is nothing real to chart yet. Nothing here is estimated.</div>' +
         '<div class="card" style="padding:34px;text-align:center"><i class="fas fa-ruler-combined" style="font-size:34px;color:#b9c4d3"></i><h3 style="margin:12px 0 4px">Waiting for store size data</h3>' +
         '<p style="max-width:640px;margin:0 auto;color:var(--ink2)">As soon as the Size column (square metres) is filled in MASTER, this tab will populate automatically on the next refresh. Planned view: size bands (e.g. &lt;50, 50\u2013100, 100\u2013150, 150+ sqm) against sales per sqm, PAT per sqm, PSH and margin, with the over- and under-performers for their size called out.</p>' +
-        '<p style="max-width:640px;margin:14px auto 0;color:var(--mute);font-size:11.5px">Also empty in MASTER: Grand Opening, and Target 2025 (Target 2026 is filled).</p></div>';
+        '<p style="max-width:640px;margin:14px auto 0;color:var(--mute);font-size:11.5px">Grand Opening is also empty in MASTER. Targets are deliberately not used in this dashboard.</p></div>';
     }
   };
 

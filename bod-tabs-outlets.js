@@ -47,7 +47,7 @@
     return {
       render: function (ctx, view) {
         var all = dir === 'down' ? ctx.down : ctx.up, P = ctx.P;
-        if (!P.baseAvailable) { view.innerHTML = '<div class="note warn">Level analysis needs a full prior-year comparison. Pick a period inside FY2026 (or Q4 FY2025) to see ' + (dir === 'down' ? 'declining' : 'improving') + ' stores.</div>'; return; }
+        if (!P.baseAvailable) { view.innerHTML = '<div class="note warn">Level analysis needs a full prior-year comparison. Pick a period whose prior-year months are in the workbook (from ' + E.monthLabel(ctx.m.baseMin + 12) + ' onwards) to see ' + (dir === 'down' ? 'declining' : 'improving') + ' stores.</div>'; return; }
         var rows = S.level ? all.filter(function (r) { return r.level === S.level; }) : all;
         var nm = dir === 'down' ? 'decline' : 'growth', rl = ctx.rate === 'tx' ? 'transaction' : 'sales';
         var banner = '<div class="note"><b>' + (dir === 'down' ? 'Declining stores' : 'Improving stores') + '.</b> Like-for-like outlets that traded in every month of ' + esc(P.tag) + ' and ' + esc(P.baseTag) + ', ranked into five levels by <b>' + rl + '</b> ' + nm +
@@ -175,13 +175,21 @@
       var all = rows.map(function (r) { return r.o; }), mo = E.monthly(m, all), cur = mo[mo.length - 1];
       for (var i = mo.length - 1; i >= 0; i--) if (mo[i].t === endT) { cur = mo[i]; break; }
       var hasBase = P.baseAvailable;
+      // Company PSH: the sheet's own company figure when no outlet filter is applied (owner instruction);
+      // otherwise rebuilt as PAT / hours from the filtered outlets.
+      var coPsh = { m: cur.psh, p: gs.a.psh, pos: cur.posPsh, n: cur.nPsh, src: 'rebuilt' };
+      if (!B.isFiltered()) {
+        var sm = E.execAt(ex, 'PSH', endT), sp = E.companyPsh(m, ex, P.cur), sv = E.execAt(ex, 'OUTLET WITH +VE PSH', endT);
+        if (isN(sm)) { coPsh.m = sm; coPsh.src = 'sheet'; if (isN(sv)) coPsh.pos = sv; }
+        if (sp.src === 'sheet') coPsh.p = sp.v;
+      }
       var gl = function (v) { return hasBase ? F.p(v, 1, true) : 'n/a'; };
       var cards = '<div class="grid g6" style="margin-bottom:12px">' +
         B.card('Sales \u00b7 ' + esc(P.tag), F.rp(gs.a.rev), hasBase ? 'vs ' + F.rp(gs.b.rev) + '<br>Like-for-like <b class="' + F.cls(gs.lRev) + '">' + gl(gs.lRev) + '</b>' : 'Prior-year base not in workbook') +
         B.card('Transactions', F.n(gs.a.tx), hasBase ? 'vs ' + F.n(gs.b.tx) + '<br>Like-for-like <b class="' + F.cls(gs.lTx) + '">' + gl(gs.lTx) + '</b>' : '') +
         B.card('Gross profit \u00b7 margin', F.rp(gs.a.pro), 'Margin ' + F.p(gs.a.margin, 2) + (hasBase ? '<br>LFL change <b class="' + F.cls(gs.lMargin) + '">' + F.pp(gs.lMargin) + '</b>' : '')) +
         B.card('PAT (PSH \u00d7 hours)', F.rp(gs.a.pat), hasBase ? 'vs ' + F.rp(gs.b.pat) + '<br>Change ' + F.rp(gs.dPat) : '', gs.a.pat < 0 ? 'neg' : 'pos') +
-        B.card('PSH \u00b7 ' + E.monthShort(endT), F.n(cur.psh), 'Period PSH ' + F.n(gs.a.psh) + ' Rp/hr<br>' + cur.posPsh + ' of ' + cur.nPsh + ' outlets positive', cur.psh < 0 ? 'neg' : 'pos') +
+        B.card('PSH \u00b7 ' + E.monthShort(endT), F.n(coPsh.m), 'Period PSH ' + F.n(coPsh.p) + ' Rp/hr' + (coPsh.src === 'sheet' ? ' <span title=\"Company PSH as published on the Exec Dashboard\">(sheet)</span>' : '') + '<br>' + coPsh.pos + ' of ' + coPsh.n + ' outlets positive', coPsh.m < 0 ? 'neg' : 'pos') +
         B.card('Trading outlets', gs.n, ctx.down.length + ' declining \u00b7 ' + ctx.up.length + ' improving<br>' + ctx.neu.length + ' new / non-comparable') + '</div>';
       var cards2 = '<div class="grid g6" style="margin-bottom:12px">' +
         B.card('Basket \u00b7 ' + E.monthShort(endT), F.n(cur.basket) + ' <small>Rp</small>', 'Sales \u00f7 transactions') +
