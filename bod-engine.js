@@ -39,8 +39,10 @@
   var PERIOD_OFF = { FY: [0, 11], H1: [0, 5], H2: [6, 11], Q1: [0, 2], Q2: [3, 5], Q3: [6, 8], Q4: [9, 11] };
   var PERIOD_NAME = { FY: 'Full period', H1: 'Half-year 1', H2: 'Half-year 2', Q1: 'Quarter 1', Q2: 'Quarter 2', Q3: 'Quarter 3', Q4: 'Quarter 4' };
   // Label with the months that actually exist: e.g. "Full period (Jan\u2013Oct \u00b7 to date)" while the year is running.
-  function periodName(basis, p, year, latest) {
+  function periodName(basis, p, year, latest, firstOk) {
     var o = PERIOD_OFF[p], s = yearStart(basis, year || 2001), a = s + o[0], b = s + o[1], part = '';
+    if (firstOk != null && b >= firstOk && a < firstOk) a = firstOk;                 // history starts mid-period (FY2024 = Jul\u2013Dec)
+    if (firstOk != null && b < firstOk) return PERIOD_NAME[p] + ' (' + MN[ymOf(a).m] + '\u2013' + MN[ymOf(b).m] + ' \u00b7 no data)';
     if (latest != null) {
       if (a > latest) return PERIOD_NAME[p] + ' (' + MN[ymOf(a).m] + '\u2013' + MN[ymOf(b).m] + ' \u00b7 no data yet)';
       if (b > latest) { b = latest; part = ' \u00b7 to date'; }
@@ -263,7 +265,7 @@
   // sel: {basis:'FY'|'CY', year, period:'FY'|'H1'|'H2'|'Q1'..'Q4'|'R12'|'M', month(idx)}
   // Growth is always running year-on-year: same months, 12 months earlier.
   function resolvePeriod(model, sel) {
-    var basis = sel.basis || 'FY', cur = [], label = '', partial = false, tag = '', baseTag = '';
+    var basis = sel.basis || 'FY', cur = [], label = '', partial = false, tag = '', baseTag = '', startLimited = false;
     if (sel.period === 'M') {
       cur = [sel.month]; label = monthLabel(cur[0]); tag = monthShort(cur[0]); baseTag = monthShort(cur[0] - 12);
     } else if (sel.period === 'R12') {
@@ -273,8 +275,10 @@
     } else {
       var off = PERIOD_OFF[sel.period] || PERIOD_OFF.FY, s0 = yearStart(basis, sel.year), full = [];
       for (var o = off[0]; o <= off[1]; o++) full.push(s0 + o);
-      cur = full.filter(function (x) { return x >= model.min && x <= model.latest; });
-      partial = cur.length < full.length;
+      var firstOk = model.baseMin != null ? model.baseMin : model.min;      // earlier months are part-month / not trusted
+      cur = full.filter(function (x) { return x >= firstOk && x <= model.latest; });
+      partial = full.some(function (x) { return x > model.latest; });        // year to date
+      startLimited = full.some(function (x) { return x < firstOk; }) && cur.length > 0;   // e.g. FY2024 = Jul-Dec only
       var pre = sel.period === 'FY' ? '' : sel.period + ' ';
       tag = pre + yearLabel(basis, sel.year); baseTag = pre + yearLabel(basis, sel.year - 1);
       if (cur.length) label = tag + ' \u00b7 ' + monthLabel(cur[0]) + ' \u2013 ' + monthLabel(cur[cur.length - 1]) + (partial ? ' (to date)' : '');
@@ -282,7 +286,7 @@
     var base = cur.map(function (x) { return x - 12; });
     var bm = model.baseMin != null ? model.baseMin : model.min;
     var baseAvailable = base.length > 0 && base.every(function (x) { return x >= bm; });
-    return { cur: cur, base: base, label: label, partial: partial, baseAvailable: baseAvailable, tag: tag, baseTag: baseTag };
+    return { cur: cur, base: base, label: label, partial: partial, startLimited: startLimited, baseAvailable: baseAvailable, tag: tag, baseTag: baseTag };
   }
 
   /* ---------- aggregation ---------- */
