@@ -124,15 +124,14 @@
     var years = Object.keys(ys).map(Number).sort(function (a, b) { return b - a; });
     if (!S.year || years.indexOf(S.year) < 0) S.year = years[0];
     $('fYear').innerHTML = years.map(function (y) { return '<option value="' + y + '"' + (y === S.year ? ' selected' : '') + '>' + E.yearLabel(S.basis, y) + '</option>'; }).join('');
-    var ps = ['FY', 'H1', 'H2', 'Q1', 'Q2', 'Q3', 'Q4'].map(function (k) { return [k, E.periodName(S.basis, k)]; });
-    ps[0][1] = 'Full period \u00b7 ' + ps[0][1];
-    ps.push(['R12', 'Running 12 months'], ['M', 'Single month']);
+    // period names show the real months, e.g. "Full period (Jan\u2013Oct \u00b7 to date)"; running 12 months follows the latest month
+    var ps = ['FY', 'H1', 'H2', 'Q1', 'Q2', 'Q3', 'Q4'].map(function (k) { return [k, E.periodName(S.basis, k, S.year, m.latest)]; });
+    ps.push(['R12', 'Running 12 months (' + E.monthShort(m.latest - 11) + ' \u2013 ' + E.monthShort(m.latest) + ')'], ['M', 'Single month']);
     $('fPeriod').innerHTML = ps.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === S.period ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('');
     var ms = []; for (t = m.latest; t >= m.min + 12; t--) ms.push(t);
     if (!S.month) S.month = m.latest;
     $('fMonth').innerHTML = ms.map(function (x) { return '<option value="' + x + '"' + (x === S.month ? ' selected' : '') + '>' + E.monthLabel(x) + '</option>'; }).join('');
     $('lMonth').classList.toggle('hidden', S.period !== 'M');
-    $('fBasis').value = S.basis;
     var ol = m.outlets;
     fillSelect('fType', uniq(ol.map(function (o) { return o.type; })), 'All types', S.type);
     fillSelect('fAm', uniq(ol.map(function (o) { return o.am; })), 'All area managers', S.am);
@@ -140,10 +139,9 @@
   }
   function wire() {
     function onChange(fn) { return function (e) { fn(e.target.value); B.render(); }; }
-    $('fYear').onchange = onChange(function (v) { S.year = +v; });
+    $('fYear').onchange = function (e) { S.year = +e.target.value; S.level = null; buildControls(); B.render(); };
     $('fPeriod').onchange = function (e) { S.period = e.target.value; $('lMonth').classList.toggle('hidden', S.period !== 'M'); S.level = null; B.render(); };
     $('fMonth').onchange = onChange(function (v) { S.month = +v; });
-    $('fBasis').onchange = function (e) { S.basis = e.target.value; S.level = null; buildControls(); B.render(); };
     $('fType').onchange = onChange(function (v) { S.type = v; });
     $('fAm').onchange = onChange(function (v) { S.am = v; });
     $('fProv').onchange = onChange(function (v) { S.prov = v; });
@@ -333,7 +331,7 @@
       '<li><b>PAT</b> = PSH &times; working hours for each outlet-month, summed over the period. <b>PSH</b> for a period = PAT &divide; working hours (hours-weighted).</li>' +
       '<li><b>Margin</b> = profit &divide; sales. <b>Basket</b> = sales &divide; transactions. <b>Focus product %</b> and <b>member %</b> are sales-weighted and transaction-weighted.</li>' +
       '<li><b>Recruitment rate</b> = new members &divide; walk-in customers without membership (10 walk-ins, 2 recruited = 20%); rolled up as total recruited &divide; implied walk-ins.</li>' +
-      '<li>Fiscal year runs Nov&ndash;Oct (FY' + E.yearOf('FY', m.latest) + ' = ' + E.monthLabel(E.yearStart('FY', E.yearOf('FY', m.latest))) + ' to ' + E.monthLabel(E.yearStart('FY', E.yearOf('FY', m.latest)) + 11) + '). It rolls over automatically as months are added to the sheet. Switch to calendar year in the filter bar if preferred.</li></ul></div>' +
+      '<li><b>Financial year</b> = Jan&ndash;Dec: FY' + E.yearOf('FY', m.latest) + ' runs from ' + E.monthLabel(E.yearStart('FY', E.yearOf('FY', m.latest))) + ' to the latest month in the sheet (' + E.monthLabel(m.latest) + ') and rolls over automatically each January. <b>Running 12 months</b> = the last 12 months to the latest month (' + E.monthLabel(m.latest - 11) + ' &ndash; ' + E.monthLabel(m.latest) + ') and moves forward as months are added.</li></ul></div>' +
       '<div class="card" style="margin-bottom:12px"><h4>Things in the workbook worth confirming</h4><ul style="margin:6px 0 0 16px;padding:0;line-height:1.7">' +
       '<li><b>PAT</b> is PSH &times; working hours per outlet-month (per management definition). It is not Profit minus the cost columns in MASTER, because other costs (management fee, tax, other overheads) are outside the sheet. Latest month PAT: <b>' + F.rp(A.pat) + '</b>.</li>' +
       '<li><b>Company PSH</b> (' + E.monthLabel(m.latest) + ') is taken from the Exec Dashboard: <b>' + F.n(execPsh) + '</b> (outlet PSH &times; hours rolled up is <b>' + F.n(A.psh) + '</b>; the gap is expected because the company figure also reflects management fee, tax and other items). Outlet-level and filtered views always use outlet PSH &times; hours; for multi-month periods the company monthly figures are weighted by working hours.</li>' +

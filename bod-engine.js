@@ -31,16 +31,22 @@
   function ymOf(idx) { return { y: 2000 + Math.floor(idx / 12), m: idx % 12 }; }
   function monthLabel(idx) { var o = ymOf(idx); return MN[o.m] + ' ' + o.y; }
   function monthShort(idx) { var o = ymOf(idx); return MN[o.m] + " '" + String(o.y).slice(2); }
-  // Fiscal year runs Nov -> Oct (FY2026 = Nov 2025 .. Oct 2026), read from the reference screenshot
-  // ("FY2026 Nov 2025 - Oct 2026"). basis 'CY' switches to calendar year (Jan -> Dec).
-  function yearOf(basis, idx) { var o = ymOf(idx); return basis === 'CY' ? o.y : o.y + (o.m >= 10 ? 1 : 0); }
-  function yearStart(basis, y) { return basis === 'CY' ? (y - 2000) * 12 : (y - 1 - 2000) * 12 + 10; }
-  function yearLabel(basis, y) { return (basis === 'CY' ? 'CY' : 'FY') + y; }
+  // Financial year = calendar year: FY2026 = Jan 2026 .. latest month in the sheet (year to date), and it
+  // rolls over by itself when the sheet reaches January. The `basis` argument is kept only so older calls work.
+  function yearOf(basis, idx) { return ymOf(idx).y; }
+  function yearStart(basis, y) { return (y - 2000) * 12; }
+  function yearLabel(basis, y) { return 'FY' + y; }
   var PERIOD_OFF = { FY: [0, 11], H1: [0, 5], H2: [6, 11], Q1: [0, 2], Q2: [3, 5], Q3: [6, 8], Q4: [9, 11] };
-  var PERIOD_NAME = { FY: 'Full year', H1: 'Half-year 1', H2: 'Half-year 2', Q1: 'Quarter 1', Q2: 'Quarter 2', Q3: 'Quarter 3', Q4: 'Quarter 4' };
-  function periodName(basis, p) {
-    var s = yearStart(basis, 2001), o = PERIOD_OFF[p];
-    return PERIOD_NAME[p] + ' (' + MN[ymOf(s + o[0]).m] + '\u2013' + MN[ymOf(s + o[1]).m] + ')';
+  var PERIOD_NAME = { FY: 'Full period', H1: 'Half-year 1', H2: 'Half-year 2', Q1: 'Quarter 1', Q2: 'Quarter 2', Q3: 'Quarter 3', Q4: 'Quarter 4' };
+  // Label with the months that actually exist: e.g. "Full period (Jan\u2013Oct \u00b7 to date)" while the year is running.
+  function periodName(basis, p, year, latest) {
+    var o = PERIOD_OFF[p], s = yearStart(basis, year || 2001), a = s + o[0], b = s + o[1], part = '';
+    if (latest != null) {
+      if (a > latest) return PERIOD_NAME[p] + ' (' + MN[ymOf(a).m] + '\u2013' + MN[ymOf(b).m] + ' \u00b7 no data yet)';
+      if (b > latest) { b = latest; part = ' \u00b7 to date'; }
+    }
+    var span = (a === b) ? MN[ymOf(a).m] : MN[ymOf(a).m] + '\u2013' + MN[ymOf(b).m];
+    return PERIOD_NAME[p] + ' (' + span + part + ')';
   }
 
   /* ---------- gviz parsing ---------- */
