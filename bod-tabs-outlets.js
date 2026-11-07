@@ -16,7 +16,7 @@
     return Object.keys(c).sort().map(function (k) { return c[k] + ' ' + k.replace('EXPRESS-SM', 'Express-SM').replace(/^ALPRO$/, 'Alpro').replace(/^EXPRESS$/, 'Express'); }).join(' \u00b7 ') || '\u2013';
   }
   function scopeLabel() {
-    return (S.level ? 'Level ' + S.level : 'All levels') + ' \u00b7 ' + (S.type ? S.type : 'All outlet types') + (S.am ? ' \u00b7 ' + S.am : '') + (S.prov ? ' \u00b7 ' + S.prov : '');
+    return (S.level ? 'Level ' + S.level : 'All levels') + ' \u00b7 ' + (S.type ? S.type : 'All outlet types') + (S.am ? ' \u00b7 ' + S.am : '') + (S.prov ? ' \u00b7 ' + S.prov : '') + (S.city ? ' \u00b7 ' + S.city : '');
   }
 
   /* ---------- shared outlet table columns ---------- */
@@ -51,7 +51,7 @@
         var rows = S.level ? all.filter(function (r) { return r.level === S.level; }) : all;
         var nm = dir === 'down' ? 'decline' : 'growth', rl = ctx.rate === 'tx' ? 'transaction' : 'sales';
         var banner = '<div class="note"><b>' + (dir === 'down' ? 'Declining stores' : 'Improving stores') + '.</b> Like-for-like outlets that traded in every month of ' + esc(P.tag) + ' and ' + esc(P.baseTag) + ', ranked into five levels by <b>' + rl + '</b> ' + nm +
-          '. ' + ctx.neu.length + ' new or non-comparable outlet(s) are listed under <i>New outlets</i>. Click an outlet for its monthly detail.</div>';
+          '. ' + ctx.neu.length + ' new outlet(s) (opened within ' + E.NEW_MONTHS + ' months)' + (ctx.nc.length ? ' and ' + ctx.nc.length + ' older outlet(s) without a full prior-year base' : '') + ' are not in the levels; see <i>New outlets</i>. Click an outlet for its monthly detail.</div>';
         var cards = B.levelCards(ctx, dir);
         var rc = sum(rows, function (r) { return r.revCur; }), rb = sum(rows, function (r) { return r.revBase; }), dRev = rc - rb;
         var avg = mean(rows, function (r) { return r.rate; });
@@ -106,21 +106,21 @@
       var rampo = B.ramp(m);
       rows.forEach(function (r) {
         r.rpd = r.last.rev > 0 ? r.last.rev / daysIn(endT) : NaN; r.vsBench = isN(bench) && isN(r.rpd) ? r.rpd / bench : NaN;
-        r.age = r.ol.firstRev >= 0 ? endT - r.ol.firstRev + 1 : NaN;
-        var md = rampo.med[r.age]; r.vsRamp = isN(md) && r.last.rev > 0 ? r.last.rev / md : NaN;
+        r.ageSale = r.ol.firstRev >= 0 ? endT - r.ol.firstRev + 1 : NaN;   // months since first sale (ramp curve basis)
+        var md = rampo.med[r.ageSale]; r.vsRamp = isN(md) && r.last.rev > 0 ? r.last.rev / md : NaN;
       });
-      var young = rows.filter(function (r) { return isN(r.age) && r.age <= 12; });
-      var banner = '<div class="note"><b>New outlets.</b> Outlets that cannot be compared like-for-like with ' + esc(P.baseTag) + ' because they opened during the window or have gaps in sales. They are kept out of the decline and improvement levels and judged on ramp-up instead. Benchmark = median daily sales of like-for-like outlets in ' + E.monthLabel(endT) + ': <b>' + F.rp(bench) + '</b> per outlet per day.</div>';
+      var young = rows;
+      var banner = '<div class="note"><b>New outlets.</b> An outlet is <b>new while it is within ' + E.NEW_MONTHS + ' months of opening</b> (opening month = month 1, counted to ' + E.monthLabel(endT) + '). New outlets are kept out of the decline and improvement levels and judged on ramp-up instead. Older outlets that still lack a full prior-year base are listed separately below. Benchmark = median daily sales of like-for-like outlets in ' + E.monthLabel(endT) + ': <b>' + F.rp(bench) + '</b> per outlet per day.</div>';
       var cards = '<div class="grid g4">' +
-        B.card('New / non-comparable outlets', rows.length, typeBreakdown(rows)) +
+        B.card('New outlets (\u2264 ' + E.NEW_MONTHS + ' months)', rows.length, typeBreakdown(rows) + (ctx.nc.length ? '<br>+ ' + ctx.nc.length + ' older, not yet comparable' : '')) +
         B.card(esc(P.tag) + ' sales', '<small>Rp</small> ' + (sum(rows, function (r) { return r.revCur; }) / 1e9).toFixed(2) + '<small>b</small>', E.monthLabel(endT) + ': Rp ' + (sum(rows, function (r) { return r.last.rev; }) / 1e9).toFixed(2) + 'b') +
-        B.card('Median daily sales, outlets \u2264 12 months old', F.rp(median(young.map(function (r) { return r.rpd; }))), (isN(bench) ? F.p(median(young.map(function (r) { return r.rpd; })) / bench, 0) + ' of mature benchmark' : ''), '') +
+        B.card('Median daily sales, new outlets', F.rp(median(young.map(function (r) { return r.rpd; }))), (isN(bench) ? F.p(median(young.map(function (r) { return r.rpd; })) / bench, 0) + ' of mature benchmark' : ''), '') +
         B.card('Negative PAT in ' + E.monthShort(endT), rows.filter(function (r) { return r.last.patOM && r.patLast < 0; }).length, 'Of ' + rows.filter(function (r) { return r.last.patOM; }).length + ' with PSH reported') + '</div>';
       var flags = function (r) { return isN(r.vsRamp) && r.vsRamp < 0.5 ? '<span class="fl h">Slow ramp</span>' : isN(r.vsRamp) && r.vsRamp >= 1.2 ? '<span class="fl i">Fast ramp</span>' : ''; };
       var cols = [
         { k: 'name', label: 'Outlet', left: true, get: function (r) { return r.ol.name; }, fmt: function (r) { return '<div class="nm"><b>' + esc(r.ol.name) + '</b><span>' + esc(r.ol.code) + ' \u00b7 <i class="pill t">' + esc(r.ol.type) + '</i> ' + esc(r.ol.am) + '</span></div>'; } },
         { k: 'start', label: 'Opened', get: function (r) { return r.ol.start; }, fmt: function (r) { return F.d(r.ol.start); } },
-        { k: 'age', label: 'Age', sub: 'from 1st sale', get: function (r) { return r.age; }, fmt: function (r) { return F.n(r.age); } },
+        { k: 'age', label: 'Age', sub: 'months since opening', get: function (r) { return r.age; }, fmt: function (r) { return F.n(r.age); } },
         { k: 'mt', label: 'Months trading', sub: 'in period', get: function (r) { return r.nCur; }, fmt: function (r) { return r.nCur + ' / ' + r.nMonths; } },
         { k: 'rc', label: esc(P.tag) + ' sales', sub: 'Rp m', get: function (r) { return r.revCur; }, fmt: function (r) { return F.m(r.revCur); } },
         { k: 'rl', label: E.monthShort(endT) + ' sales', sub: 'Rp m', get: function (r) { return r.last.rev; }, fmt: function (r) { return F.m(r.last.rev); } },
@@ -132,14 +132,27 @@
         { k: 'tc', th: 'pt', cls: 'pt', label: esc(P.tag) + ' PAT', sub: 'Rp k', get: function (r) { return r.patCur; }, fmt: function (r) { return r.A.patOM ? F.n(r.patCur / 1e3) : '\u2013'; }, tdc: function (r) { return F.cls(r.patCur); } },
         { k: 'tl', th: 'pt', cls: 'pt', label: E.monthShort(endT) + ' PAT', sub: 'Rp k', get: function (r) { return r.patLast; }, fmt: function (r) { return r.last.patOM ? F.n(r.patLast / 1e3) : '\u2013'; }, tdc: function (r) { return F.cls(r.patLast); } },
         { k: 'fl', label: 'Signal', left: true, get: function (r) { return r.vsRamp; }, fmt: flags },
-        { k: 'why', label: 'Why not like-for-like', left: true, get: function (r) { return r.reason; }, fmt: function (r) { return '<span style="color:var(--mute);font-size:10.5px">' + esc(r.reason) + '</span>'; } }
+        { k: 'why', label: 'Why new', left: true, get: function (r) { return r.reason; }, fmt: function (r) { return '<span style="color:var(--mute);font-size:10.5px">' + esc(r.reason) + '</span>'; } }
       ];
       var tbl = B.table('tbl-new', rows, cols, { defSort: 'start', defDir: -1 });
+      var ncRows = ctx.nc;
+      var ncCols = [
+        cols[0],
+        { k: 'start', label: 'Opened', get: function (r) { return r.ol.start; }, fmt: function (r) { return F.d(r.ol.start); } },
+        { k: 'age', label: 'Age', sub: 'months since opening', get: function (r) { return r.age; }, fmt: function (r) { return F.n(r.age); } },
+        { k: 'mt', label: 'Months trading', sub: 'in period', get: function (r) { return r.nCur; }, fmt: function (r) { return r.nCur + ' / ' + r.nMonths; } },
+        { k: 'rc', label: esc(P.tag) + ' sales', sub: 'Rp m', get: function (r) { return r.revCur; }, fmt: function (r) { return F.m(r.revCur); } },
+        { k: 'rl', label: E.monthShort(endT) + ' sales', sub: 'Rp m', get: function (r) { return r.last.rev; }, fmt: function (r) { return F.m(r.last.rev); } },
+        { k: 'pl', label: E.monthShort(endT) + ' PSH', sub: 'Rp/hr', get: function (r) { return r.pshLast; }, fmt: function (r) { return F.n(r.pshLast); }, tdc: function (r) { return F.cls(r.pshLast); } },
+        { k: 'why', label: 'Why not comparable', left: true, get: function (r) { return r.reason; }, fmt: function (r) { return '<span style="color:var(--mute);font-size:10.5px">' + esc(r.reason) + '</span>'; } }
+      ];
+      var tblNc = ncRows.length ? B.table('tbl-nc', ncRows, ncCols, { defSort: 'start', defDir: -1 }) : null;
       view.innerHTML = banner + cards +
         '<div class="grid g2" style="margin-top:12px"><div class="card"><h4>Ramp-up curve: median monthly sales by months since opening (Rp m)</h4><div class="ch"><canvas id="rampC"></canvas></div><div class="ks">Real outlets that opened inside the workbook window (first part-month skipped). Bars show how many outlets feed each point.</div></div>' +
-        '<div class="card"><h4>Daily sales vs mature benchmark, outlets \u2264 12 months old</h4><div class="ch" style="height:420px"><canvas id="newC"></canvas></div></div></div>' +
-        '<div class="tw"><div class="th"><div><h3>New and non-comparable outlets</h3><p>Slow ramp = latest-month sales below half the median of outlets at the same age.</p></div><div style="display:flex;gap:10px">' + B.searchBox() + '<button class="btn" id="exp"><i class="fas fa-download"></i> Export table</button></div></div>' + tbl.html + '</div>';
-      tbl.bind(view); B.bindSearch(view);
+        '<div class="card"><h4>Daily sales vs mature benchmark, new outlets</h4><div class="ch" style="height:420px"><canvas id="newC"></canvas></div></div></div>' +
+        '<div class="tw"><div class="th"><div><h3>New outlets</h3><p>Slow ramp = latest-month sales below half the median of outlets at the same age.</p></div><div style="display:flex;gap:10px">' + B.searchBox() + '<button class="btn" id="exp"><i class="fas fa-download"></i> Export table</button></div></div>' + tbl.html + '</div>' +
+        (tblNc ? '<div class="tw" style="margin-top:12px"><div class="th"><div><h3>Older outlets, not yet comparable (' + ncRows.length + ')</h3><p>Opened more than ' + E.NEW_MONTHS + ' months ago but missing sales in some comparison months, so they are left out of the decline and improvement levels.</p></div></div>' + tblNc.html + '</div>' : '');
+      tbl.bind(view); if (tblNc) tblNc.bind(view); B.bindSearch(view);
       view.querySelector('#exp').onclick = function () {
         B.csv('bod-new-outlets.csv', ['Code', 'Outlet', 'Type', 'AM', 'Opened', 'Age months', 'Months trading', 'Sales in period', 'Latest month sales', 'Sales per day', 'vs benchmark', 'vs ramp', 'Latest PSH', 'PAT in period', 'Latest PAT', 'Reason'],
           tbl.all.map(function (r) { return [r.ol.code, r.ol.name, r.ol.type, r.ol.am, r.ol.start ? new Date(r.ol.start).toISOString().slice(0, 10) : '', r.age, r.nCur + '/' + r.nMonths, Math.round(r.revCur), Math.round(r.last.rev), isN(r.rpd) ? Math.round(r.rpd) : '', isN(r.vsBench) ? r.vsBench.toFixed(3) : '', isN(r.vsRamp) ? r.vsRamp.toFixed(3) : '', isN(r.pshLast) ? Math.round(r.pshLast) : '', Math.round(r.patCur), Math.round(r.patLast), r.reason]; }));
@@ -190,7 +203,7 @@
         B.card('Gross profit \u00b7 margin', F.rp(gs.a.pro), 'Margin ' + F.p(gs.a.margin, 2) + (hasBase ? '<br>LFL change <b class="' + F.cls(gs.lMargin) + '">' + F.pp(gs.lMargin) + '</b>' : '')) +
         B.card('PAT (PSH \u00d7 hours)', F.rp(gs.a.pat), hasBase ? 'vs ' + F.rp(gs.b.pat) + '<br>Change ' + F.rp(gs.dPat) : '', gs.a.pat < 0 ? 'neg' : 'pos') +
         B.card('PSH \u00b7 ' + E.monthShort(endT), F.n(coPsh.m), 'Period PSH ' + F.n(coPsh.p) + ' Rp/hr' + (coPsh.src === 'sheet' ? ' <span title=\"Company PSH as published on the Exec Dashboard\">(sheet)</span>' : '') + '<br>' + coPsh.pos + ' of ' + coPsh.n + ' outlets positive', coPsh.m < 0 ? 'neg' : 'pos') +
-        B.card('Trading outlets', gs.n, ctx.down.length + ' declining \u00b7 ' + ctx.up.length + ' improving<br>' + ctx.neu.length + ' new / non-comparable') + '</div>';
+        B.card('Trading outlets', gs.n, ctx.down.length + ' declining \u00b7 ' + ctx.up.length + ' improving<br>' + ctx.neu.length + ' new \u00b7 ' + ctx.nc.length + ' not yet comparable') + '</div>';
       var cards2 = '<div class="grid g6" style="margin-bottom:12px">' +
         B.card('Basket \u00b7 ' + E.monthShort(endT), F.n(cur.basket) + ' <small>Rp</small>', 'Sales \u00f7 transactions') +
         B.card('Focus product', F.p(cur.focus, 1), 'Share of sales \u00b7 ' + E.monthShort(endT)) +

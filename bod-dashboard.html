@@ -36,10 +36,19 @@ h1{font-size:30px;margin:4px 0 4px;letter-spacing:-.02em}
 .seg button.on{background:var(--navy);color:#fff}
 .spacer{flex:1}
 /* tabs */
-.tabs{display:flex;gap:26px;border-bottom:1px solid var(--line);margin:14px 0 14px;overflow-x:auto}
-.tab{padding:12px 2px;border:0;background:none;cursor:pointer;font-weight:600;color:var(--ink2);border-bottom:2px solid transparent;white-space:nowrap;font-size:13px}
-.tab.on{color:var(--navy);border-bottom-color:var(--navy)}
-.tab .n{background:#e9eef5;border-radius:10px;padding:1px 7px;font-size:10px;margin-left:5px;color:var(--ink2)}
+.tabs{display:flex;gap:4px;margin:14px 0 14px;padding:6px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 3px rgba(15,48,87,.07);flex-wrap:wrap}
+.tab{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border:0;border-radius:8px;background:transparent;cursor:pointer;font-weight:600;color:var(--ink2);white-space:nowrap;font-size:13px;transition:background .15s,color .15s,box-shadow .15s}
+.tab i.ti{font-size:12px;opacity:.75;width:14px;text-align:center}
+.tab:hover{background:#eaf1fa;color:var(--navy)}
+.tab.on{background:linear-gradient(135deg,#0f3057,#1d5a96);color:#fff;box-shadow:0 3px 10px rgba(15,48,87,.28)}
+.tab.on i.ti{opacity:1}
+.tab .n{border-radius:10px;padding:1px 8px;font-size:10.5px;font-weight:800;margin-left:1px;background:#e9eef5;color:var(--ink2);line-height:1.5}
+.tab .n.dn{background:#fde3e5;color:#b5303b}
+.tab .n.up{background:#d9f2e5;color:#0b6b48}
+.tab .n.nw{background:#e0ecff;color:#1d4fd8}
+.tab.on .n.dn{background:#ff8d96;color:#fff}
+.tab.on .n.up{background:#4fd39b;color:#05301f}
+.tab.on .n.nw{background:#ffd166;color:#4a3300}
 /* banners */
 .note{background:#eef5fd;border:1px solid #d3e4f7;border-left:3px solid var(--navy2);border-radius:6px;padding:11px 14px;font-size:12px;color:#243a57;margin-bottom:14px}
 .note b{color:var(--navy)}
@@ -144,7 +153,6 @@ td.neg{color:var(--neg);font-weight:600}td.pos{color:var(--pos)}
       <div style="display:flex;gap:8px">
         <button class="btn sm" id="btnNotes"><i class="fas fa-circle-info"></i> Data notes</button>
         <button class="btn sm" id="btnRefresh"><i class="fas fa-rotate"></i> Refresh</button>
-        <a class="btn sm" id="btnSource" target="_blank" rel="noopener">Source workbook <i class="fas fa-arrow-up-right-from-square" style="font-size:9px"></i></a>
       </div>
     </div>
   </header>
@@ -158,6 +166,7 @@ td.neg{color:var(--neg);font-weight:600}td.pos{color:var(--pos)}
     <label>Outlet type<select id="fType"></select></label>
     <label>Area manager<select id="fAm"></select></label>
     <label>Province<select id="fProv"></select></label>
+    <label>Kota<select id="fCity"></select></label>
   </div>
 
   <div id="banner"></div>
