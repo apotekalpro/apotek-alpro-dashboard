@@ -6622,7 +6622,8 @@
                     JWTSession.create(user.email, {
                         name: user.name || user.email,
                         role: user.role || 'user',
-                        department: user.department || 'operations'
+                        department: user.department || 'operations',
+                        bod: userHasBodAccess(user, user.role)
                     }).then(function(jwtResult) {
                         if (jwtResult.success) {
                             console.log('✅ JWT session created successfully');
@@ -6848,13 +6849,27 @@
             });
         }
 
-        // BOD Dashboard is Chief-only. Enforced here, on top of any saved role config or per-user
-        // department_access, so it cannot be granted to (or left on for) any other role.
+        // BOD Dashboard access: Chief always; any other user only when "BOD Dashboard" is ticked on that
+        // user (Admin Config > edit user > Department Access Permissions). It is never inherited from a
+        // role's default list, so ticking it for one person does not open it for their whole role.
         const BOD_TAB_ID = 'bod';
         function isChiefRole() { return String(currentUserRole || '').toLowerCase() === 'chief'; }
+        function userHasBodAccess(user, role) {
+            if (String(role || (user && user.role) || '').toLowerCase() === 'chief') return true;
+            return !!(user && Array.isArray(user.department_access) && user.department_access.includes(BOD_TAB_ID));
+        }
+        function canAccessBod() {
+            try {
+                if (isChiefRole()) return true;
+                const email = String(currentUser || '').toLowerCase();
+                const user = (userManagementData.users || []).find(u => String(u.email || '').toLowerCase() === email);
+                return userHasBodAccess(user, currentUserRole);
+            } catch (e) { return false; }
+        }
+        window.canAccessBod = canAccessBod;
         function getAccessibleTabs() {
             const tabs = (getAccessibleTabsBase() || []).filter(id => id !== BOD_TAB_ID);
-            if (isChiefRole()) tabs.push(BOD_TAB_ID);
+            if (canAccessBod()) tabs.push(BOD_TAB_ID);
             return tabs;
         }
 
@@ -6967,9 +6982,9 @@
 
         // Show Tab Content
         function showTab(tabId) {
-            // BOD Dashboard: Chief only (defence in depth, in case showTab is called directly)
-            if (tabId === BOD_TAB_ID && !isChiefRole()) {
-                console.warn('🔒 BOD Dashboard is restricted to the Chief role');
+            // BOD Dashboard: Chief or explicitly ticked users only (defence in depth, in case showTab is called directly)
+            if (tabId === BOD_TAB_ID && !canAccessBod()) {
+                console.warn('🔒 BOD Dashboard is restricted to Chief and users granted access');
                 return;
             }
             // Hide all tab contents
@@ -6988,8 +7003,8 @@
                 content.classList.remove('hidden');
             }
             
-            // BOD Dashboard: load the iframe on first open, only for Chief
-            if (tabId === BOD_TAB_ID && isChiefRole() && content) {
+            // BOD Dashboard: load the iframe on first open, only for permitted users
+            if (tabId === BOD_TAB_ID && canAccessBod() && content) {
                 const bodFrame = content.querySelector('iframe.lazy-iframe');
                 if (bodFrame && !bodFrame.getAttribute('src') && bodFrame.dataset.src) {
                     bodFrame.src = bodFrame.dataset.src;
@@ -9932,7 +9947,9 @@
                 
                 userManagementData.users.forEach((user, index) => {
                     if (user.role === role) {
-                        userManagementData.users[index].department_access = newAccess;
+                        // keep a per-user BOD Dashboard tick; role lists never carry it
+                        const hadBod = Array.isArray(user.department_access) && user.department_access.includes(BOD_TAB_ID);
+                        userManagementData.users[index].department_access = hadBod && !newAccess.includes(BOD_TAB_ID) ? [...newAccess, BOD_TAB_ID] : newAccess;
                         updateCount++;
                         console.log(`✅ Updated ${user.email} with new access:`, newAccess);
                     }
@@ -9985,7 +10002,9 @@
             
             // Apply defaults to all users
             userManagementData.users.forEach((user, index) => {
-                userManagementData.users[index].department_access = department_accessConfig[user.role] || ['operations'];
+                const hadBod = Array.isArray(user.department_access) && user.department_access.includes(BOD_TAB_ID);
+                const base = department_accessConfig[user.role] || ['operations'];
+                userManagementData.users[index].department_access = hadBod && !base.includes(BOD_TAB_ID) ? [...base, BOD_TAB_ID] : [...base];
             });
             
             // Save changes
@@ -10373,7 +10392,6 @@
             const roleDefaults = department_accessConfig[role] || ['operations'];
             
             allTabs.forEach(tab => {
-                if (tab.id === 'bod') return; // BOD Dashboard is fixed to Chief, not assignable
                 if (tab.id === 'adminConfig' && role !== 'admin') return; // Admin config only for admin role
                 
                 const isRoleDefault = roleDefaults.includes(tab.id);
@@ -11125,10 +11143,9 @@
             }
             
             allTabs.forEach(tab => {
-                if (tab.id === 'bod') return; // BOD Dashboard is fixed to Chief, not assignable
                 if (tab.id === 'adminConfig' && user.role !== 'admin') return; // Admin config only for admin role
                 
-                const isChecked = user.department_access.includes(tab.id);
+                const isChecked = user.department_access.includes(tab.id) || (tab.id === BOD_TAB_ID && String(user.role || '').toLowerCase() === 'chief');
                 const isRoleDefault = (department_accessConfig[user.role] || []).includes(tab.id);
                 
                 const checkboxHtml = `
@@ -11161,7 +11178,12 @@
             if (!user) return;
             
             // Update the user's role temporarily for UI purposes
+            const prevRole = String(user.role || '').toLowerCase();
             user.role = newRole;
+            // BOD access that came with the Chief role does not follow the user to another role
+            if (prevRole === 'chief' && String(newRole).toLowerCase() !== 'chief' && Array.isArray(user.department_access)) {
+                user.department_access = user.department_access.filter(id => id !== BOD_TAB_ID);
+            }
             
             // Update role defaults but keep any custom access
             if (!user.department_access || user.department_access.length === 0) {
@@ -11595,10 +11617,9 @@
             }
             
             allTabs.forEach(tab => {
-                if (tab.id === 'bod') return; // BOD Dashboard is fixed to Chief, not assignable
                 if (tab.id === 'adminConfig' && user.role !== 'admin') return; // Admin config only for admin role
                 
-                const isChecked = user.department_access.includes(tab.id);
+                const isChecked = user.department_access.includes(tab.id) || (tab.id === BOD_TAB_ID && String(user.role || '').toLowerCase() === 'chief');
                 const isRoleDefault = (department_accessConfig[user.role] || []).includes(tab.id);
                 
                 const checkboxHtml = `
@@ -11757,7 +11778,6 @@
             const currentAccess = department_accessConfig[role] || [];
             
             allTabs.forEach(tab => {
-                if (tab.id === 'bod') return; // BOD Dashboard is fixed to Chief, not assignable
                 if (tab.id === 'adminConfig' && role !== 'admin') return; // Admin config only for admin role
                 
                 const isChecked = currentAccess.includes(tab.id);
@@ -14443,6 +14463,7 @@
                         name: userData.name || userEmail,
                         role: userData.role || 'user',
                         department: userData.department || 'operations',
+                        bod: !!userData.bod,               // BOD Dashboard access (ticked per user)
                         loginTime: new Date().toISOString()
                     };
                     
@@ -14551,6 +14572,7 @@
                         name: userData.name || userEmail,
                         role: userData.role || 'user',
                         department: userData.department || 'operations',
+                        bod: userHasBodAccess((userManagementData.users || []).find(u => String(u.email || '').toLowerCase() === String(userEmail).toLowerCase()) || userData, userData.role),
                         refreshedAt: new Date().toISOString()
                     };
                     
