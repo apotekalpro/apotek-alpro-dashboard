@@ -151,7 +151,6 @@
     };
     $('btnRefresh').onclick = function () { B.reload(); };
     $('btnNotes').onclick = function () { B.openNotes(); };
-    $('btnSource').href = E.SHEET_URL;
     $('tabs').onclick = function (e) { var b = e.target.closest('.tab'); if (!b) return; S.tab = b.dataset.t; S.level = null; S.sort = null; B.render(); };
   }
 
@@ -168,6 +167,7 @@
     ctx.down = rowsF.filter(function (r) { return r.cat === 'lfl' && r.dir === 'down'; });
     ctx.up = rowsF.filter(function (r) { return r.cat === 'lfl' && r.dir === 'up'; });
     ctx.neu = rowsF.filter(function (r) { return r.cat === 'new'; });
+    ctx.nc = rowsF.filter(function (r) { return r.cat === 'nc'; });
     ctx.lfl = rowsF.filter(function (r) { return r.cat === 'lfl'; });
     ctx.rateName = S.rate === 'tx' ? 'transactions' : 'sales';
     return ctx;
@@ -287,7 +287,7 @@
       B.card('Transactions', F.n(r.txCur), 'vs ' + F.n(r.txBase) + ' \u00b7 ' + F.p(r.gTx, 1, true), F.cls(r.gTx)) +
       B.card('PAT (PSH \u00d7 hours)', F.rp(r.patCur), 'vs ' + F.rp(r.patBase), r.patCur < 0 ? 'neg' : '') +
       B.card('Level', (r.dir === 'down' ? 'Decline ' : 'Improve ') + 'L' + r.level, esc(ctx.rateName) + ' ' + F.p(r.rate, 1, true), r.dir === 'down' ? 'neg' : 'pos') + '</div>';
-    else if (r) kp = '<div class="note warn" style="margin-bottom:12px"><b>Not like-for-like.</b> ' + esc(r.reason || '') + '</div>';
+    else if (r) kp = '<div class="note warn" style="margin-bottom:12px"><b>' + (r.cat === 'new' ? 'New outlet.' : 'Not like-for-like.') + '</b> ' + esc(r.reason || '') + '</div>';
     var tb = last24.slice().reverse().map(function (x) {
       return '<tr><td class="l">' + E.monthLabel(x.t) + '</td><td>' + F.m(x.rev) + '</td><td class="' + F.cls(yoy(x, 'rev')) + '">' + F.p(yoy(x, 'rev'), 1, true) + '</td><td>' + F.n(x.tx) + '</td><td class="' + F.cls(yoy(x, 'tx')) + '">' + F.p(yoy(x, 'tx'), 1, true) +
         '</td><td>' + F.n(x.basket) + '</td><td>' + F.p(x.margin, 1) + '</td><td class="' + F.cls(x.psh) + '">' + F.n(x.psh) + '</td><td class="' + F.cls(x.pat) + '">' + F.m(x.pat) + '</td><td>' + F.p(x.focus, 1) + '</td><td>' + F.p(x.mem, 0) + '</td><td>' + F.p(x.rr, 0) + '</td><td>' + F.n(x.nm) + '</td><td>' + F.p(x.sal, 1) + '</td><td>' + F.p(x.sl, 1) + '</td></tr>';
@@ -337,6 +337,7 @@
       '<li><b>Company PSH</b> (' + E.monthLabel(m.latest) + ') is taken from the Exec Dashboard: <b>' + F.n(execPsh) + '</b> (outlet PSH &times; hours rolled up is <b>' + F.n(A.psh) + '</b>; the gap is expected because the company figure also reflects management fee, tax and other items). Outlet-level and filtered views always use outlet PSH &times; hours; for multi-month periods the company monthly figures are weighted by working hours.</li>' +
       '<li>Closed outlets (hidden rows below the active list in MASTER) and the ECOM row are excluded, so company totals can sit slightly below the sheet\u2019s own totals.</li>' +
       '<li>' + dn.startAfterSales.length + ' outlet(s) have an opening date later than their first sales month; ' + dn.noStart.length + ' have no valid opening date. Operating months use the recorded opening date.</li>' +
+      '<li><b>New outlet</b> = within ' + E.NEW_MONTHS + ' months of opening (opening month = month 1, counted to the period\'s last month, using the recorded opening date; if sales began well before that date, the first sales month is used). New outlets are kept out of the decline and improvement levels. Older outlets that still lack sales in some prior-year comparison months are shown under <i>New outlets</i> as "not yet comparable".</li>' +
       '<li>Revenue history starts ' + E.monthLabel(m.min) + ' but the first month looks partial, so ' + E.monthLabel(m.baseMin) + ' is used as the first month. FY2024 therefore covers Jul&ndash;Dec only; FY2025 (Jan&ndash;Dec) shows full-year totals, but growth levels start from Jul 2025 (prior-year base = Jul 2024), so use Half-year 2 for FY2025 growth; from FY2026 onwards every period is compared.</li>' +
       '<li>Columns Size and Grand Opening are empty, so Store size &amp; profitability is a placeholder until the Size column is filled. <b>Target figures are not used</b> (not compared against target by design).</li>' +
       '<li>Margin has a few implausible cells (e.g. 137% and &minus;97%); they are used as recorded and show up in the Watchlist.</li></ul></div>' +

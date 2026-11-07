@@ -8,7 +8,6 @@
   'use strict';
 
   var SHEET_ID = '1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs';
-  var SHEET_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/edit';
 
   // Order matters: "Non Ethical Focus Product" must be tested before "Ethical Focus Product".
   var METRICS = [
@@ -179,6 +178,10 @@
       for (var tt = m.min; tt <= m.latest; tt++) { if (m.S.rev[o * m.nm + (tt - m.min)] > 0) { f = tt; break; } }
       ol.firstRev = f;
       ol.startIdx = ol.start ? (new Date(ol.start).getUTCFullYear() - 2000) * 12 + new Date(ol.start).getUTCMonth() : -1;
+      // Opening month used for the "new outlet" rule: the recorded opening date. If sales started well before that date
+      // (re-opened / converted store), the first sales month is used instead; with no date at all, also the first sales month.
+      ol.openIdx = ol.startIdx >= 0 ? ol.startIdx : f;
+      if (ol.startIdx >= 0 && f >= 0 && ol.startIdx > f + 1) ol.openIdx = f;
     });
     return m;
   }
@@ -373,10 +376,15 @@
   };
 
 
+  // An outlet is "new" while it is within NEW_MONTHS months of opening (opening month = month 1), measured at the period's last month.
+  var NEW_MONTHS = 6;
+  function ageAt(ol, t) { return ol.openIdx >= 0 ? t - ol.openIdx + 1 : NaN; }
+
   /* ---------- like-for-like evaluation ---------- */
   // P = resolvePeriod(...). rate = 'rev' | 'tx' (the metric that drives the 5 levels).
   // An outlet is "lfl" only if it traded in EVERY month of both the current window and the
-  // same window one year earlier; everything else is routed to "new" (or "inactive").
+  // same window one year earlier. Outlets within 6 months of opening are "new"; older outlets without a full
+  // like-for-like base are "nc" (not yet comparable); outlets with no sales are "inactive".
   function evaluate(model, P, rate) {
     var rk = rate === 'tx' ? 'tx' : 'rev', rows = [], endT = P.cur[P.cur.length - 1];
     for (var o = 0; o < model.outlets.length; o++) {
@@ -400,7 +408,12 @@
       var baseWanted = P.cur.length;
       var baseOk = P.baseAvailable && nBase === baseWanted && (rk !== 'tx' || nBaseTx === baseWanted);
       var curRate = rk === 'tx' ? A.tx : A.rev, baseRate = rk === 'tx' ? B.tx : B.rev;
-      if (okCur && baseOk && curRate > 0 && baseRate > 0) {
+      var ageEnd = ageAt(ol, endT);
+      r.age = ageEnd;
+      if (ageEnd === ageEnd && ageEnd <= NEW_MONTHS) {
+        r.cat = 'new';
+        r.reason = 'Opened ' + monthLabel(ol.openIdx) + ': month ' + ageEnd + ' of ' + NEW_MONTHS + ' (within ' + NEW_MONTHS + ' months of opening)';
+      } else if (okCur && baseOk && curRate > 0 && baseRate > 0) {
         r.cat = 'lfl';
         r.gRev = A.rev / B.rev - 1;
         r.gTx = (A.tx > 0 && B.tx > 0) ? A.tx / B.tx - 1 : NaN;
@@ -412,7 +425,7 @@
         r.dir = r.rate < 0 ? 'down' : 'up';
         r.level = r.rate < 0 ? declineLevel(r.rate) : improveLevel(r.rate);
       } else {
-        r.cat = 'new';
+        r.cat = 'nc';
         if (!P.baseAvailable) r.reason = 'Prior-year base not available in the workbook';
         else if (nBase === 0) r.reason = 'Opened within or after the comparison window (no prior-year sales)';
         else if (nBase < baseWanted) r.reason = 'Prior-year gap: ' + (baseWanted - nBase) + ' of ' + baseWanted + ' comparison months without sales';
@@ -484,7 +497,7 @@
   }
 
   var API = {
-    SHEET_ID: SHEET_ID, SHEET_URL: SHEET_URL, METRICS: METRICS, KEYS: KEYS, MN: MN, PERIOD_OFF: PERIOD_OFF, periodName: periodName, LEVEL_TXT: LEVEL_TXT,
+    SHEET_ID: SHEET_ID, METRICS: METRICS, KEYS: KEYS, NEW_MONTHS: NEW_MONTHS, ageAt: ageAt, MN: MN, PERIOD_OFF: PERIOD_OFF, periodName: periodName, LEVEL_TXT: LEVEL_TXT,
     parseGviz: parseGviz, parseMaster: parseMaster, parseExec: parseExec, toSnapshot: toSnapshot, fromSnapshot: fromSnapshot,
     ymOf: ymOf, monthLabel: monthLabel, monthShort: monthShort, yearOf: yearOf, yearStart: yearStart, yearLabel: yearLabel,
     resolvePeriod: resolvePeriod, agg: agg, fullSum: fullSum, get: g,
