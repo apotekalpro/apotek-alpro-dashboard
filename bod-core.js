@@ -124,15 +124,14 @@
     var years = Object.keys(ys).map(Number).sort(function (a, b) { return b - a; });
     if (!S.year || years.indexOf(S.year) < 0) S.year = years[0];
     $('fYear').innerHTML = years.map(function (y) { return '<option value="' + y + '"' + (y === S.year ? ' selected' : '') + '>' + E.yearLabel(S.basis, y) + '</option>'; }).join('');
-    var ps = ['FY', 'H1', 'H2', 'Q1', 'Q2', 'Q3', 'Q4'].map(function (k) { return [k, E.periodName(S.basis, k)]; });
-    ps[0][1] = 'Full period \u00b7 ' + ps[0][1];
-    ps.push(['R12', 'Running 12 months'], ['M', 'Single month']);
+    // period names show the real months, e.g. "Full period (Jan\u2013Oct \u00b7 to date)"; running 12 months follows the latest month
+    var ps = ['FY', 'H1', 'H2', 'Q1', 'Q2', 'Q3', 'Q4'].map(function (k) { return [k, E.periodName(S.basis, k, S.year, m.latest, m.baseMin)]; });
+    ps.push(['R12', 'Running 12 months (' + E.monthShort(m.latest - 11) + ' \u2013 ' + E.monthShort(m.latest) + ')'], ['M', 'Single month']);
     $('fPeriod').innerHTML = ps.map(function (x) { return '<option value="' + x[0] + '"' + (x[0] === S.period ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('');
     var ms = []; for (t = m.latest; t >= m.min + 12; t--) ms.push(t);
     if (!S.month) S.month = m.latest;
     $('fMonth').innerHTML = ms.map(function (x) { return '<option value="' + x + '"' + (x === S.month ? ' selected' : '') + '>' + E.monthLabel(x) + '</option>'; }).join('');
     $('lMonth').classList.toggle('hidden', S.period !== 'M');
-    $('fBasis').value = S.basis;
     var ol = m.outlets;
     fillSelect('fType', uniq(ol.map(function (o) { return o.type; })), 'All types', S.type);
     fillSelect('fAm', uniq(ol.map(function (o) { return o.am; })), 'All area managers', S.am);
@@ -140,10 +139,9 @@
   }
   function wire() {
     function onChange(fn) { return function (e) { fn(e.target.value); B.render(); }; }
-    $('fYear').onchange = onChange(function (v) { S.year = +v; });
+    $('fYear').onchange = function (e) { S.year = +e.target.value; S.level = null; buildControls(); B.render(); };
     $('fPeriod').onchange = function (e) { S.period = e.target.value; $('lMonth').classList.toggle('hidden', S.period !== 'M'); S.level = null; B.render(); };
     $('fMonth').onchange = onChange(function (v) { S.month = +v; });
-    $('fBasis').onchange = function (e) { S.basis = e.target.value; S.level = null; buildControls(); B.render(); };
     $('fType').onchange = onChange(function (v) { S.type = v; });
     $('fAm').onchange = onChange(function (v) { S.am = v; });
     $('fProv').onchange = onChange(function (v) { S.prov = v; });
@@ -198,7 +196,7 @@
     }).join('');
     var bn = '';
     if (!P.cur.length) bn = '<div class="note warn"><b>No data for this selection.</b> The workbook has no months in the chosen year/period yet.</div>';
-    else if (!P.baseAvailable) bn = '<div class="note warn"><b>No prior-year comparison.</b> The workbook\'s comparable history starts ' + esc(E.monthLabel(B.model.baseMin)) + ' (the first month looks like a part-month), so ' + esc(P.baseTag) + ' cannot be built for this selection. Totals are shown; growth levels need a period with a full prior-year base (try FY2026 or a 2026 half/quarter).</div>';
+    else if (!P.baseAvailable) bn = '<div class="note warn"><b>No prior-year comparison.</b> The workbook\'s comparable history starts ' + esc(E.monthLabel(B.model.baseMin)) + ' (the first month looks like a part-month), so ' + esc(P.baseTag) + ' cannot be built for this selection. Totals are shown; growth levels need a period with prior-year months in the workbook (e.g. FY2025 Half-year 2, or anything in FY2026).</div>' + (P.startLimited ? '<div class="note"><b>' + esc(P.tag) + ' covers ' + esc(E.monthLabel(P.cur[0])) + ' \u2013 ' + esc(E.monthLabel(P.cur[P.cur.length - 1])) + ' only</b>: the workbook has no reliable data before ' + esc(E.monthLabel(B.model.baseMin)) + '.</div>' : '');
     else if (P.partial) bn = '<div class="note warn"><b>Year to date.</b> ' + esc(P.tag) + ' has ' + P.cur.length + ' month(s) so far; each is compared with the same months a year earlier.</div>';
     if (B.source === 'snapshot') bn += '<div class="note warn"><b>Offline snapshot.</b> Live workbook unreachable; showing data saved ' + esc(B.fetchedAt.toISOString().slice(0, 16).replace('T', ' ')) + '.</div>';
     $('banner').innerHTML = bn;
@@ -333,13 +331,13 @@
       '<li><b>PAT</b> = PSH &times; working hours for each outlet-month, summed over the period. <b>PSH</b> for a period = PAT &divide; working hours (hours-weighted).</li>' +
       '<li><b>Margin</b> = profit &divide; sales. <b>Basket</b> = sales &divide; transactions. <b>Focus product %</b> and <b>member %</b> are sales-weighted and transaction-weighted.</li>' +
       '<li><b>Recruitment rate</b> = new members &divide; walk-in customers without membership (10 walk-ins, 2 recruited = 20%); rolled up as total recruited &divide; implied walk-ins.</li>' +
-      '<li>Fiscal year runs Nov&ndash;Oct (FY' + E.yearOf('FY', m.latest) + ' = ' + E.monthLabel(E.yearStart('FY', E.yearOf('FY', m.latest))) + ' to ' + E.monthLabel(E.yearStart('FY', E.yearOf('FY', m.latest)) + 11) + '). It rolls over automatically as months are added to the sheet. Switch to calendar year in the filter bar if preferred.</li></ul></div>' +
+      '<li><b>Financial year</b> = Jan&ndash;Dec: FY' + E.yearOf('FY', m.latest) + ' runs from ' + E.monthLabel(E.yearStart('FY', E.yearOf('FY', m.latest))) + ' to the latest month in the sheet (' + E.monthLabel(m.latest) + ') and rolls over automatically each January. <b>Running 12 months</b> = the last 12 months to the latest month (' + E.monthLabel(m.latest - 11) + ' &ndash; ' + E.monthLabel(m.latest) + ') and moves forward as months are added.</li></ul></div>' +
       '<div class="card" style="margin-bottom:12px"><h4>Things in the workbook worth confirming</h4><ul style="margin:6px 0 0 16px;padding:0;line-height:1.7">' +
       '<li><b>PAT</b> is PSH &times; working hours per outlet-month (per management definition). It is not Profit minus the cost columns in MASTER, because other costs (management fee, tax, other overheads) are outside the sheet. Latest month PAT: <b>' + F.rp(A.pat) + '</b>.</li>' +
       '<li><b>Company PSH</b> (' + E.monthLabel(m.latest) + ') is taken from the Exec Dashboard: <b>' + F.n(execPsh) + '</b> (outlet PSH &times; hours rolled up is <b>' + F.n(A.psh) + '</b>; the gap is expected because the company figure also reflects management fee, tax and other items). Outlet-level and filtered views always use outlet PSH &times; hours; for multi-month periods the company monthly figures are weighted by working hours.</li>' +
       '<li>Closed outlets (hidden rows below the active list in MASTER) and the ECOM row are excluded, so company totals can sit slightly below the sheet\u2019s own totals.</li>' +
       '<li>' + dn.startAfterSales.length + ' outlet(s) have an opening date later than their first sales month; ' + dn.noStart.length + ' have no valid opening date. Operating months use the recorded opening date.</li>' +
-      '<li>Revenue history starts ' + E.monthLabel(m.min) + ' but the first month looks partial, so ' + E.monthLabel(m.baseMin) + ' is used as the first comparable month; periods whose prior-year months fall before that show no growth.</li>' +
+      '<li>Revenue history starts ' + E.monthLabel(m.min) + ' but the first month looks partial, so ' + E.monthLabel(m.baseMin) + ' is used as the first month. FY2024 therefore covers Jul&ndash;Dec only; FY2025 (Jan&ndash;Dec) shows full-year totals, but growth levels start from Jul 2025 (prior-year base = Jul 2024), so use Half-year 2 for FY2025 growth; from FY2026 onwards every period is compared.</li>' +
       '<li>Columns Size and Grand Opening are empty, so Store size &amp; profitability is a placeholder until the Size column is filled. <b>Target figures are not used</b> (not compared against target by design).</li>' +
       '<li>Margin has a few implausible cells (e.g. 137% and &minus;97%); they are used as recorded and show up in the Watchlist.</li></ul></div>' +
       '<div class="card"><h4>Coverage for this view</h4><div class="ks">' + gs.n + ' trading outlets \u00b7 ' + gs.nLfl + ' like-for-like \u00b7 ' + (gs.n - gs.nLfl) + ' new or non-comparable \u00b7 ' + m.outlets.length + ' rows read from MASTER.</div></div></aside>';
