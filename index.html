@@ -4120,6 +4120,26 @@
                     </div>
                 </div>
 
+                <!-- BOD Dashboard (Chief only) -->
+                <div id="bodContent" class="tab-content hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                                <i class="fas fa-chart-line mr-3 text-blue-600"></i>
+                                BOD Dashboard
+                            </h2>
+                            <p class="text-gray-600">Outlet performance, growth levels, PSH &amp; PAT for the Board. Chief access only.</p>
+                        </div>
+                        <button onclick="openInNewTab('bod-dashboard.html')" class="btn-primary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-external-link-alt mr-2"></i>
+                            Open full screen
+                        </button>
+                    </div>
+                    <div class="iframe-container" style="height: calc(100vh - 220px); min-height: 640px;">
+                        <iframe data-src="bod-dashboard.html" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"></iframe>
+                    </div>
+                </div>
+
                 <!-- Admin Configuration Content -->
                 <div id="adminConfigContent" class="tab-content hidden">
                     <div class="mb-4">
@@ -5226,13 +5246,14 @@
             { id: 'academy', name: 'Academy', icon: 'fas fa-graduation-cap' },
             { id: 'sgm', name: 'SGM', icon: 'fas fa-store-alt' },
             { id: 'powerlife', name: 'Powerlife', icon: 'fas fa-heartbeat' },
+            { id: 'bod', name: 'BOD Dashboard', icon: 'fas fa-chart-line' },
             { id: 'adminConfig', name: 'Admin Config', icon: 'fas fa-cogs' }
         ];
         
         // Default department access configuration
         let department_accessConfig = {
             admin: ['operations', 'opsales', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife', 'adminConfig'],
-            chief: ['operations', 'opsales', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife'],
+            chief: ['operations', 'opsales', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'powerlife', 'bod'],
             strategy: ['ppm', 'strategy', 'operations', 'sgm'],
             operations: ['operations', 'warehouseApd', 'sgm'],
             opsales: ['opsales'],
@@ -6827,8 +6848,18 @@
             });
         }
 
-        // Get Accessible Tabs Based on User-Level Permissions
+        // BOD Dashboard is Chief-only. Enforced here, on top of any saved role config or per-user
+        // department_access, so it cannot be granted to (or left on for) any other role.
+        const BOD_TAB_ID = 'bod';
+        function isChiefRole() { return String(currentUserRole || '').toLowerCase() === 'chief'; }
         function getAccessibleTabs() {
+            const tabs = (getAccessibleTabsBase() || []).filter(id => id !== BOD_TAB_ID);
+            if (isChiefRole()) tabs.push(BOD_TAB_ID);
+            return tabs;
+        }
+
+        // Get Accessible Tabs Based on User-Level Permissions
+        function getAccessibleTabsBase() {
             const role = currentUserRole?.toLowerCase();
             
             // First, try to find user-specific permissions
@@ -6936,6 +6967,11 @@
 
         // Show Tab Content
         function showTab(tabId) {
+            // BOD Dashboard: Chief only (defence in depth, in case showTab is called directly)
+            if (tabId === BOD_TAB_ID && !isChiefRole()) {
+                console.warn('🔒 BOD Dashboard is restricted to the Chief role');
+                return;
+            }
             // Hide all tab contents
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.add('hidden');
@@ -6952,6 +6988,14 @@
                 content.classList.remove('hidden');
             }
             
+            // BOD Dashboard: load the iframe on first open, only for Chief
+            if (tabId === BOD_TAB_ID && isChiefRole() && content) {
+                const bodFrame = content.querySelector('iframe.lazy-iframe');
+                if (bodFrame && !bodFrame.getAttribute('src') && bodFrame.dataset.src) {
+                    bodFrame.src = bodFrame.dataset.src;
+                }
+            }
+
             // Initialize admin config tab if needed
             if (tabId === 'adminConfig' && currentUserRole && currentUserRole.toLowerCase() === 'admin') {
                 updateCurrentDepartmentsList();
@@ -9926,7 +9970,7 @@
             // Reset to default configuration
             department_accessConfig = {
                 admin: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'adminConfig'],
-                chief: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm'],
+                chief: ['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'sgm', 'bod'],
                 strategy: ['ppm', 'strategy', 'operations', 'sgm'],
                 operations: ['operations', 'warehouseApd', 'sgm'],
                 finance: ['finance'],
@@ -10329,6 +10373,7 @@
             const roleDefaults = department_accessConfig[role] || ['operations'];
             
             allTabs.forEach(tab => {
+                if (tab.id === 'bod') return; // BOD Dashboard is fixed to Chief, not assignable
                 if (tab.id === 'adminConfig' && role !== 'admin') return; // Admin config only for admin role
                 
                 const isRoleDefault = roleDefaults.includes(tab.id);
@@ -11080,6 +11125,7 @@
             }
             
             allTabs.forEach(tab => {
+                if (tab.id === 'bod') return; // BOD Dashboard is fixed to Chief, not assignable
                 if (tab.id === 'adminConfig' && user.role !== 'admin') return; // Admin config only for admin role
                 
                 const isChecked = user.department_access.includes(tab.id);
@@ -11549,6 +11595,7 @@
             }
             
             allTabs.forEach(tab => {
+                if (tab.id === 'bod') return; // BOD Dashboard is fixed to Chief, not assignable
                 if (tab.id === 'adminConfig' && user.role !== 'admin') return; // Admin config only for admin role
                 
                 const isChecked = user.department_access.includes(tab.id);
@@ -11710,6 +11757,7 @@
             const currentAccess = department_accessConfig[role] || [];
             
             allTabs.forEach(tab => {
+                if (tab.id === 'bod') return; // BOD Dashboard is fixed to Chief, not assignable
                 if (tab.id === 'adminConfig' && role !== 'admin') return; // Admin config only for admin role
                 
                 const isChecked = currentAccess.includes(tab.id);
@@ -12065,7 +12113,7 @@
             container.innerHTML = '';
             
             allTabs.forEach(tab => {
-                const isCustom = !['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'adminConfig'].includes(tab.id);
+                const isCustom = !['operations', 'ppm', 'strategy', 'finance', 'bpt', 'procurement', 'warehouseApd', 'ppr', 'academy', 'bod', 'adminConfig'].includes(tab.id);
                 
                 const departmentHtml = `
                     <div class="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
@@ -14564,6 +14612,9 @@
                     currentUser = sessionResult.user.email;
                     currentUserRole = sessionResult.user.role || 'user';
                     currentUserName = sessionResult.user.name || sessionResult.user.email;
+                    window.currentUser = currentUser;
+                    window.currentUserRole = currentUserRole;
+                    window.currentUserName = currentUserName;
                     
                     // Hide login page and show dashboard
                     console.log('🚀 Auto-login via JWT session');
