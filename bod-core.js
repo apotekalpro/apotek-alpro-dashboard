@@ -31,7 +31,7 @@
   };
 
   /* ---------- state ---------- */
-  var S = { basis: 'FY', year: null, period: 'FY', month: null, rate: 'rev', type: '', am: '', prov: '', tab: 'overview', level: null, sort: null, search: '' };
+  var S = { basis: 'FY', year: null, period: 'FY', month: null, rate: 'rev', type: '', am: '', prov: '', city: '', tab: 'overview', level: null, sort: null, search: '' };
   var B = { S: S, F: F, esc: esc, isN: isN, E: E, model: null, exec: null, fetchedAt: null, source: '', ctx: null, tabs: {}, charts: [] };
   win.BOD = B;
 
@@ -87,7 +87,7 @@
     Object.keys(ex.rows).forEach(function (k) { ex.rows[k] = ex.rows[k].slice(0, keep); });
   };
   // true when any outlet filter (type / AM / province) narrows the company
-  B.isFiltered = function () { return !!(S.type || S.am || S.prov); };
+  B.isFiltered = function () { return !!(S.type || S.am || S.prov || S.city); };
   async function loadData(force) {
     var view = $('view');
     view.innerHTML = '<div class="loading"><div class="spin"></div>Loading MASTER and Exec Dashboard from the source workbook&hellip;</div>';
@@ -115,8 +115,15 @@
   function fillSelect(id, items, all, cur) {
     var el = $(id); el.innerHTML = '<option value="">' + all + '</option>' + items.map(function (x) { return '<option value="' + esc(x) + '"' + (x === cur ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('');
   }
+  // Kota list follows the selected province (and is cleared if the chosen Kota is not in it)
+  function fillCities() {
+    var ol = B.model.outlets.filter(function (o) { return !S.prov || o.prov === S.prov; });
+    var list = uniq(ol.map(function (o) { return o.city; }).filter(Boolean));
+    if (S.city && list.indexOf(S.city) < 0) S.city = '';
+    fillSelect('fCity', list, 'All kota', S.city);
+  }
   B.syncFilters = function () {
-    ['fType', 'fAm', 'fProv'].forEach(function (id) { var k = id === 'fType' ? 'type' : id === 'fAm' ? 'am' : 'prov'; if ($(id)) $(id).value = S[k] || ''; });
+    fillCities(); ['fType', 'fAm', 'fProv', 'fCity'].forEach(function (id) { var k = id === 'fType' ? 'type' : id === 'fAm' ? 'am' : id === 'fProv' ? 'prov' : 'city'; if ($(id)) $(id).value = S[k] || ''; });
   };
   function buildControls() {
     var m = B.model, ys = {}, t;
@@ -136,6 +143,7 @@
     fillSelect('fType', uniq(ol.map(function (o) { return o.type; })), 'All types', S.type);
     fillSelect('fAm', uniq(ol.map(function (o) { return o.am; })), 'All area managers', S.am);
     fillSelect('fProv', uniq(ol.map(function (o) { return o.prov; })), 'All provinces', S.prov);
+    fillCities();
   }
   function wire() {
     function onChange(fn) { return function (e) { fn(e.target.value); B.render(); }; }
@@ -144,7 +152,8 @@
     $('fMonth').onchange = onChange(function (v) { S.month = +v; });
     $('fType').onchange = onChange(function (v) { S.type = v; });
     $('fAm').onchange = onChange(function (v) { S.am = v; });
-    $('fProv').onchange = onChange(function (v) { S.prov = v; });
+    $('fProv').onchange = function (e) { S.prov = e.target.value; fillCities(); S.level = null; B.render(); };
+    $('fCity').onchange = onChange(function (v) { S.city = v; });
     $('fRate').onclick = function (e) {
       var b = e.target.closest('button'); if (!b) return; S.rate = b.dataset.v; S.level = null;
       [].forEach.call($('fRate').children, function (x) { x.classList.toggle('on', x === b); }); B.render();
@@ -156,7 +165,7 @@
 
   /* ---------- context ---------- */
   function pass(o) {
-    return (!S.type || o.type === S.type) && (!S.am || o.am === S.am) && (!S.prov || o.prov === S.prov);
+    return (!S.type || o.type === S.type) && (!S.am || o.am === S.am) && (!S.prov || o.prov === S.prov) && (!S.city || o.city === S.city);
   }
   function buildCtx() {
     var m = B.model;
@@ -191,8 +200,10 @@
     $('pTag').textContent = P.tag || ''; $('pRange').textContent = P.cur.length ? P.label.replace(/^[^\u00b7]*\u00b7\s*/, '') : 'No data';
     $('subtitle').textContent = 'Growth is running year-on-year: ' + (P.tag || '') + ' vs ' + (P.baseTag || '') + ', same months. Levels are driven by ' + ctx.rateName + '.';
     var badge = { down: ctx.down.length, up: ctx.up.length, 'new': ctx.neu.length };
+    var TI = { overview: 'fa-gauge-high', down: 'fa-arrow-trend-down', up: 'fa-arrow-trend-up', 'new': 'fa-store', growth: 'fa-chart-line', am: 'fa-user-tie', size: 'fa-ruler-combined', watch: 'fa-flag', win: 'fa-trophy' };
+    var BC = { down: 'dn', up: 'up', 'new': 'nw' };
     $('tabs').innerHTML = TAB_LIST.map(function (t) {
-      return '<button class="tab' + (S.tab === t[0] ? ' on' : '') + '" data-t="' + t[0] + '">' + t[1] + (badge[t[0]] != null ? '<span class="n">' + badge[t[0]] + '</span>' : '') + '</button>';
+      return '<button class="tab' + (S.tab === t[0] ? ' on' : '') + '" data-t="' + t[0] + '"><i class="fas ' + (TI[t[0]] || 'fa-circle') + ' ti"></i>' + t[1] + (badge[t[0]] != null ? '<span class="n ' + (BC[t[0]] || '') + '">' + badge[t[0]] + '</span>' : '') + '</button>';
     }).join('');
     var bn = '';
     if (!P.cur.length) bn = '<div class="note warn"><b>No data for this selection.</b> The workbook has no months in the chosen year/period yet.</div>';
