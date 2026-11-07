@@ -35,7 +35,7 @@
   var B = { S: S, F: F, esc: esc, isN: isN, E: E, model: null, exec: null, fetchedAt: null, source: '', ctx: null, tabs: {}, charts: [] };
   win.BOD = B;
 
-  /* ---------- access gate: Chief only ---------- */
+  /* ---------- access gate: Chief, or users with BOD ticked in Admin Config ---------- */
   var JWT_SECRET = 'alpro_jwt_secret_2024_secure', ALLOWED_ROLES = ['chief'];
   function b64u(str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; return atob(str); }
   async function verifyStoredJwt() {
@@ -58,6 +58,8 @@
       if (win.parent && win.parent !== win && win.parent.currentUserRole) {
         var r = String(win.parent.currentUserRole).toLowerCase();
         B.user = { email: win.parent.currentUser, role: r };
+        // the Executive Dashboard decides (Chief, or BOD ticked on this user); fall back to role only
+        if (typeof win.parent.canAccessBod === 'function') return !!win.parent.canAccessBod();
         return ALLOWED_ROLES.indexOf(r) >= 0;
       }
     } catch (e) { /* cross-origin parent: fall through */ }
@@ -67,7 +69,7 @@
       var role = String(v.payload.role || '').toLowerCase();
       B.user = { email: v.payload.email, role: role };
       if (v.expired) { B.expired = true; return false; }
-      return ALLOWED_ROLES.indexOf(role) >= 0;
+      return ALLOWED_ROLES.indexOf(role) >= 0 || v.payload.bod === true;
     }
     return false;
   }
