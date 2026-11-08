@@ -128,6 +128,17 @@ td.neg{color:var(--neg);font-weight:600}td.pos{color:var(--pos)}
 /* drawer */
 .dim{position:fixed;inset:0;background:rgba(15,30,50,.38);z-index:50}
 .dr{position:fixed;top:0;right:0;bottom:0;width:min(980px,96vw);background:var(--bg);z-index:51;overflow:auto;box-shadow:-10px 0 40px rgba(0,0,0,.2);padding:22px 24px 40px}
+.drsub{color:var(--ink2);font-size:12px;margin:2px 0 10px}
+.drbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin:10px 0 12px;position:sticky;top:-22px;z-index:5}
+.drbar b{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2)}
+.drbar select,#drMeasure{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;background:#fff;color:var(--ink)}
+.drtag{margin-left:auto;font-size:11px;color:var(--ink2)}
+.drnarr{font-size:12.5px;line-height:1.55;color:var(--ink);margin:0 0 12px}
+.drcards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.drcards .card:nth-child(5){grid-column:span 4}
+.drcards .kv{font-size:20px}
+tr.drh td{background:#eef2f7;font-weight:700;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);text-align:left!important}
+@media(max-width:800px){.drcards{grid-template-columns:repeat(2,minmax(0,1fr))}.drcards .card:nth-child(5){grid-column:span 2}}
 .dr h2{margin:0 0 4px;font-size:20px}
 .dx{position:absolute;top:14px;right:18px;border:0;background:#fff;border:1px solid var(--line);border-radius:6px;width:32px;height:32px;cursor:pointer;font-size:14px}
 .tags{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 14px}
@@ -200,6 +211,7 @@ td.neg{color:var(--neg);font-weight:600}td.pos{color:var(--pos)}
 <script src="bod-tabs-insights.js"></script>
 <script src="bod-tabs-geo.js"></script>
 <script src="bod-tabs-psh.js"></script>
+<script src="bod-drawer.js"></script>
 <script>BOD.boot();</script>
 </body>
 </html>
