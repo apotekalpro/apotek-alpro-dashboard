@@ -185,7 +185,7 @@
   /* ---------- tabs / render ---------- */
   var TAB_LIST = [
     ['overview', 'Overview'], ['down', 'Declining stores'], ['up', 'Improving stores'], ['new', 'New outlets'],
-    ['growth', 'Financial growth'], ['am', 'Area managers'], ['psh', 'PSH ranking'], ['geo', 'Geographic analysis'], ['size', 'Store size & profitability'], ['watch', 'Watchlist & alerts'], ['win', 'Winning formula']
+    ['growth', 'Financial growth'], ['pat', 'Profitability (PAT)'], ['am', 'Area managers'], ['psh', 'PSH ranking'], ['geo', 'Geographic analysis'], ['size', 'Store size & profitability'], ['watch', 'Watchlist & alerts'], ['win', 'Winning formula']
   ];
   function destroyCharts() { B.charts.forEach(function (c) { try { c.destroy(); } catch (e) { /* noop */ } }); B.charts = []; }
   B.chart = function (id, cfg) {
@@ -200,7 +200,7 @@
     $('pTag').textContent = P.tag || ''; $('pRange').textContent = P.cur.length ? P.label.replace(/^[^\u00b7]*\u00b7\s*/, '') : 'No data';
     $('subtitle').textContent = 'Growth is running year-on-year: ' + (P.tag || '') + ' vs ' + (P.baseTag || '') + ', same months. Levels are driven by ' + ctx.rateName + '.';
     var badge = { down: ctx.down.length, up: ctx.up.length, 'new': ctx.neu.length };
-    var TI = { overview: 'fa-gauge-high', down: 'fa-arrow-trend-down', up: 'fa-arrow-trend-up', 'new': 'fa-store', growth: 'fa-chart-line', am: 'fa-user-tie', psh: 'fa-ranking-star', geo: 'fa-map-location-dot', size: 'fa-ruler-combined', watch: 'fa-flag', win: 'fa-trophy' };
+    var TI = { overview: 'fa-gauge-high', down: 'fa-arrow-trend-down', up: 'fa-arrow-trend-up', 'new': 'fa-store', growth: 'fa-chart-line', pat: 'fa-sack-dollar', am: 'fa-user-tie', psh: 'fa-ranking-star', geo: 'fa-map-location-dot', size: 'fa-ruler-combined', watch: 'fa-flag', win: 'fa-trophy' };
     var BC = { down: 'dn', up: 'up', 'new': 'nw' };
     $('tabs').innerHTML = TAB_LIST.map(function (t) {
       return '<button class="tab' + (S.tab === t[0] ? ' on' : '') + '" data-t="' + t[0] + '"><i class="fas ' + (TI[t[0]] || 'fa-circle') + ' ti"></i>' + t[1] + (badge[t[0]] != null ? '<span class="n ' + (BC[t[0]] || '') + '">' + badge[t[0]] + '</span>' : '') + '</button>';
