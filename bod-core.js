@@ -285,48 +285,7 @@
     q.oninput = function () { S.search = q.value; var pos = q.selectionStart; B.render(); var n = $('q'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } };
   };
 
-  /* ---------- outlet drawer ---------- */
-  B.openOutlet = function (o) {
-    var m = B.model, ol = m.outlets[o], ctx = B.ctx, r = ctx.rows[o], mo = E.monthly(m, [o]).filter(function (x) { return x.rev > 0 || x.tx > 0; });
-    var last24 = mo.slice(-24), byT = {}; mo.forEach(function (x) { byT[x.t] = x; });
-    var yoy = function (cur, key) { var b = cur.t - 12 >= m.baseMin ? byT[cur.t - 12] : null; return b && b[key] > 0 && cur[key] > 0 ? cur[key] / b[key] - 1 : NaN; };
-    var tags = '<span class="pill t">' + esc(ol.type) + '</span><span class="pill">' + esc(ol.nature) + '</span><span class="pill">' + esc(ol.tier) + '</span><span class="pill">' + esc(ol.am) + '</span><span class="pill">' + esc(ol.city || ol.prov) + '</span>' +
-      '<span class="pill">Opened ' + F.d(ol.start) + '</span>' + (ol.transformed ? '<span class="pill">Transformed ' + esc(ol.phase || '') + '</span>' : '');
-    var kp = '';
-    if (r && r.cat === 'lfl') kp = '<div class="grid g4" style="margin-bottom:12px">' +
-      B.card('Sales ' + esc(ctx.P.tag), F.rp(r.revCur), 'vs ' + F.rp(r.revBase) + ' \u00b7 ' + F.p(r.gRev, 1, true), F.cls(r.gRev)) +
-      B.card('Transactions', F.n(r.txCur), 'vs ' + F.n(r.txBase) + ' \u00b7 ' + F.p(r.gTx, 1, true), F.cls(r.gTx)) +
-      B.card('PAT (PSH \u00d7 hours)', F.rp(r.patCur), 'vs ' + F.rp(r.patBase), r.patCur < 0 ? 'neg' : '') +
-      B.card('Level', (r.dir === 'down' ? 'Decline ' : 'Improve ') + 'L' + r.level, esc(ctx.rateName) + ' ' + F.p(r.rate, 1, true), r.dir === 'down' ? 'neg' : 'pos') + '</div>';
-    else if (r) kp = '<div class="note warn" style="margin-bottom:12px"><b>' + (r.cat === 'new' ? 'New outlet.' : 'Not like-for-like.') + '</b> ' + esc(r.reason || '') + '</div>';
-    var tb = last24.slice().reverse().map(function (x) {
-      return '<tr><td class="l">' + E.monthLabel(x.t) + '</td><td>' + F.m(x.rev) + '</td><td class="' + F.cls(yoy(x, 'rev')) + '">' + F.p(yoy(x, 'rev'), 1, true) + '</td><td>' + F.n(x.tx) + '</td><td class="' + F.cls(yoy(x, 'tx')) + '">' + F.p(yoy(x, 'tx'), 1, true) +
-        '</td><td>' + F.n(x.basket) + '</td><td>' + F.p(x.margin, 1) + '</td><td class="' + F.cls(x.psh) + '">' + F.n(x.psh) + '</td><td class="' + F.cls(x.pat) + '">' + F.m(x.pat) + '</td><td>' + F.p(x.focus, 1) + '</td><td>' + F.p(x.mem, 0) + '</td><td>' + F.p(x.rr, 0) + '</td><td>' + F.n(x.nm) + '</td><td>' + F.p(x.sal, 1) + '</td><td>' + F.p(x.sl, 1) + '</td></tr>';
-    }).join('');
-    $('drawerHost').innerHTML = '<div class="dim" id="dim"></div><aside class="dr"><button class="dx" id="dx"><i class="fas fa-xmark"></i></button>' +
-      '<div class="eyebrow">' + esc(ol.code) + '</div><h2>' + esc(ol.name) + '</h2><div class="tags">' + tags + '</div>' + kp +
-      '<div class="card" style="margin-bottom:12px"><h4>Sales (Rp m) and PAT (Rp m), last ' + last24.length + ' months</h4><div class="ch t"><canvas id="dc1"></canvas></div></div>' +
-      '<div class="grid g2" style="margin-bottom:12px"><div class="card"><h4>PSH (Rp per staff hour) and margin %</h4><div class="ch"><canvas id="dc2"></canvas></div></div>' +
-      '<div class="card"><h4>Transactions and basket size</h4><div class="ch"><canvas id="dc3"></canvas></div></div></div>' +
-      '<div class="tw" style="margin-top:0"><div class="th"><div><h3>Monthly detail</h3><p>Amounts in Rp m; YoY compares the same month a year earlier.</p></div></div><div class="tx" style="max-height:420px"><table class="mt"><thead><tr><th class="l">Month</th><th>Sales</th><th>YoY</th><th>Tx</th><th>YoY</th><th>Basket</th><th>Margin</th><th>PSH</th><th>PAT</th><th>Focus %</th><th>Member %</th><th>Recruit %</th><th>New mem</th><th>Salary %</th><th>Stock loss %</th></tr></thead><tbody>' + tb + '</tbody></table></div></div></aside>';
-    var labels = last24.map(function (x) { return E.monthShort(x.t); });
-    var base = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { x: { ticks: { font: { size: 9 } } } } };
-    var mk = function (id, cfg) { var c = new win.Chart($(id).getContext('2d'), cfg); B.charts.push(c); };
-    mk('dc1', { data: { labels: labels, datasets: [
-      { type: 'bar', label: 'Sales', data: last24.map(function (x) { return x.rev / 1e6; }), backgroundColor: '#9db8d9', yAxisID: 'y' },
-      { type: 'line', label: 'PAT', data: last24.map(function (x) { return isN(x.pat) ? x.pat / 1e6 : null; }), borderColor: '#0f7a55', backgroundColor: '#0f7a55', tension: .25, yAxisID: 'y1', pointRadius: 2 }] },
-      options: Object.assign({}, base, { scales: { x: base.scales.x, y: { position: 'left', ticks: { font: { size: 9 } } }, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { font: { size: 9 } } } } }) });
-    mk('dc2', { type: 'line', data: { labels: labels, datasets: [
-      { label: 'PSH', data: last24.map(function (x) { return isN(x.psh) ? x.psh : null; }), borderColor: '#b5303b', yAxisID: 'y', tension: .25, pointRadius: 2 },
-      { label: 'Margin %', data: last24.map(function (x) { return isN(x.margin) ? x.margin * 100 : null; }), borderColor: '#16436f', yAxisID: 'y1', tension: .25, pointRadius: 2 }] },
-      options: Object.assign({}, base, { scales: { x: base.scales.x, y: { position: 'left', ticks: { font: { size: 9 } } }, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { font: { size: 9 } } } } }) });
-    mk('dc3', { type: 'line', data: { labels: labels, datasets: [
-      { label: 'Transactions', data: last24.map(function (x) { return x.tx; }), borderColor: '#2f7f9a', yAxisID: 'y', tension: .25, pointRadius: 2 },
-      { label: 'Basket (Rp)', data: last24.map(function (x) { return isN(x.basket) ? x.basket : null; }), borderColor: '#c9951c', yAxisID: 'y1', tension: .25, pointRadius: 2 }] },
-      options: Object.assign({}, base, { scales: { x: base.scales.x, y: { position: 'left', ticks: { font: { size: 9 } } }, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { font: { size: 9 } } } } }) });
-    var close = function () { $('drawerHost').innerHTML = ''; };
-    $('dx').onclick = close; $('dim').onclick = close;
-  };
+  /* ---------- outlet drawer: see bod-drawer.js ---------- */
 
   /* ---------- data notes ---------- */
   B.openNotes = function () {
