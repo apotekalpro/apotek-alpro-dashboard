@@ -80,6 +80,43 @@
     return { rows: out, n: same.length, scope: scope, ok: same.length >= MIN_PEERS, peerPatMargin: pm.med, gap: gapM };
   }
 
+
+  /* ---------- watchlist flags for this outlet (same rules as the Watchlist tab, on the drawer's period) ---------- */
+  function flagPanel(m, P, r, o, endT, L) {
+    if (!r || r.cat === 'inactive' || !B.computeFlags) return '';
+    var al = B.computeFlags({ m: m, P: P, rowsF: [r] }), ids = al.by[o] || [], TH = B.flagTH || {}, defs = B.flagDefs;
+    var def = function (id) { return defs.filter(function (d) { return d.id === id; })[0]; };
+    var sevW = { h: 3, m: 2, i: 1 }, score = ids.reduce(function (a, id) { return a + sevW[def(id).sev]; }, 0);
+    var mon = E.monthShort(endT), rn = S.rate === 'tx' ? 'Transactions' : 'Sales';
+    var ev = {
+      lvl45: function () { return rn + ' ' + F.p(r.rate, 1, true) + ' vs ' + esc(P.baseTag) + ' (level ' + r.level + ' decline)'; },
+      txdrop: function () { return 'Transactions ' + F.p(r.gTx, 1, true) + ' vs ' + esc(P.baseTag) + ' (flag at ' + F.p(TH.txDrop, 0, true) + ')'; },
+      negpsh: function () {
+        return 'PAT ' + [2, 1, 0].map(function (k) { var t = endT - k, ps = val(m, 'psh', o, t), h = val(m, 'wh', o, t); return E.monthShort(t) + ' ' + (isN(ps) && isN(h) ? 'Rp ' + F.m(ps * h, 2) + 'm' : '\u2013'); }).join(' \u00b7 ');
+      },
+      stockloss: function () { return 'Stock loss ' + F.p(L.slPct, 1) + ' of sales in ' + esc(mon) + ' (flag at ' + F.p(TH.stockLoss, 0) + ')'; },
+      slow: function () { var rp = B.ramp(m), age = endT - r.ol.firstRev + 1, md = rp.med[age]; return 'Month ' + age + ' sales Rp ' + F.m(L.rev, 1) + 'm vs typical Rp ' + F.m(md, 1) + 'm for outlets at the same age (' + F.p(L.rev / md, 0) + ')'; },
+      margin: function () { return 'Margin ' + F.pp(r.dMargin) + ' vs ' + esc(P.baseTag) + ' (' + F.p(r.A.margin, 1) + ' now, ' + F.p(r.B.margin, 1) + ' before)'; },
+      salary: function () { return 'Salary ' + F.p(L.salPct, 1) + ' of sales in ' + esc(mon) + ' (flag at ' + F.p(TH.salary, 0) + ')'; },
+      recruit: function () { return 'Recruitment rate ' + F.p(L.rrPct, 1) + ' in ' + esc(mon) + ' (flag below ' + F.p(TH.recruit, 0) + ')'; },
+      lossmaking: function () { return 'PAT Rp ' + F.m(r.patCur, 1) + 'm over ' + esc(P.tag) + ', open ' + r.opMonths + ' months'; },
+      anomaly: function () { return 'Margin ' + F.p(L.margin, 1) + ' in ' + esc(mon) + ' is outside the plausible range; check the source data first'; }
+    };
+    var order = { h: 0, m: 1, i: 2 };
+    var sorted = ids.slice().sort(function (a, b) { return order[def(a).sev] - order[def(b).sev]; });
+    var sevTxt = { h: 'High', m: 'Medium', i: 'Check' };
+    var items = sorted.map(function (id) {
+      var d = def(id), t = '';
+      try { t = ev[id](); } catch (e) { t = esc(d.desc); }
+      return '<div class="flrow"><span class="fl ' + d.sev + '">' + esc(d.label) + '</span><span class="flsev">' + sevTxt[d.sev] + '</span><span class="fltx">' + t + '<small>Rule: ' + esc(d.desc) + '</small></span></div>';
+    }).join('');
+    var head = ids.length
+      ? '<b>' + ids.length + ' flag' + (ids.length > 1 ? 's' : '') + ' to pay attention to</b> \u00b7 priority score ' + score + ' <small>(3 per high, 2 per medium, 1 per check; same score as the Watchlist)</small>'
+      : '<b class="pos">No watchlist flags</b> for this outlet in this period';
+    var foot = 'Checked on ' + esc(E.monthLabel(endT)) + ' data' + (P.baseAvailable ? ' and ' + esc(P.tag) + ' vs ' + esc(P.baseTag) : '; no prior-year comparison for this period, so the growth, footfall and margin-change flags cannot be tested') + '. Thresholds are the Watchlist defaults.';
+    return '<div class="flp ' + (ids.length ? (sorted.some(function (id) { return def(id).sev === 'h'; }) ? 'hi' : 'md') : 'ok') + '" id="drFlags"><div class="flh">' + head + '</div>' + items + '<div class="flf">' + foot + '</div></div>';
+  }
+
   /* ---------- drawer ---------- */
   B.openOutlet = function (o) {
     var m = B.model;
@@ -235,7 +272,7 @@
       '<div class="tw" style="margin-top:0"><div class="th"><div><h3>Monthly detail</h3><p>Amounts in Rp m; YoY compares with the same month a year earlier.</p></div></div><div class="tx" style="max-height:420px"><table class="mt"><thead><tr><th class="l">Month</th><th>Sales</th><th>YoY</th><th>Tx</th><th>YoY</th><th>Basket</th><th>Margin</th><th>PSH</th><th>PAT</th><th>Hours</th><th>Focus %</th><th>Member %</th><th>Recruit %</th><th>New mem</th><th>Salary %</th><th>Rent %</th><th>Stock loss %</th></tr></thead><tbody>' + tb + '</tbody></table></div></div></div>';
 
     var note = P.baseAvailable ? '' : '<div class="note warn">No prior-year comparison for this period (the workbook\u2019s comparable history starts ' + esc(E.monthLabel(m.baseMin)) + '). Pick a later period to see change and growth.</div>';
-    $('drawerHost').innerHTML = shell(ol, tags, sub, bar, '<div class="drnarr">' + narr + '</div>' + note + cards + trend + ptable + etable + ptbl + dtab);
+    $('drawerHost').innerHTML = shell(ol, tags, sub, bar, '<div class="drnarr">' + narr + '</div>' + note + flagPanel(m, P, r, o, endT, L) + cards + trend + ptable + etable + ptbl + dtab);
     wire();
 
     /* charts */
