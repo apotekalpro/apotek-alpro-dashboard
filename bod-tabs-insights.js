@@ -21,6 +21,7 @@
     { id: 'anomaly', sev: 'i', label: 'Check the data', desc: 'Latest margin above 60% or below \u221230%' }
   ];
   B.flagDefs = DEFS;
+  B.flagTH = TH;
 
   B.computeFlags = function (ctx) {
     var m = ctx.m, endT = ctx.P.cur[ctx.P.cur.length - 1], counts = {}, by = {}, high = 0, ramp = null, bench = NaN;
