@@ -16,7 +16,7 @@
     return Object.keys(c).sort().map(function (k) { return c[k] + ' ' + k.replace('EXPRESS-SM', 'Express-SM').replace(/^ALPRO$/, 'Alpro').replace(/^EXPRESS$/, 'Express'); }).join(' \u00b7 ') || '\u2013';
   }
   function scopeLabel() {
-    return (S.level ? 'Level ' + S.level : 'All levels') + ' \u00b7 ' + (S.type ? S.type : 'All outlet types') + (S.am ? ' \u00b7 ' + S.am : '') + (S.prov ? ' \u00b7 ' + S.prov : '') + (S.city ? ' \u00b7 ' + S.city : '');
+    return (S.level ? 'Level ' + S.level : 'All levels') + ' \u00b7 ' + (S.type ? S.type : 'All outlet types') + (S.am ? ' \u00b7 ' + S.am : '') + (S.prov ? ' \u00b7 ' + S.prov : '') + (S.city ? ' \u00b7 ' + S.city : '') + (S.size ? ' \u00b7 size ' + S.size : '');
   }
 
   /* ---------- shared outlet table columns ---------- */

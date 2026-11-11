@@ -26,7 +26,8 @@
   function cover(m, key, o, months) { return obs(m, key, o, months).n; }
   function sgn(v, f) { return isN(v) ? (v > 0 ? '+' : v < 0 ? '\u2212' : '') + f(Math.abs(v)) : '\u2013'; }
   function avgDays(P) { var d = 0; P.cur.forEach(function (t) { d += U.daysIn(t); }); return d / Math.max(1, P.cur.length); }
-  function sizeOf(ol) { var v = parseFloat(String(ol.size || '').replace(/[^0-9.,]/g, '').replace(',', '.')); return v > 0 ? v : NaN; }
+  function sizeOf(ol) { return isN(ol.floor) && ol.floor > 0 ? ol.floor : NaN; }
+  function sizeTxt(ol) { var f = sizeOf(ol); return (ol.sizeCat ? ol.sizeCat : '') + (ol.sizeCat && isN(f) ? ' \u00b7 ' : '') + (isN(f) ? F.n(f, 1) + ' m\u00b2' : ''); }
   function lastSalesT(m, o) { for (var t = m.latest; t >= m.min; t--) if (val(m, 'rev', o, t) > 0) return t; return -1; }
   function statusOf(r) {
     if (!r) return '';
@@ -81,6 +82,20 @@
   }
 
 
+  /* ---------- same size category: sales and PAT per m2 against the other outlets of that category ---------- */
+  function sizeBlock(m, P, rowsD, o) {
+    var self = rowsD[o], ol = self.ol, f = sizeOf(ol), grpNew = self.cat === 'new';
+    var out = { ok: false, n: 0 };
+    if (!ol.sizeCat || !isN(f) || self.cat === 'inactive') return out;
+    var perm = function (r) { return r.A.revOM > 0 ? r.A.rev / r.A.revOM / r.ol.floor : NaN; };
+    var perp = function (r) { return r.A.patOM > 0 ? r.A.pat / r.A.patOM / r.ol.floor : NaN; };
+    var pool = rowsD.filter(function (r) { return r.o !== o && r.cat !== 'inactive' && r.ol.sizeCat === ol.sizeCat && isN(r.ol.floor) && (r.cat === 'new') === grpNew && isN(perm(r)); });
+    out.n = pool.length; out.ok = pool.length >= MIN_PEERS;
+    out.mineS = perm(self); out.medS = U.median(pool.map(perm)); out.medP = U.median(pool.map(perp));
+    out.rankS = isN(out.mineS) ? pool.filter(function (r) { return perm(r) > out.mineS; }).length + 1 : NaN;
+    return out;
+  }
+
   /* ---------- watchlist flags for this outlet (same rules as the Watchlist tab, on the drawer's period) ---------- */
   function flagPanel(m, P, r, o, endT, L) {
     if (!r || r.cat === 'inactive' || !B.computeFlags) return '';
@@ -130,9 +145,9 @@
     killCharts(); D.rendered = false;
     var P = E.resolvePeriod(m, { basis: S.basis, year: D.year, period: D.period, month: D.month });
     var rowsD = E.evaluate(m, P, S.rate), r = rowsD[o], hb = P.baseAvailable, N = P.cur.length, endT = N ? P.cur[N - 1] : m.latest;
-    var tags = '<span class="pill t">' + esc(ol.type) + '</span><span class="pill">' + esc(ol.nature) + '</span><span class="pill">' + esc(ol.tier) + '</span><span class="pill">' + esc(ol.am) + '</span><span class="pill">' + esc(ol.city || ol.prov) + '</span>' +
+    var tags = '<span class="pill t">' + esc(ol.type) + '</span><span class="pill">' + esc(ol.nature) + '</span><span class="pill">' + esc(ol.tier) + '</span>' + (sizeTxt(ol) ? '<span class="pill" style="background:#fff4dc;color:#8a5a00">' + esc(sizeTxt(ol)) + '</span>' : '') + '<span class="pill">' + esc(ol.am) + '</span><span class="pill">' + esc(ol.city || ol.prov) + '</span>' +
       (ol.transformed ? '<span class="pill">Transformed ' + esc(ol.phase || '') + '</span>' : '');
-    var sub = [ol.city, ol.prov, ol.tier, ol.nature].filter(Boolean).map(esc).join(' \u00b7 ');
+    var sub = [ol.city, ol.prov, ol.tier, sizeTxt(ol), ol.nature].filter(Boolean).map(esc).join(' \u00b7 ');
 
     /* period bar */
     var ys = {}, t; for (t = m.min; t <= m.latest; t++) ys[E.yearOf(S.basis, t)] = 1;
@@ -225,16 +240,26 @@
       '<div class="tx" style="max-height:none"><table class="mt"><thead><tr><th class="l">Measure</th><th>' + esc(P.tag) + '</th><th>' + (hb ? esc(P.baseTag) : 'Prior year') + '</th><th>Change</th><th>Coverage (months)</th></tr></thead><tbody>' + ptab + '</tbody></table></div></div>';
 
     /* economics */
-    var peers = peerBlock(m, P, rowsD, r, o), size = sizeOf(ol), mc = Math.max(1, A.patOM);
+    var peers = peerBlock(m, P, rowsD, r, o), size = sizeOf(ol), mc = Math.max(1, A.patOM), sz = sizeBlock(m, P, rowsD, o);
     var sal = obs(m, 'sal', o, P.cur), rent = obs(m, 'rent', o, P.cur), util = obs(m, 'util', o, P.cur), petty = obs(m, 'petty', o, P.cur), sl = obs(m, 'stockloss', o, P.cur);
     var perM = function (x) { return x.n ? x.s / x.n : NaN; };
     var revDays = A.revOM > 0 ? A.rev / (A.revOM * avgDays(P)) : NaN;
     var erow = function (l, v, c, cls) { return '<tr><td class="l">' + l + '</td><td class="' + (cls || '') + '">' + v + '</td><td>' + c + '</td></tr>'; };
     var eco = '';
     if (isN(size)) {
-      eco += erow('Revenue / full m\u00b2 / month', money(A.rev / A.revOM / size), A.revOM + ' revenue months \u00b7 ' + F.n(size, 1) + ' full m\u00b2') +
-        erow('PAT / full m\u00b2 / month', money(A.pat / mc / size), A.patOM + ' PAT months', F.cls(A.pat));
-    } else eco += erow('Revenue and PAT per m\u00b2', '\u2013', 'Store size is not recorded in MASTER (Size column is empty)');
+      var rentO = perM(rent), whM = A.patOM ? A.wh / A.patOM : NaN;
+      eco += erow('Sales floor', F.n(size, 1) + ' m\u00b2', ol.sizeCat ? 'Size category ' + esc(ol.sizeCat) : 'no size category recorded') +
+        erow('Revenue / full m\u00b2 / month', money(A.rev / A.revOM / size), A.revOM + ' revenue months \u00b7 ' + F.n(size, 1) + ' m\u00b2') +
+        erow('PAT / full m\u00b2 / month', money(A.pat / mc / size), A.patOM + ' PAT months', F.cls(A.pat)) +
+        erow('Profit / full m\u00b2 / month', money(A.revOM ? A.pro / A.revOM / size : NaN), A.revOM + ' months') +
+        erow('Rent / full m\u00b2 / month', money(rentO / size), rent.n + ' months') +
+        erow('Staff hours / m\u00b2 / month', F.n(whM / size, 1), A.patOM + ' months');
+      if (sz.ok) {
+        var gapS = isN(sz.mineS) && sz.medS > 0 ? sz.mineS / sz.medS - 1 : NaN;
+        eco += erow('Size-category median sales / m\u00b2', money(sz.medS), sz.n + ' other ' + (r && r.cat === 'new' ? 'new' : 'mature') + ' ' + esc(ol.sizeCat) + ' outlets with a floor size \u00b7 minimum ' + MIN_PEERS) +
+          erow('Own sales / m\u00b2 vs category', isN(gapS) ? F.p(gapS, 0, true) : '\u2013', 'rank ' + (isN(sz.rankS) ? '#' + sz.rankS + ' of ' + (sz.n + 1) : '\u2013') + ' \u00b7 PAT / m\u00b2 median ' + money(sz.medP), F.cls(gapS));
+      } else if (ol.sizeCat) eco += erow('Size-category comparison', '\u2013', 'only ' + sz.n + ' other ' + esc(ol.sizeCat) + ' outlets with comparable data (minimum ' + MIN_PEERS + ')');
+    } else eco += erow('Revenue and PAT per m\u00b2', '\u2013', ol.sizeCat ? 'Size category ' + esc(ol.sizeCat) + ' recorded, but the sales-floor m\u00b2 is blank in MASTER' : 'Size is not recorded in MASTER for this outlet');
     eco += erow('Sales per trading day', money(revDays), A.revOM + ' revenue months') +
       erow('Working hours / month', F.n(A.patOM ? A.wh / A.patOM : NaN), A.patOM + ' months') +
       erow('PAT / month', money(A.patOM ? A.pat / A.patOM : NaN), A.patOM + ' PAT months', F.cls(A.pat)) +

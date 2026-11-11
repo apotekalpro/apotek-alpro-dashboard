@@ -1,5 +1,5 @@
 /* ============================================================================
- * BOD Dashboard - tabs: Financial growth, Store size (placeholder), Watchlist, Winning formula
+ * BOD Dashboard - tabs: Financial growth, Watchlist, Winning formula
  * Alert thresholds below are PROPOSED defaults, shown on screen so the board can challenge them.
  * ==========================================================================*/
 (function (win) {
@@ -107,7 +107,7 @@
     var y = 2000 + Math.floor(t / 12);
     return y < 2020 ? 'Before 2020' : String(y);
   }
-  var DIMS = { cohort: ['Opening year', cohortOf], type: ['Outlet type', function (o) { return o.type; }], tier: ['Tier (Category)', function (o) { return o.tier; }], am: ['Area manager', function (o) { return o.am; }], prov: ['Province', function (o) { return o.prov; }], nature: ['Nature', function (o) { return o.nature; }], city: ['City / regency', function (o) { return o.city || 'N/A'; }] };
+  var DIMS = { cohort: ['Opening year', cohortOf], type: ['Outlet type', function (o) { return o.type; }], tier: ['Tier (Category)', function (o) { return o.tier; }], size: ['Store size', function (o) { return B.sizeKey(o); }], am: ['Area manager', function (o) { return o.am; }], prov: ['Province', function (o) { return o.prov; }], nature: ['Nature', function (o) { return o.nature; }], city: ['City / regency', function (o) { return o.city || 'N/A'; }] };
   S.dim = S.dim || 'type';
 
   B.tabs.growth = {
@@ -239,17 +239,6 @@
         B.csv('bod-am-scorecard.csv', ['Area manager', 'Outlets', 'Sales', 'LFL sales change', 'LFL tx change', 'Margin', 'LFL margin change', 'PSH', 'PAT', 'PAT change', 'Declining LFL outlets', 'LFL outlets', 'Level 4-5 outlets', 'Negative PAT outlets', 'High alert outlets'],
           tbl.all.map(function (x) { return [x.k, x.n, Math.round(x.g.a.rev), isN(x.g.lRev) ? x.g.lRev.toFixed(4) : '', isN(x.g.lTx) ? x.g.lTx.toFixed(4) : '', isN(x.g.a.margin) ? x.g.a.margin.toFixed(4) : '', isN(x.g.lMargin) ? x.g.lMargin.toFixed(4) : '', isN(x.g.a.psh) ? Math.round(x.g.a.psh) : '', Math.round(x.g.a.pat), hb ? Math.round(x.g.dPat) : '', x.dn, x.lf, x.deep, x.g.negPat, x.hi]; }));
       };
-    }
-  };
-
-  /* ---------- Store size & profitability (placeholder, as requested) ---------- */
-  B.tabs.size = {
-    render: function (ctx, view) {
-      var ol = ctx.m.outlets, withSize = ol.filter(function (o) { return o.size; }).length;
-      view.innerHTML = '<div class="note warn"><b>Store size &amp; profitability is intentionally blank for now.</b> The <i>Size</i> column in MASTER is empty for all ' + ol.length + ' outlets (' + withSize + ' filled), so there is nothing real to chart yet. Nothing here is estimated.</div>' +
-        '<div class="card" style="padding:34px;text-align:center"><i class="fas fa-ruler-combined" style="font-size:34px;color:#b9c4d3"></i><h3 style="margin:12px 0 4px">Waiting for store size data</h3>' +
-        '<p style="max-width:640px;margin:0 auto;color:var(--ink2)">As soon as the Size column (square metres) is filled in MASTER, this tab will populate automatically on the next refresh. Planned view: size bands (e.g. &lt;50, 50\u2013100, 100\u2013150, 150+ sqm) against sales per sqm, PAT per sqm, PSH and margin, with the over- and under-performers for their size called out.</p>' +
-        '<p style="max-width:640px;margin:14px auto 0;color:var(--mute);font-size:11.5px">Grand Opening is also empty in MASTER. Targets are deliberately not used in this dashboard.</p></div>';
     }
   };
 

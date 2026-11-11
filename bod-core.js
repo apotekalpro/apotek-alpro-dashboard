@@ -31,7 +31,7 @@
   };
 
   /* ---------- state ---------- */
-  var S = { basis: 'FY', year: null, period: 'FY', month: null, rate: 'rev', type: '', am: '', prov: '', city: '', tab: 'overview', level: null, sort: null, search: '' };
+  var S = { basis: 'FY', year: null, period: 'FY', month: null, rate: 'rev', type: '', am: '', prov: '', city: '', size: '', tab: 'overview', level: null, sort: null, search: '' };
   var B = { S: S, F: F, esc: esc, isN: isN, E: E, model: null, exec: null, fetchedAt: null, source: '', ctx: null, tabs: {}, charts: [] };
   win.BOD = B;
 
@@ -87,7 +87,9 @@
     Object.keys(ex.rows).forEach(function (k) { ex.rows[k] = ex.rows[k].slice(0, keep); });
   };
   // true when any outlet filter (type / AM / province) narrows the company
-  B.isFiltered = function () { return !!(S.type || S.am || S.prov || S.city); };
+  B.isFiltered = function () { return !!(S.type || S.am || S.prov || S.city || S.size); };
+  // size band of an outlet: the Size Category typed in MASTER (SS / S / M / L / XL), else 'Not recorded'
+  B.sizeKey = function (ol) { return ['SS', 'S', 'M', 'L', 'XL'].indexOf(ol.sizeCat) >= 0 ? ol.sizeCat : 'Not recorded'; };
   async function loadData(force) {
     var view = $('view');
     view.innerHTML = '<div class="loading"><div class="spin"></div>Loading MASTER and Exec Dashboard from the source workbook&hellip;</div>';
@@ -123,7 +125,7 @@
     fillSelect('fCity', list, 'All kota', S.city);
   }
   B.syncFilters = function () {
-    fillCities(); ['fType', 'fAm', 'fProv', 'fCity'].forEach(function (id) { var k = id === 'fType' ? 'type' : id === 'fAm' ? 'am' : id === 'fProv' ? 'prov' : 'city'; if ($(id)) $(id).value = S[k] || ''; });
+    fillCities(); ['fType', 'fAm', 'fProv', 'fCity', 'fSize'].forEach(function (id) { var k = id === 'fType' ? 'type' : id === 'fAm' ? 'am' : id === 'fProv' ? 'prov' : id === 'fSize' ? 'size' : 'city'; if ($(id)) $(id).value = S[k] || ''; });
   };
   function buildControls() {
     var m = B.model, ys = {}, t;
@@ -144,6 +146,8 @@
     fillSelect('fAm', uniq(ol.map(function (o) { return o.am; })), 'All area managers', S.am);
     fillSelect('fProv', uniq(ol.map(function (o) { return o.prov; })), 'All provinces', S.prov);
     fillCities();
+    var present = {}; ol.forEach(function (o) { present[B.sizeKey(o)] = 1; });
+    fillSelect('fSize', ['SS', 'S', 'M', 'L', 'XL', 'Not recorded'].filter(function (k) { return present[k]; }), 'All sizes', S.size);
   }
   function wire() {
     function onChange(fn) { return function (e) { fn(e.target.value); B.render(); }; }
@@ -154,6 +158,7 @@
     $('fAm').onchange = onChange(function (v) { S.am = v; });
     $('fProv').onchange = function (e) { S.prov = e.target.value; fillCities(); S.level = null; B.render(); };
     $('fCity').onchange = onChange(function (v) { S.city = v; });
+    $('fSize').onchange = onChange(function (v) { S.size = v; });
     $('fRate').onclick = function (e) {
       var b = e.target.closest('button'); if (!b) return; S.rate = b.dataset.v; S.level = null;
       [].forEach.call($('fRate').children, function (x) { x.classList.toggle('on', x === b); }); B.render();
@@ -165,7 +170,7 @@
 
   /* ---------- context ---------- */
   function pass(o) {
-    return (!S.type || o.type === S.type) && (!S.am || o.am === S.am) && (!S.prov || o.prov === S.prov) && (!S.city || o.city === S.city);
+    return (!S.type || o.type === S.type) && (!S.am || o.am === S.am) && (!S.prov || o.prov === S.prov) && (!S.city || o.city === S.city) && (!S.size || B.sizeKey(o) === S.size);
   }
   function buildCtx() {
     var m = B.model;
@@ -290,6 +295,7 @@
   /* ---------- data notes ---------- */
   B.openNotes = function () {
     var m = B.model, dn = E.dataNotes(m), ctx = B.ctx;
+    var nCat = m.outlets.filter(function (o) { return !!o.sizeCat; }).length, nFl = m.outlets.filter(function (o) { return isN(o.floor); }).length;
     var gs = E.groupStats(m, ctx.P, ctx.rows);
     var all = m.outlets.map(function (_, i) { return i; }), A = E.agg(m, all, [m.latest]);
     var execPsh = E.execAt(B.exec, 'PSH', m.latest);
@@ -309,7 +315,7 @@
       '<li>' + dn.startAfterSales.length + ' outlet(s) have an opening date later than their first sales month; ' + dn.noStart.length + ' have no valid opening date. Operating months use the recorded opening date.</li>' +
       '<li><b>New outlet</b> = within ' + E.NEW_MONTHS + ' months of opening (opening month = month 1, counted to the period\'s last month, using the recorded opening date; if sales began well before that date, the first sales month is used). New outlets are kept out of the decline and improvement levels. Older outlets that still lack sales in some prior-year comparison months are shown under <i>New outlets</i> as "not yet comparable".</li>' +
       '<li>Revenue history starts ' + E.monthLabel(m.min) + ' but the first month looks partial, so ' + E.monthLabel(m.baseMin) + ' is used as the first month. FY2024 therefore covers Jul&ndash;Dec only; FY2025 (Jan&ndash;Dec) shows full-year totals, but growth levels start from Jul 2025 (prior-year base = Jul 2024), so use Half-year 2 for FY2025 growth; from FY2026 onwards every period is compared.</li>' +
-      '<li>Columns Size and Grand Opening are empty, so Store size &amp; profitability is a placeholder until the Size column is filled. <b>Target figures are not used</b> (not compared against target by design).</li>' +
+      '<li><b>Store size</b> uses MASTER columns Size Category (SS/S/M/L/XL) and Size Sales Floor (m&sup2;). ' + nCat + ' of ' + m.outlets.length + ' outlets have a category and ' + nFl + ' have a floor size; the rest show as <i>Not recorded</i> and are left out of per-m&sup2; figures (nothing is estimated). Grand Opening is not used. <b>Target figures are not used</b> (not compared against target by design).</li>' +
       '<li>Margin has a few implausible cells (e.g. 137% and &minus;97%); they are used as recorded and show up in the Watchlist.</li></ul></div>' +
       '<div class="card"><h4>Coverage for this view</h4><div class="ks">' + gs.n + ' trading outlets \u00b7 ' + gs.nLfl + ' like-for-like \u00b7 ' + (gs.n - gs.nLfl) + ' new or non-comparable \u00b7 ' + m.outlets.length + ' rows read from MASTER.</div></div></aside>';
     var close = function () { $('drawerHost').innerHTML = ''; }; $('dx').onclick = close; $('dim').onclick = close;
