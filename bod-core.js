@@ -165,7 +165,13 @@
     };
     $('btnRefresh').onclick = function () { B.reload(); };
     $('btnNotes').onclick = function () { B.openNotes(); };
-    $('tabs').onclick = function (e) { var b = e.target.closest('.tab'); if (!b) return; S.tab = b.dataset.t; S.level = null; S.sort = null; B.render(); };
+    $('tabs').onclick = function (e) { var b = e.target.closest('.tab'); if (!b) return; var g = GROUPS.filter(function (x) { return x.id === b.dataset.g; })[0]; S.tab = S.last[g.id] || g.subs[0][0]; S.level = null; S.sort = null; B.render(); };
+    $('subtabs').onclick = function (e) { var b = e.target.closest('.stab'); if (!b) return; S.tab = b.dataset.t; S.level = null; S.sort = null; B.render(); };
+    $('scope').onclick = function (e) {
+      var c = e.target.closest('.chip'); if (!c) return;
+      if (c.id === 'clrAll') { S.type = S.am = S.prov = S.city = S.size = ''; } else if (c.dataset.clr) S[c.dataset.clr] = '';
+      S.level = null; B.syncFilters(); B.render();
+    };
   }
 
   /* ---------- context ---------- */
@@ -188,10 +194,35 @@
   }
 
   /* ---------- tabs / render ---------- */
-  var TAB_LIST = [
-    ['overview', 'Overview'], ['down', 'Declining stores'], ['up', 'Improving stores'], ['new', 'New outlets'],
-    ['growth', 'Financial growth'], ['pat', 'Profitability (PAT)'], ['quad', 'Growth vs profitability'], ['am', 'Area managers'], ['psh', 'PSH ranking'], ['geo', 'Geographic analysis'], ['size', 'Store size & profitability'], ['watch', 'Watchlist & alerts'], ['win', 'Winning formula']
+  // Two-level navigation: 4 groups + Overview. Sub-view ids are the original tab ids, so cross-links (S.tab = 'watch') keep working.
+  var GROUPS = [
+    { id: 'overview', label: 'Overview', icon: 'fa-gauge-high', subs: [['overview', 'Overview', 'fa-gauge-high']] },
+    { id: 'outlets', label: 'Outlet movement', icon: 'fa-store', hint: 'Which outlets are sliding, improving, new or need action',
+      subs: [['down', 'Like-for-like movers', 'fa-arrows-up-down', ['down', 'up']], ['new', 'New outlets', 'fa-seedling'], ['watch', 'Watchlist & alerts', 'fa-flag']] },
+    { id: 'fin', label: 'Financial performance', icon: 'fa-chart-line', hint: 'Growth, profit, PSH and what drives them',
+      subs: [['growth', 'Growth scorecard', 'fa-chart-line'], ['pat', 'Profitability (PAT)', 'fa-sack-dollar'], ['psh', 'PSH ranking', 'fa-ranking-star'], ['quad', 'Growth vs profit', 'fa-chart-scatter'], ['win', 'Winning formula', 'fa-trophy']] },
+    { id: 'seg', label: 'Segments & geography', icon: 'fa-layer-group', hint: 'Where performance differs: area manager, location, store size',
+      subs: [['am', 'Area managers', 'fa-user-tie'], ['geo', 'Geographic', 'fa-map-location-dot'], ['size', 'Store size', 'fa-ruler-combined']] }
   ];
+  B.groupOf = function (tab) { return GROUPS.filter(function (g) { return g.subs.some(function (s) { return s[0] === tab || (s[3] || []).indexOf(tab) >= 0; }); })[0] || GROUPS[0]; };
+  S.last = S.last || {};
+  function scopeStrip(ctx) {
+    var P = ctx.P, chips = [], names = { type: 'Type', am: 'AM', prov: 'Province', city: 'Kota', size: 'Size' };
+    ['type', 'am', 'prov', 'city', 'size'].forEach(function (k) { if (S[k]) chips.push('<button class="chip" data-clr="' + k + '" title="Remove this filter">' + names[k] + ': <b>' + esc(S[k]) + '</b> <i class="fas fa-xmark"></i></button>'); });
+    var nT = ctx.rowsF.filter(function (r) { return r.cat !== 'inactive'; }).length;
+    return '<span class="sc-l"><i class="fas fa-crosshairs"></i> <b>' + esc(P.tag || '') + '</b>' + (P.baseAvailable ? ' vs ' + esc(P.baseTag) : '') + '</span>' +
+      '<span class="sc-n">' + nT + ' trading outlets' + (B.isFiltered() ? ' (filtered)' : ' (all)') + '</span>' + chips.join('') +
+      (chips.length ? '<button class="chip reset" id="clrAll"><i class="fas fa-rotate-left"></i> Reset filters</button>' : '');
+  }
+  // Turn the leading explanatory banner of a view into a collapsed "About this view" row (state is remembered per sub-view)
+  function collapseAbout(view) {
+    var n = view.firstElementChild; if (!n || !n.classList.contains('note') || n.classList.contains('warn') || n.classList.contains('err')) return;
+    var b = n.querySelector('b'), title = b ? b.textContent.replace(/[.:]\s*$/, '') : 'About this view';
+    var d = document.createElement('details'); d.className = 'about'; if (S.aboutOpen && S.aboutOpen[S.tab]) d.open = true;
+    var sm = document.createElement('summary'); sm.innerHTML = '<i class="fas fa-circle-info"></i> About this view: <b>' + esc(title) + '</b><span>definitions and how to read it</span>';
+    d.appendChild(sm); n.classList.add('abt-body'); d.appendChild(n); view.insertBefore(d, view.firstChild);
+    d.addEventListener('toggle', function () { S.aboutOpen = S.aboutOpen || {}; S.aboutOpen[S.tab] = d.open; });
+  }
   function destroyCharts() { B.charts.forEach(function (c) { try { c.destroy(); } catch (e) { /* noop */ } }); B.charts = []; }
   B.chart = function (id, cfg) {
     var el = $(id); if (!el || !win.Chart) return null;
@@ -205,11 +236,22 @@
     $('pTag').textContent = P.tag || ''; $('pRange').textContent = P.cur.length ? P.label.replace(/^[^\u00b7]*\u00b7\s*/, '') : 'No data';
     $('subtitle').textContent = 'Growth is running year-on-year: ' + (P.tag || '') + ' vs ' + (P.baseTag || '') + ', same months. Levels are driven by ' + ctx.rateName + '.';
     var badge = { down: ctx.down.length, up: ctx.up.length, 'new': ctx.neu.length };
-    var TI = { overview: 'fa-gauge-high', down: 'fa-arrow-trend-down', up: 'fa-arrow-trend-up', 'new': 'fa-store', growth: 'fa-chart-line', pat: 'fa-sack-dollar', quad: 'fa-chart-scatter', am: 'fa-user-tie', psh: 'fa-ranking-star', geo: 'fa-map-location-dot', size: 'fa-ruler-combined', watch: 'fa-flag', win: 'fa-trophy' };
-    var BC = { down: 'dn', up: 'up', 'new': 'nw' };
-    $('tabs').innerHTML = TAB_LIST.map(function (t) {
-      return '<button class="tab' + (S.tab === t[0] ? ' on' : '') + '" data-t="' + t[0] + '"><i class="fas ' + (TI[t[0]] || 'fa-circle') + ' ti"></i>' + t[1] + (badge[t[0]] != null ? '<span class="n ' + (BC[t[0]] || '') + '">' + badge[t[0]] + '</span>' : '') + '</button>';
+    var cur = B.groupOf(S.tab); S.last[cur.id] = S.tab;
+    var al = null; try { al = ctx.al = B.computeFlags ? B.computeFlags(ctx) : null; } catch (e) { al = null; }
+    var gBadge = { outlets: [{ c: 'dn', v: ctx.down.length, t: 'declining' }] , fin: [], seg: [], overview: [] };
+    $('tabs').innerHTML = GROUPS.map(function (g) {
+      var bd = (gBadge[g.id] || []).map(function (x) { return '<span class="n ' + x.c + '" title="' + x.v + ' ' + x.t + '">' + x.v + '</span>'; }).join('');
+      return '<button class="tab' + (cur.id === g.id ? ' on' : '') + '" data-g="' + g.id + '" title="' + esc(g.hint || '') + '"><i class="fas ' + g.icon + ' ti"></i>' + g.label + bd + '</button>';
     }).join('');
+    var badge = { down: [ctx.down.length, 'dn'], up: [ctx.up.length, 'up'], 'new': [ctx.neu.length, 'nw'], watch: al ? [al.high, 'hi'] : null };
+    $('subtabs').classList.toggle('hidden', cur.subs.length < 2);
+    $('subtabs').innerHTML = cur.subs.map(function (t) {
+      var on = S.tab === t[0] || (t[3] || []).indexOf(S.tab) >= 0, bg = '';
+      if (t[0] === 'down') bg = '<span class="n dn" title="declining like-for-like outlets">' + ctx.down.length + '</span><span class="n up" title="improving like-for-like outlets">' + ctx.up.length + '</span>';
+      else if (badge[t[0]]) bg = '<span class="n ' + badge[t[0]][1] + '">' + badge[t[0]][0] + '</span>';
+      return '<button class="stab' + (on ? ' on' : '') + '" data-t="' + t[0] + '"><i class="fas ' + t[2] + '"></i>' + t[1] + bg + '</button>';
+    }).join('');
+    $('scope').innerHTML = scopeStrip(ctx);
     var bn = '';
     if (!P.cur.length) bn = '<div class="note warn"><b>No data for this selection.</b> The workbook has no months in the chosen year/period yet.</div>';
     else if (!P.baseAvailable) bn = '<div class="note warn"><b>No prior-year comparison.</b> The workbook\'s comparable history starts ' + esc(E.monthLabel(B.model.baseMin)) + ' (the first month looks like a part-month), so ' + esc(P.baseTag) + ' cannot be built for this selection. Totals are shown; growth levels need a period with prior-year months in the workbook (e.g. FY2025 Half-year 2, or anything in FY2026).</div>' + (P.startLimited ? '<div class="note"><b>' + esc(P.tag) + ' covers ' + esc(E.monthLabel(P.cur[0])) + ' \u2013 ' + esc(E.monthLabel(P.cur[P.cur.length - 1])) + ' only</b>: the workbook has no reliable data before ' + esc(E.monthLabel(B.model.baseMin)) + '.</div>' : '');
@@ -221,6 +263,13 @@
     var t = B.tabs[S.tab] || B.tabs.overview;
     var v = $('view'); v.innerHTML = '';
     t.render(ctx, v);
+    collapseAbout(v);
+    if (S.tab === 'down' || S.tab === 'up') {
+      var dt = document.createElement('div'); dt.className = 'dirbar';
+      dt.innerHTML = '<span class="dl">Like-for-like outlets that are</span><div class="seg" id="dirSeg"><button data-v="down" class="' + (S.tab === 'down' ? 'on dn' : '') + '"><i class="fas fa-arrow-trend-down"></i> Declining <span class="n">' + ctx.down.length + '</span></button><button data-v="up" class="' + (S.tab === 'up' ? 'on up' : '') + '"><i class="fas fa-arrow-trend-up"></i> Improving <span class="n">' + ctx.up.length + '</span></button></div>';
+      v.insertBefore(dt, v.firstChild);
+      dt.querySelector('#dirSeg').onclick = function (e) { var b = e.target.closest('button'); if (!b || b.dataset.v === S.tab) return; S.tab = b.dataset.v; S.level = null; S.sort = null; B.render(); };
+    }
   };
   B.reload = async function () {
     var ok = await loadData(true); if (!ok) return; buildControls(); B.render();
@@ -293,6 +342,24 @@
   /* ---------- outlet drawer: see bod-drawer.js ---------- */
 
   /* ---------- data notes ---------- */
+  // Audit panel: MASTER (rebuilt) vs the Exec Dashboard rows, last 13 months
+  B.reconCard = function (m) {
+    var ex = B.exec; if (!ex || !ex.rows || !ex.rows['Revenue']) return '';
+    var all = m.outlets.map(function (_, i) { return i; }), rows = '', big = 0, T = [], t;
+    for (t = Math.max(m.baseMin + 1, m.latest - 12); t <= m.latest; t++) T.push(t);
+    T.forEach(function (t) {
+      var A = E.agg(m, all, [t]), xr = E.execAt(ex, 'Revenue', t), xp = E.execAt(ex, 'Profit', t);
+      var dr = isN(xr) && xr > 0 ? A.rev / xr - 1 : NaN, dp = isN(xp) && xp ? A.pro / xp - 1 : NaN;
+      if (Math.abs(dr) > 0.005 || Math.abs(dp) > 0.005) big++;
+      var cl = function (d) { return isN(d) && Math.abs(d) > 0.005 ? ' class="neg"' : ''; };
+      rows += '<tr><td>' + E.monthShort(t) + '</td><td>' + (A.rev / 1e9).toFixed(2) + '</td><td>' + (isN(xr) ? (xr / 1e9).toFixed(2) : '\u2013') + '</td><td' + cl(dr) + '>' + (isN(dr) ? F.pp(dr) : '\u2013') + '</td><td>' + (A.pro / 1e9).toFixed(2) + '</td><td>' + (isN(xp) ? (xp / 1e9).toFixed(2) : '\u2013') + '</td><td' + cl(dp) + '>' + (isN(dp) ? F.pp(dp) : '\u2013') + '</td></tr>';
+    });
+    return '<div class="card reco" style="margin-bottom:12px"><h4>Data check: MASTER rebuilt vs Exec Dashboard (Rp b)</h4>' +
+      '<div class="ks" style="margin:2px 0 8px">Outlet rows in MASTER summed per month against the company rows the sheet publishes. ' + (big ? '<b>' + big + ' of ' + T.length + ' months differ by more than 0.5%</b>: the Exec rows were typed or kept before closed outlets were removed from MASTER, so older months are higher there. ' : 'All months agree within 0.5%. ') +
+      'Dashboard outlet-level views, LFL growth and PAT use MASTER only; the growth scorecard shows the Exec-based company growth next to the MASTER-based one when no filter is set.</div>' +
+      '<div style="overflow:auto"><table><thead><tr><th>Month</th><th>Sales MASTER</th><th>Sales Exec</th><th>Diff</th><th>Profit MASTER</th><th>Profit Exec</th><th>Diff</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+  };
+
   B.openNotes = function () {
     var m = B.model, dn = E.dataNotes(m), ctx = B.ctx;
     var nCat = m.outlets.filter(function (o) { return !!o.sizeCat; }).length, nFl = m.outlets.filter(function (o) { return isN(o.floor); }).length;
@@ -311,12 +378,13 @@
       '<div class="card" style="margin-bottom:12px"><h4>Things in the workbook worth confirming</h4><ul style="margin:6px 0 0 16px;padding:0;line-height:1.7">' +
       '<li><b>PAT</b> is PSH &times; working hours per outlet-month (per management definition). It is not Profit minus the cost columns in MASTER, because other costs (management fee, tax, other overheads) are outside the sheet. Latest month PAT: <b>' + F.rp(A.pat) + '</b>.</li>' +
       '<li><b>Company PSH</b> (' + E.monthLabel(m.latest) + ') is taken from the Exec Dashboard: <b>' + F.n(execPsh) + '</b> (outlet PSH &times; hours rolled up is <b>' + F.n(A.psh) + '</b>; the gap is expected because the company figure also reflects management fee, tax and other items). Outlet-level and filtered views always use outlet PSH &times; hours; for multi-month periods the company monthly figures are weighted by working hours.</li>' +
-      '<li>Closed outlets (hidden rows below the active list in MASTER) and the ECOM row are excluded, so company totals can sit slightly below the sheet\u2019s own totals.</li>' +
+      '<li>Closed outlets (removed from the MASTER list) and the ECOM row are not included, so MASTER-based totals for periods before the closures can sit below the Exec Dashboard, and growth built from them can read a few points higher than the Exec Dashboard\u2019s own growth. Like-for-like figures are not affected. See the data check above.</li>' +
       '<li>' + dn.startAfterSales.length + ' outlet(s) have an opening date later than their first sales month; ' + dn.noStart.length + ' have no valid opening date. Operating months use the recorded opening date.</li>' +
       '<li><b>New outlet</b> = within ' + E.NEW_MONTHS + ' months of opening (opening month = month 1, counted to the period\'s last month, using the recorded opening date; if sales began well before that date, the first sales month is used). New outlets are kept out of the decline and improvement levels. Older outlets that still lack sales in some prior-year comparison months are shown under <i>New outlets</i> as "not yet comparable".</li>' +
       '<li>Revenue history starts ' + E.monthLabel(m.min) + ' but the first month looks partial, so ' + E.monthLabel(m.baseMin) + ' is used as the first month. FY2024 therefore covers Jul&ndash;Dec only; FY2025 (Jan&ndash;Dec) shows full-year totals, but growth levels start from Jul 2025 (prior-year base = Jul 2024), so use Half-year 2 for FY2025 growth; from FY2026 onwards every period is compared.</li>' +
       '<li><b>Store size</b> uses MASTER columns Size Category (SS/S/M/L/XL) and Size Sales Floor (m&sup2;). ' + nCat + ' of ' + m.outlets.length + ' outlets have a category and ' + nFl + ' have a floor size; the rest show as <i>Not recorded</i> and are left out of per-m&sup2; figures (nothing is estimated). Grand Opening is not used. <b>Target figures are not used</b> (not compared against target by design).</li>' +
       '<li>Margin has a few implausible cells (e.g. 137% and &minus;97%); they are used as recorded and show up in the Watchlist.</li></ul></div>' +
+      B.reconCard(m) +
       '<div class="card"><h4>Coverage for this view</h4><div class="ks">' + gs.n + ' trading outlets \u00b7 ' + gs.nLfl + ' like-for-like \u00b7 ' + (gs.n - gs.nLfl) + ' new or non-comparable \u00b7 ' + m.outlets.length + ' rows read from MASTER.</div></div></aside>';
     var close = function () { $('drawerHost').innerHTML = ''; }; $('dx').onclick = close; $('dim').onclick = close;
   };
