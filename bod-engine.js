@@ -90,8 +90,8 @@
   var FIXED = [
     ['code', /^(\d[\d,]*\s+)?Outlet\b/i, 0], ['name', /\bName\b/i, 1], ['start', /Start Date/i, 2], ['am', /^AM\b/i, 4],
     ['type', /\bTYPE\b/i, 5], ['nature', /\bNATURE\b/i, 6], ['kec', /KECAMATAN/i, 7], ['city', /\bKOTA\b/i, 8],
-    ['prov', /PROVINCE/i, 9], ['size', /\bSize\b/i, 11], ['target', /Target\s+2026/i, 13], ['transformed', /Transformed/i, 14],
-    ['phase', /\bPHASE\b/i, 15], ['tier', /Category/i, 16]
+    ['prov', /PROVINCE/i, 9], ['sizeCat', /Size\s+Category/i, 11], ['floor', /Sales\s+Floor|\(m2\)/i, 12], ['target', /Target\s+2026/i, 13], ['transformed', /Transformed/i, 14],
+    ['phase', /\bPHASE\b/i, 15], ['tier', /Category\s+20\d\d/i, 16]
   ];
   function parseMaster(j) {
     var cols = j.table.cols, rows = j.table.rows;
@@ -134,7 +134,7 @@
         fullName: cellStr(c[fx.name]),
         start: cellDate(c[fx.start]), am: cellStr(c[fx.am]) || 'Unassigned', type: cellStr(c[fx.type]) || 'N/A',
         nature: cellStr(c[fx.nature]) || 'N/A', kec: cellStr(c[fx.kec]), city: cellStr(c[fx.city]), prov: prov || 'N/A',
-        size: cellStr(c[fx.size]), target26: cellNum(c[fx.target]), transformed: cellStr(c[fx.transformed]),
+        sizeCat: cellStr(c[fx.sizeCat]).toUpperCase(), floor: (function (v) { return v > 0 ? v : NaN; })(cellNum(c[fx.floor])), target26: cellNum(c[fx.target]), transformed: cellStr(c[fx.transformed]),
         phase: cellStr(c[fx.phase]), tier: (cellStr(c[fx.tier]) || 'N/A').toUpperCase()
       });
       KEYS.forEach(function (key) {

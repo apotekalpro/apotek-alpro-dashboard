@@ -20,6 +20,7 @@
   var DIMS = {
     am: ['Area manager', function (o) { return o.am || 'N/A'; }],
     type: ['Outlet type', function (o) { return o.type || 'N/A'; }],
+    size: ['Store size', function (o) { return B.sizeKey(o); }],
     city: ['Kota', function (o) { return o.city || 'N/A'; }],
     prov: ['Province', function (o) { return o.prov || 'N/A'; }]
   };
