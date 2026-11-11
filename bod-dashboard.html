@@ -49,6 +49,43 @@ h1{font-size:30px;margin:4px 0 4px;letter-spacing:-.02em}
 .tab.on .n.dn{background:#ff8d96;color:#fff}
 .tab.on .n.up{background:#4fd39b;color:#05301f}
 .tab.on .n.nw{background:#ffd166;color:#4a3300}
+/* two-level navigation */
+.tabs{margin:10px 0 0;padding:6px;border-radius:12px 12px 0 0;border-bottom:0;gap:6px}
+.tab{padding:10px 16px;font-size:14px}
+.tab .n.hi{background:#fde3e5;color:#b5303b}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;background:#eef3f9;border:1px solid var(--line);border-radius:0 0 12px 12px;margin:0 0 14px}
+.subtabs.hidden{display:none}
+.tabs+.subtabs.hidden{display:none}
+.stab{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid transparent;border-radius:20px;background:transparent;cursor:pointer;font-weight:600;font-size:12.5px;color:var(--ink2)}
+.stab i{font-size:11px;opacity:.7}
+.stab:hover{background:#fff;color:var(--navy)}
+.stab.on{background:#fff;border-color:#b9c9de;color:var(--navy);box-shadow:0 1px 4px rgba(15,48,87,.15)}
+.stab .n{border-radius:10px;padding:0 7px;font-size:10.5px;font-weight:800;background:#e1e8f1;color:var(--ink2);line-height:1.6}
+.stab .n.dn,.stab .n.hi{background:#fde3e5;color:#b5303b}.stab .n.up{background:#d9f2e5;color:#0b6b48}.stab .n.nw{background:#e0ecff;color:#1d4fd8}
+.scope{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0 4px;font-size:11.5px;color:var(--ink2)}
+.scope .sc-l{background:#e8eef6;border-radius:6px;padding:4px 10px;color:var(--navy)}
+.scope .sc-n{color:var(--mute)}
+.chip{border:1px solid #b9c9de;background:#fff;border-radius:14px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--ink2)}
+.chip:hover{border-color:var(--neg);color:var(--neg)}
+.chip i{font-size:9px;margin-left:3px}
+.chip.reset{border-style:dashed}
+details.about{margin-bottom:12px;background:#fff;border:1px solid var(--line);border-radius:8px}
+details.about>summary{list-style:none;cursor:pointer;padding:7px 12px;font-size:11.5px;color:var(--ink2);display:flex;gap:6px;align-items:center}
+details.about>summary::-webkit-details-marker{display:none}
+details.about>summary i{color:var(--navy2)}
+details.about>summary span{margin-left:auto;color:var(--mute);font-size:10.5px}
+details.about>summary:hover{background:#f6f9fd}
+details.about[open]>summary{border-bottom:1px solid var(--line)}
+details.about .abt-body{margin:0;border:0;border-radius:0 0 8px 8px;border-left:3px solid var(--navy2)}
+.dirbar .dl{font-size:11.5px;color:var(--ink2)}
+.dirbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.dirbar .seg button{padding:8px 16px;display:inline-flex;gap:6px;align-items:center}
+.dirbar .seg button .n{background:#e9eef5;color:var(--ink2);border-radius:10px;padding:0 7px;font-size:11px;font-weight:800}
+.dirbar .seg button.on.dn{background:var(--l5)}.dirbar .seg button.on.up{background:var(--up5)}
+.dirbar .seg button.on .n{background:rgba(255,255,255,.28);color:#fff}
+.reco table{width:100%;border-collapse:collapse;font-size:11.5px}.reco th,.reco td{padding:4px 7px;border-bottom:1px solid var(--line);text-align:right}.reco th:first-child,.reco td:first-child{text-align:left}
+.reco th{font-size:10px;color:var(--ink2);text-transform:uppercase}
+/* end navigation */
 /* geographic analysis */
 .geoctl{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:12px 0}
 .geoctl label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--ink2)}
@@ -201,7 +238,9 @@ tr.drh td{background:#eef2f7;font-weight:700;font-size:10.5px;text-transform:upp
   </div>
 
   <div id="banner"></div>
+  <div class="scope" id="scope"></div>
   <nav class="tabs" id="tabs"></nav>
+  <nav class="subtabs" id="subtabs"></nav>
   <main id="view"></main>
   <div class="foot" id="foot"></div>
 </div>

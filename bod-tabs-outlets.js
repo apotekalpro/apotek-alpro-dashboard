@@ -228,7 +228,7 @@
           return '<td class="' + cls + '">' + execCell(lab, x) + '</td>';
         }).join('') + '</tr>';
       }).join('');
-      view.innerHTML = '<div class="note"><b>Executive overview.</b> Period cards are rebuilt from MASTER for the ' + gs.n + ' outlets trading in the selection (the 17 closed outlets and ECOM are excluded, so company totals can differ slightly from the Exec Dashboard below). Use the filters above to move between full period, half-year, quarter, running 12 months or a single month.</div>' +
+      view.innerHTML = '<div class="note"><b>Executive overview.</b> Period cards are rebuilt from MASTER for the ' + gs.n + ' outlets trading in the selection (closed outlets and ECOM are not in MASTER, so company totals can differ from the Exec Dashboard below, mostly in older months; see Data notes for the month-by-month check). Use the filters above to move between full period, half-year, quarter, running 12 months or a single month.</div>' +
         cards + cards2 + alHtml +
         '<div class="grid g2"><div class="card"><h4>Company sales (Rp b) and margin %</h4><div class="ch t"><canvas id="o1"></canvas></div></div><div class="card"><h4>PSH (Rp per staff hour) and outlets with positive PSH</h4><div class="ch t"><canvas id="o2"></canvas></div></div></div>' +
         '<div class="grid g2" style="margin-top:12px"><div class="card"><h4>Transactions and new members</h4><div class="ch t"><canvas id="o3"></canvas></div></div><div class="card"><h4>Outlets by level, ' + esc(P.tag) + ' vs ' + esc(P.baseTag) + '</h4><div class="ch t"><canvas id="o4"></canvas></div></div></div>' +
