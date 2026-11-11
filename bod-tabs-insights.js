@@ -127,11 +127,17 @@
         var pa = E.companyPsh(m, B.exec, P.cur), pb = hb ? E.companyPsh(m, B.exec, P.base) : null;
         if (pa.src === 'sheet') { coP.a = pa.v; coP.src = 'sheet'; if (pb && pb.src === 'sheet') coP.b = pb.v; else coP.b = NaN; }
       }
+      var execSales = '';
+      if (!B.isFiltered() && B.exec && hb) {
+        var sx = function (ms) { var t = 0, ok = ms.length > 0; ms.forEach(function (x) { var v = E.execAt(B.exec, 'Revenue', x); if (isN(v)) t += v; else ok = false; }); return ok ? t : NaN; };
+        var xa = sx(P.cur), xb = sx(P.base);
+        if (isN(xa) && isN(xb) && xb > 0) execSales = '<tr style="cursor:default;background:#f7f9fc"><td class="l"><b>Sales per Exec Dashboard</b> <small style="color:var(--mute)">(company row as published; reference only)</small></td><td>' + F.rp(xa) + '</td><td>' + F.rp(xb) + '</td><td class="' + F.cls(xa / xb - 1) + '">' + F.p(xa / xb - 1, 1, true) + '</td></tr>';
+      }
       var lflRows = '';
       lflRows += '<tr style="cursor:default"><td class="l"><b>Like-for-like sales</b> (' + gs.nLfl + ' outlets)</td><td>' + F.rp(gs.la.rev) + '</td><td>' + (hb ? F.rp(gs.lb.rev) : '\u2013') + '</td><td class="' + F.cls(gs.lRev) + '">' + F.p(gs.lRev, 1, true) + '</td></tr>';
       lflRows += '<tr style="cursor:default"><td class="l"><b>Like-for-like transactions</b></td><td>' + F.n(gs.la.tx) + '</td><td>' + (hb ? F.n(gs.lb.tx) : '\u2013') + '</td><td class="' + F.cls(gs.lTx) + '">' + F.p(gs.lTx, 1, true) + '</td></tr>';
       var mt = '<div class="tw" style="margin-top:0"><div class="th"><div><h3>Company growth scorecard</h3><p>' + esc(P.tag) + ' vs ' + esc(P.baseTag) + ' \u00b7 all ' + gs.n + ' trading outlets in the current filter</p></div></div><div class="tx"><table><thead><tr><th class="l">Metric</th><th>' + esc(P.tag) + '</th><th>' + esc(P.baseTag) + '</th><th>Change</th></tr></thead><tbody>' +
-        line('Sales', a.rev, b.rev, F.rp) + line('Transactions', a.tx, b.tx, F.n) + line('Basket size (Rp)', a.basket, b.basket, F.n) + line('Gross profit', a.pro, b.pro, F.rp) +
+        line('Sales', a.rev, b.rev, F.rp) + execSales + line('Transactions', a.tx, b.tx, F.n) + line('Basket size (Rp)', a.basket, b.basket, F.n) + line('Gross profit', a.pro, b.pro, F.rp) +
         line('Margin', a.margin, b.margin, function (v) { return F.p(v, 2); }, 'pp') +
         line('<b>PAT (PSH \u00d7 hours)</b>', a.pat, b.pat, F.rp, 'abs') +
         line('PSH (Rp per staff hour)' + (coP.src === 'sheet' ? ' \u00b7 company, per sheet' : ''), coP.a, coP.b, F.n, 'abs') +
