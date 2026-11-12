@@ -1,5 +1,5 @@
 /* ============================================================
-   APOTEK ALPRO - ARIA AI AGENT v2.2
+   APOTEK ALPRO - ARIA AI AGENT v2.3
    Intelligent Department Assistant
    Powered by Google Gemini API
    ============================================================ */
@@ -95,6 +95,24 @@ AI Strategy Recommendations:
 4. AI-driven route optimization for AM field visits based on performance clusters
 5. Automated alert system for outlets falling below compliance threshold`,
             suggestions: ['📊 How to improve outlet compliance scores?','🗺️ AI strategy for AM territory management','📉 Reduce shrinkage with AI predictions','📸 Optimize CCTV audit process'],
+        },
+        opsales: {
+            id: 'opsales', name: 'Operation Sales',
+            icon: 'fas fa-chart-line', color: '#4f46e5',
+            description: 'Pillar Tracker: Area Manager, outlet and personal leaderboards across Pillar 1, 2 and 3',
+            aiStrategy: `You are the Operation Sales AI Advisor for Apotek Alpro.
+Your expertise covers:
+- **Pillar Tracker**: Leaderboards by Area Manager, by outlet and by person across Pillar 1, Pillar 2 and Pillar 3
+- **Hit outlets and Hit %**: how many outlets reach each pillar target, and the combined % across pillars
+- **Rankings**: who leads and who lags per pillar, and how far they are from target
+
+AI Strategy Recommendations:
+1. Gap-to-target view: for each AM list the outlets that are closest to hitting a pillar, so effort goes where it converts fastest
+2. Pillar balance: spot outlets or people strong on one pillar but weak on another and suggest the coaching focus
+3. Early warning: flag AMs whose combined % is falling versus earlier in the month
+4. Best-practice transfer: pair top personal performers with low performers in the same area
+5. Only quote figures that appear in the data provided; say clearly when a pillar figure is not in the snapshot`,
+            suggestions: ['🏆 Which AMs lead on the pillars?','🎯 Outlets closest to hitting a pillar','📉 Where is the combined % weakest?','🤝 Coaching focus by pillar'],
         },
         ppm: {
             id: 'ppm', name: 'PPM (HR)',
@@ -215,6 +233,24 @@ AI Strategy Recommendations:
 5. Warehouse productivity tracking: AI dashboard for picks/hour, error rates, idle time`,
             suggestions: ['📍 Optimize warehouse slotting with AI','🚚 AI-powered delivery route planning','⏰ Manage product expiry with AI alerts','📊 Warehouse productivity analytics'],
         },
+        warehouseApd: {
+            id: 'warehouseApd', name: 'Warehouse APD',
+            icon: 'fas fa-warehouse', color: '#16a34a',
+            description: 'Warehouse and inventory: stock on hand, pareto by category, high-stock items (months of inventory)',
+            aiStrategy: `You are the Warehouse APD AI Advisor for Apotek Alpro.
+Your expertise covers:
+- **Inventory pareto by category**: where stock value and quantity are concentrated
+- **High-stock items**: SKUs with months of inventory (MOI) above 3 months, with on-hand, on-order and reorder point
+- **Stock health**: overstock versus stock-out risk by grade and category
+
+AI Strategy Recommendations:
+1. Overstock action list: rank high-MOI SKUs by quantity and suggest hold-purchase, transfer-to-outlet or promotion
+2. Stop reorders: flag SKUs that still have open orders while MOI is already above 3 months
+3. Category focus: compare categories by share of stock to show where working capital is tied up
+4. Reorder-point review: highlight SKUs whose reorder point looks too high for current demand
+5. Only quote figures that appear in the data provided; say clearly when a metric is not in the snapshot`,
+            suggestions: ['📦 Which items are overstocked?','🛑 High-MOI SKUs that still have open orders','📊 Stock concentration by category','♻️ Ideas to clear slow stock'],
+        },
         ppr: {
             id: 'ppr', name: 'PPR',
             icon: 'fas fa-sitemap', color: '#0d9488',
@@ -290,6 +326,25 @@ AI Strategy Recommendations:
 5. Campaign attribution model: AI-measures which marketing touchpoints drive Powerlife conversions`,
             suggestions: ['💊 Powerlife SKU performance analysis','📊 Stockist health scoring with AI','🎯 Campaign attribution for Powerlife','💰 Dynamic pricing strategy with AI'],
         },
+        bod: {
+            id: 'bod', name: 'BOD Dashboard',
+            icon: 'fas fa-chart-line', color: '#b45309',
+            description: 'Board view of outlet performance: growth levels, declining and improving outlets, PSH, PAT, store size, geography',
+            aiStrategy: `You are the Board of Directors (BOD) Dashboard AI Advisor for Apotek Alpro.
+Your expertise covers:
+- **Growth** = running year-on-year (selected months versus the same months a year earlier). Levels 5 to 1 = 20 / 15 / 10 / 5 / 0 percent growth or decline, on sales or transactions
+- **Like-for-like (LFL)** outlets traded in every month of both windows; **new outlets** are within 6 months of opening and are kept out of the levels
+- **PSH** = profit per staff hour. **PAT** = PSH x working hours per outlet-month (no other cost deducted)
+- **Views**: Overview, Outlet movement (declining, improving, new outlets, watchlist), Financial performance (growth scorecard, PAT, PSH ranking, growth vs profit, winning formula), Segments and geography (area managers, location, store size)
+- Targets are not used anywhere in this dashboard
+
+How to answer:
+1. Lead with the board-level number, then the cause (which outlets, area managers or segments drive it)
+2. Separate like-for-like growth from total growth: total growth includes new outlets
+3. Total sales growth is built from the MASTER sheet and can read a few points above the Exec Dashboard figure because closed outlets are not in MASTER; say so when comparing the two
+4. Only use the figures in the live BOD data provided. The dashboard must have been opened once in this session for that data to exist; if it is missing, say so instead of guessing`,
+            suggestions: ['📉 Which outlets are declining most?','💰 PAT and PSH summary for the period','🏪 How are new outlets ramping up?','🚩 What needs the Board\u2019s attention?'],
+        },
     };
 
     // ── Role Helpers ──────────────────────────────────────────────────────────
@@ -301,9 +356,21 @@ AI Strategy Recommendations:
     function getUserDeptAccess() {
         try {
             const role = (window.currentUserRole || '').toLowerCase();
-            if (role === 'admin' || role === 'superadmin' || role === 'chief') return Object.keys(DEPARTMENTS);
+            const known = id => Object.prototype.hasOwnProperty.call(DEPARTMENTS, id);
+            // The dashboard decides tab access per user first, then per role. Mirror it so ARIA lists exactly the user's tabs.
+            let tabs = null;
+            if (typeof window.getAccessibleTabs === 'function') {
+                try { tabs = window.getAccessibleTabs(); } catch (e) { tabs = null; }
+            }
+            if (role === 'admin' || role === 'superadmin' || role === 'chief') {
+                const all = Object.keys(DEPARTMENTS).filter(id => id !== 'bod');
+                // BOD: Chief always; anyone else only when ticked for that user
+                const bodOk = role === 'chief' || (Array.isArray(tabs) && tabs.includes('bod'));
+                return bodOk ? all.concat('bod') : all;
+            }
+            if (Array.isArray(tabs)) return tabs.filter(known);
             if (window.department_accessConfig && window.department_accessConfig[role])
-                return window.department_accessConfig[role];
+                return window.department_accessConfig[role].filter(known);
         } catch (e) { /* ignore */ }
         return [];
     }
@@ -552,6 +619,40 @@ AI Strategy Recommendations:
                     ).join('\n') +
                     (hs.length > 80 ? `\n  ... and ${hs.length - 80} more` : '')
                 );
+            }
+        } catch(e) { /* silent */ }
+
+        // ── BOD DASHBOARD: read from the BOD iframe once it has been opened (same origin) ──
+        try {
+            if (getUserDeptAccess().includes('bod')) {
+                const fr = document.querySelector('iframe[data-src="bod-dashboard.html"]');
+                const W = fr && fr.contentWindow, Bd = W && W.BOD;
+                if (Bd && Bd.ctx && Bd.model) {
+                    const E = Bd.E, ctx = Bd.ctx, P = ctx.P, S = Bd.S, m = Bd.model;
+                    const gs = E.groupStats(m, P, ctx.rowsF);
+                    const P1 = v => (typeof v === 'number' && isFinite(v)) ? (v * 100).toFixed(1) + '%' : 'N/A';
+                    const RB = v => (typeof v === 'number' && isFinite(v)) ? 'Rp ' + (v / 1e9).toFixed(2) + 'b' : 'N/A';
+                    const RM = v => (typeof v === 'number' && isFinite(v)) ? 'Rp ' + (v / 1e6).toFixed(1) + ' million' : 'N/A';
+                    const PS = v => (typeof v === 'number' && isFinite(v)) ? 'Rp ' + Math.round(v) + ' per staff hour' : 'N/A';
+                    let coPsh = gs.a.psh, pshSrc = 'outlet PSH x hours';
+                    if (!Bd.isFiltered() && Bd.exec) { try { const cp = E.companyPsh(m, Bd.exec, P.cur); if (cp && typeof cp.v === 'number' && isFinite(cp.v)) { coPsh = cp.v; pshSrc = cp.src === 'sheet' ? 'company figure from the Exec Dashboard' : pshSrc; } } catch (e) { /* keep outlet-based */ } }
+                    const filt = ['type', 'am', 'prov', 'city', 'size'].filter(k => S[k]).map(k => k + '=' + S[k]).join(', ') || 'none (all outlets)';
+                    const worst = ctx.down.slice().sort((a, b) => a.gRev - b.gRev).slice(0, 15);
+                    const best = ctx.up.slice().sort((a, b) => b.gRev - a.gRev).slice(0, 10);
+                    const lv = L => ctx.down.filter(r => r.level === L).length;
+                    let al = null; try { al = Bd.computeFlags(ctx); } catch (e) { al = null; }
+                    const line = r => `  • ${safe(r.ol.name)} (${safe(r.ol.code)}) | AM:${safe(r.ol.am)} | Sales growth:${P1(r.gRev)} | Level:${r.level || 'N/A'}`;
+                    sections.push(
+                        `=== BOD DASHBOARD: ${P.tag} vs ${P.baseTag} (growth is running year-on-year; levels driven by ${ctx.rateName}) ===\n` +
+                        `Filters applied: ${filt}\n` +
+                        `Trading outlets: ${gs.n} | like-for-like: ${gs.nLfl} | declining LFL: ${ctx.down.length} | improving LFL: ${ctx.up.length} | new (<=6 months): ${ctx.neu.length} | not yet comparable: ${ctx.nc.length}\n` +
+                        `Sales: ${RB(gs.a.rev)} vs ${RB(gs.b.rev)} (total growth ${P1(gs.b.rev > 0 ? gs.a.rev / gs.b.rev - 1 : NaN)}, includes new outlets; LFL sales growth ${P1(gs.lRev)}, LFL transactions growth ${P1(gs.lTx)})\n` +
+                        `Margin: ${P1(gs.a.margin)} | PAT (PSH x hours): ${RB(gs.a.pat)} vs ${RB(gs.b.pat)} | PSH: ${PS(coPsh)} (${pshSrc}) | outlets with negative PAT: ${gs.negPat}\n` +
+                        `Decline levels (outlets): L5 ${lv(5)}, L4 ${lv(4)}, L3 ${lv(3)}, L2 ${lv(2)}, L1 ${lv(1)}` + (al ? ` | Watchlist: ${al.high} outlets with a high-severity alert` : '') + `\n` +
+                        `Most declining LFL outlets:\n${worst.length ? worst.map(line).join('\n') : '  (none)'}\n` +
+                        `Strongest improving LFL outlets:\n${best.length ? best.map(line).join('\n') : '  (none)'}`
+                    );
+                }
             }
         } catch(e) { /* silent */ }
 
