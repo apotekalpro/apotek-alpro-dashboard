@@ -7,7 +7,7 @@
   var B = win.BOD, E = B.E, F = B.F, S = B.S, esc = B.esc, isN = B.isN, U = B.util;
 
   /* ---------- flags ---------- */
-  var TH = { txDrop: -0.10, marginDrop: -0.02, stockLoss: 0.03, salary: 0.20, recruit: 0.15, negStreak: 3, slowRamp: 0.5 };
+  var TH = { txDrop: -0.10, marginDrop: -0.02, stockLoss: 0.03, salary: 0.20, rent: 0.10, recruit: 0.15, negStreak: 3, slowRamp: 0.5 };
   var DEFS = [
     { id: 'lvl45', sev: 'h', label: 'Level 4\u20135 decline', desc: 'Sales or transactions down 15% or more vs last year' },
     { id: 'txdrop', sev: 'h', label: 'Footfall falling', desc: 'Transactions down 10% or more vs last year' },
@@ -16,6 +16,7 @@
     { id: 'slow', sev: 'h', label: 'Slow ramp-up', desc: 'New outlet at under half the sales of outlets at the same age' },
     { id: 'margin', sev: 'm', label: 'Margin erosion', desc: 'Margin down 2 pp or more vs last year' },
     { id: 'salary', sev: 'm', label: 'Heavy salary load', desc: 'Salary at or above 20% of sales in the latest month' },
+    { id: 'rent', sev: 'm', label: 'High rental cost', desc: 'Rental above 10% of sales in the latest month' },
     { id: 'recruit', sev: 'm', label: 'Weak member recruitment', desc: 'Recruitment rate below 15% in the latest month' },
     { id: 'lossmaking', sev: 'm', label: 'Loss-making mature outlet', desc: 'Negative PAT over the period, open more than 12 months' },
     { id: 'anomaly', sev: 'i', label: 'Check the data', desc: 'Latest margin above 60% or below \u221230%' }
@@ -40,6 +41,7 @@
       if (p.every(function (v) { return v === v && v < 0; })) f.push('negpsh');
       if (isN(L.slPct) && L.revC > 0 && L.slPct >= TH.stockLoss) f.push('stockloss');
       if (isN(L.salPct) && L.salPct >= TH.salary) f.push('salary');
+      if (isN(L.rentPct) && L.revC > 0 && L.rentPct > TH.rent) f.push('rent');
       if (isN(L.rrPct) && L.rrPct < TH.recruit) f.push('recruit');
       if (r.A.patOM > 0 && r.patCur < 0 && r.opMonths > 12) f.push('lossmaking');
       if (isN(L.margin) && (L.margin > 0.6 || L.margin < -0.3)) f.push('anomaly');
@@ -80,6 +82,7 @@
         { k: 'rv', label: E.monthShort(endT) + ' sales', sub: 'Rp m', get: function (r) { return r.last.rev; }, fmt: function (r) { return F.m(r.last.rev); } },
         { k: 'mg', label: 'Margin', get: function (r) { return r.last.margin; }, fmt: function (r) { return F.p(r.last.margin, 1); } },
         { k: 'sa', label: 'Salary', sub: '% sales', get: function (r) { return r.last.salPct; }, fmt: function (r) { return F.p(r.last.salPct, 1); } },
+        { k: 'rn', label: 'Rental', sub: '% sales', get: function (r) { return r.last.rentPct; }, fmt: function (r) { return F.p(r.last.rentPct, 1); }, tdc: function (r) { return isN(r.last.rentPct) && r.last.rentPct > TH.rent ? 'neg' : ''; } },
         { k: 'sl', label: 'Stock loss', sub: '% sales', get: function (r) { return r.last.slPct; }, fmt: function (r) { return F.p(r.last.slPct, 1); } },
         { k: 'rr', label: 'Recruit', sub: 'rate', get: function (r) { return r.last.rrPct; }, fmt: function (r) { return F.p(r.last.rrPct, 0); } },
         { k: 'pl', label: 'PSH', sub: 'Rp/hr', get: function (r) { return r.pshLast; }, fmt: function (r) { return F.n(r.pshLast); }, tdc: function (r) { return F.cls(r.pshLast); } },
@@ -94,8 +97,8 @@
       var c = view.querySelector('#clr'); if (c) c.onclick = function () { S.flag = null; B.render(); };
       tbl.bind(view); B.bindSearch(view);
       view.querySelector('#exp').onclick = function () {
-        B.csv('bod-watchlist.csv', ['Priority', 'Code', 'Outlet', 'Type', 'AM', 'Flags', 'Sales change', 'Tx change', 'Latest sales', 'Latest margin', 'Salary %', 'Stock loss %', 'Recruit %', 'Latest PSH', 'Latest PAT'],
-          tbl.all.map(function (r) { return [r.score, r.ol.code, r.ol.name, r.ol.type, r.ol.am, r.flags.map(function (id) { return DEFS.filter(function (d) { return d.id === id; })[0].label; }).join('; '), isN(r.gRev) ? r.gRev.toFixed(4) : '', isN(r.gTx) ? r.gTx.toFixed(4) : '', Math.round(r.last.rev), isN(r.last.margin) ? r.last.margin.toFixed(4) : '', isN(r.last.salPct) ? r.last.salPct.toFixed(4) : '', isN(r.last.slPct) ? r.last.slPct.toFixed(4) : '', isN(r.last.rrPct) ? r.last.rrPct.toFixed(4) : '', isN(r.pshLast) ? Math.round(r.pshLast) : '', Math.round(r.patLast)]; }));
+        B.csv('bod-watchlist.csv', ['Priority', 'Code', 'Outlet', 'Type', 'AM', 'Flags', 'Sales change', 'Tx change', 'Latest sales', 'Latest margin', 'Salary %', 'Rental %', 'Stock loss %', 'Recruit %', 'Latest PSH', 'Latest PAT'],
+          tbl.all.map(function (r) { return [r.score, r.ol.code, r.ol.name, r.ol.type, r.ol.am, r.flags.map(function (id) { return DEFS.filter(function (d) { return d.id === id; })[0].label; }).join('; '), isN(r.gRev) ? r.gRev.toFixed(4) : '', isN(r.gTx) ? r.gTx.toFixed(4) : '', Math.round(r.last.rev), isN(r.last.margin) ? r.last.margin.toFixed(4) : '', isN(r.last.salPct) ? r.last.salPct.toFixed(4) : '', isN(r.last.rentPct) ? r.last.rentPct.toFixed(4) : '', isN(r.last.slPct) ? r.last.slPct.toFixed(4) : '', isN(r.last.rrPct) ? r.last.rrPct.toFixed(4) : '', isN(r.pshLast) ? Math.round(r.pshLast) : '', Math.round(r.patLast)]; }));
       };
     }
   };

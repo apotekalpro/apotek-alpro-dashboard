@@ -113,6 +113,7 @@
       slow: function () { var rp = B.ramp(m), age = endT - r.ol.firstRev + 1, md = rp.med[age]; return 'Month ' + age + ' sales Rp ' + F.m(L.rev, 1) + 'm vs typical Rp ' + F.m(md, 1) + 'm for outlets at the same age (' + F.p(L.rev / md, 0) + ')'; },
       margin: function () { return 'Margin ' + F.pp(r.dMargin) + ' vs ' + esc(P.baseTag) + ' (' + F.p(r.A.margin, 1) + ' now, ' + F.p(r.B.margin, 1) + ' before)'; },
       salary: function () { return 'Salary ' + F.p(L.salPct, 1) + ' of sales in ' + esc(mon) + ' (flag at ' + F.p(TH.salary, 0) + ')'; },
+      rent: function () { return 'Rental ' + F.p(L.rentPct, 1) + ' of sales in ' + esc(mon) + ' (flag above ' + F.p(TH.rent, 0) + ')'; },
       recruit: function () { return 'Recruitment rate ' + F.p(L.rrPct, 1) + ' in ' + esc(mon) + ' (flag below ' + F.p(TH.recruit, 0) + ')'; },
       lossmaking: function () { return 'PAT Rp ' + F.m(r.patCur, 1) + 'm over ' + esc(P.tag) + ', open ' + r.opMonths + ' months'; },
       anomaly: function () { return 'Margin ' + F.p(L.margin, 1) + ' in ' + esc(mon) + ' is outside the plausible range; check the source data first'; }
