@@ -172,13 +172,21 @@
   B.tabs.up = cohortView('up');
 
   /* ---------- Overview ---------- */
+  // 'rp' rows are rupiah amounts shown with the Indonesian unit: M = Milyar (1e9), Jt = Juta (1e6); below a million the full amount
   var EXEC_FMT = {
-    'Total Active Outlet': 'n', 'MTM Growth (Include Days)': 'p', 'MTM Growth (Exclude Days)': 'p', 'Revenue': 'm', 'Revenue/outlet/day': 'n', 'Margin': 'p', 'Transaction': 'n', 'Profit': 'm',
-    'Total Focus Product': 'm', 'New Member': 'n', 'PSH': 'n', 'OUTLET WITH +VE PSH': 'n', 'EVIP': 'n', 'QTY SKU PER TX': 'd', 'Purchasing Power': 'n', 'New Member Return Rate %': 'p'
+    'Total Active Outlet': 'n', 'MTM Growth (Include Days)': 'p', 'MTM Growth (Exclude Days)': 'p', 'Revenue': 'rp', 'Revenue/outlet/day': 'rp', 'Margin': 'p', 'Transaction': 'n', 'Profit': 'rp',
+    'Total Focus Product': 'rp', 'New Member': 'n', 'PSH': 'n', 'OUTLET WITH +VE PSH': 'n', 'EVIP': 'n', 'QTY SKU PER TX': 'd', 'Purchasing Power': 'rp', 'New Member Return Rate %': 'p'
   };
+  function rpId(v) {
+    var a = Math.abs(v), sg = v < 0 ? '\u2212' : '';
+    if (a >= 1e12) return sg + 'Rp ' + (a / 1e12).toFixed(2) + ' T';
+    if (a >= 1e9) return sg + 'Rp ' + (a / 1e9).toFixed(2) + ' M';
+    if (a >= 1e6) return sg + 'Rp ' + (a / 1e6).toFixed(2) + ' Jt';
+    return sg + 'Rp ' + F.n(a);
+  }
   function execCell(label, v) {
     if (!isN(v)) return '\u2013'; var k = EXEC_FMT[label] || 'n';
-    if (k === 'p') return F.p(v, 2); if (k === 'm') return F.m(v, 1); if (k === 'd') return v.toFixed(2); return F.n(v);
+    if (k === 'p') return F.p(v, 2); if (k === 'rp') return rpId(v); if (k === 'd') return v.toFixed(2); return F.n(v);
   }
 
   B.tabs.overview = {
@@ -232,7 +240,7 @@
         cards + cards2 + alHtml +
         '<div class="grid g2"><div class="card"><h4>Company sales (Rp b) and margin %</h4><div class="ch t"><canvas id="o1"></canvas></div></div><div class="card"><h4>PSH (Rp per staff hour) and outlets with positive PSH</h4><div class="ch t"><canvas id="o2"></canvas></div></div></div>' +
         '<div class="grid g2" style="margin-top:12px"><div class="card"><h4>Transactions and new members</h4><div class="ch t"><canvas id="o3"></canvas></div></div><div class="card"><h4>Outlets by level, ' + esc(P.tag) + ' vs ' + esc(P.baseTag) + '</h4><div class="ch t"><canvas id="o4"></canvas></div></div></div>' +
-        '<div class="tw"><div class="th"><div><h3>Exec Dashboard</h3><p>Company performance as published in the workbook (rows 9\u201325), last ' + (months.length - last12) + ' months. Amounts: sales, profit and focus product in Rp m.</p></div>' +
+        '<div class="tw"><div class="th"><div><h3>Exec Dashboard</h3><p>Company performance as published in the workbook (rows 9\u201325), last ' + (months.length - last12) + ' months. Amounts in Rupiah: M = Milyar (billion), Jt = Juta (million).</p></div>' +
         '<button class="btn" id="expEx"><i class="fas fa-download"></i> Export full series</button></div><div class="tx"><table id="execT"><thead>' + th + '</thead><tbody>' + tb + '</tbody></table></div></div>';
       view.querySelectorAll('[data-flag]').forEach(function (el) { el.onclick = function () { S.flag = el.dataset.flag; S.tab = 'watch'; B.render(); }; });
       var tw = view.querySelector('#toWatch'); if (tw) tw.onclick = function () { S.flag = null; S.tab = 'watch'; B.render(); };
