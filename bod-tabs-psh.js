@@ -8,7 +8,6 @@
   'use strict';
   var B = win.BOD, E = B.E, F = B.F, S = B.S, esc = B.esc, isN = B.isN, U = B.util;
   if (!S.pshScope) S.pshScope = 'all';
-  if (!S.pshMin) S.pshMin = 3;
   if (!S.pshDim) S.pshDim = 'am';
 
   var BANDS = [
@@ -42,7 +41,7 @@
   B.tabs.psh = {
     render: function (ctx, view) {
       var m = ctx.m, P = ctx.P, endT = P.cur[P.cur.length - 1];
-      var minM = Math.min(S.pshMin, P.cur.length);
+      var minM = 1; // the period selected at the top is the only control: any outlet with PSH data in it is ranked (months shown per outlet)
       var ranked = rankSet(ctx.rowsF, S.pshScope, minM), n = ranked.length;
       var allTrading = ctx.rowsF.filter(function (r) { return r.cat !== 'inactive'; }).length;
 
@@ -73,16 +72,16 @@
       var topP = pooled(top), botP = pooled(bot);
 
       var ctl = '<div class="geoctl"><div class="seg" id="pshScope"><button data-v="all"' + (S.pshScope === 'all' ? ' class="on"' : '') + '>All trading outlets</button><button data-v="mature"' + (S.pshScope === 'mature' ? ' class="on"' : '') + '>Mature only (exclude new)</button></div>' +
-        '<label>Include outlets with PSH data for at least <select id="pshMin">' + [1, 3, 6].map(function (x) { return '<option value="' + x + '"' + (S.pshMin === x ? ' selected' : '') + '>' + x + ' month' + (x > 1 ? 's' : '') + '</option>'; }).join('') + '</select></label>' +
+        '<span class="hint" style="margin:0 8px">Period: <b>'+esc(P.tag)+'</b> ('+P.cur.length+' month'+(P.cur.length>1?'s':'')+', '+esc(E.monthShort(P.cur[0]))+(P.cur.length>1?' \u2013 '+esc(E.monthShort(endT)):'')+') \u00b7 change it with the Year / Period filters above</span>' +
         '<span class="geoleg">' + BANDS.map(function (b) { return '<span class="gv ' + b.k + '">' + b.t + '</span>'; }).join('') + '</span></div>';
 
       var banner = '<div class="note"><b>PSH ranking, ' + esc(P.tag) + '.</b> Outlets are ranked from the highest to the lowest <b>PSH (profit per staff hour)</b> over the selected period and filters: period PSH = PAT \u00f7 working hours across the months in the period (PAT = PSH \u00d7 working hours per outlet-month), so a strong month does not outweigh a weak one unless it has more hours. ' +
         'Quartile bands split the ranked outlets into four equal groups. ' + (hasPrior ? '<b>Rank move</b> compares with the same ranking for ' + esc(P.baseTag) + ' (positive = moved up); it is blank when the outlet had too little PSH data then. ' : 'Prior-year ranking is not available for this selection, so rank movement is blank. ') +
-        'Outlets with fewer than ' + minM + ' month(s) of PSH data in the period' + (S.pshScope === 'mature' ? ' and outlets within ' + E.NEW_MONTHS + ' months of opening' : '') + ' are left out' + (allTrading - n > 0 ? ' (' + (allTrading - n) + ' of ' + allTrading + ' trading outlets)' : '') + '. New outlets are still ramping up, so read their rank with care.</div>';
+        'Every outlet with PSH data in the period is ranked (the Months column shows how many of the ' + P.cur.length + ' months each one has, so an outlet with 1 month is ranked on that month only)' + (S.pshScope === 'mature' ? '; outlets within ' + E.NEW_MONTHS + ' months of opening are left out' : '') + '. Outlets with no PSH data in the period are left out' + (allTrading - n > 0 ? ' (' + (allTrading - n) + ' of ' + allTrading + ' trading outlets)' : '') + '. New outlets are still ramping up, so read their rank with care.</div>';
 
       var cards = '<div class="grid" style="grid-template-columns:repeat(5,minmax(0,1fr))">' +
         B.card('Outlets ranked', n, 'of ' + allTrading + ' trading outlets') +
-        B.card('Company PSH', F.n(coPsh), 'Rp per staff hour' + (cp && cp.src === 'sheet' ? ' \u00b7 Exec Dashboard' : ' \u00b7 ranked outlets pooled'), F.cls(coPsh) === 'neg' ? 'neg' : '') +
+        B.card('Company PSH', F.n(coPsh), 'Rp per staff hour, ' + esc(P.tag) + (cp && cp.src === 'sheet' ? ' \u00b7 Exec Dashboard' : ' \u00b7 ranked outlets pooled'), F.cls(coPsh) === 'neg' ? 'neg' : '') +
         B.card('Median outlet PSH', F.n(med), 'Rp per staff hour', F.cls(med) === 'neg' ? 'neg' : '') +
         B.card('Top vs bottom quartile', F.n(topP) + ' <small>vs</small> ' + F.n(botP), 'pooled PSH, Rp/hr' + (isN(topP) && isN(botP) && botP > 0 ? ' \u00b7 ' + (topP / botP).toFixed(1) + '\u00d7 gap' : '')) +
         B.card('Loss-making outlets', loss.length, 'PSH of zero or below' + (n ? ' \u00b7 ' + F.p(loss.length / n, 0) + ' of ranked' : ''), loss.length ? 'neg' : 'pos') + '</div>';
@@ -133,7 +132,6 @@
 
       tbl.bind(view); B.bindSearch(view);
       view.querySelectorAll('#pshScope button').forEach(function (b) { b.onclick = function () { S.pshScope = b.dataset.v; S.sort = null; B.render(); }; });
-      view.querySelector('#pshMin').onchange = function (e) { S.pshMin = +e.target.value; S.sort = null; B.render(); };
       view.querySelectorAll('#pshDim button').forEach(function (b) { b.onclick = function () { S.pshDim = b.dataset.v; B.render(); }; });
       view.querySelector('#expPsh').onclick = function () {
         B.csv('bod-psh-ranking.csv', ['Rank', 'Code', 'Outlet', 'Type', 'Area manager', 'Province', 'Kota', 'Kecamatan', 'Status', 'Opened', 'PSH (period)', 'PSH (prior period)', 'Change', 'Prior rank', 'Rank move', 'PSH latest month', 'Sales', 'Margin', 'Staff hours per month', 'PAT', 'Months with PSH', 'Band', 'Loss-making'],
