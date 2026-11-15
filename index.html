@@ -15,6 +15,7 @@
     
     <!-- Supabase JavaScript Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="bod-config.js"></script>
     <!-- SheetJS Library for Excel Processing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Chart.js for Warehouse Pareto Dashboard -->
@@ -6583,6 +6584,7 @@
                     window.currentUserRole = currentUserRole;
                     window.currentUserName = currentUserName;
                     window.department_accessConfig = department_accessConfig;
+                    bodSilentSignIn(email, password);
                     
                     // Log successful login activity
                     console.log('🔍 Checking SecureUserManager.logActivity availability...');
@@ -9776,6 +9778,26 @@
             window.open(url, '_blank');
         }
 
+        // BOD silent sign-in: right after a successful dashboard login, ask the BOD gateway for its own
+        // token with the same credentials, so opening BOD needs no second prompt. Fails silently: users
+        // without BOD access (403) or an unreachable gateway simply get BOD's own sign-in panel later.
+        function bodSilentSignIn(email, password) {
+            try {
+                const gw = String(window.BOD_GATEWAY_URL || '').replace(/\/+$/, '');
+                if (!gw) return;
+                const ctl = new AbortController();
+                const timer = setTimeout(function () { ctl.abort(); }, 15000);
+                fetch(gw + '/auth/login', {
+                    method: 'POST', signal: ctl.signal,
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ email: email, password: password })
+                }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+                    clearTimeout(timer);
+                    if (j && j.token) sessionStorage.setItem('bod_gw_session', JSON.stringify({ token: j.token, exp: j.exp, email: j.email, name: j.name, role: j.role }));
+                }).catch(function () { clearTimeout(timer); });
+            } catch (e) { /* never block the dashboard login */ }
+        }
+
         function logout() {
             // Log logout event
             if (currentUser) {
@@ -9797,6 +9819,7 @@
             window.currentUserName = null;
             window.department_accessConfig = null;
             localStorage.removeItem('loginTime');
+            try { sessionStorage.removeItem('bod_gw_session'); } catch (e) { /* ignore */ }
             
             // Reset UI
             document.getElementById('dashboard').classList.add('hidden');
