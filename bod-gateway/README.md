@@ -19,7 +19,7 @@ GET  /health
 2. **Deploy** (from `bod-gateway/`):
    ```bash
    npx wrangler login            # your own Cloudflare account, on your own computer
-   npx wrangler secret put SUPABASE_SERVICE_KEY     # the NEW (rotated) service_role key of project txmr...
+   npx wrangler secret put SUPABASE_SERVICE_KEY     # a NEW Supabase secret key (sb_secret_...) for project txmr..., created in Supabase > Settings > API Keys. It sits next to the old keys, so nothing breaks.
    npx wrangler secret put BOD_JWT_SECRET           # any long random string, e.g. openssl rand -base64 48
    npx wrangler secret put GOOGLE_SERVICE_ACCOUNT   # paste the whole JSON key file
    npx wrangler deploy
@@ -27,12 +27,14 @@ GET  /health
    Check `https://<worker>.workers.dev/health` returns `{"ok":true}`.
 3. **Turn it on:** set `window.BOD_GATEWAY_URL = 'https://<worker>.workers.dev'` in `bod-config.js`, merge, hard refresh.
    BOD then asks for its own sign-in and loads all data through the Worker. The old client-side token check is ignored in this mode.
-4. **Lock the sheet** (only after step 3 works): Share -> General access -> **Restricted**. From that moment the
-   public `gviz` link stops working for everyone except the service account.
+4. **Do NOT lock the sheet yet.** The same workbook is also read directly by the main dashboard and the AM tracker
+   (tabs "Goal 2026", "AM Daily Progress", "SBM EBM DASHBOARD"). Setting it to Restricted now would break those pages.
+   Lock it only after every page that reads it goes through the Worker (phase 2). Until then BOD data is still readable
+   from the public sheet link by anyone who has it; this step makes BOD itself properly access-controlled, but does not yet close the sheet.
 5. **Rate limit** (Cloudflare dashboard -> Security -> WAF -> Rate limiting): e.g. 10 requests / minute on `/auth/login`.
    The Worker has a small per-instance brake (5 failures / 15 min) but a real rule is stronger.
 
-Rollback at any time: set `BOD_GATEWAY_URL` back to `''` (and re-share the sheet as "Anyone with the link").
+Rollback at any time: set `BOD_GATEWAY_URL` back to `''` (if you have already restricted the sheet, re-share it as "Anyone with the link").
 
 ## Important limits of this step
 - It protects the **BOD data**. The main dashboard (`index.html`) still talks to Supabase directly with an embedded key;
