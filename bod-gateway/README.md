@@ -6,8 +6,11 @@ This Worker holds the secrets and only returns BOD data to a signed-in user who 
 disabling them cuts them off immediately (not at token expiry).
 
 ```
-POST /auth/login  {email,password} -> {token,exp,email,name,role}   8-hour token, signed with a secret that never leaves the Worker
-GET  /bod/data?sheet=master|exec   -> gviz JSON  (Authorization: Bearer <token>)
+POST /auth/login    {email,password} -> BOD token   8 h, Chief or 'bod' ticked only
+POST /auth/session  {email,password} -> app token   7 d (APP_TOKEN_HOURS), any active user
+GET  /bod/data?sheet=master|exec     -> BOD workbook   (Bearer <BOD token>)
+GET  /sheet/<key>/gviz|export|values -> a registered sheet (Bearer <app token>)
+GET  /admin/selftest                 -> Chief/Admin only: which sheets the service account can already read
 GET  /health
 ```
 
@@ -36,6 +39,33 @@ GET  /health
 
 Rollback at any time: set `BOD_GATEWAY_URL` back to `''` (if you have already restricted the sheet, re-share it as "Anyone with the link").
 
+## Stage 1: registered sheets (private Google Sheets behind the Worker)
+
+The Worker can now serve the other Google Sheets too, so they can be set to **Restricted** once the pages read through it.
+Nothing on the live site calls these endpoints yet; deploying this only adds capability.
+
+Registered in `registry()` in `src/worker.js` (key: sheet, who may read, which tabs):
+
+| key | sheet | who | tabs served |
+|---|---|---|---|
+| `company` | Company Performance workbook (`SHEET_ID`) | any active user | only Goal Jan 2026 to Dec 2026, AM Daily Progress (name or gid 353860854), SBM EBM DASHBOARD. MASTER and Exec Dashboard are **never** served here, only through `/bod/data` |
+| `strategy` | Strategy Team Dashboard | any active user | gid 352474780 |
+| `pillar` | Pillar Compilation | any active user | gids 1852108984, 341128155 |
+| `loss` | Loss Sales Tracker (also Price comparison) | any active user | gids 1075651210, 0 |
+| `biodata` | Biodata Outlet | any active user | DIGITAL MASTER |
+| `opex` | OPEX Dashboard Master | any active user | the 7 tabs OPEX reads |
+| `hr` | Master Data (HR) | Chief/Admin, role or dept `ppm`/`strategy` | whole workbook. **Not wired to any page** (the PPM tab is another repo) |
+
+Rules the Worker enforces: only registered keys; only the listed tabs; only digits for `gid`; cell ranges validated; no query-language
+(`tq`) parameter; unknown parameters are never forwarded (the Google URL is rebuilt from validated pieces). The user is re-read from
+Supabase on every call, so a disabled user is cut off at once. BOD and app tokens have different audiences and cannot be swapped.
+
+**Re-deploy after pulling this change:** paste the new `src/worker.js` into the Worker editor and Deploy (no new secrets or variables needed;
+optionally add the variable `APP_TOKEN_HOURS`, default 168). Then share each sheet with the service account (**Viewer**) and check
+`/admin/selftest` (needs a Chief or Admin app token from `POST /auth/session`). It lists every registered sheet as `ok` or `share the sheet with the service account`.
+
+Do not set a sheet to Restricted until its readers have been switched to the Worker (stage 2) and `/admin/selftest` says `ok` for it.
+
 ## Important limits of this step
 - It protects the **BOD data**. The main dashboard (`index.html`) still talks to Supabase directly with an embedded key;
   that is the next thing to move behind a Worker (see the PR description).
@@ -45,5 +75,7 @@ Rollback at any time: set `BOD_GATEWAY_URL` back to `''` (if you have already re
   because the browser can be told to claim any role.
 
 ## Tests
-`node bod-gateway/test/worker.test.mjs` (20 checks: login for both hash formats, forged / expired / wrong-audience tokens,
-a token forged with the old public secret, access revoked after sign-in, disabled user, CORS, unconfigured = closed).
+`node bod-gateway/test/worker.test.mjs` (67 checks, mocked Google and Supabase): login for both hash formats, forged / expired /
+wrong-audience tokens, a token forged with the old public secret, BOD and app tokens not interchangeable, access revoked after
+sign-in, disabled user, CORS, unconfigured = closed, tab allow-lists (MASTER never served on `/sheet`), parameter-injection attempts,
+per-sheet access rules, Sheets-API `values` calls, and the Chief/Admin-only selftest.

@@ -59,4 +59,97 @@ users['chief@x.id'].status = 'disabled'; r = await data('master', chiefTok); ok(
 r = await handle(req('/bod/data?sheet=master', { method: 'OPTIONS' }), env, mockFetch); ok('CORS preflight allowed for the dashboard origin', r.status === 204 && r.headers.get('Access-Control-Allow-Origin') === ORIGIN);
 r = await handle(new Request('https://gw.example/bod/data?sheet=master', { headers: { Origin: 'https://evil.example', Authorization: 'Bearer ' + chiefTok } }), env, mockFetch); ok('other origins get no CORS header', !r.headers.get('Access-Control-Allow-Origin'));
 r = await handle(req('/health'), Object.assign({}, env, { GOOGLE_SERVICE_ACCOUNT: '' }), mockFetch); ok('unconfigured gateway answers 503, never open', r.status === 503);
+
+/* ===================== stage 1: app session + registered sheets ===================== */
+users['chief2@x.id'] = { email: 'chief2@x.id', name: 'Chief2', role: 'chief', status: 'active', password_hash: legacy('Pass#1'), department_access: [] };
+users['adm@x.id'] = { email: 'adm@x.id', name: 'Adm', role: 'admin', status: 'active', password_hash: legacy('Pass#5'), department_access: ['bod'] };
+users['ppm@x.id'] = { email: 'ppm@x.id', name: 'Ppm', role: 'ppm', status: 'active', password_hash: legacy('Pass#4'), department_access: ['ppm'] };
+users['mgr@x.id'] = { email: 'mgr@x.id', name: 'Mgr', role: 'manager', status: 'active', password_hash: legacy('Pass#3'), department_access: ['hr'] };
+const HR = '1S4uqo11FidtOHXqRJQNdd_NAQhDPSfW57qxL4llXLlc';
+const upstream = [];
+const mf2 = async (url, init) => {
+  url = String(url);
+  let m = /^https:\/\/docs\.google\.com\/spreadsheets\/d\/([^/]+)\/(gviz\/tq|export)\?/.exec(url) || /^https:\/\/sheets\.googleapis\.com\/v4\/spreadsheets\/([^/]+)\/values\//.exec(url);
+  if (m) {
+    upstream.push({ url, auth: init && init.headers && init.headers.Authorization });
+    if (!init || !init.headers || init.headers.Authorization !== 'Bearer g-token') return new Response('denied', { status: 401 });
+    if (m[1] === HR) return new Response('not shared', { status: 404 });
+    return new Response('DATA:' + m[1], { status: 200 });
+  }
+  return mockFetch(url, init);
+};
+const appLogin = (email, pw) => handle(req('/auth/session', { method: 'POST', body: JSON.stringify({ email, password: pw }), headers: { 'content-type': 'application/json' } }), env, mf2);
+const sh = (path, tok) => handle(req(path, { headers: tok ? { Authorization: 'Bearer ' + tok } : {} }), env, mf2);
+const forgeApp = (secret, over = {}) => { const h = b64u(JSON.stringify({ alg: 'HS256', typ: 'JWT' })), now = Math.floor(Date.now() / 1000), pl = b64u(JSON.stringify(Object.assign({ iss: 'alpro-bod-gateway', aud: 'app', sub: 'chief2@x.id', email: 'chief2@x.id', role: 'chief', iat: now, exp: now + 3600 }, over))); return h + '.' + pl + '.' + crypto.createHmac('sha256', secret).update(h + '.' + pl).digest('base64url'); };
+
+console.log('\n-- app session --');
+r = await appLogin('mgr@x.id', 'Pass#3'); j = await r.json(); const mgrTok = j.token;
+ok('any active user (no BOD) gets an app token', r.status === 200 && !!mgrTok && j.role === 'manager');
+const ttl = j.exp - Math.floor(Date.now() / 1000); ok('app token lasts about 7 days', ttl > 6.9 * 86400 && ttl < 7.1 * 86400, ttl);
+r = await appLogin('chief2@x.id', 'Pass#1'); j = await r.json(); const cTok = j.token; ok('chief gets an app token', r.status === 200 && !!cTok);
+r = await appLogin('ppm@x.id', 'Pass#4'); j = await r.json(); const ppmTok = j.token; ok('ppm user gets an app token', r.status === 200 && !!ppmTok);
+r = await appLogin('mgr@x.id', 'nope'); ok('wrong password on /auth/session gets 401', r.status === 401);
+r = await appLogin('ghost@x.id', 'x'); ok('unknown user on /auth/session gets 401', r.status === 401);
+r = await sh('/bod/data?sheet=exec', mgrTok); ok('app token cannot read the BOD workbook (audience separation)', r.status === 401);
+r = await sh('/sheet/strategy/export?gid=352474780&format=csv', bodTok); ok('BOD token cannot read /sheet (audience separation)', r.status === 401);
+r = await sh('/sheet/strategy/export?gid=352474780&format=csv', forgeApp('alpro_jwt_secret_2024_secure')); ok('app token forged with the OLD public secret gets 401', r.status === 401);
+r = await sh('/sheet/strategy/export?gid=352474780&format=csv', forgeApp(env.BOD_JWT_SECRET, { exp: Math.floor(Date.now() / 1000) - 5 })); ok('expired app token gets 401', r.status === 401);
+r = await sh('/sheet/strategy/export?gid=352474780&format=csv'); ok('/sheet without a token gets 401', r.status === 401);
+
+console.log('\n-- registered sheets --');
+let n1 = upstream.length;
+r = await sh('/sheet/strategy/export?gid=352474780&format=csv', mgrTok); let t = await r.text();
+ok('strategy export of the allowed gid works for any user', r.status === 200 && t === 'DATA:1oU2uCC1WokxCFZAW8pKeb4osZC-ktIwB-TvlyvpRZ6s' && /text\/csv/.test(r.headers.get('content-type')));
+ok('Google is called with the service-account bearer and only the fixed URL shape', upstream.length === n1 + 1 && upstream[n1].auth === 'Bearer g-token' && upstream[n1].url === 'https://docs.google.com/spreadsheets/d/1oU2uCC1WokxCFZAW8pKeb4osZC-ktIwB-TvlyvpRZ6s/export?format=csv&gid=352474780', upstream[n1] && upstream[n1].url);
+r = await sh('/sheet/strategy/export?gid=999&format=csv', mgrTok); ok('a gid outside the allow-list is refused (403)', r.status === 403);
+r = await sh('/sheet/strategy/export?format=csv', mgrTok); ok('export without gid is refused (403, no default tab)', r.status === 403);
+r = await sh('/sheet/pillar/export?gid=341128155&format=csv', mgrTok); ok('pillar second gid works', r.status === 200);
+r = await sh('/sheet/nothere/gviz?sheet=x', mgrTok); ok('unregistered key is 404', r.status === 404);
+r = await sh('/sheet/strategy/gviz?tqx=out:csv&gid=352474780&tq=select%20*', mgrTok); ok('query-language parameter is refused (400)', r.status === 400);
+r = await sh('/sheet/strategy/gviz?gid=1%26tq%3Dselect', mgrTok); ok('gid must be digits only (400)', r.status === 400);
+r = await sh('/sheet/company/gviz?tqx=out:csv&sheet=AM%20Daily%20Progress%26tq%3Dselect%20*', mgrTok); ok('injecting a parameter through the sheet name is refused (403)', r.status === 403);
+r = await sh('/sheet/strategy/gviz?tqx=out:evil&gid=352474780', mgrTok); ok('unknown output format refused (400)', r.status === 400);
+r = await sh('/sheet/strategy/gviz?gid=352474780&range=A1:B2%26tq%3Dx', mgrTok); ok('bad cell range refused (400)', r.status === 400);
+
+console.log('\n-- company workbook: BOD tabs stay behind /bod/data --');
+r = await sh('/sheet/company/gviz?tqx=out:csv&sheet=Goal+Jan+2026+to+Dec+2026', mgrTok); ok('Goal tab readable by any user (the + in the URL is a space)', r.status === 200);
+r = await sh('/sheet/company/gviz?tqx=out:csv&sheet=AM+Daily+Progress', mgrTok); ok('AM Daily Progress tab readable', r.status === 200);
+r = await sh('/sheet/company/gviz?tqx=out:csv&sheet=SBM%20EBM%20DASHBOARD', mgrTok); ok('SBM EBM DASHBOARD tab readable', r.status === 200);
+r = await sh('/sheet/company/export?format=csv&gid=353860854', mgrTok); ok('AM Daily Progress by gid readable', r.status === 200);
+r = await sh('/sheet/company/gviz?tqx=out:json&sheet=MASTER&headers=4', mgrTok); ok('MASTER (BOD data) is NOT served to an ordinary user', r.status === 403);
+r = await sh('/sheet/company/gviz?tqx=out:json&sheet=MASTER&headers=4', cTok); ok('MASTER is not served on /sheet even to a Chief (only /bod/data)', r.status === 403);
+r = await sh('/sheet/company/gviz?tqx=out:json&sheet=Exec%20Dashboard', cTok); ok('Exec Dashboard is not served on /sheet either', r.status === 403);
+r = await sh('/sheet/company/gviz?tqx=out:json', cTok); ok('company with no tab named (would be the first tab) is refused', r.status === 403);
+
+console.log('\n-- per-sheet access rules --');
+r = await sh('/sheet/hr/gviz?tqx=out:csv&sheet=Anything', mgrTok); ok('HR sheet: ordinary user refused (403)', r.status === 403);
+r = await sh('/sheet/hr/gviz?tqx=out:csv&sheet=Anything', ppmTok); ok('HR sheet: ppm role passes the access rule (then Google says 404 = not shared yet)', r.status === 502);
+r = await sh('/sheet/hr/gviz?tqx=out:csv&sheet=Anything', cTok); ok('HR sheet: chief passes the access rule', r.status === 502);
+
+console.log('\n-- values (Sheets API) for OPEX --');
+n1 = upstream.length;
+r = await sh('/sheet/opex/values?range=' + encodeURIComponent('Audit!A:N'), mgrTok); t = await r.text();
+ok('opex values for an allowed tab works', r.status === 200 && t === 'DATA:1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M');
+ok('values call goes to the Sheets API with the bearer, no API key', upstream[n1].url === 'https://sheets.googleapis.com/v4/spreadsheets/1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M/values/Audit!A%3AN' && upstream[n1].auth === 'Bearer g-token', upstream[n1].url);
+r = await sh('/sheet/opex/values?range=' + encodeURIComponent('Secret!A:B'), mgrTok); ok('opex values for a tab outside the list is refused (403)', r.status === 403);
+r = await sh('/sheet/opex/values?range=' + encodeURIComponent('Audit!A:N?key=1'), mgrTok); ok('values range with extra characters refused (400)', r.status === 400);
+r = await sh('/sheet/opex/values?range=A:N', mgrTok); ok('values range without a tab refused (400)', r.status === 400);
+r = await sh('/sheet/opex/values?range=' + encodeURIComponent("'FieldAudit_Detail'!A:AU"), mgrTok); ok('quoted tab name accepted', r.status === 200);
+
+console.log('\n-- access changes take effect at once --');
+users['mgr@x.id'].status = 'disabled'; r = await sh('/sheet/strategy/export?gid=352474780&format=csv', mgrTok); ok('disabled user is stopped on the next request (403)', r.status === 403); users['mgr@x.id'].status = 'active';
+
+console.log('\n-- selftest --');
+r = await sh('/admin/selftest'); ok('selftest without token 401', r.status === 401);
+r = await sh('/admin/selftest', mgrTok); ok('selftest for an ordinary user 403', r.status === 403);
+r = await sh('/admin/selftest', ppmTok); ok('selftest for a ppm user 403', r.status === 403);
+r = await appLogin('adm@x.id', 'Pass#5'); j = await r.json(); r = await sh('/admin/selftest', j.token); ok('selftest for an admin works', r.status === 200);
+r = await sh('/admin/selftest', cTok); j = await r.json();
+ok('selftest for chief lists every registered sheet', r.status === 200 && ['company', 'strategy', 'pillar', 'loss', 'biodata', 'opex', 'hr'].every((k) => k in j.sheets), JSON.stringify(j));
+ok('selftest says ok for shared sheets and how to fix the others', j.sheets.strategy === 'ok' && /share the sheet with the service account/.test(j.sheets.hr), JSON.stringify(j.sheets));
+ok('selftest shows the service-account email to share with', j.service_account === 'bod@test.iam.gserviceaccount.com');
+ok('selftest returns no sheet data', !JSON.stringify(j).includes('DATA:'));
+r = await handle(req('/sheet/strategy/export?gid=352474780&format=csv', { headers: { Origin: 'https://evil.example', Authorization: 'Bearer ' + mgrTok } }), env, mf2);
+ok('other origins get no CORS header on /sheet', !r.headers.get('access-control-allow-origin'));
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed'); process.exit(fail ? 1 : 0);
