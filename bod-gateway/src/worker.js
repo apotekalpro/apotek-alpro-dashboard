@@ -225,7 +225,8 @@ export async function handle(req, env, f) {
       const gt = await googleToken(env, f);
       const r = await f(q.url, { headers: { Authorization: 'Bearer ' + gt } });
       if (!r.ok) return json({ error: 'source sheet unavailable (' + r.status + ')' }, 502);
-      return new Response(await r.text(), { status: 200, headers: Object.assign({ 'content-type': q.ctype }, cors) });
+      // Stream, do not buffer: the Loss sheet tab is about 30 MB and a Worker has 128 MB of memory.
+      return new Response(r.body, { status: 200, headers: Object.assign({ 'content-type': q.ctype }, cors) });
     }
 
     // Chief only: can the service account read each registered sheet yet? (no data is returned)

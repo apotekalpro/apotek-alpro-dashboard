@@ -16396,13 +16396,18 @@ Ready for deployment! 🚀
             const gid = '352474780'; // PSH Project sheet GID
             const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
             
-            const response = await fetch(csvUrl);
-            
-            if (!response.ok) {
-                throw new Error(`Failed to fetch PSH data: ${response.status}`);
+            let csvData;
+            if (window.AlproGW) {
+                // Through the gateway when this browser has a token; direct read otherwise (works while the sheet is public).
+                try { csvData = await window.AlproGW.sheetText('strategy', 'export', { format: 'csv', gid: gid }, csvUrl); }
+                catch (e) { throw new Error(e && e.code === 'signin' ? 'Your data session has expired. Please log out and sign in again.' : `Failed to fetch PSH data: ${(e && e.message) || 'load failed'}`); }
+            } else {
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch PSH data: ${response.status}`);
+                }
+                csvData = await response.text();
             }
-            
-            const csvData = await response.text();
             return parsePSHCSVData(csvData);
         }
 

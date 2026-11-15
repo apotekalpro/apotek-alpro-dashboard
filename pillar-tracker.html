@@ -123,6 +123,8 @@
   .tab-section { display: none; }
   .tab-section.active { display: block; }
 </style>
+<script src="bod-config.js"></script>
+<script src="gw-client.js"></script>
 </head>
 <body>
 
@@ -621,6 +623,11 @@ function parseCSV(text) {
 // ============================================================
 async function fetchCSV(gid) {
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${gid}`;
+  if (window.AlproGW) {
+    // Through the gateway when this browser has a token; direct read otherwise (works while the sheet is public).
+    try { return await window.AlproGW.sheetText('pillar', 'export', { format: 'csv', gid: gid }, url); }
+    catch (e) { throw new Error(e && e.code === 'signin' ? 'Your data session has expired. Please log out and sign in again.' : (e && e.message) || 'load failed'); }
+  }
   const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.text();
