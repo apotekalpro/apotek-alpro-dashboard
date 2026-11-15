@@ -1,0 +1,11 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "apotek-alpro-bod-gateway",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-01-01",
+  "vars": {
+    "SUPABASE_URL": "https://txmrvnfqqzboupcmaupt.supabase.co",
+    "SHEET_ID": "1yHmOzLTp7uzjgoKASHbiLdwXcGske0bDc81Ur5vrdIs",
+    "ALLOWED_ORIGINS": "https://apotekalpro.github.io"
+  }
+}

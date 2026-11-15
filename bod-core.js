@@ -35,6 +35,50 @@
   var B = { S: S, F: F, esc: esc, isN: isN, E: E, model: null, exec: null, fetchedAt: null, source: '', ctx: null, tabs: {}, charts: [] };
   win.BOD = B;
 
+  /* ---------- secure mode: BOD has its own sign-in and all data comes through the gateway ---------- */
+  var GW = function () { return String(win.BOD_GATEWAY_URL || '').replace(/\/+$/, ''); };
+  var TOK_KEY = 'bod_gw_session';
+  function gwSession() {
+    try {
+      var s = JSON.parse(sessionStorage.getItem(TOK_KEY) || 'null');
+      if (s && s.token && s.exp * 1000 > Date.now()) return s;
+    } catch (e) { /* ignore */ }
+    sessionStorage.removeItem(TOK_KEY); return null;
+  }
+  function gwFetch(sheet, ms) {
+    var s = gwSession(); if (!s) { var e0 = new Error('Sign in required'); e0.status = 401; return Promise.reject(e0); }
+    var c = new AbortController(), t = setTimeout(function () { c.abort(); }, ms);
+    return fetch(GW() + '/bod/data?sheet=' + sheet, { signal: c.signal, cache: 'no-store', headers: { Authorization: 'Bearer ' + s.token } })
+      .then(function (r) { clearTimeout(t); if (!r.ok) { var e = new Error('HTTP ' + r.status); e.status = r.status; throw e; } return r.text(); });
+  }
+  function showLogin(msg) {
+    $('gate').classList.add('hidden'); $('app').classList.add('hidden'); $('denied').classList.add('hidden');
+    var box = $('glogin'); box.classList.remove('hidden'); $('gerr').textContent = msg || '';
+    var f = $('gform'), btn = $('gbtn');
+    f.onsubmit = async function (ev) {
+      ev.preventDefault(); btn.disabled = true; btn.textContent = 'Signing in\u2026'; $('gerr').textContent = '';
+      try {
+        var r = await fetch(GW() + '/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: $('gemail').value, password: $('gpass').value }) });
+        var j = await r.json().catch(function () { return {}; });
+        if (!r.ok || !j.token) { $('gerr').textContent = j.error || ('Sign-in failed (' + r.status + ')'); btn.disabled = false; btn.textContent = 'Sign in'; return; }
+        sessionStorage.setItem(TOK_KEY, JSON.stringify({ token: j.token, exp: j.exp, email: j.email, name: j.name, role: j.role }));
+        $('gpass').value = ''; box.classList.add('hidden'); B.bootSecure();
+      } catch (e) { $('gerr').textContent = 'Cannot reach the sign-in service. Try again.'; btn.disabled = false; btn.textContent = 'Sign in'; }
+    };
+  }
+  B.bootSecure = async function () {
+    var s = gwSession();
+    if (!s) { showLogin(B.expired ? 'Your session expired. Please sign in again.' : ''); return; }
+    B.user = { email: s.email, role: s.role };
+    $('app').classList.remove('hidden'); $('gate').classList.add('hidden');
+    if (!B.wired) { wire(); B.wired = true; }
+    var so = $('btnSignout'); so.classList.remove('hidden'); so.onclick = function () { sessionStorage.removeItem(TOK_KEY); B.model = null; B.exec = null; $('view').innerHTML = ''; location.reload(); };
+    var loaded = await loadData(false);
+    if (B.authFail) { B.authFail = false; sessionStorage.removeItem(TOK_KEY); $('view').innerHTML = ''; showLogin('Your access ended or your session expired. Please sign in again.'); return; }
+    if (!loaded) return;
+    buildControls(); B.render();
+  };
+
   /* ---------- access gate: Chief, or users with BOD ticked in Admin Config ---------- */
   var JWT_SECRET = 'alpro_jwt_secret_2024_secure', ALLOWED_ROLES = ['chief'];
   function b64u(str) { str = str.replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; return atob(str); }
@@ -94,12 +138,13 @@
     var view = $('view');
     view.innerHTML = '<div class="loading"><div class="spin"></div>Loading MASTER and Exec Dashboard from the source workbook&hellip;</div>';
     try {
-      var res = await Promise.all([timeoutFetch(E.masterUrl(), 60000), timeoutFetch(E.execUrl(), 30000)]);
+      var res = GW() ? await Promise.all([gwFetch('master', 60000), gwFetch('exec', 30000)]) : await Promise.all([timeoutFetch(E.masterUrl(), 60000), timeoutFetch(E.execUrl(), 30000)]);
       B.model = E.parseMaster(E.parseGviz(res[0]));
       B.exec = E.parseExec(E.parseGviz(res[1]));
       B.trimExec();
       B.fetchedAt = new Date(); B.source = 'live';
     } catch (err) {
+      if (GW() && (err.status === 401 || err.status === 403)) { B.authFail = true; return false; }
       var snap = null;
       try { var r = await fetch('bod-data-snapshot.json', { cache: 'no-store' }); if (r.ok) snap = await r.json(); } catch (e2) { /* none */ }
       if (!snap) {
@@ -272,7 +317,9 @@
     }
   };
   B.reload = async function () {
-    var ok = await loadData(true); if (!ok) return; buildControls(); B.render();
+    var ok = await loadData(true);
+    if (B.authFail) { B.authFail = false; sessionStorage.removeItem(TOK_KEY); $('view').innerHTML = ''; showLogin('Your access ended or your session expired. Please sign in again.'); return; }
+    if (!ok) return; buildControls(); B.render();
   };
 
   /* ---------- shared UI building blocks ---------- */
@@ -391,6 +438,7 @@
 
   /* ---------- boot ---------- */
   B.boot = async function () {
+    if (GW()) return B.bootSecure();   // secure mode: the dashboard session and the old client-side token are NOT trusted
     var ok = false;
     try { ok = await checkAccess(); } catch (e) { ok = false; }
     $('gate').classList.add('hidden');
