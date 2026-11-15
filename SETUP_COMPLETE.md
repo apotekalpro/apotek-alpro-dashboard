@@ -46,7 +46,7 @@
 - **Name**: `SUPABASE_KEY`
 - **Value** (Service Role Key):
   ```
-  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1ZGNoaXNjY3RjaWhzem5ld2FuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTg5MzY3NSwiZXhwIjoyMDc3NDY5Njc1fQ.8UT8y04LJ0GKS5ItOf3SiL6M0IYeYwI8e-Tt8-Mvhmk
+  <SUPABASE_KEY_REDACTED>
   ```
 
 ---

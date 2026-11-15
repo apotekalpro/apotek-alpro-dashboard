@@ -9,11 +9,11 @@ Configure GitHub repository secrets to enable automated daily sync of Google Rev
 
 ### ✅ Already Configured in Dashboard:
 - **Project URL**: `https://sudchiscctcihsznewan.supabase.co`
-- **Anon Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1ZGNoaXNjY3RjaWhzem5ld2FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4OTM2NzUsImV4cCI6MjA3NzQ2OTY3NX0.qwT4DbDY0CvyjG5ubsrVZHvmHF67A1t2y4NXUZSczTQ`
+- **Anon Key**: `<SUPABASE_KEY_REDACTED>`
 - ✅ File updated: `supabase-config.js`
 
 ### 🔐 Need to Add to GitHub Secrets:
-- **Service Role Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1ZGNoaXNjY3RjaWhzem5ld2FuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTg5MzY3NSwiZXhwIjoyMDc3NDY5Njc1fQ.8UT8y04LJ0GKS5ItOf3SiL6M0IYeYwI8e-Tt8-Mvhmk`
+- **Service Role Key**: `<SUPABASE_KEY_REDACTED>`
 
 ---
 
@@ -39,7 +39,7 @@ Configure GitHub repository secrets to enable automated daily sync of Google Rev
 2. **Name**: `SUPABASE_KEY`
 3. **Value** (Service Role Key):
    ```
-   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1ZGNoaXNjY3RjaWhzem5ld2FuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MTg5MzY3NSwiZXhwIjoyMDc3NDY5Njc1fQ.8UT8y04LJ0GKS5ItOf3SiL6M0IYeYwI8e-Tt8-Mvhmk
+   <SUPABASE_KEY_REDACTED>
    ```
 4. Click **"Add secret"**
 

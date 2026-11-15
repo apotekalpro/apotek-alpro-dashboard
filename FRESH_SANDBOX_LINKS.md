@@ -46,7 +46,7 @@ https://8000-i2w5anfbz2kkq6nhwmx1k-583b4d74.sandbox.novita.ai/test-api-live.html
 
 ## ✅ **Configuration Verified**
 
-✓ **API Key:** `AIzaSyCwK1q9OWeIqZ5suEWOB9IpE5o5VDYmYYA`  
+✓ **API Key:** `<GOOGLE_API_KEY_REDACTED>`  
 ✓ **Sheet ID:** `1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M`  
 ✓ **Server Port:** 8000  
 ✓ **Server Status:** Running (PID 2249)  

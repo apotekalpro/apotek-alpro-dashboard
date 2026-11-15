@@ -41,3 +41,13 @@ webserver_error.log
 # Excel temporary files
 ~$*.xlsx
 ~$*.xls
+
+# Security: never commit credentials, data exports or local logs
+.dev.vars
+.env
+.env.*
+*.pem
+*service-account*.json
+/*.xlsx
+*.log
+*.pid

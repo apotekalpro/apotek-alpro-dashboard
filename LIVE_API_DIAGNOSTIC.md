@@ -179,7 +179,7 @@ https://sheets.googleapis.com/v4/spreadsheets/{SHEET_ID}/values/{SheetName}!{Ran
 
 ### Current Configuration
 - Sheet ID: `1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M`
-- API Key: `AIzaSyCwK1q9OWeIqZ5suEWOB9IpE5o5VDYmYYA` (configured in opex-config.js)
+- API Key: `<GOOGLE_API_KEY_REDACTED>` (configured in opex-config.js)
 - Debug Mode: ON
 - Fallback: Sample data if API fails
 

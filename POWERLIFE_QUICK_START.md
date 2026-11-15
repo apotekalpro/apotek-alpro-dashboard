@@ -275,7 +275,7 @@ Then user should logout and login again.
 
 **Admin User:**
 - Email: admin@apotekal.com
-- Password: admin123
+- Password: <ADMIN_PASSWORD_REDACTED>
 
 **Create Powerlife Test User:**
 ```sql

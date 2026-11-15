@@ -105,7 +105,7 @@ async loadSheetData(sheetName, range) {
 
 **URL:**
 ```
-https://sheets.googleapis.com/v4/spreadsheets/1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M/values/Audit!A:N?key=AIzaSyCwK1q9OWeIqZ5suEWOB9IpE5o5VDYmYYA
+https://sheets.googleapis.com/v4/spreadsheets/1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M/values/Audit!A:N?key=<GOOGLE_API_KEY_REDACTED>
 ```
 
 **Breakdown:**
@@ -114,7 +114,7 @@ Base URL: https://sheets.googleapis.com/v4/spreadsheets/
 Sheet ID: 1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M
 Tab Name: Audit
 Range:    A:N
-API Key:  AIzaSyCwK1q9OWeIqZ5suEWOB9IpE5o5VDYmYYA
+API Key:  <GOOGLE_API_KEY_REDACTED>
 ```
 
 **What happens:**
@@ -275,7 +275,7 @@ Tab Name in Code          → What Dashboard Section Uses It
 ### **Who Can Access Your Sheet?**
 
 The dashboard uses **Google Sheets API** with:
-- ✅ API Key: `AIzaSyCwK1q9OWeIqZ5suEWOB9IpE5o5VDYmYYA`
+- ✅ API Key: `<GOOGLE_API_KEY_REDACTED>`
 - ✅ Read-only access
 - ✅ Sheet must be set to "Anyone with the link can view"
 
