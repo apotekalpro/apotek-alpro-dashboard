@@ -9783,6 +9783,17 @@
         // same credentials. /auth/session gives a 7-day "app" token (any user; used to read private Google Sheets) and,
         // for users with BOD access, a BOD token too, so opening BOD needs no second prompt. An older Worker without
         // /auth/session (404) falls back to the BOD-only /auth/login. Fails silently: pages then use their direct read.
+        // Reads a BOD-workbook tab through the gateway when this browser has a token, else directly (works while the sheet is public).
+        async function bodSheetText(mode, params, directUrl) {
+            if (window.AlproGW) {
+                try { return await window.AlproGW.sheetText('company', mode, params, directUrl); }
+                catch (e) { throw new Error(e && e.code === 'signin' ? 'Your data session has expired. Please log out and sign in again.' : ((e && e.message) || 'load failed')); }
+            }
+            const r = await fetch(directUrl, { cache: 'no-store' });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.text();
+        }
+
         function bodSilentSignIn(email, password) {
             try {
                 const gw = String(window.BOD_GATEWAY_URL || '').replace(/\/+$/, '');
@@ -12514,18 +12525,9 @@
                     const timestamp = new Date().getTime();
                     const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=Goal+Jan+2026+to+Dec+2026&timestamp=${timestamp}`;
                     
-                    const response = await fetch(csvUrl, {
-                        method: 'GET',
-                        cache: 'no-store',
-                        redirect: 'follow'
-                    });
-                    
-                    if (!response.ok) {
-                        console.error('❌ AM Tracker: Failed to fetch targets');
-                        return;
-                    }
-                    
-                    const csvData = await response.text();
+                    let csvData;
+                    try { csvData = await bodSheetText('gviz', { tqx: 'out:csv', sheet: 'Goal Jan 2026 to Dec 2026' }, csvUrl); }
+                    catch (e) { console.error('❌ AM Tracker: Failed to fetch targets', e.message); return; }
                     const lines = csvData.split('\n');
                     
                     // Parse targets (skip first 2 header rows)
@@ -12571,18 +12573,9 @@
                     const timestamp = new Date().getTime();
                     const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=AM+Daily+Progress&timestamp=${timestamp}`;
                     
-                    const response = await fetch(csvUrl, {
-                        method: 'GET',
-                        cache: 'no-store',
-                        redirect: 'follow'
-                    });
-                    
-                    if (!response.ok) {
-                        console.error('❌ AM Tracker: Failed to fetch outlet types');
-                        return;
-                    }
-                    
-                    const csvData = await response.text();
+                    let csvData;
+                    try { csvData = await bodSheetText('gviz', { tqx: 'out:csv', sheet: 'AM Daily Progress' }, csvUrl); }
+                    catch (e) { console.error('❌ AM Tracker: Failed to fetch outlet types', e.message); return; }
                     console.log('📄 AM Daily Progress CSV preview:', csvData.substring(0, 500));
                     const lines = csvData.split('\n');
                     
@@ -12662,20 +12655,7 @@
                     
                     console.log('🔗 AM Tracker: Fetching from:', csvUrl);
                     
-                    const response = await fetch(csvUrl, {
-                        method: 'GET',
-                        cache: 'no-store',
-                        redirect: 'follow'
-                    });
-                    
-                    console.log('📡 AM Tracker: Response status:', response.status, response.statusText);
-                    
-                    if (!response.ok) {
-                        console.error('❌ AM Tracker: Failed to fetch:', response.status, response.statusText);
-                        throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
-                    }
-                    
-                    const csvData = await response.text();
+                    const csvData = await bodSheetText('export', { format: 'csv', gid: gid }, csvUrl);
                     console.log('📄 AM Tracker: CSV data fetched, length:', csvData.length);
                     console.log('📄 AM Tracker: First 500 chars:', csvData.substring(0, 500));
                     
@@ -13541,17 +13521,7 @@
                     const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&timestamp=${timestamp}`;
                     
                     console.log('🔗 BM Tracker: Fetching data from:', url);
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        cache: 'no-store',
-                        redirect: 'follow'
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch data: ${response.status}`);
-                    }
-                    
-                    const csvData = await response.text();
+                    const csvData = await bodSheetText('gviz', { tqx: 'out:csv', sheet: sheetName }, url);
                     console.log('📄 BM Tracker: Data fetched, length:', csvData.length);
                     console.log('📄 BM Tracker: First 300 chars:', csvData.substring(0, 300));
                     
@@ -16509,13 +16479,7 @@ Ready for deployment! 🚀
             const gid = '353860854'; // AM Daily Progress sheet GID
             const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
             
-            const response = await fetch(csvUrl);
-            
-            if (!response.ok) {
-                throw new Error(`Failed to fetch AM data: ${response.status}`);
-            }
-            
-            const csvData = await response.text();
+            const csvData = await bodSheetText('export', { format: 'csv', gid: gid }, csvUrl);
             return parseAMForecastCSVData(csvData);
         }
 

@@ -23,6 +23,8 @@
         /* Tooltip Styles */
         /* Tooltip functionality removed as requested */
     </style>
+<script src="bod-config.js"></script>
+<script src="gw-client.js"></script>
 </head>
 <body>
     <div class="min-h-screen p-6">
@@ -401,16 +403,19 @@
                 const gid = '353860854'; // AM Daily Progress sheet GID
                 const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
                 
-                console.log('📊 Fetching data from:', csvUrl);
-                const response = await fetch(csvUrl);
-                
-                console.log('📡 Response status:', response.status, response.statusText);
-                
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch data from Google Sheets: ${response.status} ${response.statusText}`);
+                console.log('📊 Fetching AM Daily Progress...');
+                let csvData;
+                if (window.AlproGW) {
+                    // Through the gateway when this browser has a token; direct read otherwise (works while the sheet is public).
+                    try { csvData = await window.AlproGW.sheetText('company', 'export', { format: 'csv', gid: gid }, csvUrl); }
+                    catch (e) { throw new Error(e && e.code === 'signin' ? 'Your data session has expired. Please log out and sign in again.' : ((e && e.message) || 'load failed')); }
+                } else {
+                    const response = await fetch(csvUrl);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch data from Google Sheets: ${response.status} ${response.statusText}`);
+                    }
+                    csvData = await response.text();
                 }
-                
-                const csvData = await response.text();
                 console.log('📄 CSV data length:', csvData.length, 'characters');
                 console.log('📄 First 200 chars:', csvData.substring(0, 200));
                 
