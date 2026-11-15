@@ -6858,7 +6858,7 @@
                 }
             }
             
-            const accessibleTabs = getAccessibleTabs();
+            const accessibleTabs = getAccessibleTabsFinal();
             
             allTabs.forEach(tab => {
                 if (accessibleTabs.includes(tab.id)) {
@@ -6890,8 +6890,10 @@
             } catch (e) { return false; }
         }
         window.canAccessBod = canAccessBod;
-        window.getAccessibleTabs = () => getAccessibleTabs();   // read by ai-agent.js so ARIA lists the same tabs as the nav
-        function getAccessibleTabs() {
+        window.getAccessibleTabs = () => getAccessibleTabsFinal();   // read by ai-agent.js so ARIA lists the same tabs as the nav
+        // NB: must NOT be named getAccessibleTabs - a top-level function of that name is a global, and the
+        // window.getAccessibleTabs line above would overwrite it with an arrow that calls itself (infinite recursion).
+        function getAccessibleTabsFinal() {
             const tabs = (getAccessibleTabsBase() || []).filter(id => id !== BOD_TAB_ID);
             if (canAccessBod()) tabs.push(BOD_TAB_ID);
             return tabs;
@@ -6955,7 +6957,7 @@
         // Set Default Tab
         function setDefaultTab() {
             const role = currentUserRole?.toLowerCase();
-            const accessibleTabs = getAccessibleTabs();
+            const accessibleTabs = getAccessibleTabsFinal();
             
             console.log('🎯 Setting default tab for role:', role);
             console.log('📋 Accessible tabs:', accessibleTabs);
