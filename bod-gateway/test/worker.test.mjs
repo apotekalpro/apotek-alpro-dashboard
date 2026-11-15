@@ -62,6 +62,7 @@ r = await handle(req('/health'), Object.assign({}, env, { GOOGLE_SERVICE_ACCOUNT
 
 /* ===================== stage 1: app session + registered sheets ===================== */
 users['chief2@x.id'] = { email: 'chief2@x.id', name: 'Chief2', role: 'chief', status: 'active', password_hash: legacy('Pass#1'), department_access: [] };
+users['adm@x.id'] = { email: 'adm@x.id', name: 'Adm', role: 'admin', status: 'active', password_hash: legacy('Pass#5'), department_access: ['bod'] };
 users['ppm@x.id'] = { email: 'ppm@x.id', name: 'Ppm', role: 'ppm', status: 'active', password_hash: legacy('Pass#4'), department_access: ['ppm'] };
 users['mgr@x.id'] = { email: 'mgr@x.id', name: 'Mgr', role: 'manager', status: 'active', password_hash: legacy('Pass#3'), department_access: ['hr'] };
 const HR = '1S4uqo11FidtOHXqRJQNdd_NAQhDPSfW57qxL4llXLlc';
@@ -140,7 +141,9 @@ users['mgr@x.id'].status = 'disabled'; r = await sh('/sheet/strategy/export?gid=
 
 console.log('\n-- selftest --');
 r = await sh('/admin/selftest'); ok('selftest without token 401', r.status === 401);
-r = await sh('/admin/selftest', mgrTok); ok('selftest for a non-chief 403', r.status === 403);
+r = await sh('/admin/selftest', mgrTok); ok('selftest for an ordinary user 403', r.status === 403);
+r = await sh('/admin/selftest', ppmTok); ok('selftest for a ppm user 403', r.status === 403);
+r = await appLogin('adm@x.id', 'Pass#5'); j = await r.json(); r = await sh('/admin/selftest', j.token); ok('selftest for an admin works', r.status === 200);
 r = await sh('/admin/selftest', cTok); j = await r.json();
 ok('selftest for chief lists every registered sheet', r.status === 200 && ['company', 'strategy', 'pillar', 'loss', 'biodata', 'opex', 'hr'].every((k) => k in j.sheets), JSON.stringify(j));
 ok('selftest says ok for shared sheets and how to fix the others', j.sheets.strategy === 'ok' && /share the sheet with the service account/.test(j.sheets.hr), JSON.stringify(j.sheets));

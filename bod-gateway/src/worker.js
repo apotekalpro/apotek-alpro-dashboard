@@ -10,7 +10,7 @@
  *   POST /auth/session   {email, password} -> app token   (aud 'app', 7 d; any active user)
  *   GET  /bod/data?sheet=master|exec        -> BOD workbook (Authorization: Bearer <bod token>)
  *   GET  /sheet/<key>/gviz|export|values    -> a registered sheet (Authorization: Bearer <app token>)
- *   GET  /admin/selftest                    -> Chief only: which sheets the service account can read
+ *   GET  /admin/selftest                    -> Chief/Admin only: which sheets the service account can read
  *   GET  /health
  *
  * Every data call re-reads the user from Supabase, so disabling a user or removing access takes
@@ -228,7 +228,7 @@ export async function handle(req, env, f) {
       const pl = await bearer(APP_AUD);
       if (!pl) return json({ error: 'sign in required' }, 401);
       const u = await findUser(env, pl.email, f);
-      if (!u || String(u.role || '').toLowerCase() !== 'chief') return json({ error: 'chief only' }, 403);
+      if (!u || ['chief', 'admin'].indexOf(String(u.role || '').toLowerCase()) < 0) return json({ error: 'chief or admin only' }, 403);
       const gt = await googleToken(env, f), out = {}, reg = registry(env);
       for (const k of Object.keys(reg)) {
         const d = reg[k]; if (!d.id) { out[k] = 'sheet id not configured'; continue; }

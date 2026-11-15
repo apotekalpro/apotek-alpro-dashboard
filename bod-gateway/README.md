@@ -10,7 +10,7 @@ POST /auth/login    {email,password} -> BOD token   8 h, Chief or 'bod' ticked o
 POST /auth/session  {email,password} -> app token   7 d (APP_TOKEN_HOURS), any active user
 GET  /bod/data?sheet=master|exec     -> BOD workbook   (Bearer <BOD token>)
 GET  /sheet/<key>/gviz|export|values -> a registered sheet (Bearer <app token>)
-GET  /admin/selftest                 -> Chief only: which sheets the service account can already read
+GET  /admin/selftest                 -> Chief/Admin only: which sheets the service account can already read
 GET  /health
 ```
 
@@ -62,7 +62,7 @@ Supabase on every call, so a disabled user is cut off at once. BOD and app token
 
 **Re-deploy after pulling this change:** paste the new `src/worker.js` into the Worker editor and Deploy (no new secrets or variables needed;
 optionally add the variable `APP_TOKEN_HOURS`, default 168). Then share each sheet with the service account (**Viewer**) and check
-`/admin/selftest` (needs a Chief app token from `POST /auth/session`). It lists every registered sheet as `ok` or `share the sheet with the service account`.
+`/admin/selftest` (needs a Chief or Admin app token from `POST /auth/session`). It lists every registered sheet as `ok` or `share the sheet with the service account`.
 
 Do not set a sheet to Restricted until its readers have been switched to the Worker (stage 2) and `/admin/selftest` says `ok` for it.
 
@@ -78,4 +78,4 @@ Do not set a sheet to Restricted until its readers have been switched to the Wor
 `node bod-gateway/test/worker.test.mjs` (67 checks, mocked Google and Supabase): login for both hash formats, forged / expired /
 wrong-audience tokens, a token forged with the old public secret, BOD and app tokens not interchangeable, access revoked after
 sign-in, disabled user, CORS, unconfigured = closed, tab allow-lists (MASTER never served on `/sheet`), parameter-injection attempts,
-per-sheet access rules, Sheets-API `values` calls, and the Chief-only selftest.
+per-sheet access rules, Sheets-API `values` calls, and the Chief/Admin-only selftest.
