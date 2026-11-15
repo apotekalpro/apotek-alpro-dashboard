@@ -196,6 +196,13 @@ tr.drh td{background:#eef2f7;font-weight:700;font-size:10.5px;text-transform:upp
 @keyframes s{to{transform:rotate(360deg)}}
 .denied{max-width:520px;margin:12vh auto;text-align:center;background:#fff;border:1px solid var(--line);border-radius:12px;padding:40px}
 .denied i{font-size:34px;color:var(--neg)}
+.glogin{max-width:380px;margin:12vh auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:32px}
+.glogin h2{margin:0 0 4px;font-size:18px;color:var(--navy)}.glogin p{margin:0 0 16px;color:var(--ink2);font-size:12.5px}
+.glogin label{display:block;font-size:11.5px;font-weight:700;color:var(--ink2);margin:10px 0 4px}
+.glogin input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:6px;padding:9px 10px;font-size:13px}
+.glogin button{margin-top:16px;width:100%;background:var(--navy);color:#fff;border:0;border-radius:6px;padding:10px;font-weight:700;cursor:pointer}
+.glogin button:disabled{opacity:.6;cursor:default}.glogin .gerr{color:var(--neg);font-size:12px;margin-top:10px;min-height:16px}
+
 .foot{margin-top:26px;font-size:10.5px;color:var(--mute)}
 @media(max-width:1100px){.lv{grid-template-columns:repeat(2,1fr)}.g4,.g6{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr}.g2{grid-template-columns:1fr}.pat{grid-template-columns:1fr}.pat>div{border:0;padding:6px 0}}
 </style>
@@ -206,6 +213,14 @@ tr.drh td{background:#eef2f7;font-weight:700;font-size:10.5px;text-transform:upp
   <i class="fas fa-lock"></i>
   <h2 style="margin:12px 0 6px">Restricted to Chief level</h2>
   <p style="color:#51627a">The BOD Dashboard is available to users with the <b>Chief</b> role only. Please sign in to the Executive Dashboard with a Chief account.</p>
+</div>
+
+<div id="glogin" class="glogin hidden">
+  <h2><i class="fas fa-lock" style="margin-right:8px"></i>BOD Dashboard sign-in</h2>
+  <p>Use your Executive Dashboard email and password. Access is limited to Chief and users with BOD access.</p>
+  <form id="gform" autocomplete="on"><label for="gemail">Email</label><input id="gemail" type="email" autocomplete="username" required>
+  <label for="gpass">Password</label><input id="gpass" type="password" autocomplete="current-password" required>
+  <button id="gbtn" type="submit">Sign in</button><div class="gerr" id="gerr"></div></form>
 </div>
 
 <div id="app" class="wrap hidden">
@@ -220,6 +235,7 @@ tr.drh td{background:#eef2f7;font-weight:700;font-size:10.5px;text-transform:upp
       <div style="display:flex;gap:8px">
         <button class="btn sm" id="btnNotes"><i class="fas fa-circle-info"></i> Data notes</button>
         <button class="btn sm" id="btnRefresh"><i class="fas fa-rotate"></i> Refresh</button>
+        <button class="btn sm hidden" id="btnSignout"><i class="fas fa-right-from-bracket"></i> Sign out</button>
       </div>
     </div>
   </header>
@@ -247,6 +263,7 @@ tr.drh td{background:#eef2f7;font-weight:700;font-size:10.5px;text-transform:upp
 
 <div id="drawerHost"></div>
 
+<script src="bod-config.js"></script>
 <script src="bod-engine.js"></script>
 <script src="bod-core.js"></script>
 <script src="bod-tabs-outlets.js"></script>
