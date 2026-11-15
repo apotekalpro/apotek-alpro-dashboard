@@ -71,7 +71,8 @@ Do not set a sheet to Restricted until its readers have been switched to the Wor
 
 `gw-client.js` (`window.AlproGW.sheetText`) reads a registered sheet through the Worker using the app token that the dashboard login
 stores in `localStorage['alpro_gw_app']`. If the browser has no token (or the Worker does not know the endpoint yet) it falls back to the
-old direct read, so nothing breaks while the sheet is still public. Biodata Outlet is the only page switched so far.
+old direct read, so nothing breaks while the sheet is still public. Switched so far: Biodata Outlet, Pillar Tracker, Strategy (PSH Bull Eye), Loss Sales Tracker and Price Comparison Tracker.
+The Worker streams the Google response instead of buffering it (the Loss sheet's main tab is about 30 MB).
 
 Steps:
 1. Merge, then paste the new `src/worker.js` into the Cloudflare editor and Deploy. `POST /auth/session` must answer 400 (not 404) to an empty body.

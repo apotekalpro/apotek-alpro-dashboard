@@ -138,6 +138,8 @@
             margin-top: 8px;
         }
     </style>
+<script src="bod-config.js"></script>
+<script src="gw-client.js"></script>
 </head>
 <body class="bg-gray-50">
     <!-- Loading Overlay -->
@@ -743,14 +745,18 @@
             try {
                 console.log(`📥 Fetching data from ${sheetLabel} (GID: ${gid})`);
                 const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${gid}`;
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    console.error(`❌ Failed to fetch ${sheetLabel} (GID: ${gid}): ${response.status}`);
-                    return [];
+                let text;
+                if (window.AlproGW) {
+                    // Through the gateway when this browser has a token; direct read otherwise (works while the sheet is public).
+                    text = await window.AlproGW.sheetText('loss', 'gviz', { tqx: 'out:json', gid: gid }, url);
+                } else {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        console.error(`❌ Failed to fetch ${sheetLabel} (GID: ${gid}): ${response.status}`);
+                        return [];
+                    }
+                    text = await response.text();
                 }
-                
-                const text = await response.text();
                 const json = JSON.parse(text.substr(47).slice(0, -2));
                 
                 console.log(`✅ Fetched ${json.table.rows.length} rows from ${sheetLabel}`);
@@ -760,6 +766,7 @@
                 });
             } catch (error) {
                 console.error(`❌ Error fetching ${sheetLabel} (GID: ${gid}):`, error);
+                if (error && error.code === 'signin') window.__gwSigninNeeded = true;
                 return [];
             }
         }
@@ -774,6 +781,7 @@
                 updateLoadingText('Fetching loss sales data...');
                 const sheet1Data = await fetchSheetDataByGid(SHEET1_GID, 'Main Sheet');
                 console.log(`📊 Main sheet data rows: ${sheet1Data.length}`);
+                if (sheet1Data.length === 0 && window.__gwSigninNeeded) { throw new Error('Your data session has expired. Please log out and sign in again.'); }
                 
                 // Try to fetch Price sheet by GID (optional)
                 let priceSheetData = [];
@@ -874,10 +882,10 @@
                 
             } catch (error) {
                 console.error('❌ Error processing data:', error);
-                updateLoadingText('Error loading data. Check console for details.');
+                updateLoadingText((error && error.message && /session has expired/.test(error.message)) ? error.message : 'Error loading data. Check console for details.');
                 setTimeout(() => {
                     hideLoadingOverlay();
-                    alert('Error loading data. Please check the console for details and try refreshing the page.');
+                    alert((error && error.message && /session has expired/.test(error.message)) ? error.message : 'Error loading data. Please check the console for details and try refreshing the page.');
                 }, 1000);
             }
         }
