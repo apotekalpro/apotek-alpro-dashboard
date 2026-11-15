@@ -58,7 +58,10 @@ async function passwordOk(password, stored) {
 /* ---------- Supabase (service key stays here) ---------- */
 async function findUser(env, email, f) {
   const url = env.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/users?select=email,name,role,status,password_hash,department_access&limit=1&status=eq.active&email=eq.' + encodeURIComponent(email.toLowerCase());
-  const r = await f(url, { headers: { apikey: env.SUPABASE_SERVICE_KEY, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_KEY } });
+  const hdr = { apikey: env.SUPABASE_SERVICE_KEY };
+  // legacy service_role keys are JWTs and also go in Authorization; new sb_secret_ keys are not JWTs and go in apikey only
+  if (String(env.SUPABASE_SERVICE_KEY).indexOf('eyJ') === 0) hdr.Authorization = 'Bearer ' + env.SUPABASE_SERVICE_KEY;
+  const r = await f(url, { headers: hdr });
   if (!r.ok) throw new Error('supabase ' + r.status);
   const rows = await r.json(); return rows && rows[0] || null;
 }
