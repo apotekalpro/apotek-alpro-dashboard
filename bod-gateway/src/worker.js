@@ -7,7 +7,7 @@
  * account) while signed-in dashboard users still get their data.
  *
  *   POST /auth/login     {email, password} -> BOD token   (aud 'bod', 8 h; Chief or 'bod' ticked only)
- *   POST /auth/session   {email, password} -> app token   (aud 'app', 7 d; any active user)
+ *   POST /auth/session   {email, password} -> app token   (aud 'app', 7 d; any active user; plus bod_token if BOD access)
  *   GET  /bod/data?sheet=master|exec        -> BOD workbook (Authorization: Bearer <bod token>)
  *   GET  /sheet/<key>/gviz|export|values    -> a registered sheet (Authorization: Bearer <app token>)
  *   GET  /admin/selftest                    -> Chief/Admin only: which sheets the service account can read
@@ -190,7 +190,12 @@ export async function handle(req, env, f) {
       const ttl = isApp ? Math.max(1, Math.min(Number(env.APP_TOKEN_HOURS) || 168, 720)) * 3600 : TOKEN_TTL;
       const now = Math.floor(Date.now() / 1000), exp = now + ttl, role = String(u.role || '').toLowerCase();
       const token = await signJwt({ iss: ISS, aud: isApp ? APP_AUD : AUD, sub: u.email, email: u.email, name: u.name || '', role: role, iat: now, exp: exp }, env.BOD_JWT_SECRET);
-      return json({ token: token, exp: exp, email: u.email, name: u.name || '', role: role });
+      const out = { token: token, exp: exp, email: u.email, name: u.name || '', role: role };
+      if (isApp && hasBod(u)) { // one sign-in gives both tokens, so the dashboard login needs a single call
+        out.bod_exp = now + TOKEN_TTL;
+        out.bod_token = await signJwt({ iss: ISS, aud: AUD, sub: u.email, email: u.email, name: u.name || '', role: role, iat: now, exp: out.bod_exp }, env.BOD_JWT_SECRET);
+      }
+      return json(out);
     }
 
     const bearer = (aud) => { const m = /^Bearer (.+)$/.exec(req.headers.get('Authorization') || ''); return m ? verifyJwt(m[1], env.BOD_JWT_SECRET, aud) : null; };

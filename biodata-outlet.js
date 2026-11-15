@@ -182,9 +182,16 @@ const BiodataOutlet = (() => {
   // ----------------------------------------------------------
   async function loadSheetData() {
     try {
-      const resp = await fetch(SHEET_URL);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const text = await resp.text();
+      // Through the gateway when this browser has a gateway token (the sheet can then be private);
+      // otherwise the old direct read, which keeps working while the sheet is still public.
+      let text;
+      if (window.AlproGW) {
+        text = await window.AlproGW.sheetText('biodata', 'gviz', { tqx: 'out:csv', sheet: SHEET_NAME }, SHEET_URL);
+      } else {
+        const resp = await fetch(SHEET_URL);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        text = await resp.text();
+      }
       allSheetData = parseCSV(text);
 
       // Build STORES dynamically from parsed rows
@@ -209,7 +216,9 @@ const BiodataOutlet = (() => {
       renderMapView();
       const statusEl = document.getElementById('bo-sheet-status');
       if (statusEl) {
-        statusEl.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i>Could not load live data — check connection`;
+        statusEl.innerHTML = (e && e.code === 'signin')
+          ? `<i class="fas fa-exclamation-triangle mr-1"></i>Your data session has expired — please log out and sign in again to load live data`
+          : `<i class="fas fa-exclamation-triangle mr-1"></i>Could not load live data — check connection`;
         statusEl.className = 'text-xs text-red-500 font-medium mt-1';
       }
     }
