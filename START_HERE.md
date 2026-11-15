@@ -14,7 +14,7 @@ This page will **automatically diagnose** why you're seeing mock data instead of
 ## ✅ What's Confirmed Working
 
 1. **✓ API Key Configured**
-   - Your API key `AIzaSyCwK1q9OWeIqZ5suEWOB9IpE5o5VDYmYYA` is correctly set in `opex-config.js`
+   - Your API key `<GOOGLE_API_KEY_REDACTED>` is correctly set in `opex-config.js`
 
 2. **✓ Sheet ID Configured**
    - Sheet ID `1WkoZimssIpNbHZMhExTKiQkgyNMSLWeN0PXH_hQU08M` is correct
