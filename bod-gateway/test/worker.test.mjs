@@ -96,6 +96,12 @@ r = await sh('/sheet/strategy/export?gid=352474780&format=csv', forgeApp('alpro_
 r = await sh('/sheet/strategy/export?gid=352474780&format=csv', forgeApp(env.BOD_JWT_SECRET, { exp: Math.floor(Date.now() / 1000) - 5 })); ok('expired app token gets 401', r.status === 401);
 r = await sh('/sheet/strategy/export?gid=352474780&format=csv'); ok('/sheet without a token gets 401', r.status === 401);
 
+r = await appLogin('mgr@x.id', 'Pass#3'); j = await r.json(); ok('user without BOD gets no bod_token from /auth/session', r.status === 200 && !j.bod_token);
+r = await appLogin('adm@x.id', 'Pass#5'); j = await r.json(); const admBod = j.bod_token; ok('user with BOD ticked gets a bod_token too', !!admBod && j.bod_exp > Math.floor(Date.now() / 1000));
+r = await data('exec', admBod); ok('that bod_token works on /bod/data', r.status === 200);
+r = await sh('/sheet/strategy/export?gid=352474780&format=csv', admBod); ok('that bod_token still cannot read /sheet (audience separation)', r.status === 401);
+r = await appLogin('chief2@x.id', 'Pass#1'); j = await r.json(); ok('chief gets a bod_token from /auth/session', !!j.bod_token);
+
 console.log('\n-- registered sheets --');
 let n1 = upstream.length;
 r = await sh('/sheet/strategy/export?gid=352474780&format=csv', mgrTok); let t = await r.text();

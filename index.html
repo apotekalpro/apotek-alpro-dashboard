@@ -16,6 +16,7 @@
     <!-- Supabase JavaScript Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="bod-config.js"></script>
+    <script src="gw-client.js"></script>
     <!-- SheetJS Library for Excel Processing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Chart.js for Warehouse Pareto Dashboard -->
@@ -9778,23 +9779,39 @@
             window.open(url, '_blank');
         }
 
-        // BOD silent sign-in: right after a successful dashboard login, ask the BOD gateway for its own
-        // token with the same credentials, so opening BOD needs no second prompt. Fails silently: users
-        // without BOD access (403) or an unreachable gateway simply get BOD's own sign-in panel later.
+        // Gateway silent sign-in: right after a successful dashboard login, ask the gateway Worker for tokens with the
+        // same credentials. /auth/session gives a 7-day "app" token (any user; used to read private Google Sheets) and,
+        // for users with BOD access, a BOD token too, so opening BOD needs no second prompt. An older Worker without
+        // /auth/session (404) falls back to the BOD-only /auth/login. Fails silently: pages then use their direct read.
         function bodSilentSignIn(email, password) {
             try {
                 const gw = String(window.BOD_GATEWAY_URL || '').replace(/\/+$/, '');
                 if (!gw) return;
-                const ctl = new AbortController();
-                const timer = setTimeout(function () { ctl.abort(); }, 15000);
-                fetch(gw + '/auth/login', {
-                    method: 'POST', signal: ctl.signal,
-                    headers: { 'content-type': 'application/json' },
-                    body: JSON.stringify({ email: email, password: password })
-                }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-                    clearTimeout(timer);
-                    if (j && j.token) sessionStorage.setItem('bod_gw_session', JSON.stringify({ token: j.token, exp: j.exp, email: j.email, name: j.name, role: j.role }));
-                }).catch(function () { clearTimeout(timer); });
+                const post = function (path) {
+                    const ctl = new AbortController();
+                    const timer = setTimeout(function () { ctl.abort(); }, 15000);
+                    return fetch(gw + path, {
+                        method: 'POST', signal: ctl.signal,
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({ email: email, password: password })
+                    }).then(function (r) { clearTimeout(timer); return r; }, function (e) { clearTimeout(timer); throw e; });
+                };
+                const saveBod = function (tok, exp, j) {
+                    sessionStorage.setItem('bod_gw_session', JSON.stringify({ token: tok, exp: exp, email: j.email, name: j.name, role: j.role }));
+                };
+                post('/auth/session').then(function (r) {
+                    if (r.ok) {
+                        return r.json().then(function (j) {
+                            if (j && j.token) localStorage.setItem('alpro_gw_app', JSON.stringify({ token: j.token, exp: j.exp, email: j.email }));
+                            if (j && j.bod_token) saveBod(j.bod_token, j.bod_exp, j);
+                        });
+                    }
+                    if (r.status === 404) {
+                        return post('/auth/login').then(function (r2) { return r2.ok ? r2.json() : null; }).then(function (j) {
+                            if (j && j.token) saveBod(j.token, j.exp, j);
+                        });
+                    }
+                }).catch(function () { /* never block the dashboard login */ });
             } catch (e) { /* never block the dashboard login */ }
         }
 
@@ -9819,7 +9836,7 @@
             window.currentUserName = null;
             window.department_accessConfig = null;
             localStorage.removeItem('loginTime');
-            try { sessionStorage.removeItem('bod_gw_session'); } catch (e) { /* ignore */ }
+            try { sessionStorage.removeItem('bod_gw_session'); localStorage.removeItem('alpro_gw_app'); } catch (e) { /* ignore */ }
             
             // Reset UI
             document.getElementById('dashboard').classList.add('hidden');
@@ -16964,7 +16981,7 @@ Ready for deployment! 🚀
     <script src="assets/js/product-incentive-calculator.js?v=1.0"></script>
 
     <!-- Biodata Outlet Module -->
-    <script src="biodata-outlet.js?v=1.0"></script>
+    <script src="biodata-outlet.js?v=1.1"></script>
 
     <!-- ============================================================
          ARIA - Apotek Alpro AI Research & Intelligence Agent v2.0

@@ -7,7 +7,8 @@ disabling them cuts them off immediately (not at token expiry).
 
 ```
 POST /auth/login    {email,password} -> BOD token   8 h, Chief or 'bod' ticked only
-POST /auth/session  {email,password} -> app token   7 d (APP_TOKEN_HOURS), any active user
+POST /auth/session  {email,password} -> app token   7 d (APP_TOKEN_HOURS), any active user;
+                                        also returns bod_token/bod_exp when the user has BOD access
 GET  /bod/data?sheet=master|exec     -> BOD workbook   (Bearer <BOD token>)
 GET  /sheet/<key>/gviz|export|values -> a registered sheet (Bearer <app token>)
 GET  /admin/selftest                 -> Chief/Admin only: which sheets the service account can already read
@@ -42,7 +43,7 @@ Rollback at any time: set `BOD_GATEWAY_URL` back to `''` (if you have already re
 ## Stage 1: registered sheets (private Google Sheets behind the Worker)
 
 The Worker can now serve the other Google Sheets too, so they can be set to **Restricted** once the pages read through it.
-Nothing on the live site calls these endpoints yet; deploying this only adds capability.
+Pages switch over one sheet at a time (see the trial below). A page that has not been switched keeps reading the sheet directly.
 
 Registered in `registry()` in `src/worker.js` (key: sheet, who may read, which tabs):
 
@@ -66,6 +67,21 @@ optionally add the variable `APP_TOKEN_HOURS`, default 168). Then share each she
 
 Do not set a sheet to Restricted until its readers have been switched to the Worker (stage 2) and `/admin/selftest` says `ok` for it.
 
+## Trial: Biodata Outlet (the first sheet behind the Worker)
+
+`gw-client.js` (`window.AlproGW.sheetText`) reads a registered sheet through the Worker using the app token that the dashboard login
+stores in `localStorage['alpro_gw_app']`. If the browser has no token (or the Worker does not know the endpoint yet) it falls back to the
+old direct read, so nothing breaks while the sheet is still public. Biodata Outlet is the only page switched so far.
+
+Steps:
+1. Merge, then paste the new `src/worker.js` into the Cloudflare editor and Deploy. `POST /auth/session` must answer 400 (not 404) to an empty body.
+2. Wait for GitHub Pages (about 10 min), hard refresh, **log out and log in again** (this is what stores the token).
+3. Open Operations, Biodata Outlet. Status line says "Live data loaded". Console: `AlproGW.last.biodata` is `'gateway'`.
+4. Restrict the Biodata sheet in Google Sheets, reload, and check it still loads. An anonymous request to the sheet must now return 401.
+5. Rollback: set the sheet back to "Anyone with the link" (instant), or set `BOD_GATEWAY_URL` to `''`.
+
+After the sheet is restricted, a browser that has no gateway token shows "session expired, log out and sign in again" on that page.
+
 ## Important limits of this step
 - It protects the **BOD data**. The main dashboard (`index.html`) still talks to Supabase directly with an embedded key;
   that is the next thing to move behind a Worker (see the PR description).
@@ -75,7 +91,7 @@ Do not set a sheet to Restricted until its readers have been switched to the Wor
   because the browser can be told to claim any role.
 
 ## Tests
-`node bod-gateway/test/worker.test.mjs` (67 checks, mocked Google and Supabase): login for both hash formats, forged / expired /
+`node bod-gateway/test/worker.test.mjs` (74 checks, mocked Google and Supabase): login for both hash formats, forged / expired /
 wrong-audience tokens, a token forged with the old public secret, BOD and app tokens not interchangeable, access revoked after
 sign-in, disabled user, CORS, unconfigured = closed, tab allow-lists (MASTER never served on `/sheet`), parameter-injection attempts,
 per-sheet access rules, Sheets-API `values` calls, and the Chief/Admin-only selftest.
