@@ -195,7 +195,7 @@
       var gs = E.groupStats(m, P, ctx.rowsF), endT = P.cur[P.cur.length - 1];
       var all = rows.map(function (r) { return r.o; }), mo = E.monthly(m, all), cur = mo[mo.length - 1];
       for (var i = mo.length - 1; i >= 0; i--) if (mo[i].t === endT) { cur = mo[i]; break; }
-      var hasBase = P.baseAvailable;
+      var hasBase = P.baseAvailable, multi = P.cur.length > 1;
       // Company PSH: the sheet's own company figure when no outlet filter is applied (owner instruction);
       // otherwise rebuilt as PAT / hours from the filtered outlets.
       var coPsh = { m: cur.psh, p: gs.a.psh, pos: cur.posPsh, n: cur.nPsh, src: 'rebuilt' };
@@ -210,15 +210,18 @@
         B.card('Transactions', F.n(gs.a.tx), hasBase ? 'vs ' + F.n(gs.b.tx) + '<br>Like-for-like <b class="' + F.cls(gs.lTx) + '">' + gl(gs.lTx) + '</b>' : '') +
         B.card('Gross profit \u00b7 margin', F.rp(gs.a.pro), 'Margin ' + F.p(gs.a.margin, 2) + (hasBase ? '<br>LFL change <b class="' + F.cls(gs.lMargin) + '">' + F.pp(gs.lMargin) + '</b>' : '')) +
         B.card('PAT (PSH \u00d7 hours)', F.rp(gs.a.pat), hasBase ? 'vs ' + F.rp(gs.b.pat) + '<br>Change ' + F.rp(gs.dPat) : '', gs.a.pat < 0 ? 'neg' : 'pos') +
-        B.card('PSH \u00b7 ' + E.monthShort(endT), F.n(coPsh.m), 'Period PSH ' + F.n(coPsh.p) + ' Rp/hr' + (coPsh.src === 'sheet' ? ' <span title=\"Company PSH as published on the Exec Dashboard\">(sheet)</span>' : '') + '<br>' + coPsh.pos + ' of ' + coPsh.n + ' outlets positive', coPsh.m < 0 ? 'neg' : 'pos') +
+        (multi
+          ? B.card('PSH \u00b7 ' + esc(P.tag), F.n(coPsh.p), E.monthShort(endT) + ' ' + F.n(coPsh.m) + ' Rp/hr' + (coPsh.src === 'sheet' ? ' <span title=\"Company PSH as published on the Exec Dashboard\">(sheet)</span>' : '') + '<br>' + coPsh.pos + ' of ' + coPsh.n + ' outlets positive in ' + E.monthShort(endT), coPsh.p < 0 ? 'neg' : 'pos')
+          : B.card('PSH \u00b7 ' + E.monthShort(endT), F.n(coPsh.m), 'Rp per staff hour' + (coPsh.src === 'sheet' ? ' <span title=\"Company PSH as published on the Exec Dashboard\">(sheet)</span>' : '') + '<br>' + coPsh.pos + ' of ' + coPsh.n + ' outlets positive', coPsh.m < 0 ? 'neg' : 'pos')) +
         B.card('Trading outlets', gs.n, ctx.down.length + ' declining \u00b7 ' + ctx.up.length + ' improving<br>' + ctx.neu.length + ' new \u00b7 ' + ctx.nc.length + ' not yet comparable') + '</div>';
+      var ga = gs.a, tg = esc(P.tag);
       var cards2 = '<div class="grid g6" style="margin-bottom:12px">' +
-        B.card('Basket \u00b7 ' + E.monthShort(endT), F.n(cur.basket) + ' <small>Rp</small>', 'Sales \u00f7 transactions') +
-        B.card('Focus product', F.p(cur.focus, 1), 'Share of sales \u00b7 ' + E.monthShort(endT)) +
-        B.card('Sales by members', F.p(cur.mem, 1), 'Share of transactions') +
-        B.card('Recruitment rate', F.p(cur.rr, 1), 'New members \u00f7 walk-ins without membership') +
-        B.card('New members', F.n(cur.nm), E.monthShort(endT) + (cur.evip ? ' \u00b7 EVIP ' + F.n(cur.evip) : '')) +
-        B.card('Salary \u00b7 stock loss', F.p(cur.sal, 1) + ' \u00b7 ' + F.p(cur.sl, 1), 'Share of sales \u00b7 ' + E.monthShort(endT)) + '</div>';
+        B.card('Basket \u00b7 ' + tg, F.n(ga.basket) + ' <small>Rp</small>', 'Sales \u00f7 transactions') +
+        B.card('Focus product', F.p(ga.focusPct, 1), 'Share of sales \u00b7 ' + tg) +
+        B.card('Sales by members', F.p(ga.memPct, 1), 'Share of transactions \u00b7 ' + tg) +
+        B.card('Recruitment rate', F.p(ga.rrPct, 1), 'New members \u00f7 walk-ins without membership \u00b7 ' + tg) +
+        B.card('New members', F.n(ga.nm), tg + (cur.evip ? '<br>EVIP ' + E.monthShort(endT) + ': ' + F.n(cur.evip) : '')) +
+        B.card('Salary \u00b7 stock loss', F.p(ga.salPct, 1) + ' \u00b7 ' + F.p(ga.slPct, 1), 'Share of sales \u00b7 ' + tg) + '</div>';
       // alerts strip (computed in insights module)
       var al = B.computeFlags ? B.computeFlags(ctx) : null, alHtml = '';
       if (al) {
