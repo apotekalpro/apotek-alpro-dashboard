@@ -41,12 +41,12 @@
     var amt = function (k) { return function (x) { return isN(x[k]) ? x[k] / 1e6 : null; }; };
     var num = function (k) { return function (x) { return isN(x[k]) ? x[k] : null; }; };
     return [
-      ['rev', 'Revenue (Rp m)', amt('rev')], ['tx', 'Transactions', num('tx')], ['basket', 'Basket size (Rp)', num('basket')],
-      ['margin', 'Margin %', pct('margin')], ['pro', 'Profit (Rp m)', amt('pro')],
+      ['rev', 'Revenue (Rp Jt)', amt('rev')], ['tx', 'Transactions', num('tx')], ['basket', 'Basket size (Rp)', num('basket')],
+      ['margin', 'Margin %', pct('margin')], ['pro', 'Profit (Rp Jt)', amt('pro')],
       ['psh', 'PSH (Rp/hr)', function (x) { return val(m, 'psh', o, x.t) === val(m, 'psh', o, x.t) && isN(x.psh) ? x.psh : null; }],
-      ['pat', 'PAT (Rp m)', function (x) { return isN(val(m, 'psh', o, x.t)) && isN(x.pat) ? x.pat / 1e6 : null; }],
+      ['pat', 'PAT (Rp Jt)', function (x) { return isN(val(m, 'psh', o, x.t)) && isN(x.pat) ? x.pat / 1e6 : null; }],
       ['wh', 'Working hours', function (x) { var v = val(m, 'wh', o, x.t); return isN(v) ? v : null; }],
-      ['ssd', 'Avg staff sales/day (Rp m)', amt('ssd')],
+      ['ssd', 'Avg staff sales/day (Rp Jt)', amt('ssd')],
       ['focus', 'Focus product %', pct('focus')], ['mem', 'Sales through members %', pct('mem')], ['rr', 'Recruitment rate %', pct('rr')], ['nm', 'New members', num('nm')],
       ['sal', 'Salary % of sales', pct('sal')], ['rent', 'Rent % of sales', pct('rent')], ['util', 'Utilities % of sales', pct('util')], ['sl', 'Stock loss % of sales', pct('sl')]
     ];
@@ -63,7 +63,7 @@
       ['PSH (Rp/hr)', function (r) { return r.A.psh; }, F.n, 1],
       ['PAT margin', function (r) { return r.A.patMargin; }, function (v) { return F.p(v, 2); }, 1],
       ['Profit margin', function (r) { return r.A.margin; }, function (v) { return F.p(v, 1); }, 1],
-      ['Sales per trading day (Rp m)', spd, function (v) { return F.m(v, 2); }, 1],
+      ['Sales per trading day (Rp Jt)', spd, function (v) { return F.m(v, 2); }, 1],
       ['Basket size (Rp)', function (r) { return r.A.basket; }, F.n, 1],
       ['Focus product share', function (r) { return r.A.focusPct; }, function (v) { return F.p(v, 1); }, 1],
       ['Sales through members', function (r) { return r.A.memPct; }, function (v) { return F.p(v, 1); }, 1],
@@ -107,15 +107,15 @@
       lvl45: function () { return rn + ' ' + F.p(r.rate, 1, true) + ' vs ' + esc(P.baseTag) + ' (level ' + r.level + ' decline)'; },
       txdrop: function () { return 'Transactions ' + F.p(r.gTx, 1, true) + ' vs ' + esc(P.baseTag) + ' (flag at ' + F.p(TH.txDrop, 0, true) + ')'; },
       negpsh: function () {
-        return 'PAT ' + [2, 1, 0].map(function (k) { var t = endT - k, ps = val(m, 'psh', o, t), h = val(m, 'wh', o, t); return E.monthShort(t) + ' ' + (isN(ps) && isN(h) ? 'Rp ' + F.m(ps * h, 2) + 'm' : '\u2013'); }).join(' \u00b7 ');
+        return 'PAT ' + [2, 1, 0].map(function (k) { var t = endT - k, ps = val(m, 'psh', o, t), h = val(m, 'wh', o, t); return E.monthShort(t) + ' ' + (isN(ps) && isN(h) ? F.jt(ps * h, 2) + '' : '\u2013'); }).join(' \u00b7 ');
       },
       stockloss: function () { return 'Stock loss ' + F.p(L.slPct, 1) + ' of sales in ' + esc(mon) + ' (flag at ' + F.p(TH.stockLoss, 0) + ')'; },
-      slow: function () { var rp = B.ramp(m), age = endT - r.ol.firstRev + 1, md = rp.med[age]; return 'Month ' + age + ' sales Rp ' + F.m(L.rev, 1) + 'm vs typical Rp ' + F.m(md, 1) + 'm for outlets at the same age (' + F.p(L.rev / md, 0) + ')'; },
+      slow: function () { var rp = B.ramp(m), age = endT - r.ol.firstRev + 1, md = rp.med[age]; return 'Month ' + age + ' sales ' + F.jt(L.rev, 1) + ' vs typical ' + F.jt(md, 1) + ' for outlets at the same age (' + F.p(L.rev / md, 0) + ')'; },
       margin: function () { return 'Margin ' + F.pp(r.dMargin) + ' vs ' + esc(P.baseTag) + ' (' + F.p(r.A.margin, 1) + ' now, ' + F.p(r.B.margin, 1) + ' before)'; },
       salary: function () { return 'Salary ' + F.p(L.salPct, 1) + ' of sales in ' + esc(mon) + ' (flag at ' + F.p(TH.salary, 0) + ')'; },
       rent: function () { return 'Rental ' + F.p(L.rentPct, 1) + ' of sales in ' + esc(mon) + ' (flag above ' + F.p(TH.rent, 0) + ')'; },
       recruit: function () { return 'Recruitment rate ' + F.p(L.rrPct, 1) + ' in ' + esc(mon) + ' (flag below ' + F.p(TH.recruit, 0) + ')'; },
-      lossmaking: function () { return 'PAT Rp ' + F.m(r.patCur, 1) + 'm over ' + esc(P.tag) + ', open ' + r.opMonths + ' months'; },
+      lossmaking: function () { return 'PAT ' + F.jt(r.patCur, 1) + ' over ' + esc(P.tag) + ', open ' + r.opMonths + ' months'; },
       anomaly: function () { return 'Margin ' + F.p(L.margin, 1) + ' in ' + esc(mon) + ' is outside the plausible range; check the source data first'; }
     };
     var order = { h: 0, m: 1, i: 2 };
@@ -205,7 +205,7 @@
       ['Sales', 'rev', function (a) { return a.rev; }, money, 'pct', 1],
       ['Transactions', 'tx', function (a) { return a.tx; }, F.n, 'pct', 1],
       ['Basket size (Rp)', 'tx', function (a) { return a.basket; }, F.n, 'pct', 1],
-      ['Avg staff sales per day (Rp m)', 'ssd', function (a) { return a.ssd; }, function (v) { return F.m(v, 2); }, 'pct', 1],
+      ['Avg staff sales per day (Rp Jt)', 'ssd', function (a) { return a.ssd; }, function (v) { return F.m(v, 2); }, 'pct', 1],
       ['h', 'Profitability'],
       ['Profit (gross, as recorded)', 'pro', function (a) { return a.pro; }, money, 'pct', 1],
       ['Profit margin', 'pro', function (a) { return a.margin; }, pc1, 'pp', 1],
@@ -277,7 +277,7 @@
     /* peers table */
     var pt = peers.rows.map(function (d) {
       var gap = isN(d.mine) && isN(d.med) ? d.mine - d.med : NaN, good = isN(gap) ? gap * d.dir : NaN;
-      var gTxt = !isN(gap) ? '\u2013' : /margin|share|Sales through|Recruitment|% of sales|growth/.test(d.l) ? F.pp(gap) : sgn(gap, d.l.indexOf('(Rp m)') >= 0 ? function (v) { return F.m(v, 2); } : F.n);
+      var gTxt = !isN(gap) ? '\u2013' : /margin|share|Sales through|Recruitment|% of sales|growth/.test(d.l) ? F.pp(gap) : sgn(gap, d.l.indexOf('(Rp Jt)') >= 0 ? function (v) { return F.m(v, 2); } : F.n);
       return '<tr><td class="l">' + esc(d.l) + '</td><td><b>' + (isN(d.mine) ? d.fmt(d.mine) : '\u2013') + '</b></td><td>' + (isN(d.med) ? d.fmt(d.med) : '\u2013') + '</td><td class="' + (good > 0 ? 'pos' : good < 0 ? 'neg' : '') + '">' + gTxt + '</td><td>' + (isN(d.rank) ? '#' + d.rank + ' of ' + (d.n + 1) : '\u2013') + '</td></tr>';
     }).join('');
     var ptbl = '<div class="tw" style="margin-top:0;margin-bottom:12px"><div class="th"><div><h3>Versus peers</h3><p>' + (peers.ok ? peers.n + ' other ' + (r && r.cat === 'new' ? 'new' : 'mature') + ' outlets, ' + esc(peers.scope) + '; median of peers; rank 1 = best (lowest for cost lines).' : 'Fewer than ' + MIN_PEERS + ' comparable outlets in this period, so peer comparison is not shown.') + '</p></div></div>' +
@@ -293,9 +293,9 @@
         '</td><td>' + F.n(x.basket) + '</td><td>' + F.p(x.margin, 1) + '</td><td class="' + F.cls(ph) + '">' + F.n(ph) + '</td><td class="' + F.cls(ph) + '">' + (isN(ph) ? F.m(x.pat) : '\u2013') + '</td><td>' + F.n(h) + '</td><td>' + F.p(x.focus, 1) + '</td><td>' + F.p(x.mem, 0) + '</td><td>' + F.p(x.rr, 0) + '</td><td>' + F.n(x.nm) + '</td><td>' + F.p(x.sal, 1) + '</td><td>' + F.p(x.rent, 1) + '</td><td>' + F.p(x.sl, 1) + '</td></tr>';
     }).join('');
     var dtab = '<div style="margin:4px 0 12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="drToggle">Show 24-month data table</button><button class="btn" id="drCsv"><i class="fas fa-download"></i> Export months</button></div>' +
-      '<div id="drTable" class="hidden"><div class="card" style="margin-bottom:12px"><h4>Sales (Rp m) and PAT (Rp m), last ' + last24.length + ' months to ' + esc(E.monthShort(endT)) + '</h4><div class="ch t"><canvas id="dc1"></canvas></div></div>' +
+      '<div id="drTable" class="hidden"><div class="card" style="margin-bottom:12px"><h4>Sales (Rp Jt) and PAT (Rp Jt), last ' + last24.length + ' months to ' + esc(E.monthShort(endT)) + '</h4><div class="ch t"><canvas id="dc1"></canvas></div></div>' +
       '<div class="grid g2" style="margin-bottom:12px"><div class="card"><h4>PSH (Rp per staff hour) and margin %</h4><div class="ch"><canvas id="dc2"></canvas></div></div><div class="card"><h4>Transactions and basket size</h4><div class="ch"><canvas id="dc3"></canvas></div></div></div>' +
-      '<div class="tw" style="margin-top:0"><div class="th"><div><h3>Monthly detail</h3><p>Amounts in Rp m; YoY compares with the same month a year earlier.</p></div></div><div class="tx" style="max-height:420px"><table class="mt"><thead><tr><th class="l">Month</th><th>Sales</th><th>YoY</th><th>Tx</th><th>YoY</th><th>Basket</th><th>Margin</th><th>PSH</th><th>PAT</th><th>Hours</th><th>Focus %</th><th>Member %</th><th>Recruit %</th><th>New mem</th><th>Salary %</th><th>Rent %</th><th>Stock loss %</th></tr></thead><tbody>' + tb + '</tbody></table></div></div></div>';
+      '<div class="tw" style="margin-top:0"><div class="th"><div><h3>Monthly detail</h3><p>Amounts in Rp Jt; YoY compares with the same month a year earlier.</p></div></div><div class="tx" style="max-height:420px"><table class="mt"><thead><tr><th class="l">Month</th><th>Sales</th><th>YoY</th><th>Tx</th><th>YoY</th><th>Basket</th><th>Margin</th><th>PSH</th><th>PAT</th><th>Hours</th><th>Focus %</th><th>Member %</th><th>Recruit %</th><th>New mem</th><th>Salary %</th><th>Rent %</th><th>Stock loss %</th></tr></thead><tbody>' + tb + '</tbody></table></div></div></div>';
 
     var note = P.baseAvailable ? '' : '<div class="note warn">No prior-year comparison for this period (the workbook\u2019s comparable history starts ' + esc(E.monthLabel(m.baseMin)) + '). Pick a later period to see change and growth.</div>';
     $('drawerHost').innerHTML = shell(ol, tags, sub, bar, '<div class="drnarr">' + narr + '</div>' + note + flagPanel(m, P, r, o, endT, L) + cards + trend + ptable + etable + ptbl + dtab);
