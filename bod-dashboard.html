@@ -205,6 +205,29 @@ tr.drh td{background:#eef2f7;font-weight:700;font-size:10.5px;text-transform:upp
 
 .foot{margin-top:26px;font-size:10.5px;color:var(--mute)}
 @media(max-width:1100px){.lv{grid-template-columns:repeat(2,1fr)}.g4,.g6{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr}.g2{grid-template-columns:1fr}.pat{grid-template-columns:1fr}.pat>div{border:0;padding:6px 0}}
+/* phones / the mobile app: compact header, collapsible outlet filters, one-line scrolling tab bars */
+.mfbtn{display:none}
+@media(max-width:700px){
+.wrap{padding:10px 10px 28px}
+.eyebrow{display:none}
+h1{font-size:21px;margin:0 0 2px}
+.sub{font-size:11px}
+.top{gap:8px}.topr{align-items:stretch;width:100%}
+.pbox{padding:6px 10px}
+.ctl{gap:8px;padding:8px 10px;margin-top:10px}
+.ctl label{flex:1 1 44%}.ctl select{min-width:0;width:100%}
+.ctl #lMonth{flex:1 1 44%}
+.ctl .spacer{display:none}
+.mfbtn{display:inline-flex;flex:1 1 100%;justify-content:center}
+.ctl .mf{display:none}
+.ctl.open .mf{display:flex}
+.tabs,.subtabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar,.subtabs::-webkit-scrollbar{display:none}
+.tab{padding:9px 12px;font-size:13px;flex:0 0 auto}
+.stab{flex:0 0 auto;white-space:nowrap}
+.note{font-size:12px}
+.tw .th{flex-wrap:wrap;gap:8px}
+}
 </style>
 </head>
 <body>
@@ -245,12 +268,13 @@ tr.drh td{background:#eef2f7;font-weight:700;font-size:10.5px;text-transform:upp
     <label>Period<select id="fPeriod"></select></label>
     <label id="lMonth" class="hidden">Month<select id="fMonth"></select></label>
     <label>Level driven by<div class="seg" id="fRate"><button data-v="rev" class="on">Revenue</button><button data-v="tx">Transactions</button></div></label>
+    <button type="button" class="btn sm mfbtn" id="btnMore" aria-expanded="false"><i class="fas fa-sliders"></i> More filters</button>
     <span class="spacer"></span>
-    <label>Outlet type<select id="fType"></select></label>
-    <label>Area manager<select id="fAm"></select></label>
-    <label>Province<select id="fProv"></select></label>
-    <label>Kota<select id="fCity"></select></label>
-    <label>Store size<select id="fSize"></select></label>
+    <label class="mf">Outlet type<select id="fType"></select></label>
+    <label class="mf">Area manager<select id="fAm"></select></label>
+    <label class="mf">Province<select id="fProv"></select></label>
+    <label class="mf">Kota<select id="fCity"></select></label>
+    <label class="mf">Store size<select id="fSize"></select></label>
   </div>
 
   <div id="banner"></div>
