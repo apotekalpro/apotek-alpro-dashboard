@@ -12,7 +12,7 @@
   var B = win.BOD, E = B.E, F = B.F, S = B.S, esc = B.esc, isN = B.isN, U = B.util;
   if (!S.rentBy) S.rentBy = 'month';
   if (!S.rentScope) S.rentScope = 'mature';
-  if (!S.rentStepM) S.rentStepM = 50;        // Jt per month
+  if (!S.rentStepM) S.rentStepM = 5;         // Jt per month (rents in the MASTER run up to about 30 Jt)
   if (!S.rentStepA) S.rentStepA = 0.1;       // Jt per m2 per month
   if (S.rentBand === undefined) S.rentBand = null;
   if (!S.rentY) S.rentY = 'psh';
@@ -30,16 +30,19 @@
   function seg(id, items, cur) { return '<div class="seg" id="' + id + '">' + items.map(function (x) { return '<button data-v="' + x[0] + '"' + (String(cur) === String(x[0]) ? ' class="on"' : '') + '>' + x[1] + '</button>'; }).join('') + '</div>'; }
 
   /* Jt amounts: per month bands in whole Jt, per m2 bands with 2 decimals */
-  function jt(v, byM2) { return isN(v) ? (byM2 ? v.toFixed(2) : String(Math.round(v))) : '\u2013'; }
+  function jt(v, byM2) { return isN(v) ? (byM2 ? v.toFixed(2) : (Math.abs(v - Math.round(v)) < 1e-6 ? String(Math.round(v)) : v.toFixed(1))) : '\u2013'; }
   function makeBands(vals, step, byM2) {
     var v = vals.filter(isN);
     if (!v.length) return [];
     var lo = Math.floor(Math.min.apply(null, v) / step + 1e-9) * step;
-    var cap = Math.ceil(pct(v, 0.95) / step - 1e-9) * step;
+    // Cover the whole range up to the highest rent. Only a far-out value (more than twice the 95th percentile, e.g. a data
+    // entry slip) is folded into an open-ended top band so it cannot stretch the table.
+    var mx = Math.max.apply(null, v), p95 = pct(v, 0.95), trunc = mx > 2 * p95 && mx > 30;
+    var cap = Math.ceil((trunc ? p95 : mx) / step - 1e-9) * step;
     if (cap <= lo) cap = lo + step;
-    var nb = Math.round((cap - lo) / step) + 1, bands = [];
+    var nb = Math.round((cap - lo) / step) + (trunc ? 1 : 0), bands = [];
     for (var i = 0; i < nb; i++) {
-      var a = lo + i * step, b = a + step, last = i === nb - 1;
+      var a = lo + i * step, b = a + step, last = trunc && i === nb - 1;
       bands.push({ i: i, lo: a, hi: last ? Infinity : b, last: last, col: PAL[i % PAL.length],
         label: last ? '\u2265 ' + jt(a, byM2) + ' Jt' : jt(a, byM2) + '\u2013' + jt(b, byM2) + ' Jt' });
     }
@@ -68,7 +71,7 @@
       var bands = makeBands(xs, step, byM2), lo = bands.length ? bands[0].lo : 0;
       hasX.forEach(function (x) { x.bi = bandOf(bands, x.x / scale, step, lo); });
 
-      var stepSeg = byM2 ? seg('rentStep', [[0.05, '0.05'], [0.1, '0.10'], [0.2, '0.20']], S.rentStepA) : seg('rentStep', [[25, '25'], [50, '50'], [100, '100']], S.rentStepM);
+      var stepSeg = byM2 ? seg('rentStep', [[0.05, '0.05'], [0.1, '0.10'], [0.2, '0.20']], S.rentStepA) : seg('rentStep', [[2.5, '2.5'], [5, '5'], [10, '10']], S.rentStepM);
       var ctl = '<div class="geoctl">' + seg('rentBy', [['month', 'Rent per month'], ['m2', 'Rent per m\u00b2']], S.rentBy) +
         seg('rentScope', [['mature', 'Mature outlets only'], ['all', 'All trading outlets']], S.rentScope) +
         '<label>Band width (Jt' + (byM2 ? ' per m\u00b2' : '') + ') ' + stepSeg + '</label></div>';
