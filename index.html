@@ -460,7 +460,10 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-    </style>
+        #bodFrameBox.bod-full{position:fixed;inset:0;z-index:9999;height:100vh!important;min-height:0!important;margin:0;border-radius:0;background:#fff;padding-top:env(safe-area-inset-top)}
+        #bodFrameBox.bod-full iframe{height:100%}
+        #bodFullClose{display:none;position:absolute;right:10px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:10000;width:44px;height:44px;border-radius:50%;border:0;background:#1e293b;color:#fff;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+</style>
 </head>
 <body>
     <!-- Login Page -->
@@ -4154,12 +4157,12 @@
                             </h2>
                             <p class="text-gray-600">Outlet performance, growth levels, PSH &amp; PAT for the Board. Restricted access.</p>
                         </div>
-                        <button onclick="openInNewTab('bod-dashboard.html')" class="btn-primary text-white px-4 py-2 rounded-lg">
+                        <button id="bodFullBtn" onclick="openBodFull()" class="btn-primary text-white px-4 py-2 rounded-lg">
                             <i class="fas fa-external-link-alt mr-2"></i>
                             Open full screen
                         </button>
                     </div>
-                    <div class="iframe-container" style="height: calc(100vh - 220px); min-height: 640px;">
+                    <div id="bodFrameBox" class="iframe-container" style="height: calc(100vh - 220px); min-height: 640px;">
                         <iframe data-src="bod-dashboard.html" class="iframe-full lazy-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"></iframe>
                     </div>
                 </div>
@@ -9777,6 +9780,32 @@
         // Utility Functions
         function openInNewTab(url) {
             window.open(url, '_blank');
+        }
+
+        // BOD "Open full screen". In a browser it opens a new tab. In the Android app (Capacitor WebView) new windows are
+        // not reliable, so the BOD frame itself expands to cover the screen, with a Close button. Same canAccessBod() gate.
+        function isNativeApp() {
+            try { return !!(window.Capacitor && (window.Capacitor.isNativePlatform ? window.Capacitor.isNativePlatform() : window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')); }
+            catch (e) { return false; }
+        }
+        function openBodFull() {
+            if (typeof canAccessBod === 'function' && !canAccessBod()) return;
+            if (!isNativeApp()) { openInNewTab('bod-dashboard.html'); return; }
+            var box = document.getElementById('bodFrameBox');
+            if (!box) return;
+            var on = box.classList.toggle('bod-full');
+            document.body.style.overflow = on ? 'hidden' : '';
+            var b = document.getElementById('bodFullBtn');
+            if (b) b.lastChild.textContent = on ? ' Close full screen' : ' Open full screen';
+            var x = document.getElementById('bodFullClose');
+            if (on && !x) {
+                x = document.createElement('button');
+                x.id = 'bodFullClose'; x.type = 'button'; x.setAttribute('aria-label', 'Close full screen');
+                x.innerHTML = '<i class="fas fa-times"></i>';
+                x.onclick = openBodFull;
+                box.appendChild(x);
+            }
+            if (x) x.style.display = on ? 'flex' : 'none';
         }
 
         // Gateway silent sign-in: right after a successful dashboard login, ask the gateway Worker for tokens with the

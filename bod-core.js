@@ -216,6 +216,7 @@
       var b = e.target.closest('button'); if (!b) return; S.rate = b.dataset.v; S.level = null;
       [].forEach.call($('fRate').children, function (x) { x.classList.toggle('on', x === b); }); B.render();
     };
+    $('btnMore').onclick = function () { var c = $('controls'), o = c.classList.toggle('open'); this.setAttribute('aria-expanded', o ? 'true' : 'false'); this.lastChild.textContent = o ? ' Fewer filters' : ' More filters'; };
     $('btnRefresh').onclick = function () { B.reload(); };
     $('btnNotes').onclick = function () { B.openNotes(); };
     $('tabs').onclick = function (e) { var b = e.target.closest('.tab'); if (!b) return; var g = GROUPS.filter(function (x) { return x.id === b.dataset.g; })[0]; S.tab = S.last[g.id] || g.subs[0][0]; S.level = null; S.sort = null; B.render(); };
@@ -305,6 +306,8 @@
       return '<button class="stab' + (on ? ' on' : '') + '" data-t="' + t[0] + '"><i class="fas ' + t[2] + '"></i>' + t[1] + bg + '</button>';
     }).join('');
     $('scope').innerHTML = scopeStrip(ctx);
+    // keep the active tab in view in the one-line scrolling tab bars (horizontal only, never moves the page)
+    try { ['tabs', 'subtabs'].forEach(function (id) { var c = $(id), on = c.querySelector('.on'); if (on && c.scrollWidth > c.clientWidth) c.scrollLeft = on.offsetLeft - (c.clientWidth - on.offsetWidth) / 2; }); } catch (e) { /* cosmetic */ }
     var bn = '';
     if (!P.cur.length) bn = '<div class="note warn"><b>No data for this selection.</b> The workbook has no months in the chosen year/period yet.</div>';
     else if (!P.baseAvailable) bn = '<div class="note warn"><b>No prior-year comparison.</b> The workbook\'s comparable history starts ' + esc(E.monthLabel(B.model.baseMin)) + ' (the first month looks like a part-month), so ' + esc(P.baseTag) + ' cannot be built for this selection. Totals are shown; growth levels need a period with prior-year months in the workbook (e.g. FY2025 Half-year 2, or anything in FY2026).</div>' + (P.startLimited ? '<div class="note"><b>' + esc(P.tag) + ' covers ' + esc(E.monthLabel(P.cur[0])) + ' \u2013 ' + esc(E.monthLabel(P.cur[P.cur.length - 1])) + ' only</b>: the workbook has no reliable data before ' + esc(E.monthLabel(B.model.baseMin)) + '.</div>' : '');
