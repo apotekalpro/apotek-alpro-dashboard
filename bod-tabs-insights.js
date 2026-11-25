@@ -79,14 +79,14 @@
         { k: 'lv', label: 'Level', get: function (r) { return r.cat === 'lfl' ? (r.dir === 'down' ? -r.level : r.level) : null; }, fmt: function (r) { return r.cat === 'lfl' ? (r.dir === 'down' ? '<span class="lvl" style="--c:var(--l' + r.level + ')">\u2193L' + r.level + '</span>' : '<span class="lvl" style="--c:var(--up' + r.level + ')">\u2191L' + r.level + '</span>') : '<span class="pill">New</span>'; } },
         { k: 'g', label: 'Sales change', get: function (r) { return r.gRev; }, fmt: function (r) { return isN(r.gRev) ? F.p(r.gRev, 1, true) : '\u2013'; }, tdc: function (r) { return F.cls(r.gRev); } },
         { k: 'gt', label: 'Tx change', get: function (r) { return r.gTx; }, fmt: function (r) { return isN(r.gTx) ? F.p(r.gTx, 1, true) : '\u2013'; }, tdc: function (r) { return F.cls(r.gTx); } },
-        { k: 'rv', label: E.monthShort(endT) + ' sales', sub: 'Rp m', get: function (r) { return r.last.rev; }, fmt: function (r) { return F.m(r.last.rev); } },
+        { k: 'rv', label: E.monthShort(endT) + ' sales', sub: 'Rp Jt', get: function (r) { return r.last.rev; }, fmt: function (r) { return F.m(r.last.rev); } },
         { k: 'mg', label: 'Margin', get: function (r) { return r.last.margin; }, fmt: function (r) { return F.p(r.last.margin, 1); } },
         { k: 'sa', label: 'Salary', sub: '% sales', get: function (r) { return r.last.salPct; }, fmt: function (r) { return F.p(r.last.salPct, 1); } },
         { k: 'rn', label: 'Rental', sub: '% sales', get: function (r) { return r.last.rentPct; }, fmt: function (r) { return F.p(r.last.rentPct, 1); }, tdc: function (r) { return isN(r.last.rentPct) && r.last.rentPct > TH.rent ? 'neg' : ''; } },
         { k: 'sl', label: 'Stock loss', sub: '% sales', get: function (r) { return r.last.slPct; }, fmt: function (r) { return F.p(r.last.slPct, 1); } },
         { k: 'rr', label: 'Recruit', sub: 'rate', get: function (r) { return r.last.rrPct; }, fmt: function (r) { return F.p(r.last.rrPct, 0); } },
         { k: 'pl', label: 'PSH', sub: 'Rp/hr', get: function (r) { return r.pshLast; }, fmt: function (r) { return F.n(r.pshLast); }, tdc: function (r) { return F.cls(r.pshLast); } },
-        { k: 'tl', th: 'pt', cls: 'pt', label: E.monthShort(endT) + ' PAT', sub: 'Rp k', get: function (r) { return r.patLast; }, fmt: function (r) { return r.last.patOM ? F.n(r.patLast / 1e3) : '\u2013'; }, tdc: function (r) { return F.cls(r.patLast); } }
+        { k: 'tl', th: 'pt', cls: 'pt', label: E.monthShort(endT) + ' PAT', sub: 'Rp Jt', get: function (r) { return r.patLast; }, fmt: function (r) { return r.last.patOM ? F.m(r.patLast, 2) : '\u2013'; }, tdc: function (r) { return F.cls(r.patLast); } }
       ];
       var tbl = B.table('tbl-watch', shown, cols, { defSort: 'score', defDir: -1 });
       view.innerHTML = '<div class="note"><b>Watchlist: outlets that need intervention.</b> Each outlet is checked against ' + DEFS.length + ' rules on ' + E.monthLabel(endT) + ' data and ' + esc(P.tag) + ' vs ' + esc(P.baseTag) + '. Priority score = 3 per high flag, 2 per medium, 1 per info. ' +
@@ -161,7 +161,7 @@
       var dcols = [
         { k: 'k', label: dim[0], left: true, get: function (x) { return x.k; }, fmt: function (x) { return '<b>' + esc(x.k) + '</b>'; } },
         c('n', 'Outlets', '', function (x) { return x.n; }, function (x) { return x.n; }),
-        c('rev', 'Sales', 'Rp b', function (x) { return x.g.a.rev; }, function (x) { return (x.g.a.rev / 1e9).toFixed(2); }),
+        c('rev', 'Sales', 'Rp M', function (x) { return x.g.a.rev; }, function (x) { return (x.g.a.rev / 1e9).toFixed(2); }),
         c('lr', 'LFL sales', 'change', function (x) { return x.g.lRev; }, function (x) { return F.p(x.g.lRev, 1, true); }, function (x) { return F.cls(x.g.lRev); }),
         c('lt', 'LFL tx', 'change', function (x) { return x.g.lTx; }, function (x) { return F.p(x.g.lTx, 1, true); }, function (x) { return F.cls(x.g.lTx); }),
         c('mg', 'Margin', '', function (x) { return x.g.a.margin; }, function (x) { return F.p(x.g.a.margin, 1); }),
@@ -170,8 +170,8 @@
         c('fp', 'Focus', '% sales', function (x) { return x.g.a.focusPct; }, function (x) { return F.p(x.g.a.focusPct, 1); }),
         c('rr', 'Recruit', 'rate', function (x) { return x.g.a.rrPct; }, function (x) { return F.p(x.g.a.rrPct, 0); }),
         c('ps', 'PSH', 'Rp/hr', function (x) { return x.g.a.psh; }, function (x) { return F.n(x.g.a.psh); }, function (x) { return F.cls(x.g.a.psh); }),
-        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: 'Rp m', get: function (x) { return x.g.a.pat; }, fmt: function (x) { return F.m(x.g.a.pat); }, tdc: function (x) { return F.cls(x.g.a.pat); } },
-        { k: 'dpat', th: 'pt', cls: 'pt', label: 'PAT change', sub: 'Rp m', get: function (x) { return x.g.dPat; }, fmt: function (x) { return hb ? F.m(x.g.dPat) : '\u2013'; }, tdc: function (x) { return F.cls(x.g.dPat); } },
+        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: 'Rp Jt', get: function (x) { return x.g.a.pat; }, fmt: function (x) { return F.m(x.g.a.pat); }, tdc: function (x) { return F.cls(x.g.a.pat); } },
+        { k: 'dpat', th: 'pt', cls: 'pt', label: 'PAT change', sub: 'Rp Jt', get: function (x) { return x.g.dPat; }, fmt: function (x) { return hb ? F.m(x.g.dPat) : '\u2013'; }, tdc: function (x) { return F.cls(x.g.dPat); } },
         c('ng', 'Negative PAT', 'outlets', function (x) { return x.g.negPat; }, function (x) { return x.g.negPat; }, function (x) { return x.g.negPat ? 'neg' : ''; }),
         c('dn', 'Declining', '% of LFL', function (x) { return x.lf ? x.dn / x.lf : NaN; }, function (x) { return x.lf ? F.p(x.dn / x.lf, 0) : '\u2013'; })
       ];
@@ -181,7 +181,7 @@
       view.innerHTML = '<div class="note"><b>Financial growth.</b> Sales, transactions, profit, PAT and margin for ' + esc(P.label) + ', each against ' + esc(P.baseTag) + '. Totals include every outlet that traded; <i>like-for-like</i> rows only count outlets with a full prior-year base, so new openings do not flatter growth.</div>' +
         '<div class="grid g2" style="align-items:start">' + mt +
         '<div class="grid" style="gap:12px"><div class="card"><h4>Year-on-year growth by month</h4><div class="ch"><canvas id="gy"></canvas></div><div class="ks">Same-month growth, all trading outlets (includes new openings). Sales, transactions and profit.</div></div>' +
-        '<div class="card"><h4>PAT (Rp m) and margin %, by month</h4><div class="ch"><canvas id="gp"></canvas></div></div></div></div>' +
+        '<div class="card"><h4>PAT (Rp Jt) and margin %, by month</h4><div class="ch"><canvas id="gp"></canvas></div></div></div></div>' +
         '<div class="tw"><div class="th"><div><h3>Growth by ' + dim[0].toLowerCase() + '</h3><p>Where the growth and the leakage sit. Rows are sortable; PAT columns are on the right.</p></div><div style="display:flex;gap:10px;align-items:center"><label style="font-size:11px;color:var(--ink2);font-weight:600">Group by <select id="dimSel" style="border:1px solid var(--line);border-radius:6px;padding:5px 8px;margin-left:4px">' + dimSel + '</select></label><button class="btn" id="exp"><i class="fas fa-download"></i> Export</button></div></div>' + dtbl.html + '</div>';
       view.querySelector('#dimSel').onchange = function (e) { S.dim = e.target.value; S.sort = null; B.render(); };
       var t = view.querySelector('#tbl-dim'); if (t) { t.querySelectorAll('th').forEach(function (th) { th.onclick = function () { var k = th.dataset.k, cur = S.sort && S.sort.id === 'tbl-dim' ? S.sort : { k: 'rev', dir: -1 }; S.sort = { id: 'tbl-dim', k: k, dir: cur.k === k ? -cur.dir : 1 }; B.render(); }; }); t.querySelectorAll('tbody tr').forEach(function (tr) { tr.style.cursor = 'default'; }); }
@@ -200,7 +200,7 @@
         { label: 'Profit', data: yy('pro'), borderColor: '#0f7a55', backgroundColor: '#0f7a55', tension: .25, pointRadius: 2 }] },
         options: { plugins: leg, scales: { x: tick, y: { ticks: { font: { size: 9 }, callback: function (v) { return v + '%'; } } } } } });
       B.chart('gp', { data: { labels: lab, datasets: [
-        { type: 'bar', label: 'PAT (Rp m)', data: ts.map(function (x) { return isN(x.pat) ? x.pat / 1e6 : null; }), backgroundColor: ts.map(function (x) { return x.pat < 0 ? '#e7a3a8' : '#a9d3bd'; }), yAxisID: 'y' },
+        { type: 'bar', label: 'PAT (Rp Jt)', data: ts.map(function (x) { return isN(x.pat) ? x.pat / 1e6 : null; }), backgroundColor: ts.map(function (x) { return x.pat < 0 ? '#e7a3a8' : '#a9d3bd'; }), yAxisID: 'y' },
         { type: 'line', label: 'Margin %', data: ts.map(function (x) { return isN(x.margin) ? x.margin * 100 : null; }), borderColor: '#16436f', backgroundColor: '#16436f', tension: .25, yAxisID: 'y1', pointRadius: 2 }] },
         options: { plugins: leg, scales: { x: tick, y: { position: 'left', ticks: tick.ticks }, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: tick.ticks } } } });
     }
@@ -223,14 +223,14 @@
       var cols = [
         { k: 'k', label: 'Area manager', left: true, get: function (x) { return x.k; }, fmt: function (x) { return '<b>' + esc(x.k) + '</b>'; } },
         c('n', 'Outlets', '', function (x) { return x.n; }, function (x) { return x.n; }),
-        c('rev', 'Sales', 'Rp b', function (x) { return x.g.a.rev; }, function (x) { return (x.g.a.rev / 1e9).toFixed(2); }),
+        c('rev', 'Sales', 'Rp M', function (x) { return x.g.a.rev; }, function (x) { return (x.g.a.rev / 1e9).toFixed(2); }),
         c('lr', 'LFL sales', 'change', function (x) { return x.g.lRev; }, function (x) { return F.p(x.g.lRev, 1, true); }, function (x) { return F.cls(x.g.lRev); }),
         c('lt', 'LFL tx', 'change', function (x) { return x.g.lTx; }, function (x) { return F.p(x.g.lTx, 1, true); }, function (x) { return F.cls(x.g.lTx); }),
         c('mg', 'Margin', '', function (x) { return x.g.a.margin; }, function (x) { return F.p(x.g.a.margin, 1); }),
         c('dm', 'LFL margin', 'change', function (x) { return x.g.lMargin; }, function (x) { return F.pp(x.g.lMargin); }, function (x) { return F.cls(x.g.lMargin); }),
         c('ps', 'PSH', 'Rp/hr', function (x) { return x.g.a.psh; }, function (x) { return F.n(x.g.a.psh); }, function (x) { return F.cls(x.g.a.psh); }),
-        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: 'Rp m', get: function (x) { return x.g.a.pat; }, fmt: function (x) { return F.m(x.g.a.pat); }, tdc: function (x) { return F.cls(x.g.a.pat); } },
-        { k: 'dpat', th: 'pt', cls: 'pt', label: 'PAT change', sub: 'Rp m', get: function (x) { return x.g.dPat; }, fmt: function (x) { return hb ? F.m(x.g.dPat) : '\u2013'; }, tdc: function (x) { return F.cls(x.g.dPat); } },
+        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: 'Rp Jt', get: function (x) { return x.g.a.pat; }, fmt: function (x) { return F.m(x.g.a.pat); }, tdc: function (x) { return F.cls(x.g.a.pat); } },
+        { k: 'dpat', th: 'pt', cls: 'pt', label: 'PAT change', sub: 'Rp Jt', get: function (x) { return x.g.dPat; }, fmt: function (x) { return hb ? F.m(x.g.dPat) : '\u2013'; }, tdc: function (x) { return F.cls(x.g.dPat); } },
         c('dn', 'Declining', '% of LFL', function (x) { return x.lf ? x.dn / x.lf : NaN; }, function (x) { return x.lf ? F.p(x.dn / x.lf, 0) : '\u2013'; }, function (x) { return x.lf && x.dn / x.lf >= 0.5 ? 'neg' : ''; }),
         c('deep', 'Level 4\u20135', 'outlets', function (x) { return x.deep; }, function (x) { return x.deep; }, function (x) { return x.deep ? 'neg' : ''; }),
         c('ng', 'Negative PAT', 'outlets', function (x) { return x.g.negPat; }, function (x) { return x.g.negPat; }, function (x) { return x.g.negPat ? 'neg' : ''; }),
@@ -263,14 +263,14 @@
       var m = ctx.m, P = ctx.P, days = P.cur.reduce(function (s, t) { return s + U.daysIn(t); }, 0);
       var pool = ctx.rowsF.filter(function (r) { return r.cat !== 'inactive' && r.A.patOM >= Math.min(3, P.cur.length) && isN(r.A.psh) && r.opMonths >= 12; });
       var drivers = [
-        ['Sales per day (Rp m)', function (r) { return r.A.rev / days / 1e6; }, function (v) { return F.n(v, 2); }, 'Scale'],
+        ['Sales per day (Rp Jt)', function (r) { return r.A.rev / days / 1e6; }, function (v) { return F.n(v, 2); }, 'Scale'],
         ['Transactions per day', function (r) { return r.A.tx / days; }, function (v) { return F.n(v, 0); }, 'Traffic'],
         ['Basket size (Rp)', function (r) { return r.A.basket; }, F.n, 'Ticket'],
         ['Margin', function (r) { return r.A.margin; }, function (v) { return F.p(v, 1); }, 'Mix / pricing'],
         ['Focus product share', function (r) { return r.A.focusPct; }, function (v) { return F.p(v, 1); }, 'Mix / pricing'],
         ['Sales through members', function (r) { return r.A.memPct; }, function (v) { return F.p(v, 1); }, 'Loyalty'],
         ['Recruitment rate', function (r) { return r.A.rrPct; }, function (v) { return F.p(v, 1); }, 'Loyalty'],
-        ['Staff sales per day (Rp m)', function (r) { return r.A.ssd / 1e6; }, function (v) { return F.n(v, 2); }, 'Productivity'],
+        ['Staff sales per day (Rp Jt)', function (r) { return r.A.ssd / 1e6; }, function (v) { return F.n(v, 2); }, 'Productivity'],
         ['Salary % of sales', function (r) { return r.A.salPct; }, function (v) { return F.p(v, 1); }, 'Cost'],
         ['Rental % of sales', function (r) { return r.A.rentPct; }, function (v) { return F.p(v, 1); }, 'Cost'],
         ['Stock loss % of sales', function (r) { return r.A.slPct; }, function (v) { return F.p(v, 2); }, 'Cost']

@@ -55,7 +55,7 @@
       var plotN = plotted.length;
       var cards = '<div class="lv" id="quadLv" style="grid-template-columns:repeat(5,1fr)">' + ORDER.map(function (k) {
         return '<button class="lc' + (S.quadCls === k ? ' on' : '') + '" data-cls="' + k + '" style="--c:' + Q[k].col + '"><div class="l">' + Q[k].t.toUpperCase() + '</div><div class="d">' + Q[k].d + '</div>' +
-          '<div class="big">' + cnt[k] + '<small>outlets' + (k !== 'np' && plotN ? ' \u00b7 ' + F.p(cnt[k] / plotN, 0) : '') + '</small></div><div class="f"><b>' + F.m(pat[k], 1) + '</b><span>PAT Rp m, ' + esc(P.tag) + '</span></div></button>';
+          '<div class="big">' + cnt[k] + '<small>outlets' + (k !== 'np' && plotN ? ' \u00b7 ' + F.p(cnt[k] / plotN, 0) : '') + '</small></div><div class="f"><b>' + F.m(pat[k], 1) + '</b><span>PAT Rp Jt, ' + esc(P.tag) + '</span></div></button>';
       }).join('') + '</div>';
 
       /* ---------- chart card ---------- */
@@ -72,9 +72,9 @@
         { k: 'q', label: 'Quadrant', left: true, get: function (w) { return ORDER.indexOf(w.k); }, fmt: function (w) { return pill(w.k) + (w.why ? '<small style="display:block;color:var(--mute);white-space:normal">' + esc(w.why) + '</small>' : ''); } },
         { k: 'x', label: 'Growth', sub: rateName + ' \u00b7 ' + esc(P.tag), get: function (w) { return w.x; }, fmt: function (w) { return sgnP(w.x); }, tdc: function (w) { return F.cls(w.x); } },
         { k: 'y', label: 'PAT margin', sub: 'of sales', get: function (w) { return w.y; }, fmt: function (w) { return F.p(w.y, 2); }, tdc: function (w) { return F.cls(w.y); } },
-        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: 'Rp m', get: function (w) { return w.pat; }, fmt: function (w) { return '<b>' + F.m(w.pat, 1) + '</b>'; }, tdc: function (w) { return F.cls(w.pat); } },
+        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: 'Rp Jt', get: function (w) { return w.pat; }, fmt: function (w) { return '<b>' + F.m(w.pat, 1) + '</b>'; }, tdc: function (w) { return F.cls(w.pat); } },
         { k: 'psh', label: 'PSH', sub: 'Rp/hr', get: function (w) { return w.psh; }, fmt: function (w) { return F.n(w.psh); }, tdc: function (w) { return F.cls(w.psh); } },
-        { k: 'rev', label: 'Sales', sub: 'Rp m', get: function (w) { return w.rev; }, fmt: function (w) { return F.m(w.rev, 1); } },
+        { k: 'rev', label: 'Sales', sub: 'Rp Jt', get: function (w) { return w.rev; }, fmt: function (w) { return F.m(w.rev, 1); } },
         { k: 'dx', label: 'Distance to split', sub: 'growth, pts', get: function (w) { return isN(w.x) ? (w.x - split) * 100 : NaN; }, fmt: function (w) { return isN(w.x) ? ((w.x - split) * 100 >= 0 ? '+' : '\u2212') + Math.abs((w.x - split) * 100).toFixed(1) : '\u2013'; } }
       ];
       var list = recs.filter(function (x) { return !S.quadCls || x.k === S.quadCls; });
@@ -135,7 +135,7 @@
         plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
           tooltip: { callbacks: { title: function (it) { return it[0].raw.w.ol.name; },
             label: function (c) { var w = c.raw.w; return w.ol.code + ' \u00b7 ' + w.ol.type + ' \u00b7 ' + w.ol.am; },
-            afterLabel: function (c) { var w = c.raw.w; return ['Growth ' + sgnP(w.x) + ' \u00b7 PAT margin ' + F.p(w.y, 2), 'PAT Rp ' + F.m(w.pat, 1) + 'm \u00b7 sales Rp ' + F.m(w.rev, 0) + 'm', Q[w.k].t]; } } } },
+            afterLabel: function (c) { var w = c.raw.w; return ['Growth ' + sgnP(w.x) + ' \u00b7 PAT margin ' + F.p(w.y, 2), 'PAT ' + F.jt(w.pat, 1) + ' \u00b7 sales ' + F.jt(w.rev, 0) + '', Q[w.k].t]; } } } },
         scales: {
           x: { min: xr[0], max: xr[1], title: { display: true, text: 'Comparable ' + rateName + ' growth \u00b7 ' + P.tag + ' vs ' + P.baseTag, font: { size: 11 } }, ticks: { font: { size: 10 }, stepSize: xr[1] - xr[0] > 80 ? 20 : 10, callback: function (v) { return Math.round(v) + '%'; } }, grid: { display: false } },
           y: { min: yr[0], max: yr[1], title: { display: true, text: 'Estimated PAT margin', font: { size: 11 } }, ticks: { font: { size: 10 }, stepSize: 5, callback: function (v) { return Math.round(v) + '%'; } }, grid: { display: false } } } } });

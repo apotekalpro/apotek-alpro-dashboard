@@ -13,13 +13,21 @@
   var F = {
     n: function (v, d) { return isN(v) ? (d ? v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) : nf0.format(v)) : '\u2013'; },
     m: function (v, d) { return isN(v) ? (v / 1e6).toLocaleString('en-US', { minimumFractionDigits: d == null ? 1 : d, maximumFractionDigits: d == null ? 1 : d }) : '\u2013'; },
+    // Rupiah with Indonesian units: M = Milyar (billion), Jt = Juta (million); below a million the full amount.
     rp: function (v, d) {
       if (!isN(v)) return '\u2013'; var a = Math.abs(v), s = v < 0 ? '\u2212' : '';
       d = d == null ? 2 : d;
-      if (a >= 1e9) return s + 'Rp ' + (a / 1e9).toFixed(d) + 'b';
-      if (a >= 1e6) return s + 'Rp ' + (a / 1e6).toFixed(1) + 'm';
+      if (a >= 1e9) return s + 'Rp ' + (a / 1e9).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) + ' M';
+      if (a >= 1e6) return s + 'Rp ' + (a / 1e6).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' Jt';
       return s + 'Rp ' + nf0.format(a);
     },
+    // Always in Jt (million Rupiah), e.g. 'Rp 12.5 Jt'; for per-outlet / per-m2 amounts that stay in the millions.
+    jt: function (v, d) {
+      if (!isN(v)) return '\u2013'; d = d == null ? 1 : d;
+      return (v < 0 ? '\u2212' : '') + 'Rp ' + Math.abs(v / 1e6).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) + ' Jt';
+    },
+    // Signed change in Jt, e.g. '+Rp 1.2 Jt'
+    jts: function (v, d) { return !isN(v) ? '\u2013' : (v > 0 ? '+' : '') + F.jt(v, d); },
     p: function (v, d, sign) {
       if (!isN(v)) return '\u2013'; d = d == null ? 1 : d; var x = v * 100;
       var t = Math.abs(x).toFixed(d); var neg = x < 0 && +t !== 0;
@@ -247,7 +255,7 @@
     { id: 'fin', label: 'Financial performance', icon: 'fa-chart-line', hint: 'Growth, profit, PSH and what drives them',
       subs: [['growth', 'Growth scorecard', 'fa-chart-line'], ['pat', 'Profitability (PAT)', 'fa-sack-dollar'], ['psh', 'PSH ranking', 'fa-ranking-star'], ['quad', 'Growth vs profit', 'fa-chart-scatter'], ['win', 'Winning formula', 'fa-trophy']] },
     { id: 'seg', label: 'Segments & geography', icon: 'fa-layer-group', hint: 'Where performance differs: area manager, location, store size',
-      subs: [['am', 'Area managers', 'fa-user-tie'], ['geo', 'Geographic', 'fa-map-location-dot'], ['size', 'Store size', 'fa-ruler-combined']] }
+      subs: [['am', 'Area managers', 'fa-user-tie'], ['geo', 'Geographic', 'fa-map-location-dot'], ['size', 'Store size', 'fa-ruler-combined'], ['rent', 'Rent vs profit', 'fa-store']] }
   ];
   B.groupOf = function (tab) { return GROUPS.filter(function (g) { return g.subs.some(function (s) { return s[0] === tab || (s[3] || []).indexOf(tab) >= 0; }); })[0] || GROUPS[0]; };
   S.last = S.last || {};
@@ -304,7 +312,7 @@
     if (B.source === 'snapshot') bn += '<div class="note warn"><b>Offline snapshot.</b> Live workbook unreachable; showing data saved ' + esc(B.fetchedAt.toISOString().slice(0, 16).replace('T', ' ')) + '.</div>';
     $('banner').innerHTML = bn;
     $('foot').innerHTML = 'Source: Google Sheet (MASTER, Exec Dashboard rows 9\u201325) \u00b7 loaded ' + B.fetchedAt.toLocaleString() + ' (' + B.source + ') \u00b7 latest month: ' + E.monthLabel(B.model.latest) +
-      ' \u00b7 PAT = PSH \u00d7 working hours per outlet-month \u00b7 amounts in Rupiah.';
+      ' \u00b7 PAT = PSH \u00d7 working hours per outlet-month \u00b7 amounts in Rupiah: Jt = Juta (million), M = Milyar (billion).';
     var t = B.tabs[S.tab] || B.tabs.overview;
     var v = $('view'); v.innerHTML = '';
     t.render(ctx, v);
@@ -401,7 +409,7 @@
       var cl = function (d) { return isN(d) && Math.abs(d) > 0.005 ? ' class="neg"' : ''; };
       rows += '<tr><td>' + E.monthShort(t) + '</td><td>' + (A.rev / 1e9).toFixed(2) + '</td><td>' + (isN(xr) ? (xr / 1e9).toFixed(2) : '\u2013') + '</td><td' + cl(dr) + '>' + (isN(dr) ? F.pp(dr) : '\u2013') + '</td><td>' + (A.pro / 1e9).toFixed(2) + '</td><td>' + (isN(xp) ? (xp / 1e9).toFixed(2) : '\u2013') + '</td><td' + cl(dp) + '>' + (isN(dp) ? F.pp(dp) : '\u2013') + '</td></tr>';
     });
-    return '<div class="card reco" style="margin-bottom:12px"><h4>Data check: MASTER rebuilt vs Exec Dashboard (Rp b)</h4>' +
+    return '<div class="card reco" style="margin-bottom:12px"><h4>Data check: MASTER rebuilt vs Exec Dashboard (Rp M)</h4>' +
       '<div class="ks" style="margin:2px 0 8px">Outlet rows in MASTER summed per month against the company rows the sheet publishes. ' + (big ? '<b>' + big + ' of ' + T.length + ' months differ by more than 0.5%</b>. Older sales gaps are consistent with closed outlets that were removed from MASTER but remain in the Exec rows; the profit gaps cannot be explained from the sheet alone, so please confirm how the Exec Profit row is produced. ' : 'All months agree within 0.5%. ') +
       'Dashboard outlet-level views, LFL growth and PAT use MASTER only; the growth scorecard shows the Exec-based company growth next to the MASTER-based one when no filter is set.</div>' +
       '<div style="overflow:auto"><table><thead><tr><th>Month</th><th>Sales MASTER</th><th>Sales Exec</th><th>Diff</th><th>Profit MASTER</th><th>Profit Exec</th><th>Diff</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';

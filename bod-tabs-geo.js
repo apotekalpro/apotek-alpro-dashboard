@@ -74,7 +74,7 @@
     var hiSpd = isN(z.spd) && isN(med.spd) && z.spd >= med.spd, psh = z.g.a.psh, rel = isN(cg) && cg > 0;
     var lagLine = rel ? cg * TH.lagMult : 0.05, winLine = rel ? Math.max(cg * TH.winMult, 0.10) : 0.10;
     z.white = z.n <= TH.whiteMax && isN(z.spd) && isN(med.spd) && z.spd >= TH.whiteSpd * med.spd && isN(z.zg) && z.zg >= lagLine;
-    var sp = isN(z.spd) ? 'Rp ' + (z.spd / 1e6).toFixed(2) + 'm' : 'n/a', md = isN(med.spd) ? 'Rp ' + (med.spd / 1e6).toFixed(2) + 'm' : 'n/a';
+    var sp = isN(z.spd) ? F.jt(z.spd, 2) + '' : 'n/a', md = isN(med.spd) ? F.jt(med.spd, 2) + '' : 'n/a';
     var cmp = rel ? ' vs ' + F.p(cg, 1) + ' for the company' : '';
     var cn = z.recent > 0 ? ' ' + z.recent + ' outlet(s) opened here in the last 12 months, so check cannibalisation before adding more.' : '';
     if (z.nL < TH.minLfl) { z.v = 'few'; z.why = 'Only ' + z.nL + ' like-for-like outlet(s); at least ' + TH.minLfl + ' are needed for a reliable read.'; return; }
@@ -115,12 +115,12 @@
         '<td class="' + F.cls(r.rate) + '">' + (r.cat === 'lfl' ? F.p(r.rate, 1, true) : '\u2013') + '</td><td>' + F.m(spd, 2) + '</td><td class="' + F.cls(r.A.psh) + '">' + F.n(r.A.psh) + '</td></tr>';
     }).join('');
     return '<tr class="geo-det"><td colspan="' + ncol + '"><div class="geo-why"><b>' + esc(V[z.v].t) + '.</b> ' + esc(z.why) + '</div>' +
-      '<table class="geo-sub"><thead><tr><th class="l">Outlet</th><th class="l">Type</th><th class="l">AM</th><th>Opened</th><th>Age (months)</th><th>Status</th><th>' + (ctx.rate === 'tx' ? 'Tx' : 'Sales') + ' growth</th><th>Sales / day (Rp m)</th><th>PSH (Rp/hr)</th></tr></thead><tbody>' + tr + '</tbody></table></td></tr>';
+      '<table class="geo-sub"><thead><tr><th class="l">Outlet</th><th class="l">Type</th><th class="l">AM</th><th>Opened</th><th>Age (months)</th><th>Status</th><th>' + (ctx.rate === 'tx' ? 'Tx' : 'Sales') + ' growth</th><th>Sales / day (Rp Jt)</th><th>PSH (Rp/hr)</th></tr></thead><tbody>' + tr + '</tbody></table></td></tr>';
   }
 
   /* ---------- what the winning zones do differently ---------- */
   var DRV = [
-    ['Sales per outlet per day (Rp m)', function (z) { return z.spd / 1e6; }, function (v) { return F.n(v, 2); }],
+    ['Sales per outlet per day (Rp Jt)', function (z) { return z.spd / 1e6; }, function (v) { return F.n(v, 2); }],
     ['Transactions per outlet per day', function (z) { return z.tpd; }, function (v) { return F.n(v, 0); }],
     ['Basket size (Rp)', function (z) { return z.g.la.basket; }, F.n],
     ['Margin', function (z) { return z.g.la.margin; }, function (v) { return F.p(v, 1); }],
@@ -183,14 +183,14 @@
         c('n', 'Outlets', 'trading', function (z) { return z.n; }, function (z) { return z.n; }),
         c('nl', 'Mature', 'like-for-like', function (z) { return z.nL; }, function (z) { return z.nL; }),
         c('rc', 'Opened', 'last 12 mo', function (z) { return z.recent; }, function (z) { return z.recent || '\u2013'; }),
-        c('rev', 'Sales', 'Rp b', function (z) { return z.g.a.rev; }, function (z) { return (z.g.a.rev / 1e9).toFixed(2); }),
-        c('spd', 'Sales / outlet / day', 'Rp m, mature', function (z) { return z.spd; }, function (z) { return F.m(z.spd, 2); }),
+        c('rev', 'Sales', 'Rp M', function (z) { return z.g.a.rev; }, function (z) { return (z.g.a.rev / 1e9).toFixed(2); }),
+        c('spd', 'Sales / outlet / day', 'Rp Jt, mature', function (z) { return z.spd; }, function (z) { return F.m(z.spd, 2); }),
         c('zg', ctx.rate === 'tx' ? 'LFL tx' : 'LFL sales', 'growth', function (z) { return z.zg; }, function (z) { return F.p(z.zg, 1, true); }, function (z) { return F.cls(z.zg); }),
         c('mom', 'Last 3 months', 'growth', function (z) { return z.mom; }, function (z) { return F.p(z.mom, 1, true); }, function (z) { return F.cls(z.mom); }),
         c('st', 'Flat or declining', '% of mature', function (z) { return z.share; }, function (z) { return isN(z.share) ? F.p(z.share, 0) + ' <small style="color:var(--mute)">(' + z.stalled + '/' + z.nL + ')</small>' : '\u2013'; }, function (z) { return isN(z.share) && z.share >= TH.stallShare ? 'neg' : ''; }),
         c('mg', 'Margin', '', function (z) { return z.g.a.margin; }, function (z) { return F.p(z.g.a.margin, 1); }),
         c('ps', 'PSH', 'Rp/hr', function (z) { return z.g.a.psh; }, function (z) { return F.n(z.g.a.psh); }, function (z) { return F.cls(z.g.a.psh); }),
-        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: 'Rp m', get: function (z) { return z.g.a.pat; }, fmt: function (z) { return F.m(z.g.a.pat); }, tdc: function (z) { return F.cls(z.g.a.pat); } },
+        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: 'Rp Jt', get: function (z) { return z.g.a.pat; }, fmt: function (z) { return F.m(z.g.a.pat); }, tdc: function (z) { return F.cls(z.g.a.pat); } },
         { k: 'vr', label: 'Signal', left: true, get: function (z) { return V[z.v].rank; }, fmt: function (z) { return pill(z); } }
       ];
       var tbl = B.table('tbl-geo', zs, cols, { defSort: 'vr', defDir: 1, limit: 500 });
@@ -233,9 +233,9 @@
       }) }, options: {
         plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
           tooltip: { callbacks: { label: function (c) { var z = c.raw.z; return z.name + (kecMode ? ' (' + z.parent + ')' : '') + ': ' + z.n + ' outlets'; },
-            afterLabel: function (c) { var z = c.raw.z; return ['Growth ' + F.p(z.zg, 1, true) + ' \u00b7 sales/outlet/day Rp ' + (z.spd / 1e6).toFixed(2) + 'm', z.stalled + ' of ' + z.nL + ' mature outlets flat or declining']; } } } },
+            afterLabel: function (c) { var z = c.raw.z; return ['Growth ' + F.p(z.zg, 1, true) + ' \u00b7 sales/outlet/day ' + F.jt(z.spd, 2) + '', z.stalled + ' of ' + z.nL + ' mature outlets flat or declining']; } } } },
         scales: { x: { title: { display: true, text: 'Mature outlets growth vs last year (%)', font: { size: 10 } }, ticks: { font: { size: 9 }, callback: function (v) { return v + '%'; } }, grid: { color: function (c) { return c.tick && c.tick.value === 0 ? '#8a97a8' : '#eef1f5'; } } },
-          y: { title: { display: true, text: 'Sales per mature outlet per day (Rp m)', font: { size: 10 } }, beginAtZero: true, ticks: { font: { size: 9 } } } } } });
+          y: { title: { display: true, text: 'Sales per mature outlet per day (Rp Jt)', font: { size: 10 } }, beginAtZero: true, ticks: { font: { size: 9 } } } } } });
     }
   };
 })(window);

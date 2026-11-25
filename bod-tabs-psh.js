@@ -98,10 +98,10 @@
         c('dp', 'Change', 'Rp/hr', function (w) { return w.dPsh; }, function (w) { return isN(w.dPsh) ? (w.dPsh > 0 ? '+' : w.dPsh < 0 ? '\u2212' : '') + F.n(Math.abs(w.dPsh)) : '\u2013'; }, function (w) { return F.cls(w.dPsh); }),
         c('mv', 'Rank move', 'vs prior', function (w) { return w.move; }, function (w) { return isN(w.move) ? (w.move > 0 ? '\u25b2 ' + w.move : w.move < 0 ? '\u25bc ' + Math.abs(w.move) : '=') : '\u2013'; }, function (w) { return F.cls(w.move); }),
         c('pl', E.monthShort(endT) + ' PSH', 'latest month', function (w) { return w.pshLast; }, function (w) { return F.n(w.pshLast); }, function (w) { return F.cls(w.pshLast); }),
-        c('rev', 'Sales', 'Rp m', function (w) { return w.A.rev; }, function (w) { return F.m(w.A.rev, 1); }),
+        c('rev', 'Sales', 'Rp Jt', function (w) { return w.A.rev; }, function (w) { return F.m(w.A.rev, 1); }),
         c('mg', 'Margin', '', function (w) { return w.A.margin; }, function (w) { return F.p(w.A.margin, 1); }),
         c('hr', 'Staff hours', 'per month', function (w) { return w.hrs; }, function (w) { return F.n(w.hrs); }),
-        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: 'Rp m', get: function (w) { return w.A.pat; }, fmt: function (w) { return F.m(w.A.pat); }, tdc: function (w) { return F.cls(w.A.pat); } },
+        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: 'Rp Jt', get: function (w) { return w.A.pat; }, fmt: function (w) { return F.m(w.A.pat); }, tdc: function (w) { return F.cls(w.A.pat); } },
         c('mo', 'Months', 'with PSH', function (w) { return w.A.patOM; }, function (w) { return w.A.patOM + '/' + w.nMonths; }),
         { k: 'bd', label: 'Band', left: true, get: function (w) { return w.rk; }, fmt: function (w) { return bandPill(w); } }
       ];
@@ -124,7 +124,7 @@
       }).join('');
       var gseg = '<div class="seg" id="pshDim">' + Object.keys(DIMS).map(function (k) { return '<button data-v="' + k + '"' + (S.pshDim === k ? ' class="on"' : '') + '>' + DIMS[k][0] + '</button>'; }).join('') + '</div>';
       var gtable = '<div class="tw" style="margin-top:12px"><div class="th"><div><h3>PSH ranking by ' + esc(dim[0].toLowerCase()) + '</h3><p>Pooled PSH of the ranked outlets in each group (total PAT \u00f7 total staff hours), ' + esc(P.tag) + '. Top / bottom = outlets in the top / bottom quartile of the ranking.</p></div>' + gseg + '</div>' +
-        '<div class="tx"><table><thead><tr><th>#</th><th class="l">' + esc(dim[0]) + '</th><th>Outlets</th><th>PSH<small>Rp/hr</small></th><th>Median outlet<small>Rp/hr</small></th><th>Prior PSH<small>Rp/hr</small></th><th>Change<small>Rp/hr</small></th><th>In top quartile</th><th>In bottom quartile</th><th>Loss-making</th><th class="pt">PAT<small>Rp m</small></th></tr></thead><tbody>' + (gbody || '<tr><td colspan="11" class="empty">No outlets ranked.</td></tr>') + '</tbody></table></div></div>';
+        '<div class="tx"><table><thead><tr><th>#</th><th class="l">' + esc(dim[0]) + '</th><th>Outlets</th><th>PSH<small>Rp/hr</small></th><th>Median outlet<small>Rp/hr</small></th><th>Prior PSH<small>Rp/hr</small></th><th>Change<small>Rp/hr</small></th><th>In top quartile</th><th>In bottom quartile</th><th>Loss-making</th><th class="pt">PAT<small>Rp Jt</small></th></tr></thead><tbody>' + (gbody || '<tr><td colspan="11" class="empty">No outlets ranked.</td></tr>') + '</tbody></table></div></div>';
 
       view.innerHTML = banner + ctl + cards +
         '<div class="grid g2" style="margin-top:12px"><div class="card" style="grid-column:span 2"><h4>Highest and lowest PSH outlets, ' + esc(P.tag) + '</h4><div class="ch" style="height:' + (n > 20 ? 440 : Math.max(200, 24 * n + 60)) + 'px"><canvas id="pshC"></canvas></div><div class="ks">Top 10 (green) and bottom 10 (red) of the ' + n + ' ranked outlets, Rp per staff hour' + (n > 20 ? '. The full list is in the table below.' : '.') + '</div></div></div>' +
@@ -142,7 +142,7 @@
       var pick = n > 20 ? W.slice(0, 10).concat(W.slice(-10)) : W;
       B.chart('pshC', { type: 'bar', data: { labels: pick.map(function (w) { return '#' + w.rk + ' ' + w.ol.name; }),
         datasets: [{ data: pick.map(function (w) { return w.A.psh; }), backgroundColor: pick.map(function (w) { return BANDS.filter(function (b) { return b.k === w.band; })[0].col + 'cc'; }) }] },
-        options: { indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { var w = pick[c.dataIndex]; return 'PSH Rp ' + F.n(w.A.psh) + '/hr \u00b7 ' + status(w); }, afterLabel: function (c) { var w = pick[c.dataIndex]; return [w.ol.am + ' \u00b7 ' + (w.ol.city || ''), 'PAT Rp ' + F.m(w.A.pat) + 'm \u00b7 ' + w.A.patOM + ' months']; } } } },
+        options: { indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { var w = pick[c.dataIndex]; return 'PSH Rp ' + F.n(w.A.psh) + '/hr \u00b7 ' + status(w); }, afterLabel: function (c) { var w = pick[c.dataIndex]; return [w.ol.am + ' \u00b7 ' + (w.ol.city || ''), 'PAT ' + F.jt(w.A.pat) + ' \u00b7 ' + w.A.patOM + ' months']; } } } },
           scales: { x: { ticks: { font: { size: 9 }, callback: function (v) { return F.n(v); } } }, y: { ticks: { font: { size: 9 }, autoSkip: false } } } } });
     }
   };

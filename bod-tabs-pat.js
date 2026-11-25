@@ -188,8 +188,8 @@
           '<td>' + r.oa + ' / ' + r.na + ' <small style="color:var(--mute)">(' + pct(r.oa, r.na) + (r.np ? ' vs ' + pct(r.op, r.np) + ' before' : '') + ')</small></td>' +
           '<td>' + (r.cmp ? r.imp + ' / ' + r.cmp + ' <small style="color:var(--mute)">(' + pct(r.imp, r.cmp) + ')</small>' : '\u2013') + '</td></tr>';
       }).join('');
-      var momTbl = '<div class="tw" style="margin-top:12px"><div class="th"><div><h3>Same company, different look-back windows</h3><p>Each row ends at ' + esc(E.monthShort(endT)) + '. \u201cBefore\u201d is the window of the same length directly earlier. A long window can still show losses while the latest 3 or 6 months have already turned: compare the rows. PAT / month is in Rp m.</p></div></div>' +
-        '<div class="tx" style="max-height:none"><table><thead><tr><th class="l">Window</th><th class="pt">PAT<small>Rp m</small></th><th>PAT / month<small>Rp m</small></th><th>Before<small>PAT / month</small></th><th>Change<small>Rp m / month</small></th><th>vs last year<small>PAT / month</small></th><th>PAT margin</th><th>Outlet PSH<small>Rp/hr</small></th><th>Company PSH<small>Exec Dashboard</small></th><th>Profitable outlets</th><th>Improved vs before</th></tr></thead><tbody>' + momRows + '</tbody></table></div></div>';
+      var momTbl = '<div class="tw" style="margin-top:12px"><div class="th"><div><h3>Same company, different look-back windows</h3><p>Each row ends at ' + esc(E.monthShort(endT)) + '. \u201cBefore\u201d is the window of the same length directly earlier. A long window can still show losses while the latest 3 or 6 months have already turned: compare the rows. PAT / month is in Rp Jt.</p></div></div>' +
+        '<div class="tx" style="max-height:none"><table><thead><tr><th class="l">Window</th><th class="pt">PAT<small>Rp Jt</small></th><th>PAT / month<small>Rp Jt</small></th><th>Before<small>PAT / month</small></th><th>Change<small>Rp Jt / month</small></th><th>vs last year<small>PAT / month</small></th><th>PAT margin</th><th>Outlet PSH<small>Rp/hr</small></th><th>Company PSH<small>Exec Dashboard</small></th><th>Profitable outlets</th><th>Improved vs before</th></tr></thead><tbody>' + momRows + '</tbody></table></div></div>';
 
       /* ---------- controls and banner ---------- */
       var seg = function (id, items, cur) { return '<div class="seg" id="' + id + '">' + items.map(function (x) { return '<button data-v="' + x[0] + '"' + (String(cur) === String(x[0]) ? ' class="on"' : '') + '>' + x[1] + '</button>'; }).join('') + '</div>'; };
@@ -208,10 +208,10 @@
       var dPm = aP && aP.mo ? aW.pm - aP.pm : NaN;
       var profPrev = (function () { if (!W.prev) return NaN; var n = 0, p = 0; recs.forEach(function (x) { if (x.aP && x.aP.mo > 0) { n++; if (x.aP.pat > 0) p++; } }); return n ? p / n : NaN; })();
       var cards = '<div class="grid" style="grid-template-columns:repeat(5,minmax(0,1fr))">' +
-        B.card('PAT \u00b7 ' + esc(tagW), F.rp(aW.pat), 'PAT / month ' + F.rp(aW.pm) + (isN(dPm) ? '<br>vs ' + F.rp(aP.pm) + ' before \u00b7 <b class="' + F.cls(dPm) + '">' + sgn(dPm, 2) + 'm / month</b>' : '<br>no earlier window in the workbook'), aW.pat < 0 ? 'neg' : 'pos') +
+        B.card('PAT \u00b7 ' + esc(tagW), F.rp(aW.pat), 'PAT / month ' + F.rp(aW.pm) + (isN(dPm) ? '<br>vs ' + F.rp(aP.pm) + ' before \u00b7 <b class="' + F.cls(dPm) + '">' + sgn(dPm, 2) + ' Jt / month</b>' : '<br>no earlier window in the workbook'), aW.pat < 0 ? 'neg' : 'pos') +
         B.card('Outlet PSH \u00b7 ' + esc(tagW), F.n(aW.psh), 'Rp per staff hour' + (aP && aP.mo ? '<br>before ' + F.n(aP.psh) + ' \u00b7 <b class="' + F.cls(aW.psh - aP.psh) + '">' + sgnN(aW.psh - aP.psh) + '</b>' : '') + (isN(execPsh(W.cur)) ? '<br>Exec Dashboard ' + F.n(execPsh(W.cur)) : ''), aW.psh < 0 ? 'neg' : 'pos') +
         B.card('Profitable outlets', nProf + ' <small>of ' + inWin.length + '</small>', F.p(inWin.length ? nProf / inWin.length : NaN, 0) + ' of outlets with PAT above zero' + (isN(profPrev) ? '<br>before: ' + F.p(profPrev, 0) : ''), nProf / Math.max(1, inWin.length) >= 0.5 ? 'pos' : 'neg') +
-        B.card('Trend \u00b7 last ' + K + ' months', cf ? sgn(cf.b, 2) + ' <small>m / month</small>' : '\u2013', cf ? 'PAT changes by this much each month<br>fit R\u00b2 ' + (isN(cf.r2) ? cf.r2.toFixed(2) : '\u2013') + ' \u00b7 trend level at ' + esc(E.monthShort(endT)) + ' ' + F.rp(cf.a) : 'Not enough months with data', cf ? F.cls(cf.b) : '') +
+        B.card('Trend \u00b7 last ' + K + ' months', cf ? sgn(cf.b, 2) + ' <small>Jt / month</small>' : '\u2013', cf ? 'PAT changes by this much each month<br>fit R\u00b2 ' + (isN(cf.r2) ? cf.r2.toFixed(2) : '\u2013') + ' \u00b7 trend level at ' + esc(E.monthShort(endT)) + ' ' + F.rp(cf.a) : 'Not enough months with data', cf ? F.cls(cf.b) : '') +
         B.card('Next ' + H + ' months (indicative)', F.rp(fcT), 'If the trend continues<br>hold-flat scenario ' + F.rp(flat) + '<br>breakeven: <b>' + esc(be.txt) + '</b>', isN(fcT) && fcT < 0 ? 'neg' : 'pos') + '</div>';
 
       /* ---------- journey cards ---------- */
@@ -219,7 +219,7 @@
       var lv = ['good', 'slip', 'turn', 'narrow', 'loss'].map(function (k) {
         var a = clsRows[k], tot = a.reduce(function (s, x) { return s + x.aW.pat; }, 0);
         return '<button class="lc' + (S.patCls === k ? ' on' : '') + '" data-cls="' + k + '" style="--c:' + CLS[k].col + '"><div class="l">' + CLS[k].t.toUpperCase() + '</div><div class="d">' + ({ good: 'PAT above zero, trend up or flat', slip: 'PAT above zero, trend down', turn: 'Loss over window, recent months positive or near breakeven', narrow: 'Loss over window, trend up', loss: 'Loss over window, trend flat or down' })[k] +
-          '</div><div class="big">' + a.length + '<small>outlets</small></div><div class="f"><b>' + F.m(tot, 1) + '</b><span>PAT Rp m, ' + esc(tagW) + '</span></div></button>';
+          '</div><div class="big">' + a.length + '<small>outlets</small></div><div class="f"><b>' + F.m(tot, 1) + '</b><span>PAT Rp Jt, ' + esc(tagW) + '</span></div></button>';
       }).join('');
       var fewN = clsRows.few.length;
       var lvHtml = '<div class="sec"><h3>Outlet journey<small>' + esc(tagFor[S.patWin]) + ' result + trend of the last ' + K + ' months</small></h3><a data-cls="all">All outlets \u00b7 ' + inWin.length + '</a></div><div class="lv" id="patLv">' + lv + '</div>' +
@@ -232,18 +232,18 @@
         { k: 'am', label: 'Area manager', left: true, get: function (w) { return w.ol.am; }, fmt: function (w) { return esc(w.ol.am); } },
         { k: 'ct', label: 'Kota', left: true, get: function (w) { return w.ol.city || ''; }, fmt: function (w) { return esc(w.ol.city || '\u2013'); } },
         { k: 'st', label: 'Status', left: true, get: function (w) { return w.isNew ? 0 : 1; }, fmt: function (w) { return w.statusTxt; } },
-        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: esc(tagW) + ' \u00b7 Rp m', get: function (w) { return w.aW.pat; }, fmt: function (w) { return '<b>' + F.m(w.aW.pat, 1) + '</b>'; }, tdc: function (w) { return F.cls(w.aW.pat); } },
+        { k: 'pat', th: 'pt', cls: 'pt', label: 'PAT', sub: esc(tagW) + ' \u00b7 Rp Jt', get: function (w) { return w.aW.pat; }, fmt: function (w) { return '<b>' + F.m(w.aW.pat, 1) + '</b>'; }, tdc: function (w) { return F.cls(w.aW.pat); } },
         c('psh', 'PSH', esc(tagW) + ' \u00b7 Rp/hr', function (w) { return w.aW.psh; }, function (w) { return F.n(w.aW.psh); }, function (w) { return F.cls(w.aW.psh); }),
         c('mg', 'PAT margin', 'of sales', function (w) { return w.aW.margin; }, function (w) { return F.p(w.aW.margin, 2); }, function (w) { return F.cls(w.aW.margin); }),
-        c('pm', 'PAT / month', 'Rp m', function (w) { return w.aW.pm; }, function (w) { return F.m(w.aW.pm, 2); }, function (w) { return F.cls(w.aW.pm); }),
+        c('pm', 'PAT / month', 'Rp Jt', function (w) { return w.aW.pm; }, function (w) { return F.m(w.aW.pm, 2); }, function (w) { return F.cls(w.aW.pm); }),
         c('pp', 'Before', 'PAT / month', function (w) { return w.prevOK ? w.aP.pm : NaN; }, function (w) { return w.prevOK ? F.m(w.aP.pm, 2) : '\u2013'; }, function (w) { return w.prevOK ? F.cls(w.aP.pm) : ''; }),
-        c('ch', 'Change', 'Rp m / month', function (w) { return w.chg; }, function (w) { return sgn(w.chg, 2); }, function (w) { return F.cls(w.chg); }),
+        c('ch', 'Change', 'Rp Jt / month', function (w) { return w.chg; }, function (w) { return sgn(w.chg, 2); }, function (w) { return F.cls(w.chg); }),
         c('yy', 'vs last year', 'PAT / month', function (w) { return w.yoyChg; }, function (w) { return sgn(w.yoyChg, 2); }, function (w) { return F.cls(w.yoyChg); }),
-        c('l3', 'Last 3 months', 'PAT Rp m', function (w) { return w.l3; }, function (w) { return F.m(w.l3, 1); }, function (w) { return F.cls(w.l3); }),
-        c('lm', E.monthShort(endT), 'PAT Rp m', function (w) { return w.lastM; }, function (w) { return F.m(w.lastM, 2); }, function (w) { return F.cls(w.lastM); }),
-        c('tr', 'Trend', 'Rp m / month', function (w) { return w.f ? w.f.b : NaN; }, function (w) { return w.f ? sgn(w.f.b, 2) : '\u2013'; }, function (w) { return w.f ? F.cls(w.f.b) : ''; }),
+        c('l3', 'Last 3 months', 'PAT Rp Jt', function (w) { return w.l3; }, function (w) { return F.m(w.l3, 1); }, function (w) { return F.cls(w.l3); }),
+        c('lm', E.monthShort(endT), 'PAT Rp Jt', function (w) { return w.lastM; }, function (w) { return F.m(w.lastM, 2); }, function (w) { return F.cls(w.lastM); }),
+        c('tr', 'Trend', 'Rp Jt / month', function (w) { return w.f ? w.f.b : NaN; }, function (w) { return w.f ? sgn(w.f.b, 2) : '\u2013'; }, function (w) { return w.f ? F.cls(w.f.b) : ''; }),
         c('r2', 'Fit', 'R\u00b2', function (w) { return w.f ? w.f.r2 : NaN; }, function (w) { return w.f && isN(w.f.r2) ? w.f.r2.toFixed(2) : '\u2013'; }),
-        c('fc', 'Next ' + H + ' months', 'forecast PAT Rp m', function (w) { return w.fc; }, function (w) { return F.m(w.fc, 1); }, function (w) { return F.cls(w.fc); }),
+        c('fc', 'Next ' + H + ' months', 'forecast PAT Rp Jt', function (w) { return w.fc; }, function (w) { return F.m(w.fc, 1); }, function (w) { return F.cls(w.fc); }),
         { k: 'be', label: 'Breakeven', sub: 'on trend', left: true, get: function (w) { return w.be.k; }, fmt: function (w) { return esc(w.be.txt); } },
         { k: 'jn', label: 'Journey', left: true, get: function (w) { return CLS[w.j].rank; }, fmt: function (w) { return pill(w.j); } }
       ];
@@ -265,10 +265,10 @@
       }).join('');
       var gseg = seg('patDim', Object.keys(DIMS).map(function (k) { return [k, DIMS[k][0]]; }), S.patDim);
       var gtable = '<div class="tw" style="margin-top:12px"><div class="th"><div><h3>Profitability by ' + esc(dim[0].toLowerCase()) + '</h3><p>' + esc(tagFor[S.patWin]) + ', sorted from the biggest loss. Trend and forecast use the group\u2019s total monthly PAT.</p></div>' + gseg + '</div>' +
-        '<div class="tx" style="max-height:none"><table><thead><tr><th class="l">' + esc(dim[0]) + '</th><th>Outlets</th><th class="pt">PAT<small>Rp m</small></th><th>PSH<small>Rp/hr</small></th><th>PAT margin</th><th>Before<small>PAT / month</small></th><th>Change<small>Rp m / month</small></th><th>Profitable outlets</th><th>Trend<small>Rp m / month</small></th><th>Next ' + H + ' months<small>Rp m</small></th><th class="l">Breakeven</th><th class="l">Journey</th></tr></thead><tbody>' + (gbody || '<tr><td colspan="12" class="empty">No data.</td></tr>') + '</tbody></table></div></div>';
+        '<div class="tx" style="max-height:none"><table><thead><tr><th class="l">' + esc(dim[0]) + '</th><th>Outlets</th><th class="pt">PAT<small>Rp Jt</small></th><th>PSH<small>Rp/hr</small></th><th>PAT margin</th><th>Before<small>PAT / month</small></th><th>Change<small>Rp Jt / month</small></th><th>Profitable outlets</th><th>Trend<small>Rp Jt / month</small></th><th>Next ' + H + ' months<small>Rp Jt</small></th><th class="l">Breakeven</th><th class="l">Journey</th></tr></thead><tbody>' + (gbody || '<tr><td colspan="12" class="empty">No data.</td></tr>') + '</tbody></table></div></div>';
 
       view.innerHTML = banner + ctl + cards + momTbl +
-        '<div class="grid g2" style="margin-top:12px"><div class="card" style="grid-column:span 2"><h4>Company PAT per month, trend and ' + H + '-month outlook</h4><div class="ch t"><canvas id="patC1"></canvas></div><div class="ks">Bars: monthly PAT of the outlets in view (Rp m). Solid line: straight-line trend fitted on the last ' + K + ' months, dotted continuation = forecast, with \u00b11 standard deviation of the fit. Grey dashed: hold the last-3-month average flat. Indicative only.</div></div></div>' +
+        '<div class="grid g2" style="margin-top:12px"><div class="card" style="grid-column:span 2"><h4>Company PAT per month, trend and ' + H + '-month outlook</h4><div class="ch t"><canvas id="patC1"></canvas></div><div class="ks">Bars: monthly PAT of the outlets in view (Rp Jt). Solid line: straight-line trend fitted on the last ' + K + ' months, dotted continuation = forecast, with \u00b11 standard deviation of the fit. Grey dashed: hold the last-3-month average flat. Indicative only.</div></div></div>' +
         '<div class="grid g2" style="margin-top:12px"><div class="card" style="grid-column:span 2"><h4>PSH and share of outlets with positive PAT, by month</h4><div class="ch"><canvas id="patC2"></canvas></div></div></div>' +
         '<div style="margin-top:14px">' + lvHtml + '</div>' +
         '<div class="tw" style="margin-top:12px"><div class="th"><div><h3>Outlet profitability</h3><p>' + rowsT.length + ' outlets' + (S.patCls ? ' \u00b7 ' + esc(CLS[S.patCls].t) : '') + ' \u00b7 ' + esc(tagFor[S.patWin]) + ' \u00b7 sortable \u00b7 click an outlet for the detail with its own period filter</p></div><div style="display:flex;gap:8px;align-items:center">' + B.searchBox() + '<button class="btn" id="expPat"><i class="fas fa-download"></i> Export</button></div></div>' + tbl.html + '</div>' + gtable;
@@ -296,13 +296,13 @@
       var flatM = isN(flat) ? flat / H / 1e6 : null, fl = pad(Tc.length - 1).concat([flatM]).concat(fut.map(function () { return flatM; }));
       if (cf) { up[Tc.length - 1] = trendLine[Tc.length - 1]; lo[Tc.length - 1] = trendLine[Tc.length - 1]; }
       B.chart('patC1', { data: { labels: labels, datasets: [
-        { type: 'bar', label: 'Monthly PAT (Rp m)', data: act.concat(pad(H)), backgroundColor: act.map(function (v) { return v != null && v < 0 ? '#e3a0a6' : '#8fc8ad'; }).concat(pad(H)), order: 3 },
+        { type: 'bar', label: 'Monthly PAT (Rp Jt)', data: act.concat(pad(H)), backgroundColor: act.map(function (v) { return v != null && v < 0 ? '#e3a0a6' : '#8fc8ad'; }).concat(pad(H)), order: 3 },
         { type: 'line', label: 'Trend (last ' + K + ' months) and forecast', data: trendLine, borderColor: '#16436f', backgroundColor: '#16436f', pointRadius: 2, borderWidth: 2, tension: 0, segment: { borderDash: function (c) { return c.p0DataIndex >= Tc.length - 1 ? [5, 4] : undefined; } }, spanGaps: false, order: 1 },
         { type: 'line', label: 'Forecast \u00b11 s.d.', data: up, borderColor: '#9db0c8', borderDash: [2, 3], pointRadius: 0, borderWidth: 1, order: 2 },
         { type: 'line', label: 'Forecast \u22121 s.d.', data: lo, borderColor: '#9db0c8', borderDash: [2, 3], pointRadius: 0, borderWidth: 1, order: 2 },
         { type: 'line', label: 'Hold flat (last 3 months average)', data: fl, borderColor: '#7a8696', borderDash: [6, 4], pointRadius: 2, borderWidth: 1.5, order: 2 }] },
-        options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, filter: function (it) { return it.text.indexOf('\u2212') < 0; } } }, tooltip: { callbacks: { label: function (c) { return c.dataset.label.replace(/ \(Rp m\)/, '') + ': Rp ' + (c.parsed.y == null ? '\u2013' : c.parsed.y.toFixed(1) + 'm'); } } } },
-          scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { font: { size: 10 }, callback: function (v) { return v + 'm'; } }, grid: { color: function (c) { return c.tick && c.tick.value === 0 ? '#8a97a8' : '#eef1f5'; } } } } } });
+        options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, filter: function (it) { return it.text.indexOf('\u2212') < 0; } } }, tooltip: { callbacks: { label: function (c) { return c.dataset.label.replace(/ \(Rp Jt\)/, '') + ': ' + (c.parsed.y == null ? '\u2013' : 'Rp ' + c.parsed.y.toFixed(1) + ' Jt'); } } } },
+          scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { font: { size: 10 }, callback: function (v) { return v + ' Jt'; } }, grid: { color: function (c) { return c.tick && c.tick.value === 0 ? '#8a97a8' : '#eef1f5'; } } } } } });
       var sh = Tc.map(function (x) { return exOk ? E.execAt(B.exec, 'PSH', x) : NaN; });
       var ds2 = [
         { label: 'Outlet PSH (PAT \u00f7 hours, Rp/hr)', data: Tc.map(function (x) { return ser[x].wh > 0 ? ser[x].pat / ser[x].wh : null; }), borderColor: '#b5303b', backgroundColor: '#b5303b', tension: .2, pointRadius: 2, yAxisID: 'y' }];

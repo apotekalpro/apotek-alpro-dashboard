@@ -112,9 +112,9 @@
       var cards = '<div class="grid" style="grid-template-columns:repeat(5,minmax(0,1fr))">' +
         B.card('Size recorded', withF.length + ' <small>of ' + nSc + '</small>', F.p(nSc ? withF.length / nSc : NaN, 0) + ' of outlets have a floor size<br>' + noFl + ' without \u00b7 ' + noCat + ' without a category', noFl ? '' : 'pos') +
         B.card('Median sales floor', isN(totF.medF) ? F.n(totF.medF, 1) + ' <small>m\u00b2</small>' : '\u2013', 'Smallest ' + F.n(totF.minF, 1) + ' \u00b7 largest ' + F.n(totF.maxF, 1) + ' m\u00b2<br>' + F.n(totF.totF, 0) + ' m\u00b2 in total') +
-        B.card('Sales per m\u00b2 / month', isN(totF.spm) ? 'Rp ' + F.m(totF.spm, 2) + 'm' : '\u2013', 'Floor-weighted, outlets with size<br>median outlet Rp ' + F.m(totF.medSpm, 2) + 'm') +
-        B.card('PAT per m\u00b2 / month', isN(totF.ppm) ? 'Rp ' + F.m(totF.ppm, 3) + 'm' : '\u2013', 'Median outlet Rp ' + F.m(totF.medPpm, 3) + 'm<br>PAT margin ' + F.p(totF.margin, 2), isN(totF.ppm) && totF.ppm < 0 ? 'neg' : '') +
-        B.card('Most productive size', rank.length ? esc(rank[0]) : '\u2013', rank.length ? 'PAT per m\u00b2 Rp ' + F.m(st[rank[0]].ppm, 3) + 'm<br>weakest: ' + esc(rank[rank.length - 1]) + ' Rp ' + F.m(st[rank[rank.length - 1]].ppm, 3) + 'm' : 'No size category has ' + MINB + ' outlets with data') + '</div>';
+        B.card('Sales per m\u00b2 / month', isN(totF.spm) ? F.jt(totF.spm, 2) + '' : '\u2013', 'Floor-weighted, outlets with size<br>median outlet ' + F.jt(totF.medSpm, 2) + '') +
+        B.card('PAT per m\u00b2 / month', isN(totF.ppm) ? F.jt(totF.ppm, 3) + '' : '\u2013', 'Median outlet ' + F.jt(totF.medPpm, 3) + '<br>PAT margin ' + F.p(totF.margin, 2), isN(totF.ppm) && totF.ppm < 0 ? 'neg' : '') +
+        B.card('Most productive size', rank.length ? esc(rank[0]) : '\u2013', rank.length ? 'PAT per m\u00b2 ' + F.jt(st[rank[0]].ppm, 3) + '<br>weakest: ' + esc(rank[rank.length - 1]) + ' ' + F.jt(st[rank[rank.length - 1]].ppm, 3) + '' : 'No size category has ' + MINB + ' outlets with data') + '</div>';
 
       /* ---------- band table ---------- */
       var brow = function (k, lab) {
@@ -128,7 +128,7 @@
           '<td>' + (s.nPat ? s.prof + ' / ' + s.nPat + ' <small style="color:var(--mute)">(' + F.p(s.prof / s.nPat, 0) + ')</small>' : '\u2013') + '</td></tr>';
       };
       var bt = ORDER.map(function (k) { return brow(k, k === 'Not recorded' ? 'Not recorded' : k); }).join('') + brow('*', 'All with floor size');
-      var bandTbl = '<div class="tw" style="margin-top:12px"><div class="th"><div><h3>Size bands</h3><p>' + esc(P.tag) + ' \u00b7 ' + (S.sizeScope === 'mature' ? 'mature outlets' : 'all trading outlets') + '. Per-m\u00b2 columns use only outlets with a floor size. Rp m unless stated.</p></div></div>' +
+      var bandTbl = '<div class="tw" style="margin-top:12px"><div class="th"><div><h3>Size bands</h3><p>' + esc(P.tag) + ' \u00b7 ' + (S.sizeScope === 'mature' ? 'mature outlets' : 'all trading outlets') + '. Per-m\u00b2 columns use only outlets with a floor size. Rp Jt unless stated.</p></div></div>' +
         '<div class="tx" style="max-height:none"><table><thead><tr><th class="l">Size category</th><th>Outlets</th><th>Floor range<small>m\u00b2</small></th><th>Median floor<small>m\u00b2</small></th><th>Sales / outlet<small>per month</small></th><th class="pt">Sales per m\u00b2<small>per month</small></th><th>PAT per m\u00b2<small>per month</small></th>' +
         '<th>PAT / outlet<small>per month</small></th><th>PAT margin</th><th>PSH<small>Rp/hr</small></th><th>Rent per m\u00b2<small>per month</small></th><th>Staff hours per m\u00b2<small>per month</small></th><th>Like-for-like sales<small>vs ' + esc(P.baseTag || 'last year') + '</small></th><th>Profitable outlets</th></tr></thead><tbody>' + bt + '</tbody></table></div></div>';
 
@@ -140,13 +140,13 @@
         { k: 'ct', label: 'Kota', left: true, get: function (w) { return w.ol.city || ''; }, fmt: function (w) { return esc(w.ol.city || '\u2013'); } },
         { k: 'sc', label: 'Size', left: true, get: function (w) { return ORDER.indexOf(w.band); }, fmt: function (w) { return '<span class="gv" style="background:' + COL[w.band] + '22;color:' + COL[w.band] + '">' + esc(w.band === 'Not recorded' ? '\u2013' : w.band) + '</span>'; } },
         { k: 'fl', label: 'Floor', sub: 'm\u00b2', get: function (w) { return w.fl; }, fmt: function (w) { return F.n(w.fl, 1); } },
-        { k: 'rv', label: 'Sales / month', sub: 'Rp m', get: function (w) { return w.revM; }, fmt: function (w) { return F.m(w.revM, 1); } },
-        { k: 'sp', th: 'pt', cls: 'pt', label: 'Sales per m\u00b2', sub: 'per month \u00b7 Rp m', get: function (w) { return w.spm; }, fmt: function (w) { return '<b>' + F.m(w.spm, 2) + '</b>'; } },
+        { k: 'rv', label: 'Sales / month', sub: 'Rp Jt', get: function (w) { return w.revM; }, fmt: function (w) { return F.m(w.revM, 1); } },
+        { k: 'sp', th: 'pt', cls: 'pt', label: 'Sales per m\u00b2', sub: 'per month \u00b7 Rp Jt', get: function (w) { return w.spm; }, fmt: function (w) { return '<b>' + F.m(w.spm, 2) + '</b>'; } },
         { k: 'ix', label: 'vs size category', sub: 'sales per m\u00b2', get: function (w) { return w.idx; }, fmt: function (w) { return isN(w.idx) ? F.p(w.idx, 0, true) : '\u2013'; }, tdc: function (w) { return F.cls(w.idx); } },
-        { k: 'pm', label: 'PAT / month', sub: 'Rp m', get: function (w) { return w.patM; }, fmt: function (w) { return F.m(w.patM, 2); }, tdc: function (w) { return F.cls(w.patM); } },
-        { k: 'pp', label: 'PAT per m\u00b2', sub: 'per month \u00b7 Rp m', get: function (w) { return w.ppm; }, fmt: function (w) { return F.m(w.ppm, 3); }, tdc: function (w) { return F.cls(w.ppm); } },
-        { k: 'pg', label: 'vs size category', sub: 'PAT per m\u00b2 \u00b7 Rp m', get: function (w) { return w.pgap; }, fmt: function (w) { return sg(w.pgap, 3); }, tdc: function (w) { return F.cls(w.pgap); } },
-        { k: 'rp', label: 'Rent per m\u00b2', sub: 'per month \u00b7 Rp m', get: function (w) { return w.rpm; }, fmt: function (w) { return F.m(w.rpm, 3); } },
+        { k: 'pm', label: 'PAT / month', sub: 'Rp Jt', get: function (w) { return w.patM; }, fmt: function (w) { return F.m(w.patM, 2); }, tdc: function (w) { return F.cls(w.patM); } },
+        { k: 'pp', label: 'PAT per m\u00b2', sub: 'per month \u00b7 Rp Jt', get: function (w) { return w.ppm; }, fmt: function (w) { return F.m(w.ppm, 3); }, tdc: function (w) { return F.cls(w.ppm); } },
+        { k: 'pg', label: 'vs size category', sub: 'PAT per m\u00b2 \u00b7 Rp Jt', get: function (w) { return w.pgap; }, fmt: function (w) { return sg(w.pgap, 3); }, tdc: function (w) { return F.cls(w.pgap); } },
+        { k: 'rp', label: 'Rent per m\u00b2', sub: 'per month \u00b7 Rp Jt', get: function (w) { return w.rpm; }, fmt: function (w) { return F.m(w.rpm, 3); } },
         { k: 'hp', label: 'Staff hours per m\u00b2', sub: 'per month', get: function (w) { return w.hpm; }, fmt: function (w) { return F.n(w.hpm, 1); } },
         { k: 'ps', label: 'PSH', sub: 'Rp/hr', get: function (w) { return w.r.A.psh; }, fmt: function (w) { return F.n(w.r.A.psh); }, tdc: function (w) { return F.cls(w.r.A.psh); } },
         { k: 'vd', label: 'Verdict', left: true, get: function (w) { return isN(w.idx) ? w.idx : NaN; }, fmt: function (w) { return pill(w.verdict); } }
@@ -164,7 +164,7 @@
 
       var ySeg = seg('sizeY', [['sales', 'Sales per m\u00b2'], ['pat', 'PAT per m\u00b2']], S.sizeY);
       view.innerHTML = banner + ctl + cards + dq + bandTbl +
-        '<div class="grid g2" style="margin-top:12px"><div class="card"><h4>Sales and PAT per m\u00b2 by size category</h4><div class="ch"><canvas id="szC1"></canvas></div><div class="ks">Bars: sales per m\u00b2 per month (left, Rp m). Line: PAT per m\u00b2 per month (right, Rp m). Categories with fewer than ' + MINB + ' outlets are shown but not used for benchmarks.</div></div>' +
+        '<div class="grid g2" style="margin-top:12px"><div class="card"><h4>Sales and PAT per m\u00b2 by size category</h4><div class="ch"><canvas id="szC1"></canvas></div><div class="ks">Bars: sales per m\u00b2 per month (left, Rp Jt). Line: PAT per m\u00b2 per month (right, Rp Jt). Categories with fewer than ' + MINB + ' outlets are shown but not used for benchmarks.</div></div>' +
         '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h4 style="margin:0">Floor size against productivity</h4>' + ySeg + '</div><div class="ch"><canvas id="szC2"></canvas></div><div class="ks">Each dot is an outlet, coloured by size category; click one to open it. A downward drift to the right means bigger stores earn less per m\u00b2.</div></div></div>' +
         tw;
 
@@ -181,9 +181,9 @@
       /* ---------- charts ---------- */
       var bl = ORDER.slice(0, 5).filter(function (k) { return st[k].nF > 0; });
       B.chart('szC1', { data: { labels: bl.map(function (k) { return k + ' (' + st[k].nF + ')'; }), datasets: [
-        { type: 'bar', label: 'Sales per m\u00b2 / month (Rp m)', data: bl.map(function (k) { return isN(st[k].spm) ? st[k].spm / 1e6 : null; }), backgroundColor: bl.map(function (k) { return COL[k] + 'cc'; }), yAxisID: 'y', order: 2 },
-        { type: 'line', label: 'PAT per m\u00b2 / month (Rp m)', data: bl.map(function (k) { return isN(st[k].ppm) ? st[k].ppm / 1e6 : null; }), borderColor: '#b5303b', backgroundColor: '#b5303b', pointRadius: 4, borderWidth: 2, yAxisID: 'y1', order: 1 }] },
-        options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { x: { ticks: { font: { size: 11 } } }, y: { position: 'left', beginAtZero: true, ticks: { font: { size: 10 } }, title: { display: true, text: 'Sales per m\u00b2 (Rp m)', font: { size: 10 } } }, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { font: { size: 10 } }, title: { display: true, text: 'PAT per m\u00b2 (Rp m)', font: { size: 10 } } } } } });
+        { type: 'bar', label: 'Sales per m\u00b2 / month (Rp Jt)', data: bl.map(function (k) { return isN(st[k].spm) ? st[k].spm / 1e6 : null; }), backgroundColor: bl.map(function (k) { return COL[k] + 'cc'; }), yAxisID: 'y', order: 2 },
+        { type: 'line', label: 'PAT per m\u00b2 / month (Rp Jt)', data: bl.map(function (k) { return isN(st[k].ppm) ? st[k].ppm / 1e6 : null; }), borderColor: '#b5303b', backgroundColor: '#b5303b', pointRadius: 4, borderWidth: 2, yAxisID: 'y1', order: 1 }] },
+        options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } }, scales: { x: { ticks: { font: { size: 11 } } }, y: { position: 'left', beginAtZero: true, ticks: { font: { size: 10 } }, title: { display: true, text: 'Sales per m\u00b2 (Rp Jt)', font: { size: 10 } } }, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { font: { size: 10 } }, title: { display: true, text: 'PAT per m\u00b2 (Rp Jt)', font: { size: 10 } } } } } });
       var yk = S.sizeY === 'pat' ? 'ppm' : 'spm', pts = {}, ds = [];
       ORDER.forEach(function (k) {
         var a = withF.filter(function (x) { return x.band === k && isN(x[yk]); });
@@ -193,7 +193,7 @@
       B.chart('szC2', { type: 'scatter', data: { datasets: ds }, options: { clip: 12,
         onClick: function (e, els) { if (els.length && pts[els[0].datasetIndex]) B.openOutlet(pts[els[0].datasetIndex][els[0].index].o); },
         plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }, tooltip: { callbacks: { label: function (c) { var x = pts[c.datasetIndex][c.dataIndex]; return x.ol.name + ' \u00b7 ' + F.n(x.fl, 1) + ' m\u00b2 \u00b7 Rp ' + c.parsed.y.toFixed(S.sizeY === 'pat' ? 3 : 2) + 'm per m\u00b2'; } } } },
-        scales: { x: { title: { display: true, text: 'Sales floor (m\u00b2)', font: { size: 10 } }, ticks: { font: { size: 10 } } }, y: { title: { display: true, text: (S.sizeY === 'pat' ? 'PAT' : 'Sales') + ' per m\u00b2 per month (Rp m)', font: { size: 10 } }, ticks: { font: { size: 10 } }, grid: { color: function (c) { return c.tick && c.tick.value === 0 ? '#8a97a8' : '#eef1f5'; } } } } } });
+        scales: { x: { title: { display: true, text: 'Sales floor (m\u00b2)', font: { size: 10 } }, ticks: { font: { size: 10 } } }, y: { title: { display: true, text: (S.sizeY === 'pat' ? 'PAT' : 'Sales') + ' per m\u00b2 per month (Rp Jt)', font: { size: 10 } }, ticks: { font: { size: 10 } }, grid: { color: function (c) { return c.tick && c.tick.value === 0 ? '#8a97a8' : '#eef1f5'; } } } } } });
     }
   };
 })(window);
