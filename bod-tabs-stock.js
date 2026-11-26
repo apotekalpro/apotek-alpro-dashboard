@@ -52,15 +52,15 @@
       var m = ctx.m, P = ctx.P, TH = B.flagTH || { moiLow: 1.75, moiHigh: 4 };
       if (m.stockFrom == null) { view.innerHTML = '<div class="note warn"><b>No stock holding data.</b> The MASTER sheet has no <i>STOCK HOLDING</i> month columns (or fewer than 20 outlets have a value).</div>'; return; }
       if (!P.cur.length) { view.innerHTML = '<div class="note warn">No months in this selection yet.</div>'; return; }
-      var endT = P.cur[P.cur.length - 1], lastB = S.stockBasis === 'last';
+      var endT = P.cur[P.cur.length - 1], lastB = S.stockBasis === 'last', sEnd = B.stockEnd(m, endT), stale = sEnd !== endT;   // stale: the newest month has sales but no stock entered yet
       var all = ctx.rowsF.filter(function (r) { return r.cat !== 'inactive'; });
       var scoped = all.filter(function (r) { return S.stockScope === 'all' || r.cat !== 'new'; });
       var lflRows = all.filter(function (r) { return r.cat === 'lfl'; });
       var base = lflRows.length ? E.groupStats(m, P, lflRows).lRev : NaN;
       var recs = scoped.map(function (r) {
-        var A = r.A, L = r.last, x = lastB ? L : A, moi = x.moi;
-        var s0 = val(m, 'stock', r.o, endT - 3), v0 = val(m, 'rev', r.o, endT - 3), sY = val(m, 'stock', r.o, endT - 12);
-        var moi3 = s0 > 0 && v0 > 0 ? s0 / v0 : NaN, sNow = val(m, 'stock', r.o, endT);
+        var A = r.A, L = r.lastS, x = lastB ? L : A, moi = x.moi;
+        var s0 = val(m, 'stock', r.o, sEnd - 3), v0 = val(m, 'rev', r.o, sEnd - 3), sY = val(m, 'stock', r.o, sEnd - 12);
+        var moi3 = s0 > 0 && v0 > 0 ? s0 / v0 : NaN, sNow = val(m, 'stock', r.o, sEnd);
         var w = { o: r.o, r: r, ol: r.ol, moi: moi, moiP: A.moi, moiL: L.moi, moi3: moi3, isNew: r.cat === 'new',
           stockL: L.stockAvg, stockP: A.stockAvg, revP: A.revStockAvg,
           stockYoY: sNow > 0 && sY > 0 ? sNow / sY - 1 : NaN, sl: A.slPct, gRev: r.cat === 'lfl' ? r.gRev : NaN };
@@ -70,29 +70,30 @@
       var has = recs.filter(function (w) { return isN(w.moi); }), noStock = recs.length - has.length;
 
       var ctl = '<div class="geoctl">' + seg('stockScope', [['mature', 'Mature outlets only'], ['all', 'All trading outlets']], S.stockScope) +
-        seg('stockBasis', [['period', 'MOI over the selected period'], ['last', 'MOI of the latest month (' + esc(E.monthShort(endT)) + ')']], S.stockBasis) + '</div>';
-      var banner = '<div class="note"><b>Stock holding and month of inventory (MOI).</b> MOI = stock holding at month end \u00f7 sales of the same month, i.e. how many months of sales sit on the shelf. ' +
+        seg('stockBasis', [['period', 'MOI over the selected period'], ['last', 'MOI of the latest month (' + esc(E.monthShort(sEnd)) + ')']], S.stockBasis) + '</div>';
+      var staleNote = stale ? '<div class="note warn"><b>Stock for ' + esc(E.monthLabel(endT)) + ' is not entered yet.</b> Sales are in the sheet up to ' + esc(E.monthLabel(endT)) + ', but stock holding is only on file to ' + esc(E.monthLabel(sEnd)) + ', so the latest-month figures, flags and cards below use ' + esc(E.monthLabel(sEnd)) + '. They move forward by themselves once the new STOCK HOLDING column is filled.</div>' : '';
+      var banner = staleNote + '<div class="note"><b>Stock holding and month of inventory (MOI).</b> MOI = stock holding at month end \u00f7 sales of the same month, i.e. how many months of sales sit on the shelf. ' +
         'For a period it is total stock \u00f7 total sales over the outlet-months that have both (average stock over average monthly sales). Stock holding is on file from <b>' + esc(E.monthLabel(m.stockFrom)) + '</b>; a recorded stock of 0 is treated as not recorded. ' +
         '<b>Reading:</b> MOI below <b>' + TH.moiLow + '</b> may mean the shelf is too thin to keep up with demand (stock limits sales); MOI at or above <b>' + TH.moiHigh + '</b> means cash tied up and expiry / loss risk. ' +
         'Both thresholds are proposed starting points, not company policy' + (S.stockScope === 'mature' ? '. New outlets (within ' + E.NEW_MONTHS + ' months of opening) are left out: they carry an opening stock load, so their MOI is high by design. ' : '. New outlets are included, so their opening stock load pushes MOI up. ') +
-        '<b>Coverage:</b> ' + has.length + ' of ' + recs.length + ' outlets in view have stock holding for ' + (lastB ? esc(E.monthShort(endT)) : esc(P.tag)) + '. ' + (B.isFiltered() ? 'Top-bar filters apply.' : '') + '</div>';
-      if (!has.length) { view.innerHTML = banner + ctl + '<div class="note warn">No outlet in this selection has both a stock holding and sales for ' + (lastB ? esc(E.monthLabel(endT)) : esc(P.tag)) + (P.cur[P.cur.length - 1] < m.stockFrom ? '. Stock holding data starts ' + esc(E.monthLabel(m.stockFrom)) + '.' : '.') + '</div>'; wire(view); return; }
+        '<b>Coverage:</b> ' + has.length + ' of ' + recs.length + ' outlets in view have stock holding for ' + (lastB ? esc(E.monthShort(sEnd)) : esc(P.tag)) + '. ' + (B.isFiltered() ? 'Top-bar filters apply.' : '') + '</div>';
+      if (!has.length) { view.innerHTML = banner + ctl + '<div class="note warn">No outlet in this selection has both a stock holding and sales for ' + (lastB ? esc(E.monthLabel(sEnd)) : esc(P.tag)) + (P.cur[P.cur.length - 1] < m.stockFrom ? '. Stock holding data starts ' + esc(E.monthLabel(m.stockFrom)) + '.' : '.') + '</div>'; wire(view); return; }
 
       /* ---------- totals ---------- */
       var gsAll = E.groupStats(m, P, has.map(function (w) { return w.r; }));
-      var tA = lastB ? E.agg(m, has.map(function (w) { return w.o; }), [endT]) : gsAll.a;
-      var lastAgg = E.agg(m, has.map(function (w) { return w.o; }), [endT]);
+      var tA = lastB ? E.agg(m, has.map(function (w) { return w.o; }), [sEnd]) : gsAll.a;
+      var lastAgg = E.agg(m, has.map(function (w) { return w.o; }), [sEnd]);
       var moiVals = has.map(function (w) { return w.moi; });
       var cnt = {}; Object.keys(SIGS).forEach(function (k) { cnt[k] = 0; });
       has.forEach(function (w) { cnt[w.sig]++; });
       var lowN = has.filter(function (w) { return w.moi < TH.moiLow; }).length, highN = has.filter(function (w) { return w.moi >= TH.moiHigh && !w.isNew; }).length;
-      var above = sum(has.filter(function (w) { return !w.isNew; }), function (w) { var x = lastB ? w.r.last : w.r.A; var st = x.stk, rv = x.stkRev; return st > 0 && rv > 0 && w.moi >= TH.moiHigh ? st / x.stkN - TH.moiHigh * (rv / x.stkN) : 0; });
+      var above = sum(has.filter(function (w) { return !w.isNew; }), function (w) { var x = lastB ? w.r.lastS : w.r.A; var st = x.stk, rv = x.stkRev; return st > 0 && rv > 0 && w.moi >= TH.moiHigh ? st / x.stkN - TH.moiHigh * (rv / x.stkN) : 0; });
       var gLow = has.filter(function (w) { return w.moi < TH.moiLow && w.r.cat === 'lfl'; }), gHigh = has.filter(function (w) { return w.moi >= TH.moiHigh && w.r.cat === 'lfl' && !w.isNew; });
       var gMean = function (a) { return a.length ? sum(a, function (w) { return w.gRev; }) / a.length : NaN; };
 
       var cards = '<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">' +
-        B.card('Company MOI \u00b7 ' + (lastB ? esc(E.monthShort(endT)) : esc(P.tag)), F.moi(tA.moi, 2) + ' <small>months</small>', 'Stock ' + F.rp(tA.stockAvg * (lastB ? tA.stkN : tA.stkN / Math.max(1, P.cur.length))) + (lastB ? '' : ' avg per month') + '<br>over sales ' + F.rp(tA.stkRev / (lastB ? 1 : Math.max(1, P.cur.length)))) +
-        B.card('Stock holding \u00b7 ' + esc(E.monthShort(endT)), F.rp(lastAgg.stk), lastAgg.stkN + ' outlets \u00b7 avg ' + F.jt(lastAgg.stockAvg, 0) + ' each<br>MOI ' + F.moi(lastAgg.moi, 2)) +
+        B.card('Company MOI \u00b7 ' + (lastB ? esc(E.monthShort(sEnd)) : esc(P.tag)), F.moi(tA.moi, 2) + ' <small>months</small>', 'Stock ' + F.rp(tA.stockAvg * (lastB ? tA.stkN : tA.stkN / Math.max(1, P.cur.length))) + (lastB ? '' : ' avg per month') + '<br>over sales ' + F.rp(tA.stkRev / (lastB ? 1 : Math.max(1, P.cur.length)))) +
+        B.card('Stock holding \u00b7 ' + esc(E.monthShort(sEnd)), F.rp(lastAgg.stk), lastAgg.stkN + ' outlets \u00b7 avg ' + F.jt(lastAgg.stockAvg, 0) + ' each<br>MOI ' + F.moi(lastAgg.moi, 2)) +
         B.card('Typical outlet MOI', F.moi(U.median(moiVals), 2), 'median \u00b7 middle half ' + F.moi(pct(moiVals, 0.25), 2) + '\u2013' + F.moi(pct(moiVals, 0.75), 2)) +
         B.card('Low stock cover (&lt; ' + TH.moiLow + ')', lowN + ' <small>outlets</small>', isN(gMean(gLow)) ? 'their sales growth: avg ' + F.p(gMean(gLow), 1, true) + ' (' + gLow.length + ' like-for-like)' : 'no like-for-like read', lowN ? '' : 'pos') +
         B.card('High stock (\u2265 ' + TH.moiHigh + ')', highN + ' <small>outlets</small>', (isN(gMean(gHigh)) ? 'their sales growth: avg ' + F.p(gMean(gHigh), 1, true) + '<br>' : '') + 'stock above ' + TH.moiHigh + ' months: ' + F.rp(above), highN ? 'neg' : 'pos') +
@@ -102,12 +103,12 @@
       var bands = EDGES.slice(0, -1).map(function (e, i) {
         var a = has.filter(function (w) { return w.bi === i; });
         var gs = a.length ? E.groupStats(m, P, a.map(function (w) { return w.r; })) : null;
-        var xa = a.length ? (lastB ? E.agg(m, a.map(function (w) { return w.o; }), [endT]) : gs.a) : null;
+        var xa = a.length ? (lastB ? E.agg(m, a.map(function (w) { return w.o; }), [sEnd]) : gs.a) : null;
         return { i: i, a: a, n: a.length, gs: gs, xa: xa, lab: BLAB[i], col: BCOL[i] };
       });
       function grpRow(label, a, col, dataAttr) {
         var few = a.length < MINB, gs = a.length ? E.groupStats(m, P, a.map(function (w) { return w.r; })) : null;
-        var xa = a.length ? (lastB ? E.agg(m, a.map(function (w) { return w.o; }), [endT]) : gs.a) : null;
+        var xa = a.length ? (lastB ? E.agg(m, a.map(function (w) { return w.o; }), [sEnd]) : gs.a) : null;
         var nlow = a.filter(function (w) { return w.moi < TH.moiLow; }).length, nhigh = a.filter(function (w) { return w.moi >= TH.moiHigh && !w.isNew; }).length;
         var lfl = a.filter(function (w) { return w.r.cat === 'lfl'; }).length;
         return '<tr' + (dataAttr || '') + ' style="' + (dataAttr ? 'cursor:pointer;' : '') + (few ? 'color:var(--mute);' : '') + '"><td class="l"><b>' + (col ? '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + col + ';margin-right:6px"></span>' : '') + esc(label) + '</b>' + (few ? ' <small>few</small>' : '') + '</td>' +
@@ -124,7 +125,7 @@
         rowsHtml = Object.keys(grp).sort(function (a, b) { return grp[b].length - grp[a].length; }).map(function (k) { return grpRow(k, grp[k], null, ''); }).join('');
       }
       var dimSeg = seg('stockDim', Object.keys(DIMS).map(function (k) { return [k, DIMS[k][0]]; }), dimKey);
-      var bandTbl = '<div class="tw" style="margin-top:12px"><div class="th"><div><h3>Stock holding by ' + esc(dimKey === 'band' ? 'MOI band' : dimName.toLowerCase()) + '</h3><p>' + (lastB ? esc(E.monthShort(endT)) : esc(P.tag)) + ' \u00b7 ' + (S.stockScope === 'mature' ? 'mature outlets' : 'all trading outlets') + ' \u00b7 stock and sales per outlet per month, Rp Jt \u00b7 growth is like-for-like vs ' + esc(P.baseTag) + (dimKey === 'band' ? ' \u00b7 click a band to filter the outlet list' : '') + '</p></div><div style="overflow-x:auto">' + dimSeg + '</div></div>' +
+      var bandTbl = '<div class="tw" style="margin-top:12px"><div class="th"><div><h3>Stock holding by ' + esc(dimKey === 'band' ? 'MOI band' : dimName.toLowerCase()) + '</h3><p>' + (lastB ? esc(E.monthShort(sEnd)) : esc(P.tag)) + ' \u00b7 ' + (S.stockScope === 'mature' ? 'mature outlets' : 'all trading outlets') + ' \u00b7 stock and sales per outlet per month, Rp Jt \u00b7 growth is like-for-like vs ' + esc(P.baseTag) + (dimKey === 'band' ? ' \u00b7 click a band to filter the outlet list' : '') + '</p></div><div style="overflow-x:auto">' + dimSeg + '</div></div>' +
         '<div class="tx" style="max-height:none"><table id="stockBands"><thead><tr><th class="l">' + esc(dimName) + '</th><th>Outlets</th><th>Stock / outlet<small>Rp Jt</small></th><th>Sales / outlet<small>Rp Jt / month</small></th><th class="pt">MOI<small>months</small></th><th>Low MOI<small>&lt; ' + TH.moiLow + '</small></th><th>High MOI<small>\u2265 ' + TH.moiHigh + '</small></th><th>Sales growth<small>like-for-like</small></th><th>Stock loss<small>% sales</small></th><th>PSH<small>Rp/hr</small></th><th>PAT margin</th></tr></thead><tbody>' + rowsHtml + '</tbody></table></div></div>';
 
       /* ---------- signal tiles + outlet table ---------- */
@@ -139,11 +140,11 @@
         { k: 'nm', label: 'Outlet', left: true, get: function (w) { return w.ol.name; }, fmt: function (w) { return '<div class="nm"><b>' + esc(w.ol.name) + '</b><span>' + esc(w.ol.code) + ' \u00b7 ' + esc(w.ol.type) + (w.isNew ? ' \u00b7 new' : '') + '</span></div>'; } },
         { k: 'am', label: 'Area manager', left: true, get: function (w) { return w.ol.am; }, fmt: function (w) { return esc(w.ol.am); } },
         { k: 'sg', label: 'Reading', left: true, get: function (w) { return ({ limit: 0, over: 1, lean: 2, high: 3, ok: 4 })[w.sig]; }, fmt: function (w) { return pill(w.sig); } },
-        { k: 'sk', label: 'Stock ' + esc(E.monthShort(endT)), sub: 'Rp Jt', get: function (w) { return w.stockL; }, fmt: function (w) { return F.m(w.stockL, 0); } },
-        { k: 'moi', th: 'pt', cls: 'pt', label: 'MOI', sub: lastB ? esc(E.monthShort(endT)) : esc(P.tag), get: function (w) { return w.moi; }, fmt: function (w) { return '<b>' + F.moi(w.moi, 2) + '</b>'; }, tdc: moiTd },
-        { k: 'ml', label: 'MOI ' + esc(E.monthShort(endT)), sub: 'latest month', get: function (w) { return w.moiL; }, fmt: function (w) { return F.moi(w.moiL, 2); } },
-        { k: 'm3', label: 'MOI 3 months ago', sub: esc(E.monthShort(endT - 3)), get: function (w) { return w.moi3; }, fmt: function (w) { return F.moi(w.moi3, 2); } },
-        { k: 'sy', label: 'Stock vs ' + esc(E.monthShort(endT - 12)), sub: 'year on year', get: function (w) { return w.stockYoY; }, fmt: function (w) { return isN(w.stockYoY) ? F.p(w.stockYoY, 0, true) : '\u2013'; } },
+        { k: 'sk', label: 'Stock ' + esc(E.monthShort(sEnd)), sub: 'Rp Jt', get: function (w) { return w.stockL; }, fmt: function (w) { return F.m(w.stockL, 0); } },
+        { k: 'moi', th: 'pt', cls: 'pt', label: 'MOI', sub: lastB ? esc(E.monthShort(sEnd)) : esc(P.tag), get: function (w) { return w.moi; }, fmt: function (w) { return '<b>' + F.moi(w.moi, 2) + '</b>'; }, tdc: moiTd },
+        { k: 'ml', label: 'MOI ' + esc(E.monthShort(sEnd)), sub: 'latest month', get: function (w) { return w.moiL; }, fmt: function (w) { return F.moi(w.moiL, 2); } },
+        { k: 'm3', label: 'MOI 3 months ago', sub: esc(E.monthShort(sEnd - 3)), get: function (w) { return w.moi3; }, fmt: function (w) { return F.moi(w.moi3, 2); } },
+        { k: 'sy', label: 'Stock vs ' + esc(E.monthShort(sEnd - 12)), sub: 'year on year', get: function (w) { return w.stockYoY; }, fmt: function (w) { return isN(w.stockYoY) ? F.p(w.stockYoY, 0, true) : '\u2013'; } },
         { k: 'g', label: 'Sales change', sub: 'vs ' + esc(P.baseTag), get: function (w) { return w.gRev; }, fmt: function (w) { return isN(w.gRev) ? F.p(w.gRev, 1, true) : '\u2013'; }, tdc: function (w) { return F.cls(w.gRev); } },
         { k: 'lv', label: 'Level', get: function (w) { return w.r.cat === 'lfl' ? (w.r.dir === 'down' ? -w.r.level : w.r.level) : null; }, fmt: function (w) { return w.r.cat === 'lfl' ? (w.r.dir === 'down' ? '\u2193L' : '\u2191L') + w.r.level : (w.isNew ? 'new' : '\u2013'); } },
         { k: 'rv', label: 'Sales ' + esc(E.monthShort(endT)), sub: 'Rp Jt', get: function (w) { return w.r.last.rev; }, fmt: function (w) { return F.m(w.r.last.rev, 0); } },

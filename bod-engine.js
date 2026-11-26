@@ -21,9 +21,9 @@
   ];
   var KEYS = METRICS.map(function (m) { return m[0]; });
 
-  var MON = { jan: 1, feb: 2, mar: 3, mac: 3, apr: 4, may: 5, mei: 5, jun: 6, jul: 7, aug: 8, agu: 8,
+  var MON = { peb: 2, nop: 11, jan: 1, feb: 2, mar: 3, mac: 3, apr: 4, may: 5, mei: 5, jun: 6, jul: 7, aug: 8, agu: 8,
               sep: 9, oct: 10, okt: 10, nov: 11, dec: 12, des: 12 };
-  var MON_RE = /(jan|feb|mar|mac|apr|may|mei|jun|jul|aug|agu|sep|oct|okt|nov|dec|des)[a-z]*[\s\-]+(\d{2,4})\s*$/i;
+  var MON_RE = /(jan|feb|peb|mar|mac|apr|may|mei|jun|jul|aug|agu|sep|oct|okt|nov|nop|dec|des)[a-z]*[\s\-]+(\d{2,4})\s*$/i;
   var MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   /* ---------- month index helpers: idx = (year-2000)*12 + (month-1) ---------- */
@@ -90,7 +90,7 @@
   var FIXED = [
     ['code', /^(\d[\d,]*\s+)?Outlet\b/i, 0], ['name', /\bName\b/i, 1], ['start', /Start Date/i, 2], ['am', /^AM\b/i, 4],
     ['type', /\bTYPE\b/i, 5], ['nature', /\bNATURE\b/i, 6], ['kec', /KECAMATAN/i, 7], ['city', /\bKOTA\b/i, 8],
-    ['prov', /PROVINCE/i, 9], ['sizeCat', /Size\s+Category/i, 11], ['floor', /Sales\s+Floor|\(m2\)/i, 12], ['target', /Target\s+2026/i, 13], ['transformed', /Transformed/i, 14],
+    ['prov', /PROVINCE/i, 9], ['sizeCat', /Size\s+Category/i, 11], ['floor', /Sales\s+Floor|\(m2\)/i, 12], ['target', /Target\s+20\d\d/i, 13], ['transformed', /Transformed/i, 14],
     ['phase', /\bPHASE\b/i, 15], ['tier', /Category\s+20\d\d/i, 16]
   ];
   function parseMaster(j) {
@@ -165,6 +165,13 @@
       var ns = 0;
       for (var os = 0; os < m.outlets.length; os++) if (m.S.stock[os * m.nm + (ts - m.min)] > 0) ns++;
       if (ns >= 20) m.stockFrom = ts;
+    }
+    // last month with stock holding on file for at least 20 outlets (a new month column may be filled for sales before stock is entered)
+    m.stockLatest = null;
+    if (m.S.stock) for (var tl = m.latest; tl >= m.min && m.stockLatest === null; tl--) {
+      var nl = 0;
+      for (var ol2 = 0; ol2 < m.outlets.length; ol2++) if (m.S.stock[ol2 * m.nm + (tl - m.min)] > 0) nl++;
+      if (nl >= 20) m.stockLatest = tl;
     }
     m.minBy = {};
     KEYS.forEach(function (k) {
@@ -416,6 +423,9 @@
       var A = agg(model, [o], P.cur), B = agg(model, [o], P.base);
       r.A = A; r.B = B;
       r.last = agg(model, [o], [endT]);
+      // stock holding / MOI are read at the period's last month, or at the latest month that has stock on file if the new month's stock is not entered yet
+      r.stockEnd = (model.stockLatest != null && endT > model.stockLatest) ? model.stockLatest : endT;
+      r.lastS = r.stockEnd === endT ? r.last : agg(model, [o], [r.stockEnd]);
       r.revCur = A.rev; r.revBase = B.rev; r.txCur = A.tx; r.txBase = B.tx;
       r.patCur = A.pat; r.patBase = B.pat; r.patLast = r.last.pat; r.pshLast = r.last.psh;
       if (nCur === 0) { r.reason = 'No sales in the selected period'; rows.push(r); continue; }

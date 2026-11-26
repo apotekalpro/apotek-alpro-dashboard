@@ -117,9 +117,9 @@
       rent: function () { return 'Rental ' + F.p(L.rentPct, 1) + ' of sales in ' + esc(mon) + ' (flag above ' + F.p(TH.rent, 0) + ')'; },
       recruit: function () { return 'Recruitment rate ' + F.p(L.rrPct, 1) + ' in ' + esc(mon) + ' (flag below ' + F.p(TH.recruit, 0) + ')'; },
       lossmaking: function () { return 'PAT ' + F.jt(r.patCur, 1) + ' over ' + esc(P.tag) + ', open ' + r.opMonths + ' months'; },
-      moilow: function () { return 'Stock holding ' + F.jt(L.stockAvg, 0) + ' = ' + F.moi(L.moi) + ' months of ' + esc(mon) + ' sales (flag below ' + TH.moiLow + ')'; },
-      moihigh: function () { return 'Stock holding ' + F.jt(L.stockAvg, 0) + ' = ' + F.moi(L.moi) + ' months of ' + esc(mon) + ' sales (flag at ' + TH.moiHigh + ' or more)'; },
-      stockjump: function () { var a = val(m, 'stock', o, endT - 1), b = val(m, 'stock', o, endT); return 'Stock holding ' + F.jt(a, 0) + ' \u2192 ' + F.jt(b, 0) + ' (' + F.p(b / a - 1, 0, true) + ' vs the previous month); confirm the source figure'; },
+      moilow: function () { var Ls = r.lastS, ms = E.monthShort(r.stockEnd); return 'Stock holding ' + F.jt(Ls.stockAvg, 0) + ' = ' + F.moi(Ls.moi) + ' months of ' + esc(ms) + ' sales (flag below ' + TH.moiLow + ')'; },
+      moihigh: function () { var Ls = r.lastS, ms = E.monthShort(r.stockEnd); return 'Stock holding ' + F.jt(Ls.stockAvg, 0) + ' = ' + F.moi(Ls.moi) + ' months of ' + esc(ms) + ' sales (flag at ' + TH.moiHigh + ' or more)'; },
+      stockjump: function () { var a = val(m, 'stock', o, r.stockEnd - 1), b = val(m, 'stock', o, r.stockEnd); return 'Stock holding ' + F.jt(a, 0) + ' \u2192 ' + F.jt(b, 0) + ' (' + F.p(b / a - 1, 0, true) + ' vs the previous month); confirm the source figure'; },
       anomaly: function () { return 'Margin ' + F.p(L.margin, 1) + ' in ' + esc(mon) + ' is outside the plausible range; check the source data first'; }
     };
     var order = { h: 0, m: 1, i: 2 };

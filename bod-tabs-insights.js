@@ -25,6 +25,8 @@
     { id: 'stockjump', sev: 'i', label: 'Check stock data', desc: 'Stock holding up more than ' + Math.round(TH.stockUp * 100) + '% or down more than ' + Math.round(-TH.stockDown * 100) + '% vs the previous month' },
     { id: 'anomaly', sev: 'i', label: 'Check the data', desc: 'Latest margin above 60% or below \u221230%' }
   ];
+  // month used for stock / MOI reads: the period's last month, or the latest month that has stock holding when it is not entered yet
+  B.stockEnd = function (m, endT) { return m.stockLatest != null && endT > m.stockLatest ? m.stockLatest : endT; };
   B.flagDefs = DEFS;
   B.flagTH = TH;
 
@@ -49,10 +51,11 @@
       if (isN(L.rrPct) && L.rrPct < TH.recruit) f.push('recruit');
       if (r.A.patOM > 0 && r.patCur < 0 && r.opMonths > 12) f.push('lossmaking');
       if (isN(L.margin) && (L.margin > 0.6 || L.margin < -0.3)) f.push('anomaly');
-      if (isN(L.moi)) {
-        if (L.moi < TH.moiLow) f.push('moilow');
-        if (L.moi >= TH.moiHigh && r.cat !== 'new') f.push('moihigh');
-        var sk0 = E.get(m, 'stock', r.o, endT - 1), sk1 = E.get(m, 'stock', r.o, endT);
+      var sE = r.stockEnd, Ls = r.lastS;
+      if (isN(Ls.moi)) {
+        if (Ls.moi < TH.moiLow) f.push('moilow');
+        if (Ls.moi >= TH.moiHigh && r.cat !== 'new') f.push('moihigh');
+        var sk0 = E.get(m, 'stock', r.o, sE - 1), sk1 = E.get(m, 'stock', r.o, sE);
         if (isN(sk0) && sk0 > 0 && isN(sk1) && sk1 > 0 && (sk1 / sk0 - 1 >= TH.stockUp || sk1 / sk0 - 1 <= TH.stockDown)) f.push('stockjump');
       }
       if (r.cat === 'new' && r.ol.firstRev >= 0) {
@@ -94,8 +97,8 @@
         { k: 'sa', label: 'Salary', sub: '% sales', get: function (r) { return r.last.salPct; }, fmt: function (r) { return F.p(r.last.salPct, 1); } },
         { k: 'rn', label: 'Rental', sub: '% sales', get: function (r) { return r.last.rentPct; }, fmt: function (r) { return F.p(r.last.rentPct, 1); }, tdc: function (r) { return isN(r.last.rentPct) && r.last.rentPct > TH.rent ? 'neg' : ''; } },
         { k: 'sl', label: 'Stock loss', sub: '% sales', get: function (r) { return r.last.slPct; }, fmt: function (r) { return F.p(r.last.slPct, 1); } },
-        { k: 'sk', label: 'Stock holding', sub: 'Rp Jt', get: function (r) { return r.last.stockAvg; }, fmt: function (r) { return F.m(r.last.stockAvg, 0); } },
-        { k: 'moi', label: 'MOI', sub: 'months', get: function (r) { return r.last.moi; }, fmt: function (r) { return F.moi(r.last.moi); }, tdc: function (r) { return r.flags.indexOf('moilow') >= 0 || r.flags.indexOf('moihigh') >= 0 ? 'neg' : ''; } },
+        { k: 'sk', label: 'Stock holding', sub: 'Rp Jt', get: function (r) { return r.lastS.stockAvg; }, fmt: function (r) { return F.m(r.lastS.stockAvg, 0); } },
+        { k: 'moi', label: 'MOI', sub: 'months', get: function (r) { return r.lastS.moi; }, fmt: function (r) { return F.moi(r.lastS.moi); }, tdc: function (r) { return r.flags.indexOf('moilow') >= 0 || r.flags.indexOf('moihigh') >= 0 ? 'neg' : ''; } },
         { k: 'rr', label: 'Recruit', sub: 'rate', get: function (r) { return r.last.rrPct; }, fmt: function (r) { return F.p(r.last.rrPct, 0); } },
         { k: 'pl', label: 'PSH', sub: 'Rp/hr', get: function (r) { return r.pshLast; }, fmt: function (r) { return F.n(r.pshLast); }, tdc: function (r) { return F.cls(r.pshLast); } },
         { k: 'tl', th: 'pt', cls: 'pt', label: E.monthShort(endT) + ' PAT', sub: 'Rp Jt', get: function (r) { return r.patLast; }, fmt: function (r) { return r.last.patOM ? F.m(r.patLast, 2) : '\u2013'; }, tdc: function (r) { return F.cls(r.patLast); } }
@@ -110,7 +113,7 @@
       tbl.bind(view); B.bindSearch(view);
       view.querySelector('#exp').onclick = function () {
         B.csv('bod-watchlist.csv', ['Priority', 'Code', 'Outlet', 'Type', 'AM', 'Flags', 'Sales change', 'Tx change', 'Latest sales', 'Latest margin', 'Salary %', 'Rental %', 'Stock loss %', 'Recruit %', 'Latest PSH', 'Latest PAT', 'Stock holding', 'MOI'],
-          tbl.all.map(function (r) { return [r.score, r.ol.code, r.ol.name, r.ol.type, r.ol.am, r.flags.map(function (id) { return DEFS.filter(function (d) { return d.id === id; })[0].label; }).join('; '), isN(r.gRev) ? r.gRev.toFixed(4) : '', isN(r.gTx) ? r.gTx.toFixed(4) : '', Math.round(r.last.rev), isN(r.last.margin) ? r.last.margin.toFixed(4) : '', isN(r.last.salPct) ? r.last.salPct.toFixed(4) : '', isN(r.last.rentPct) ? r.last.rentPct.toFixed(4) : '', isN(r.last.slPct) ? r.last.slPct.toFixed(4) : '', isN(r.last.rrPct) ? r.last.rrPct.toFixed(4) : '', isN(r.pshLast) ? Math.round(r.pshLast) : '', Math.round(r.patLast), isN(r.last.stockAvg) ? Math.round(r.last.stockAvg) : '', isN(r.last.moi) ? r.last.moi.toFixed(2) : '']; }));
+          tbl.all.map(function (r) { return [r.score, r.ol.code, r.ol.name, r.ol.type, r.ol.am, r.flags.map(function (id) { return DEFS.filter(function (d) { return d.id === id; })[0].label; }).join('; '), isN(r.gRev) ? r.gRev.toFixed(4) : '', isN(r.gTx) ? r.gTx.toFixed(4) : '', Math.round(r.last.rev), isN(r.last.margin) ? r.last.margin.toFixed(4) : '', isN(r.last.salPct) ? r.last.salPct.toFixed(4) : '', isN(r.last.rentPct) ? r.last.rentPct.toFixed(4) : '', isN(r.last.slPct) ? r.last.slPct.toFixed(4) : '', isN(r.last.rrPct) ? r.last.rrPct.toFixed(4) : '', isN(r.pshLast) ? Math.round(r.pshLast) : '', Math.round(r.patLast), isN(r.lastS.stockAvg) ? Math.round(r.lastS.stockAvg) : '', isN(r.lastS.moi) ? r.lastS.moi.toFixed(2) : '']; }));
       };
     }
   };
