@@ -17,7 +17,7 @@
     ['newMem', 'New Member'], ['basket', 'Basket Size'], ['margin', 'Margin %'],
     ['tx', 'Transaction'], ['pro', 'Profit'], ['rev', 'Revenue'], ['evip', 'EVIP'],
     ['psh', 'PSH'], ['sal', 'SALARY'], ['rent', 'RENTAL'], ['util', 'UTILITIES'],
-    ['petty', 'PETTY CASH'], ['stockloss', 'STOCK LOSS'], ['wh', 'WORKING HOURS']
+    ['petty', 'PETTY CASH'], ['stockloss', 'STOCK LOSS'], ['stock', 'STOCK HOLDING'], ['wh', 'WORKING HOURS']
   ];
   var KEYS = METRICS.map(function (m) { return m[0]; });
 
@@ -159,6 +159,13 @@
       if (n >= 50) { latest = t; break; }
     }
     m.latest = latest;
+    // first month in which at least 20 outlets have a stock holding > 0 (0 = not recorded); null when the columns are absent
+    m.stockFrom = null;
+    if (m.S.stock) for (var ts = m.min; ts <= m.max && m.stockFrom === null; ts++) {
+      var ns = 0;
+      for (var os = 0; os < m.outlets.length; os++) if (m.S.stock[os * m.nm + (ts - m.min)] > 0) ns++;
+      if (ns >= 20) m.stockFrom = ts;
+    }
     m.minBy = {};
     KEYS.forEach(function (k) {
       m.minBy[k] = null;
@@ -257,7 +264,7 @@
   function fromSnapshot(s) {
     var S = {};
     KEYS.forEach(function (k) {
-      var b = s.S[k], a = new Float64Array(b.length);
+      var b = s.S[k] || [], a = new Float64Array(s.outlets.length * s.nm).fill(NaN);
       for (var i = 0; i < b.length; i++) a[i] = b[i] === null ? NaN : b[i];
       S[k] = a;
     });
@@ -300,7 +307,8 @@
   function agg(model, oList, months) {
     var A = { rev: 0, tx: 0, pro: 0, pat: 0, wh: 0, nm: 0, revTx: 0, revPro: 0, revPat: 0,
               fa: 0, fr: 0, ea: 0, er: 0, na: 0, nr: 0, ma: 0, mt: 0, rrNm: 0, rrWalk: 0, sdRev: 0, sdDays: 0,
-              sal: 0, rent: 0, util: 0, petty: 0, sl: 0, revC: 0, evip: 0, nOM: 0, patOM: 0, revOM: 0, nOutlets: oList.length };
+              sal: 0, rent: 0, util: 0, petty: 0, sl: 0, revC: 0, evip: 0, nOM: 0, patOM: 0, revOM: 0, nOutlets: oList.length,
+              stk: 0, stkRev: 0, stkN: 0 };
     var S = model.S, nmn = model.nm, mn = model.min;
     var lastT = months.length ? months[months.length - 1] : null;
     for (var a = 0; a < oList.length; a++) {
@@ -316,6 +324,9 @@
           A.pat += psh * wh; A.wh += wh; A.patOM++;
           if (hasRev) A.revPat += rev;
         }
+        // Stock holding (balance) and the same month's revenue, only where both exist; 0 means not recorded.
+        var sk = S.stock ? S.stock[p] : NaN;
+        if (sk === sk && sk > 0 && rev > 0) { A.stk += sk; A.stkRev += rev; A.stkN++; }
         var nmv = S.newMem[p]; if (nmv === nmv) A.nm += nmv;
         var f = S.focus[p]; if (f === f && hasRev) { A.fa += f * rev; A.fr += rev; }
         var e = S.eth[p]; if (e === e && hasRev) { A.ea += e * rev; A.er += rev; }
@@ -351,6 +362,10 @@
     A.utilPct = A.revC > 0 ? A.util / A.revC : NaN;
     A.pettyPct = A.revC > 0 ? A.petty / A.revC : NaN;
     A.slPct = A.revC > 0 ? A.sl / A.revC : NaN;
+    // Month of inventory = stock holding / revenue of the same month (pooled over the outlet-months that have both)
+    A.moi = A.stkRev > 0 ? A.stk / A.stkRev : NaN;
+    A.stockAvg = A.stkN > 0 ? A.stk / A.stkN : NaN;        // average stock per outlet-month
+    A.revStockAvg = A.stkN > 0 ? A.stkRev / A.stkN : NaN;  // average monthly revenue in those same outlet-months
     return A;
   }
 
@@ -480,7 +495,7 @@
       out.push({ t: t, rev: A.rev, tx: A.tx, pro: A.pro, pat: A.pat, margin: A.margin, psh: A.psh, basket: A.basket,
                  focus: A.focusPct, mem: A.memPct, rr: A.rrPct, ssd: A.ssd, nm: A.nm, n: A.revOM,
                  sal: A.salPct, rent: A.rentPct, util: A.utilPct, petty: A.pettyPct, sl: A.slPct,
-                 posPsh: posPsh, nPsh: nPsh, evip: A.evip });
+                 posPsh: posPsh, nPsh: nPsh, evip: A.evip, stock: A.stockAvg, moi: A.moi });
     }
     return out;
   }

@@ -35,6 +35,8 @@
     },
     pp: function (v) { if (!isN(v)) return '\u2013'; var x = v * 100; return (x < 0 ? '\u2212' : '+') + Math.abs(x).toFixed(2) + ' pp'; },
     d: function (ms) { if (!ms) return '\u2013'; var d = new Date(ms); return ('0' + d.getUTCDate()).slice(-2) + ' ' + E.MN[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); },
+    // Month of inventory, e.g. '2.4' (months of sales held as stock)
+    moi: function (v, d) { return isN(v) ? v.toFixed(d == null ? 1 : d) : '\u2013'; },
     cls: function (v) { return !isN(v) ? '' : v < 0 ? 'neg' : v > 0 ? 'pos' : ''; }
   };
 
@@ -255,8 +257,8 @@
       subs: [['down', 'Like-for-like movers', 'fa-arrows-up-down', ['down', 'up']], ['new', 'New outlets', 'fa-seedling'], ['watch', 'Watchlist & alerts', 'fa-flag']] },
     { id: 'fin', label: 'Financial performance', icon: 'fa-chart-line', hint: 'Growth, profit, PSH and what drives them',
       subs: [['growth', 'Growth scorecard', 'fa-chart-line'], ['pat', 'Profitability (PAT)', 'fa-sack-dollar'], ['psh', 'PSH ranking', 'fa-ranking-star'], ['quad', 'Growth vs profit', 'fa-chart-scatter'], ['win', 'Winning formula', 'fa-trophy']] },
-    { id: 'seg', label: 'Segments & geography', icon: 'fa-layer-group', hint: 'Where performance differs: area manager, location, store size',
-      subs: [['am', 'Area managers', 'fa-user-tie'], ['geo', 'Geographic', 'fa-map-location-dot'], ['size', 'Store size', 'fa-ruler-combined'], ['rent', 'Rent vs profit', 'fa-store']] }
+    { id: 'seg', label: 'Segments & geography', icon: 'fa-layer-group', hint: 'Where performance differs: area manager, location, store size, rent, stock holding',
+      subs: [['am', 'Area managers', 'fa-user-tie'], ['geo', 'Geographic', 'fa-map-location-dot'], ['size', 'Store size', 'fa-ruler-combined'], ['rent', 'Rent vs profit', 'fa-store'], ['stock', 'Stock holding (MOI)', 'fa-boxes-stacked']] }
   ];
   B.groupOf = function (tab) { return GROUPS.filter(function (g) { return g.subs.some(function (s) { return s[0] === tab || (s[3] || []).indexOf(tab) >= 0; }); })[0] || GROUPS[0]; };
   S.last = S.last || {};
@@ -431,6 +433,7 @@
       '<li><b>Like-for-like outlet</b> = traded in every month of both windows. Others are listed under <i>New outlets</i> with the reason.</li>' +
       '<li><b>PAT</b> = PSH &times; working hours for each outlet-month, summed over the period. <b>PSH</b> for a period = PAT &divide; working hours (hours-weighted).</li>' +
       '<li><b>Overview cards</b> all follow the selected period (month, quarter, half-year, year or running 12 months). Ratios are weighted over the whole period; <b>EVIP</b> and the small print on the PSH card show the latest month of the period.</li>' +
+      '<li><b>Month of inventory (MOI)</b> = stock holding at month end &divide; that month\'s sales (MASTER <i>STOCK HOLDING</i> columns, from ' + (m.stockFrom != null ? E.monthLabel(m.stockFrom) : 'n/a') + '). For a longer period it is total stock &divide; total sales over the outlet-months that have both, i.e. average stock over average monthly sales. A stock of 0 means not recorded and is left out. The Watchlist flags MOI below ' + (B.flagTH ? B.flagTH.moiLow : '') + ' (stock may cap sales) and at or above ' + (B.flagTH ? B.flagTH.moiHigh : '') + ' (cash tied up, loss risk); these are proposed thresholds.</li>' +
       '<li><b>Margin</b> = profit &divide; sales. <b>Basket</b> = sales &divide; transactions. <b>Focus product %</b> and <b>member %</b> are sales-weighted and transaction-weighted.</li>' +
       '<li><b>Recruitment rate</b> = new members &divide; walk-in customers without membership (10 walk-ins, 2 recruited = 20%); rolled up as total recruited &divide; implied walk-ins.</li>' +
       '<li><b>Financial year</b> = Jan&ndash;Dec: FY' + E.yearOf('FY', m.latest) + ' runs from ' + E.monthLabel(E.yearStart('FY', E.yearOf('FY', m.latest))) + ' to the latest month in the sheet (' + E.monthLabel(m.latest) + ') and rolls over automatically each January. <b>Running 12 months</b> = the last 12 months to the latest month (' + E.monthLabel(m.latest - 11) + ' &ndash; ' + E.monthLabel(m.latest) + ') and moves forward as months are added.</li></ul></div>' +

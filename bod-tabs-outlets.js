@@ -19,6 +19,13 @@
     return (S.level ? 'Level ' + S.level : 'All levels') + ' \u00b7 ' + (S.type ? S.type : 'All outlet types') + (S.am ? ' \u00b7 ' + S.am : '') + (S.prov ? ' \u00b7 ' + S.prov : '') + (S.city ? ' \u00b7 ' + S.city : '') + (S.size ? ' \u00b7 size ' + S.size : '');
   }
 
+  // MOI value, tinted when it crosses the Watchlist thresholds (low = may cap sales, high = cash tied up)
+  function moiCell(v, r) {
+    if (!isN(v)) return '\u2013'; var TH = B.flagTH || {};
+    var c = v < TH.moiLow ? 'var(--neg)' : (v >= TH.moiHigh && r.cat !== 'new') ? 'var(--l3)' : '';
+    return c ? '<b style="color:' + c + '">' + F.moi(v) + '</b>' : F.moi(v);
+  }
+
   /* ---------- shared outlet table columns ---------- */
   function outletCols(ctx, dir) {
     var P = ctx.P, last = E.monthShort(P.cur[P.cur.length - 1]), rl = ctx.rate === 'tx';
@@ -34,6 +41,8 @@
       { k: 'gTx', label: 'Tx change', get: function (r) { return r.gTx; }, fmt: function (r) { return chg(r.gTx); } },
       { k: 'gBk', label: 'Basket change', get: function (r) { return r.gBasket; }, fmt: function (r) { return isN(r.gBasket) ? '<span class="' + F.cls(r.gBasket) + '">' + F.p(r.gBasket, 1, true) + '</span>' : '\u2013'; }, tdc: function (r) { return F.cls(r.gBasket); } },
       { k: 'dM', label: 'Margin', sub: 'change', get: function (r) { return r.dMargin; }, fmt: function (r) { return F.pp(r.dMargin); }, tdc: function (r) { return F.cls(r.dMargin); } },
+      { k: 'sk', label: last + ' stock', sub: 'Rp Jt', get: function (r) { return r.last.stockAvg; }, fmt: function (r) { return F.m(r.last.stockAvg, 0); } },
+      { k: 'moi', label: last + ' MOI', sub: 'months of stock', get: function (r) { return r.last.moi; }, fmt: function (r) { return moiCell(r.last.moi, r); } },
       { k: 'pb', label: esc(P.baseTag) + ' PSH', sub: 'Rp/hr', get: function (r) { return r.B.psh; }, fmt: function (r) { return F.n(r.B.psh); }, tdc: function (r) { return F.cls(r.B.psh); } },
       { k: 'pc', label: esc(P.tag) + ' PSH', sub: 'Rp/hr', get: function (r) { return r.A.psh; }, fmt: function (r) { return F.n(r.A.psh); }, tdc: function (r) { return F.cls(r.A.psh); } },
       { k: 'pl', label: last + ' PSH', sub: 'Rp/hr', get: function (r) { return r.pshLast; }, fmt: function (r) { return F.n(r.pshLast); }, tdc: function (r) { return F.cls(r.pshLast); } },
@@ -129,6 +138,7 @@
         { k: 'vr', label: 'vs ramp curve', sub: 'same age', get: function (r) { return r.vsRamp; }, fmt: function (r) { return F.p(r.vsRamp, 0); } },
         { k: 'mg', label: 'Margin', get: function (r) { return r.last.margin; }, fmt: function (r) { return F.p(r.last.margin, 1); } },
         { k: 'pl', label: E.monthShort(endT) + ' PSH', sub: 'Rp/hr', get: function (r) { return r.pshLast; }, fmt: function (r) { return F.n(r.pshLast); }, tdc: function (r) { return F.cls(r.pshLast); } },
+        { k: 'moi', label: E.monthShort(endT) + ' MOI', sub: 'months of stock', get: function (r) { return r.last.moi; }, fmt: function (r) { return F.moi(r.last.moi); } },
         { k: 'tc', th: 'pt', cls: 'pt', label: esc(P.tag) + ' PAT', sub: 'Rp Jt', get: function (r) { return r.patCur; }, fmt: function (r) { return r.A.patOM ? F.m(r.patCur, 2) : '\u2013'; }, tdc: function (r) { return F.cls(r.patCur); } },
         { k: 'tl', th: 'pt', cls: 'pt', label: E.monthShort(endT) + ' PAT', sub: 'Rp Jt', get: function (r) { return r.patLast; }, fmt: function (r) { return r.last.patOM ? F.m(r.patLast, 2) : '\u2013'; }, tdc: function (r) { return F.cls(r.patLast); } },
         { k: 'fl', label: 'Signal', left: true, get: function (r) { return r.vsRamp; }, fmt: flags },
