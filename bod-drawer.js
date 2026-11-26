@@ -48,6 +48,7 @@
       ['wh', 'Working hours', function (x) { var v = val(m, 'wh', o, x.t); return isN(v) ? v : null; }],
       ['ssd', 'Avg staff sales/day (Rp Jt)', amt('ssd')],
       ['focus', 'Focus product %', pct('focus')], ['mem', 'Sales through members %', pct('mem')], ['rr', 'Recruitment rate %', pct('rr')], ['nm', 'New members', num('nm')],
+      ['stock', 'Stock holding (Rp Jt)', amt('stock')], ['moi', 'Month of inventory, MOI (months)', num('moi')],
       ['sal', 'Salary % of sales', pct('sal')], ['rent', 'Rent % of sales', pct('rent')], ['util', 'Utilities % of sales', pct('util')], ['sl', 'Stock loss % of sales', pct('sl')]
     ];
   }
@@ -116,6 +117,9 @@
       rent: function () { return 'Rental ' + F.p(L.rentPct, 1) + ' of sales in ' + esc(mon) + ' (flag above ' + F.p(TH.rent, 0) + ')'; },
       recruit: function () { return 'Recruitment rate ' + F.p(L.rrPct, 1) + ' in ' + esc(mon) + ' (flag below ' + F.p(TH.recruit, 0) + ')'; },
       lossmaking: function () { return 'PAT ' + F.jt(r.patCur, 1) + ' over ' + esc(P.tag) + ', open ' + r.opMonths + ' months'; },
+      moilow: function () { return 'Stock holding ' + F.jt(L.stockAvg, 0) + ' = ' + F.moi(L.moi) + ' months of ' + esc(mon) + ' sales (flag below ' + TH.moiLow + ')'; },
+      moihigh: function () { return 'Stock holding ' + F.jt(L.stockAvg, 0) + ' = ' + F.moi(L.moi) + ' months of ' + esc(mon) + ' sales (flag at ' + TH.moiHigh + ' or more)'; },
+      stockjump: function () { var a = val(m, 'stock', o, endT - 1), b = val(m, 'stock', o, endT); return 'Stock holding ' + F.jt(a, 0) + ' \u2192 ' + F.jt(b, 0) + ' (' + F.p(b / a - 1, 0, true) + ' vs the previous month); confirm the source figure'; },
       anomaly: function () { return 'Margin ' + F.p(L.margin, 1) + ' in ' + esc(mon) + ' is outside the plausible range; check the source data first'; }
     };
     var order = { h: 0, m: 1, i: 2 };
@@ -290,12 +294,12 @@
     var tb = last24.slice().reverse().map(function (x) {
       var h = val(m, 'wh', o, x.t), ph = val(m, 'psh', o, x.t);
       return '<tr><td class="l">' + E.monthLabel(x.t) + '</td><td>' + F.m(x.rev) + '</td><td class="' + F.cls(yo(x, 'rev')) + '">' + F.p(yo(x, 'rev'), 1, true) + '</td><td>' + F.n(x.tx) + '</td><td class="' + F.cls(yo(x, 'tx')) + '">' + F.p(yo(x, 'tx'), 1, true) +
-        '</td><td>' + F.n(x.basket) + '</td><td>' + F.p(x.margin, 1) + '</td><td class="' + F.cls(ph) + '">' + F.n(ph) + '</td><td class="' + F.cls(ph) + '">' + (isN(ph) ? F.m(x.pat) : '\u2013') + '</td><td>' + F.n(h) + '</td><td>' + F.p(x.focus, 1) + '</td><td>' + F.p(x.mem, 0) + '</td><td>' + F.p(x.rr, 0) + '</td><td>' + F.n(x.nm) + '</td><td>' + F.p(x.sal, 1) + '</td><td>' + F.p(x.rent, 1) + '</td><td>' + F.p(x.sl, 1) + '</td></tr>';
+        '</td><td>' + F.n(x.basket) + '</td><td>' + F.p(x.margin, 1) + '</td><td class="' + F.cls(ph) + '">' + F.n(ph) + '</td><td class="' + F.cls(ph) + '">' + (isN(ph) ? F.m(x.pat) : '\u2013') + '</td><td>' + F.n(h) + '</td><td>' + F.p(x.focus, 1) + '</td><td>' + F.p(x.mem, 0) + '</td><td>' + F.p(x.rr, 0) + '</td><td>' + F.n(x.nm) + '</td><td>' + F.p(x.sal, 1) + '</td><td>' + F.p(x.rent, 1) + '</td><td>' + F.p(x.sl, 1) + '</td><td>' + F.m(x.stock, 0) + '</td><td>' + F.moi(x.moi) + '</td></tr>';
     }).join('');
     var dtab = '<div style="margin:4px 0 12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="drToggle">Show 24-month data table</button><button class="btn" id="drCsv"><i class="fas fa-download"></i> Export months</button></div>' +
       '<div id="drTable" class="hidden"><div class="card" style="margin-bottom:12px"><h4>Sales (Rp Jt) and PAT (Rp Jt), last ' + last24.length + ' months to ' + esc(E.monthShort(endT)) + '</h4><div class="ch t"><canvas id="dc1"></canvas></div></div>' +
       '<div class="grid g2" style="margin-bottom:12px"><div class="card"><h4>PSH (Rp per staff hour) and margin %</h4><div class="ch"><canvas id="dc2"></canvas></div></div><div class="card"><h4>Transactions and basket size</h4><div class="ch"><canvas id="dc3"></canvas></div></div></div>' +
-      '<div class="tw" style="margin-top:0"><div class="th"><div><h3>Monthly detail</h3><p>Amounts in Rp Jt; YoY compares with the same month a year earlier.</p></div></div><div class="tx" style="max-height:420px"><table class="mt"><thead><tr><th class="l">Month</th><th>Sales</th><th>YoY</th><th>Tx</th><th>YoY</th><th>Basket</th><th>Margin</th><th>PSH</th><th>PAT</th><th>Hours</th><th>Focus %</th><th>Member %</th><th>Recruit %</th><th>New mem</th><th>Salary %</th><th>Rent %</th><th>Stock loss %</th></tr></thead><tbody>' + tb + '</tbody></table></div></div></div>';
+      '<div class="tw" style="margin-top:0"><div class="th"><div><h3>Monthly detail</h3><p>Amounts in Rp Jt; YoY compares with the same month a year earlier.</p></div></div><div class="tx" style="max-height:420px"><table class="mt"><thead><tr><th class="l">Month</th><th>Sales</th><th>YoY</th><th>Tx</th><th>YoY</th><th>Basket</th><th>Margin</th><th>PSH</th><th>PAT</th><th>Hours</th><th>Focus %</th><th>Member %</th><th>Recruit %</th><th>New mem</th><th>Salary %</th><th>Rent %</th><th>Stock loss %</th><th>Stock (Jt)</th><th>MOI</th></tr></thead><tbody>' + tb + '</tbody></table></div></div></div>';
 
     var note = P.baseAvailable ? '' : '<div class="note warn">No prior-year comparison for this period (the workbook\u2019s comparable history starts ' + esc(E.monthLabel(m.baseMin)) + '). Pick a later period to see change and growth.</div>';
     $('drawerHost').innerHTML = shell(ol, tags, sub, bar, '<div class="drnarr">' + narr + '</div>' + note + flagPanel(m, P, r, o, endT, L) + cards + trend + ptable + etable + ptbl + dtab);
@@ -330,8 +334,8 @@
       if (!hid) D.chartsCfg();
     };
     $('drCsv').onclick = function () {
-      B.csv('bod-outlet-' + (ol.code || o) + '-months.csv', ['Month', 'Sales', 'Transactions', 'Basket', 'Profit', 'Margin', 'PSH', 'PAT', 'Working hours', 'Focus %', 'Member %', 'Recruitment %', 'New members', 'Salary % of sales', 'Rent % of sales', 'Stock loss % of sales'],
-        mo.map(function (x) { var ph = val(m, 'psh', o, x.t); return [E.monthLabel(x.t), Math.round(x.rev), Math.round(x.tx), isN(x.basket) ? Math.round(x.basket) : '', isN(x.pro) ? Math.round(x.pro) : '', isN(x.margin) ? x.margin.toFixed(4) : '', isN(ph) ? Math.round(ph) : '', isN(ph) ? Math.round(x.pat) : '', isN(val(m, 'wh', o, x.t)) ? val(m, 'wh', o, x.t) : '', isN(x.focus) ? x.focus.toFixed(4) : '', isN(x.mem) ? x.mem.toFixed(4) : '', isN(x.rr) ? x.rr.toFixed(4) : '', isN(x.nm) ? x.nm : '', isN(x.sal) ? x.sal.toFixed(4) : '', isN(x.rent) ? x.rent.toFixed(4) : '', isN(x.sl) ? x.sl.toFixed(4) : '']; }));
+      B.csv('bod-outlet-' + (ol.code || o) + '-months.csv', ['Month', 'Sales', 'Transactions', 'Basket', 'Profit', 'Margin', 'PSH', 'PAT', 'Working hours', 'Focus %', 'Member %', 'Recruitment %', 'New members', 'Salary % of sales', 'Rent % of sales', 'Stock loss % of sales', 'Stock holding', 'MOI'],
+        mo.map(function (x) { var ph = val(m, 'psh', o, x.t); return [E.monthLabel(x.t), Math.round(x.rev), Math.round(x.tx), isN(x.basket) ? Math.round(x.basket) : '', isN(x.pro) ? Math.round(x.pro) : '', isN(x.margin) ? x.margin.toFixed(4) : '', isN(ph) ? Math.round(ph) : '', isN(ph) ? Math.round(x.pat) : '', isN(val(m, 'wh', o, x.t)) ? val(m, 'wh', o, x.t) : '', isN(x.focus) ? x.focus.toFixed(4) : '', isN(x.mem) ? x.mem.toFixed(4) : '', isN(x.rr) ? x.rr.toFixed(4) : '', isN(x.nm) ? x.nm : '', isN(x.sal) ? x.sal.toFixed(4) : '', isN(x.rent) ? x.rent.toFixed(4) : '', isN(x.sl) ? x.sl.toFixed(4) : '', isN(x.stock) ? Math.round(x.stock) : '', isN(x.moi) ? x.moi.toFixed(2) : '']; }));
     };
     var sel = $('drMeasure'); if (sel) sel.onchange = function () { D.measure = sel.value; draw(); };
     var nd = document.querySelector('#drawerHost .dr'); if (nd && keepTop) nd.scrollTop = keepTop;
